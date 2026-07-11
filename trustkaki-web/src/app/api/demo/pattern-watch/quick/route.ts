@@ -1,0 +1,85 @@
+import { NextResponse } from "next/server";
+import { uncleTan } from "@/data/demo";
+import { runTriageTimelineAgent } from "@/lib/agents/orchestrator";
+import {
+  persistQuickDemoTimelineResult,
+  readDashboardState,
+  resetDemoPersistence,
+} from "@/lib/persistence/trustkakiRepository";
+import type { AgentRunContext } from "@/lib/agents/contracts";
+import type { Message, RiskLevel } from "@/lib/types";
+
+const SCENARIO = [
+  {
+    id: "quick_pattern_demo_day_1",
+    text: "My knee pain today. Walking feels uncomfortable.",
+    timestamp: "2026-07-07T08:00:00.000Z",
+  },
+  {
+    id: "quick_pattern_demo_day_2",
+    text: "Not hungry today. I skipped breakfast.",
+    timestamp: "2026-07-08T08:00:00.000Z",
+  },
+  {
+    id: "quick_pattern_demo_day_3",
+    text: "I avoid going downstairs. Staying home because my leg is stiff.",
+    timestamp: "2026-07-09T08:00:00.000Z",
+  },
+  {
+    id: "quick_pattern_demo_day_4",
+    text: "Missed usual check-in. Don't want to join lunch, paiseh.",
+    timestamp: "2026-07-10T08:00:00.000Z",
+  },
+];
+
+function contextFor(index: number, currentRiskLevel: RiskLevel): AgentRunContext {
+  const messages: Message[] = SCENARIO.slice(0, index + 1).map((item) => ({
+    id: item.id,
+    sender: "senior",
+    text: item.text,
+    timestamp: item.timestamp,
+  }));
+
+  return {
+    senior: uncleTan,
+    messages,
+    currentRiskLevel,
+  };
+}
+
+export async function POST() {
+  const startedAt = Date.now();
+  try {
+    await resetDemoPersistence();
+
+    const context = contextFor(SCENARIO.length - 1, "green");
+    const triageResult = await runTriageTimelineAgent(context);
+    await persistQuickDemoTimelineResult({
+      messages: SCENARIO,
+      context,
+      result: triageResult,
+    });
+
+    const state = await readDashboardState();
+    return NextResponse.json({
+      status: "ok",
+      demo: "quick",
+      scenario: "4-day mobility, appetite, and withdrawal pattern",
+      messagesRun: SCENARIO.length,
+      signalsDetected: triageResult.data.messages.reduce(
+        (sum, analysis) => sum + analysis.signals.length,
+        0
+      ),
+      queueCount: state.data.followUpQueue.length,
+      queue: state.data.followUpQueue,
+      durationMs: Date.now() - startedAt,
+      persistence: state.persistence,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json(
+      { error: "Failed to run quick Pattern Watch demo", detail: message },
+      { status: 500 }
+    );
+  }
+}

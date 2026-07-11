@@ -3,12 +3,15 @@
 export type RiskLevel = "green" | "yellow" | "red";
 
 export type AgentId =
+  | "orchestrator"
   | "triage"
+  | "policy"
   | "daily_living"
   | "health_frailty"
   | "aac_nudge"
   | "digital_safety"
-  | "briefing";
+  | "briefing"
+  | "pattern_watch";
 
 export interface AgentTrace {
   id: string;
@@ -19,6 +22,13 @@ export interface AgentTrace {
   reasoning: string;
   output: string;
   tags: string[];
+  durationMs?: number;
+  modelUsed?: string;
+  fallback?: boolean;
+  inputSummary?: string;
+  outputSummary?: string;
+  stateChanges?: string[];
+  errorMessage?: string | null;
 }
 
 export interface Message {
@@ -54,6 +64,7 @@ export interface DashboardData {
   senior: SeniorProfile;
   activeSessions: CheckInSession[];
   recentAlerts: AlertItem[];
+  followUpQueue: FollowUpQueueItem[];
 }
 
 export interface AlertItem {
@@ -64,4 +75,80 @@ export interface AlertItem {
   acknowledged: boolean;
 }
 
+export type PatternType =
+  | "mobility_and_frailty"
+  | "social_withdrawal"
+  | "combined_wellbeing_decline";
 
+export type PatternStatus = "emerging" | "active" | "resolved";
+export type PatternSeverity = "low" | "medium" | "high";
+export type FollowUpStatus =
+  | "pending"
+  | "acknowledged"
+  | "followed_up"
+  | "snoozed"
+  | "resolved";
+export type ContactOutcome =
+  | "reached_and_okay"
+  | "needs_follow_up"
+  | "referred_to_aac_staff"
+  | "unable_to_reach"
+  | "resolved";
+
+export interface PatternEvidenceItem {
+  id: string;
+  type: AlertItem["type"];
+  severity: PatternSeverity;
+  description: string;
+  observedAt: string;
+  message?: string;
+}
+
+export interface CaregiverActionItem {
+  id: string;
+  actionType: "mark_for_follow_up" | "assign" | "record_outcome" | "snooze" | "resolve";
+  outcomeType?: ContactOutcome | null;
+  note?: string | null;
+  caregiver?: string | null;
+  createdAt: string;
+}
+
+export interface PatternDetail {
+  id: string;
+  type: PatternType;
+  status: PatternStatus;
+  severity: PatternSeverity;
+  conciseSummary: string;
+  recommendedAction: string;
+  firstObservedAt: string;
+  latestObservedAt: string;
+  evidence: PatternEvidenceItem[];
+  triggerExplanation: string;
+  comparison: string;
+  previousActions: CaregiverActionItem[];
+  relatedPatterns?: RelatedPatternSummary[];
+}
+
+export interface RelatedPatternSummary {
+  id: string;
+  type: PatternType;
+  status: PatternStatus;
+  severity: PatternSeverity;
+}
+
+export interface FollowUpQueueItem {
+  id: string;
+  seniorName: string;
+  riskLevel: RiskLevel;
+  headline: string;
+  reason: string;
+  changeFromUsual: string;
+  lastResponseAt: string | null;
+  recommendedAction: string;
+  status: FollowUpStatus;
+  assignedTo: string | null;
+  lastUpdatedAt: string;
+  priority: number;
+  pattern?: PatternDetail | null;
+  relatedPatterns: RelatedPatternSummary[];
+}

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TrustKaki — AI Care Companion",
+  title: "TrustKaki — AI Last-Mile Engagement for Seniors",
   description:
-    "TrustKaki is a multi-agent AI companion for elderly care in Singapore. Monitoring daily living, health, social engagement, and digital safety for seniors aging in place.",
+    "Proactive AI check-ins for isolated seniors. Built for SMU AI Club × Tencent Cloud 'AI CAN DO IT / Age Well' Hackathon.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-zinc-50">{children}</body>
+      <body className="h-full flex flex-col">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,230 @@
+# TrustKaki — Codex Handoff
+
+## Source of truth
+Use only:
+`/Users/ngminxie/Documents/SMU/Hackathons:Events/2026/Tencent Age Well Hackathon/trustkaki-web`
+
+Read first:
+- `docs/TrustKaki_BUILD_ROADMAP.md`
+- this handoff
+- current repository code
+
+Do not use earlier drafts. Major product decisions go back to TrustKaki HQ.
+
+## Product goal
+TrustKaki must be a real deployable product, not a scripted mock. Final target:
+- real WhatsApp inbound/outbound
+- real multi-agent orchestration
+- real LLM calls
+- Supabase persistence
+- scheduled proactive check-ins
+- caregiver/AAC alerts and briefings
+- live dashboard
+- real agent traces
+- public deployment
+
+## Current stack
+- Next.js 16.2.10
+- TypeScript
+- Tailwind
+- Zod 4
+- OpenAI-compatible provider
+- tested model: `gpt-4o-mini-2024-07-18`
+- Supabase not yet added
+- WhatsApp not yet added
+
+## Local run command
+The user is in China and OpenAI requires V2RayU proxy:
+
+```bash
+cd "/Users/ngminxie/Documents/SMU/Hackathons:Events/2026/Tencent Age Well Hackathon/trustkaki-web"
+
+NODE_USE_ENV_PROXY=1 \
+HTTP_PROXY=http://127.0.0.1:10808 \
+HTTPS_PROXY=http://127.0.0.1:10808 \
+NO_PROXY=localhost,127.0.0.1 \
+node node_modules/next/dist/bin/next dev -p 3000
+```
+
+Do not print `.env.local` secrets.
+
+## Existing frontend
+- WhatsApp-style senior chat
+- caregiver/AAC dashboard
+- agent trace panel
+- interactive demo controls
+- frontend calling agent APIs
+
+Important files:
+- `src/components/ChatSimulation.tsx`
+- `src/components/Dashboard.tsx`
+- `src/components/AgentTracePanel.tsx`
+- `src/components/NavBar.tsx`
+- `src/app/page.tsx`
+
+## Existing agent backend
+Files:
+- `src/lib/agents/contracts.ts`
+- `src/lib/agents/schemas.ts`
+- `src/lib/agents/provider.ts`
+- `src/lib/agents/prompts.ts`
+- `src/lib/agents/runner.ts`
+- `src/lib/agents/orchestrator.ts`
+- `src/lib/agents/index.ts`
+
+Routes:
+- `/api/agents/orchestrate`
+- `/api/agents/triage`
+- `/api/agents/aac-nudge`
+- `/api/agents/digital-safety`
+- `/api/agents/briefing`
+
+Shared runner already supports:
+- real LLM calls
+- structured JSON
+- Zod validation
+- retries
+- timeout
+- trace IDs
+- latency logging
+- safe fallback
+
+## Verified real LLM result
+Input:
+`Not hungry today. Knee pain.`
+
+Verified:
+- `fallback: false`
+- model `gpt-4o-mini-2024-07-18`
+- `health` medium signal
+- `daily_living` medium signal
+- Yellow risk in standalone triage
+- routing to AAC Nudge
+- Zod passed
+- first attempt success
+- about 5.4s latency
+
+## Phase 1.5 status
+
+Phase 1.5 safety and orchestration hardening is implemented.
+
+Current deterministic policy behavior:
+- final risk and risk change are authoritative from `src/lib/agents/policy.ts`
+- LLM outputs provide validated interpretation/signals only
+- policy output is returned in orchestration responses
+- a synthetic `policy` trace is visible in agent traces
+- automatic briefing is policy-gated
+- manual briefing is preserved only with `trigger: "manual_override"`
+- Briefing Agent `overallRisk` is advisory and is overwritten by authoritative risk
+- alerts are filtered separately from detected signals
+- one low-severity social signal is tracked and can trigger AAC Nudge, but does not create caregiver alert or automatic briefing by default
+
+Verified deterministic tests:
+- benign greeting -> Green, no automatic briefing, no alert
+- medium health + medium daily_living -> Yellow, briefing, one actionable alert
+- low social "paiseh" signal -> AAC Nudge preserved, no Digital Safety, no briefing, no caregiver alert
+- high digital_safety signal -> at least Yellow, Digital Safety path, alert created
+- urgent structured health signal -> Red, urgent alert
+- confirmed scam loss/account compromise -> Red urgent escalation
+- current Yellow + one positive message -> remains Yellow
+- manual briefing override works for benign context and does not alter risk
+- Briefing Agent overallRisk cannot override policy finalRisk
+- policy trace is returned
+
+## Verified orchestration behavior
+Four real tests were rerun after Phase 1.5.
+
+1. `Good morning, I slept well.`
+- orchestrator + triage + policy
+- AAC Nudge skipped
+- Digital Safety skipped
+- risk Green
+- no alert
+- no briefing
+
+2. `Not hungry today. Knee pain.`
+- orchestrator + triage + AAC Nudge + policy + briefing
+- Digital Safety skipped
+- health + daily_living detected
+- final risk Yellow
+- one medium health alert
+
+3. `Don't want. Paiseh.`
+- orchestrator + triage + AAC Nudge + policy
+- Digital Safety skipped
+- social signal detected
+- final risk Green
+- no alert
+- no automatic briefing
+
+4. SingPost scam text
+- orchestrator + triage + Digital Safety + policy + briefing
+- AAC Nudge skipped
+- high digital_safety signal detected
+- final risk Yellow
+- one high digital_safety alert
+- no Red escalation unless confirmed loss/account compromise is detected
+
+Across all runs:
+- real LLM
+- fallback false
+- Zod passed
+- policy trace returned
+- conditional routing is genuine
+
+## Current implementation status
+
+Phase 2 Supabase persistence foundation is implemented and live verified.
+Messages, check-ins, detected signals, policy risk events, agent runs, alerts,
+briefs, Pattern Watch records, caregiver queue items, and caregiver actions are
+persisted through the repository layer. `.env.local` secrets must never be
+printed or committed.
+
+Phase 3A WhatsApp Cloud API integration is implemented for local/manual testing:
+webhook verification, inbound parsing, senior lookup by configured phone,
+deduplication, orchestration handoff, outbound reply sending, and dev simulation.
+
+Phase 3B asynchronous WhatsApp inbox processing is implemented with a
+Supabase-backed webhook event inbox. Meta webhook handling can acknowledge
+quickly, and processing can be retried safely.
+
+Phase 4 Pattern Watch and caregiver queue are implemented. Pattern Watch reads
+stored detected signals over time and writes `patterns` plus operational
+`caregiver_queue_items`.
+
+Phase 4.1 queue consolidation is implemented. Multiple related active patterns
+for the same senior episode produce one active caregiver queue case with linked
+pattern IDs/types. Resolving the case resolves all linked open patterns while
+caregiver action history remains stored.
+
+Phase 5 Judge View work focuses on making the real flow understandable in under
+one minute: reset demo, run Quick Demo, inspect timeline/evidence, assign,
+record outcome, resolve, and see the active queue clear.
+
+## Current caveats
+
+1. Tone later needs tuning:
+   - avoid stereotyped overuse of “lah/leh/ah/shiok”
+   - use warm, respectful, plain Singapore English
+2. Quick Demo uses one typed Triage timeline extraction call for speed, then
+   deterministic Pattern Watch and queue consolidation. Full Agent Replay remains
+   available for technical validation.
+3. Do not deploy or configure Meta callback URL until explicitly requested.
+
+## Immediate next task
+Proceed after Phase 5 to deployment preparation, real Meta callback
+configuration, scheduler/proactive check-ins, and senior memory/health context.
+
+## Working rules
+- inspect before modifying
+- use only the existing repo
+- keep changes small and testable
+- do not expose secrets
+- run typecheck
+- run tests
+- run build
+- report changed files
+- report setup steps
+- report limitations
+- do not claim success without verification
+- do not replace real functionality with scripted simulation

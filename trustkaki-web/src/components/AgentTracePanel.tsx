@@ -1,241 +1,125 @@
 "use client";
 
-import { useState } from "react";
-import type { AgentTrace, AgentId } from "@/lib/types";
+import type { AgentTrace } from "@/lib/types";
 
 interface AgentTracePanelProps {
   traces: AgentTrace[];
+  visible: boolean;
+  onToggle: () => void;
 }
 
-const agentConfig: Record<
-  AgentId,
-  { name: string; color: string; bg: string; border: string; icon: string; accent: string }
-> = {
-  triage: {
-    name: "Triage Agent",
-    color: "text-blue-700",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    icon: "🔀",
-    accent: "bg-blue-500",
-  },
-  daily_living: {
-    name: "Daily Living Agent",
-    color: "text-amber-700",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    icon: "🍽️",
-    accent: "bg-amber-500",
-  },
-  health_frailty: {
-    name: "Health & Frailty Agent",
-    color: "text-rose-700",
-    bg: "bg-rose-50",
-    border: "border-rose-200",
-    icon: "🏥",
-    accent: "bg-rose-500",
-  },
-  aac_nudge: {
-    name: "AAC Nudge Agent",
-    color: "text-violet-700",
-    bg: "bg-violet-50",
-    border: "border-violet-200",
-    icon: "👥",
-    accent: "bg-violet-500",
-  },
-  digital_safety: {
-    name: "Digital Safety Agent",
-    color: "text-red-700",
-    bg: "bg-red-50",
-    border: "border-red-200",
-    icon: "🛡️",
-    accent: "bg-red-500",
-  },
-  briefing: {
-    name: "Briefing Agent",
-    color: "text-emerald-700",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    icon: "📋",
-    accent: "bg-emerald-500",
-  },
+const agentColors: Record<string, string> = {
+  triage: "bg-orange-100 border-orange-400 text-orange-800",
+  daily_living: "bg-blue-100 border-blue-400 text-blue-800",
+  health_frailty: "bg-red-100 border-red-400 text-red-800",
+  aac_nudge: "bg-green-100 border-green-400 text-green-800",
+  digital_safety: "bg-purple-100 border-purple-400 text-purple-800",
+  briefing: "bg-indigo-100 border-indigo-400 text-indigo-800",
+  orchestrator: "bg-slate-100 border-slate-400 text-slate-800",
+  policy: "bg-gray-100 border-gray-400 text-gray-800",
+  pattern_watch: "bg-teal-100 border-teal-400 text-teal-800",
 };
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-SG", {
+const agentIcons: Record<string, string> = {
+  triage: "🔍",
+  daily_living: "🍽️",
+  health_frailty: "🏥",
+  aac_nudge: "🤝",
+  digital_safety: "🛡️",
+  briefing: "📋",
+  orchestrator: "🧭",
+  policy: "⚖️",
+  pattern_watch: "📈",
+};
+
+function formatTime(ts: string) {
+  return new Date(ts).toLocaleTimeString("en-SG", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: true,
   });
 }
 
-export default function AgentTracePanel({ traces }: AgentTracePanelProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(traces[0]?.id ?? null);
+function compactOutput(output: string): string {
+  try {
+    return JSON.stringify(JSON.parse(output), null, 2);
+  } catch {
+    return output.length > 600 ? `${output.slice(0, 597)}...` : output;
+  }
+}
 
-  const toggle = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
-  };
-
+export default function AgentTracePanel({ traces, visible, onToggle }: AgentTracePanelProps) {
   return (
-    <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
+    <div className="flex flex-col h-full">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between px-4 py-3 bg-gray-900 text-white hover:bg-gray-800 transition-colors shrink-0"
+      >
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900">
-            Agent Reasoning Pipeline
-          </h3>
-          <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-600">
-            {traces.length} traces
-          </span>
+          <span>🧠</span>
+          <span className="font-semibold text-sm">Agent Trace</span>
+          <span className="text-xs bg-gray-700 px-2 py-0.5 rounded-full">{traces.length}</span>
         </div>
-        <span className="text-xs text-zinc-400">
-          Click cards to expand
-        </span>
-      </div>
+        <span className="text-xs">{visible ? "▼" : "▲"}</span>
+      </button>
 
-      {/* Pipeline flow */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
-        {traces.map((trace, i) => {
-          const cfg = agentConfig[trace.agentId];
-          return (
-            <div key={trace.id} className="flex items-center gap-1">
-              <div
-                className={`flex items-center gap-1.5 rounded-lg ${cfg.bg} border ${cfg.border} px-2 py-1 text-[10px] font-medium ${cfg.color} whitespace-nowrap`}
-              >
-                <span>{cfg.icon}</span>
-                {cfg.name.replace(" Agent", "")}
-              </div>
-              {i < traces.length - 1 && (
-                <span className="text-zinc-300">→</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Trace cards */}
-      <div className="space-y-2.5">
-        {traces.map((trace, index) => {
-          const cfg = agentConfig[trace.agentId];
-          const isExpanded = expandedId === trace.id;
-
-          return (
+      {visible && (
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-950">
+          {traces.map((trace) => (
             <div
               key={trace.id}
-              className={`overflow-hidden rounded-xl border ${cfg.border} bg-white transition-shadow hover:shadow-sm`}
+              className={`border rounded-lg p-3 text-xs ${agentColors[trace.agentId] || "bg-gray-800 border-gray-600 text-gray-300"}`}
             >
-              {/* Card header */}
-              <button
-                onClick={() => toggle(trace.id)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left"
-              >
-                {/* Step number */}
-                <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${cfg.accent} text-xs font-bold text-white`}
-                >
-                  {index + 1}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-base">{agentIcons[trace.agentId] || "🤖"}</span>
+                <span className="font-bold">{trace.agentName}</span>
+                <span className="ml-auto opacity-60">{formatTime(trace.timestamp)}</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <div>
+                  <span className="font-semibold">Input summary:</span>
+                  <p className="mt-0.5 opacity-90">{trace.inputSummary ?? "No summary available"}</p>
                 </div>
-
-                {/* Agent info */}
-                <div className="flex flex-1 items-center gap-2">
-                  <span className="text-lg">{cfg.icon}</span>
-                  <div>
-                    <div className={`text-sm font-semibold ${cfg.color}`}>
-                      {cfg.name}
-                    </div>
-                    <div className="text-[10px] text-zinc-400">
-                      {formatTime(trace.timestamp)}
-                    </div>
-                  </div>
+                <div>
+                  <span className="font-semibold">Structured output:</span>
+                  <pre className="mt-0.5 whitespace-pre-wrap opacity-90 font-mono text-[10px]">
+                    {trace.outputSummary ?? compactOutput(trace.output)}
+                  </pre>
                 </div>
-
-                {/* Tags preview */}
-                <div className="hidden items-center gap-1 sm:flex">
-                  {trace.tags.slice(0, 2).map((tag) => (
-                    <span
-                      key={tag}
-                      className={`rounded-full ${cfg.bg} px-2 py-0.5 text-[10px] font-medium ${cfg.color}`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {trace.tags.length > 2 && (
-                    <span className="text-[10px] text-zinc-400">
-                      +{trace.tags.length - 2}
-                    </span>
-                  )}
-                </div>
-
-                {/* Expand icon */}
-                <span
-                  className={`text-zinc-400 transition-transform ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}
-                >
-                  ▼
-                </span>
-              </button>
-
-              {/* Expanded content */}
-              {isExpanded && (
-                <div className="space-y-3 border-t border-zinc-100 px-4 py-3">
-                  {/* Input */}
+                {trace.stateChanges && trace.stateChanges.length > 0 && (
                   <div>
-                    <div className="mb-1 flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                        Input
-                      </span>
-                    </div>
-                    <div className="rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
-                      {trace.input}
-                    </div>
+                    <span className="font-semibold">Tool/state changes:</span>
+                    <p className="mt-0.5 opacity-90">{trace.stateChanges.join(", ")}</p>
                   </div>
-
-                  {/* Reasoning */}
+                )}
+                {trace.errorMessage && (
                   <div>
-                    <div className="mb-1 flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                        Reasoning
-                      </span>
-                    </div>
-                    <div
-                      className={`rounded-lg ${cfg.bg} border-l-2 ${cfg.border.replace("border-", "border-l-")} px-3 py-2 text-sm leading-relaxed text-zinc-700`}
-                    >
-                      {trace.reasoning}
-                    </div>
+                    <span className="font-semibold">Fallback/error:</span>
+                    <p className="mt-0.5 opacity-90">{trace.errorMessage}</p>
                   </div>
+                )}
+                <details>
+                  <summary className="cursor-pointer font-semibold opacity-80">
+                    Advanced raw JSON
+                  </summary>
+                  <pre className="mt-1 whitespace-pre-wrap font-mono text-[10px] opacity-80">
+                    {compactOutput(trace.output)}
+                  </pre>
+                </details>
+              </div>
 
-                  {/* Output */}
-                  <div>
-                    <div className="mb-1 flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                        Output
-                      </span>
-                    </div>
-                    <div className="rounded-lg bg-teal-50 px-3 py-2 text-sm font-medium text-teal-800">
-                      {trace.output}
-                    </div>
-                  </div>
-
-                  {/* All tags */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                    {trace.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className={`rounded-full ${cfg.bg} border ${cfg.border} px-2 py-0.5 text-[10px] font-medium ${cfg.color}`}
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="flex gap-1 mt-2 flex-wrap">
+                {trace.tags.map((tag) => (
+                  <span key={tag} className="px-1.5 py-0.5 rounded bg-black/20 text-[10px] font-medium">
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

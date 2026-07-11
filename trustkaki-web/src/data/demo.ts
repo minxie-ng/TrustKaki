@@ -199,5 +199,6 @@ import type {
     senior: { ...uncleTan, riskLevel: "yellow", lastCheckIn: "2026-01-14T08:05:00" },
     activeSessions: [demoSession],
     recentAlerts: demoAlerts,
+    followUpQueue: [],
   };
   

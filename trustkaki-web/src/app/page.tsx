@@ -1,61 +1,113 @@
 "use client";
 
-import { useState } from "react";
-import NavBar, { type TabId } from "@/components/NavBar";
-import Dashboard from "@/components/Dashboard";
+import { useCallback, useEffect, useState } from "react";
+import NavBar from "@/components/NavBar";
 import ChatSimulation from "@/components/ChatSimulation";
+import Dashboard from "@/components/Dashboard";
 import AgentTracePanel from "@/components/AgentTracePanel";
-import { dashboardData, demoSession } from "@/data/demo";
+import { demoMessages, demoTraces, dashboardData } from "@/data/demo";
+import type { BriefingOutput } from "@/lib/agents/contracts";
+import type { AgentTrace, DashboardData, RiskLevel } from "@/lib/types";
+
+interface DashboardStateResponse {
+  persistence?: {
+    mode: "supabase" | "local_demo";
+    configured: boolean;
+    persisted: boolean;
+  };
+  data: DashboardData;
+  traces: AgentTrace[];
+  briefing: BriefingOutput | null;
+}
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [activeTab, setActiveTab] = useState<"chat" | "dashboard">("chat");
+  const [riskLevel, setRiskLevel] = useState<RiskLevel>("green");
+  const [traceVisible, setTraceVisible] = useState(true);
+  const [liveDashboardData, setLiveDashboardData] =
+    useState<DashboardData>(dashboardData);
+  const [liveTraces, setLiveTraces] = useState<AgentTrace[]>(demoTraces);
+  const [liveBriefing, setLiveBriefing] = useState<BriefingOutput | null>(null);
+  const latestSession = liveDashboardData.activeSessions[0];
+  const chatMessages =
+    latestSession?.messages.length > 0 ? latestSession.messages : demoMessages;
+
+  const refreshDashboardState = useCallback(() => {
+    void fetch("/api/dashboard/state", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as DashboardStateResponse;
+      })
+      .then((state) => {
+        if (!state?.persistence?.persisted) return;
+        setLiveDashboardData(state.data);
+        setLiveTraces(state.traces);
+        setLiveBriefing(state.briefing ?? null);
+        setRiskLevel(state.data.senior.riskLevel);
+      })
+      .catch((error) => {
+        console.error("Failed to hydrate dashboard state:", error);
+      });
+  }, []);
+
+  const handleCheckinComplete = () => {
+    setRiskLevel("yellow");
+    refreshDashboardState();
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      refreshDashboardState();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [refreshDashboardState]);
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <NavBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        riskLevel={dashboardData.senior.riskLevel}
-        seniorName={dashboardData.senior.name}
-      />
+    <div className="h-screen flex flex-col bg-gray-100">
+      <NavBar activeTab={activeTab} onTabChange={setActiveTab} riskLevel={riskLevel} />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        {activeTab === "dashboard" && <Dashboard data={dashboardData} />}
-
-        {activeTab === "chat" && (
-          <div className="grid gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-3">
-              <ChatSimulation messages={demoSession.messages} />
-            </div>
-            <div className="lg:col-span-2">
-              <AgentTracePanel traces={demoSession.traces} />
-            </div>
-          </div>
-        )}
-
-        {activeTab === "traces" && (
-          <div className="mx-auto max-w-4xl">
-            <AgentTracePanel traces={demoSession.traces} />
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
-          <div className="flex flex-col items-center justify-between gap-2 text-xs text-zinc-400 sm:flex-row">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-zinc-500">TrustKaki</span>
-              <span>— AI Care Companion for Singapore Seniors</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span>Tencent Age Well Hackathon 2026</span>
-              <span>·</span>
-              <span>MVP Demo</span>
-            </div>
-          </div>
+      <div className="flex-1 flex overflow-hidden">
+        <div
+          className={`${
+            activeTab === "chat" ? "flex" : "hidden md:flex"
+          } flex-col flex-1 md:max-w-md border-r border-gray-200`}
+        >
+          <ChatSimulation
+            messages={chatMessages}
+            onComplete={handleCheckinComplete}
+          />
         </div>
-      </footer>
+
+        <div
+          className={`${
+            activeTab === "dashboard" ? "flex" : "hidden md:flex"
+          } flex-col flex-1`}
+        >
+          <Dashboard
+            data={liveDashboardData}
+            traces={liveTraces}
+            briefing={liveBriefing}
+            onRefresh={refreshDashboardState}
+          />
+        </div>
+
+        <div className="hidden lg:flex flex-col w-96 border-l border-gray-200">
+          <AgentTracePanel
+            traces={liveTraces}
+            visible={traceVisible}
+            onToggle={() => setTraceVisible(!traceVisible)}
+          />
+        </div>
+      </div>
+
+      <div className="lg:hidden">
+        <AgentTracePanel
+          traces={liveTraces}
+          visible={traceVisible}
+          onToggle={() => setTraceVisible(!traceVisible)}
+        />
+      </div>
     </div>
   );
 }
