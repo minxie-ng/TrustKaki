@@ -21,8 +21,32 @@ function textList(value: unknown): string[] {
     .filter((item): item is string => Boolean(item));
 }
 
+function looksTechnical(value: string): boolean {
+  return /[{}[\]"]/.test(value) || /"?[a-zA-Z0-9_]+"?\s*:/.test(value);
+}
+
+function collectSignalDescriptions(value: unknown): string[] {
+  if (!value || typeof value !== "object") return [];
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectSignalDescriptions(item));
+  }
+
+  const record = value as Record<string, unknown>;
+  const direct = textList(record.signals);
+  return [
+    ...direct,
+    ...Object.values(record).flatMap((item) => collectSignalDescriptions(item)),
+  ];
+}
+
+function riskText(value: unknown): string | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  return `Risk level: ${value}.`;
+}
+
 export function formatAgentOutputForCaregiver(input: AgentOutputFormatInput): string {
-  if (input.outputSummary?.trim()) return input.outputSummary.trim();
+  const summary = input.outputSummary?.trim();
+  if (summary && !looksTechnical(summary)) return summary;
   if (!input.output?.trim()) return "No recommendation summary available.";
 
   try {
@@ -34,16 +58,18 @@ export function formatAgentOutputForCaregiver(input: AgentOutputFormatInput): st
       parsed.nudgeMessage,
       parsed.warningMessage,
       parsed.forCaregiver,
+      riskText(parsed.riskLevel),
+      parsed.humanFollowUp === true ? "Human follow-up suggested." : null,
     ].filter((item): item is string => typeof item === "string" && item.length > 0);
-    const signalText = textList(parsed.signals).slice(0, 3);
+    const signalText = collectSignalDescriptions(parsed).slice(0, 3);
     const concernText = textList(parsed.keyConcerns).slice(0, 3);
     const actionText = textList(parsed.recommendedActions).slice(0, 3);
-    const combined = [...parts, ...signalText, ...concernText, ...actionText];
+    const combined = Array.from(
+      new Set([...parts, ...signalText, ...concernText, ...actionText])
+    );
     if (combined.length > 0) return combined.join(" ");
   } catch {
-    return input.output.length > 220
-      ? `${input.output.slice(0, 217)}...`
-      : input.output;
+    return "Structured result recorded.";
   }
 
   return "Structured result recorded.";

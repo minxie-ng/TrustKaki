@@ -78,7 +78,7 @@ export default function AgentTracePanel({ traces, visible, onToggle }: AgentTrac
                   <p className="mt-0.5 opacity-90">{trace.inputSummary ?? "No summary available"}</p>
                 </div>
                 <div>
-                  <span className="font-semibold">Structured output:</span>
+                  <span className="font-semibold">Caregiver-readable result:</span>
                   <p className="mt-0.5 opacity-90 leading-relaxed">
                     {formatAgentOutputForCaregiver(trace)}
                   </p>
