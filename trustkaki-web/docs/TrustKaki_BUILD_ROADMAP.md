@@ -716,28 +716,218 @@ Exit criteria:
 - README
 - architecture documentation
 
-## 16. Immediate Next Step
+## 16. Production Roadmap From Deployed Baseline
 
-Current priority is judge clarity: the real working flow should be
-understandable in under one minute without hiding the real multi-agent and
-persistence system underneath.
+TrustKaki is now deployed and should be treated as a product candidate, not a
+hackathon-only demo. The next three weeks should improve the product in layers:
+each phase must keep the deployed app working, preserve the judge demo path, and
+move the system closer to something an AAC or caregiver organisation could
+actually operate.
 
-Implemented baseline:
+### Current deployed baseline
 
-1. Phase 2 Supabase persistence foundation is live.
-2. Phase 3A Meta WhatsApp Cloud API webhook/sender is implemented for local testing.
-3. Phase 3B reliable asynchronous WhatsApp inbox processing is implemented.
-4. Phase 4 practical Pattern Watch and caregiver queue is implemented.
-5. Phase 4.1 queue consolidation creates one active caregiver episode per senior while retaining separate pattern records.
-6. Phase 5 Judge View and practical UI refinement is in progress.
+Implemented and deployed:
 
-Next steps after Phase 5:
+1. Real Next.js/Vercel production deployment.
+2. Supabase persistence for messages, check-ins, signals, risk events, agent runs, alerts, briefs, Pattern Watch, queue items, and caregiver actions.
+3. Supabase Auth sign-in with caregiver identity linked through `caregivers.auth_user_id`.
+4. Demo-admin role gating through trusted `app_metadata.role = demo_admin`.
+5. Caregiver-scoped protected API routes.
+6. Deterministic policy layer for final risk and alerts.
+7. Real multi-agent orchestration with typed schemas and persisted traces.
+8. Pattern Watch and consolidated caregiver follow-up queue.
+9. Judge View / Quick Demo flow.
+10. Meta WhatsApp Cloud API webhook, sender, durable inbox, and protected retry processor foundation.
+11. Production health check.
+12. Caregiver-readable navigation and TrustKaki Reasoning panel.
 
-1. Deploy the current working baseline.
-2. Configure the real Meta callback URL.
-3. Add scheduler/proactive check-ins.
-4. Add senior memory + health/body-condition context.
-5. Prepare final submission walkthrough and README.
+### Production-grade pillars
+
+TrustKaki must become strong across five dimensions:
+
+#### A. Product and Care Workflow
+
+- Today's Follow-up Queue is the operational homepage.
+- Every queue item should answer:
+  - who needs attention
+  - why now
+  - what changed from usual
+  - what human should do next
+  - who owns the follow-up
+  - what happened after follow-up
+- The system should reduce staff uncertainty and alert fatigue, not just display AI outputs.
+
+#### B. Senior Context and Memory
+
+- Add structured senior memory that makes TrustKaki non-generic.
+- Add health/body-condition context for safe personalisation.
+- Add routine baselines so Pattern Watch can compare today's signals against the senior's usual pattern.
+- Use this context for explanation and follow-up planning, not diagnosis.
+
+Required next tables:
+
+- `senior_memories`
+- `senior_health_contexts`
+- `routine_baselines`
+
+Do not add duplicate `pattern_watch_items` or `today_follow_up_queue` tables
+unless there is a deliberate rename/refactor. The current equivalents are:
+
+- `patterns` for Pattern Watch records
+- `caregiver_queue_items` for Today's Follow-up Queue
+
+#### C. Messaging and Operations
+
+- Finish live WhatsApp callback setup after deployed smoke testing.
+- Add scheduled proactive check-ins with duplicate-send protection.
+- Add a reliable background processing cadence for pending WhatsApp events.
+- Keep a manual recovery path for demos and support.
+
+#### D. Safety, Privacy, and Trust
+
+- Maintain deterministic final risk authority.
+- Keep raw provider responses and secrets out of UI/API responses.
+- Keep service-role access server-only.
+- Keep RLS and server-side authorization aligned.
+- Add clear human-in-the-loop language for non-diagnosis and non-emergency boundaries.
+- Add auditability for caregiver actions and AI-generated recommendations.
+
+#### E. Business Readiness
+
+- Show operational value with measurable outcomes:
+  - useful follow-up recommendation count
+  - acknowledgement rate
+  - follow-up completion rate
+  - false alarm / alert fatigue rate
+  - time from first pattern detection to human follow-up
+- Prepare a narrative for AACs:
+  - TrustKaki helps limited staff attention go to the right seniors earlier.
+  - It does not replace caregivers, AAC volunteers, doctors, or emergency services.
+  - It turns quiet daily changes into one actionable follow-up case.
+
+### Three-week build sequence
+
+#### Week 1 — Product Depth and Baseline Intelligence
+
+Goal: make Pattern Watch meaningfully personal to each senior.
+
+Build:
+
+1. `routine_baselines`
+   - usual reply windows
+   - usual breakfast/lunch participation
+   - usual mobility/activity level
+   - usual AAC participation/social comfort
+   - usual response cadence
+2. `senior_health_contexts`
+   - knee pain, weak legs, dizziness, eyesight, hearing, mobility limitations
+   - source and confidence
+   - safe-use notes
+3. `senior_memories`
+   - preferences, family details, food/items, social preferences, reminders
+   - expiry/follow-up dates where relevant
+4. Pattern Watch reads baseline and health context before writing patterns.
+5. Dashboard details explain "different from usual" from stored baseline, not hardcoded text.
+
+Exit criteria:
+
+- Quick Demo shows baseline comparison from persisted baseline rows.
+- Pattern Watch can explain why Uncle Tan's signals matter for Uncle Tan specifically.
+- Caregiver detail view separates:
+  - observed facts
+  - baseline comparison
+  - health context
+  - AI summary
+  - suggested human action
+
+#### Week 2 — Real Messaging and Proactive Check-ins
+
+Goal: make TrustKaki operate through real WhatsApp, not only the web demo.
+
+Build:
+
+1. Configure Meta callback URL on the deployed Vercel webhook.
+2. Verify real inbound WhatsApp message reaches production.
+3. Verify production outbound reply.
+4. Add scheduled morning check-in job.
+5. Add duplicate-send protection.
+6. Add protected/manual pending-event processor runbook.
+7. Add operational logging for webhook accepted, processed, failed, retried.
+
+Exit criteria:
+
+- A real WhatsApp message from the verified senior number updates Supabase and the dashboard.
+- TrustKaki replies through WhatsApp.
+- A scheduled check-in can send once and not duplicate.
+- Failed or pending WhatsApp events can be retried safely.
+
+#### Week 3 — Organisation Readiness and Final Judge Story
+
+Goal: make the product feel credible for AAC/caregiver organisation use.
+
+Build:
+
+1. Caregiver queue operational polish:
+   - assignee
+   - status transitions
+   - action history
+   - acknowledgement and completion timestamps
+2. Lightweight metrics:
+   - active follow-up cases
+   - completed follow-ups
+   - time to follow-up
+   - false alarm/usefulness feedback
+3. Admin/judge setup runbook:
+   - Supabase Auth user creation
+   - role configuration
+   - caregiver linking
+   - Vercel env checklist
+   - WhatsApp callback checklist
+4. Final demo walkthrough:
+   - one-minute judge flow
+   - technical architecture flow
+   - product/business value flow
+5. Final safety language:
+   - non-diagnosis
+   - human-in-loop
+   - escalation boundaries
+   - privacy and auditability
+
+Exit criteria:
+
+- A judge can understand the product in one minute.
+- A technical judge can see real multi-agent, policy, persistence, and WhatsApp architecture.
+- A business judge can see why AACs/caregivers would use it.
+- The deployed app remains stable under the demo flow.
+
+## 16A. Best Next Step
+
+The best next step is **Senior Context, Routine Baselines, and Memory**.
+
+Do this before adding more UI polish or new agent types. This is the product
+moat: TrustKaki should not alert because one message contains a keyword; it
+should compare today's signals against what is usual for that senior, then
+produce one actionable human follow-up.
+
+Immediate implementation target:
+
+1. Add migrations for:
+   - `routine_baselines`
+   - `senior_health_contexts`
+   - `senior_memories`
+2. Seed Uncle Tan with:
+   - usual morning reply window
+   - usual breakfast routine
+   - usual downstairs/AAC participation
+   - knee/leg mobility context
+   - social hesitation context
+   - preference for low-pressure 1-to-1 check-ins
+3. Update Pattern Watch to read these rows.
+4. Update queue/detail copy so "change from usual" is backed by stored baseline.
+5. Add tests proving Pattern Watch changes when baseline/context changes.
+
+Do not rename `patterns` or `caregiver_queue_items` yet. They already serve the
+roles of `pattern_watch_items` and `today_follow_up_queue`.
 
 ## 17. Build Rules
 
