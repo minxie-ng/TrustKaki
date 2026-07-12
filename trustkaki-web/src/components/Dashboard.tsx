@@ -33,9 +33,24 @@ interface DashboardProps {
 }
 
 const riskConfig = {
-  green: { bg: "bg-emerald-100", text: "text-emerald-800", label: "Green" },
-  yellow: { bg: "bg-yellow-100", text: "text-yellow-800", label: "Yellow" },
-  red: { bg: "bg-red-100", text: "text-red-800", label: "Red" },
+  green: {
+    bg: "bg-emerald-100",
+    text: "text-emerald-800",
+    border: "border-l-emerald-400",
+    label: "Green",
+  },
+  yellow: {
+    bg: "bg-yellow-100",
+    text: "text-yellow-800",
+    border: "border-l-yellow-400",
+    label: "Yellow",
+  },
+  red: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-l-red-500",
+    label: "Red",
+  },
 };
 
 const statusLabel: Record<FollowUpStatus, string> = {
@@ -211,13 +226,13 @@ export default function Dashboard({
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="bg-white border-b px-5 py-4 shrink-0">
+      <div className="bg-white border-b border-gray-200 px-5 py-5 shrink-0">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="font-bold text-xl text-gray-900">
+            <h2 className="font-bold text-2xl text-gray-950">
               Who may need attention today?
             </h2>
-            <p className="text-xs text-gray-500">
+            <p className="mt-1 text-sm text-gray-500">
               Ordered by risk, active patterns, response change, and unresolved follow-up.
             </p>
           </div>
@@ -227,13 +242,14 @@ export default function Dashboard({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-screen-2xl space-y-5 p-4 md:p-6">
         {seniors.length > 1 && (
-          <section className="bg-white border rounded-lg p-4">
+          <section className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="font-semibold text-gray-900">Seniors covered</h3>
-                <p className="text-xs text-gray-500">
+                <h3 className="text-base font-bold text-gray-950">Seniors covered</h3>
+                <p className="mt-1 text-sm text-gray-500">
                   Shared queue across assigned seniors and caregivers.
                 </p>
               </div>
@@ -252,12 +268,12 @@ export default function Dashboard({
                     onClick={() => onSelectSenior?.(item.id)}
                     disabled={busyAction !== null}
                     aria-pressed={selectedSenior}
-                    className={`text-left border rounded-md p-3 disabled:opacity-50 hover:border-gray-500 ${
-                      selectedSenior ? "border-gray-900 bg-gray-50" : "border-gray-200"
+                    className={`text-left border rounded-lg p-4 transition disabled:opacity-50 hover:border-gray-400 hover:shadow-sm ${
+                      selectedSenior ? "border-gray-900 bg-gray-50 shadow-sm" : "border-gray-200"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold text-gray-900">{item.name}</div>
+                      <div className="text-base font-bold text-gray-950">{item.name}</div>
                       <span className={`text-[11px] font-semibold px-2 py-1 rounded ${risk.bg} ${risk.text}`}>
                         {risk.label}
                       </span>
@@ -283,46 +299,46 @@ export default function Dashboard({
           </section>
         )}
 
-        <section className="bg-white border rounded-lg p-4">
+        <section className="border border-emerald-200 bg-emerald-50 rounded-xl p-5 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Selected senior
               </div>
-              <h3 className="mt-1 text-lg font-bold text-gray-900">
+              <h3 className="mt-1 text-2xl font-bold text-gray-950">
                 {senior.name}
               </h3>
-              <div className="mt-1 text-sm text-gray-700">
+              <div className="mt-2 text-sm text-gray-700">
                 {senior.age} years old · {senior.livingSituation}
               </div>
               <div className="mt-1 text-sm text-gray-700">
                 {senior.address ?? selectedSenior?.address ?? "Address not recorded"}
               </div>
             </div>
-            <div className="grid gap-2 text-sm text-gray-700 sm:grid-cols-2 md:min-w-96">
-              <div>
+            <div className="grid gap-3 text-sm text-gray-700 sm:grid-cols-2 md:min-w-96">
+              <div className="rounded-lg bg-white/70 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   Primary caregiver
                 </div>
-                <div>{selectedSenior?.primaryCaregiver ?? senior.caregiver}</div>
+                <div className="mt-1 font-semibold text-gray-900">{selectedSenior?.primaryCaregiver ?? senior.caregiver}</div>
               </div>
-              <div>
+              <div className="rounded-lg bg-white/70 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   AAC volunteer
                 </div>
-                <div>{selectedSenior?.aacVolunteer ?? senior.aacVolunteer}</div>
+                <div className="mt-1 font-semibold text-gray-900">{selectedSenior?.aacVolunteer ?? senior.aacVolunteer}</div>
               </div>
-              <div>
+              <div className="rounded-lg bg-white/70 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   Current risk
                 </div>
-                <div>{riskConfig[senior.riskLevel].label}</div>
+                <div className="mt-1 font-semibold text-gray-900">{riskConfig[senior.riskLevel].label}</div>
               </div>
-              <div>
+              <div className="rounded-lg bg-white/70 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   Last response
                 </div>
-                <div>{formatDate(senior.lastCheckIn)}</div>
+                <div className="mt-1 font-semibold text-gray-900">{formatDate(senior.lastCheckIn)}</div>
               </div>
             </div>
           </div>
@@ -402,7 +418,7 @@ export default function Dashboard({
         )}
 
         {followUpQueue.length === 0 ? (
-          <div className="bg-white border rounded-lg p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <div className="font-semibold text-gray-900">
               No seniors currently require follow-up.
             </div>
@@ -438,13 +454,18 @@ export default function Dashboard({
             return (
               <div
                 key={item.id}
-                className={`bg-white border rounded-lg p-4 ${
-                  selectedCard ? "border-gray-900" : "border-gray-200"
+                className={`bg-white border border-l-4 rounded-xl p-5 shadow-sm ${
+                  risk.border
+                } ${
+                  selectedCard ? "border-gray-300 shadow-md" : "border-gray-200"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-bold text-gray-900">{fields.seniorName}</div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Priority case
+                    </div>
+                    <div className="mt-1 text-xl font-bold text-gray-950">{fields.seniorName}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs font-semibold px-2 py-1 rounded ${risk.bg} ${risk.text}`}>
                         {risk.label}
@@ -457,14 +478,14 @@ export default function Dashboard({
                   </span>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-3 mt-4 text-sm">
+                <div className="grid md:grid-cols-2 gap-4 mt-5 text-sm">
                   <div>
                     <div className="text-xs font-semibold text-gray-500">Why</div>
-                    <div className="text-gray-900">{fields.reason}</div>
+                    <div className="mt-1 text-base font-semibold text-gray-950">{fields.reason}</div>
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-gray-500">Change</div>
-                    <div className="text-gray-900">{fields.changeFromUsual}</div>
+                    <div className="mt-1 text-gray-800">{fields.changeFromUsual}</div>
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-gray-500">Last response</div>
@@ -476,9 +497,9 @@ export default function Dashboard({
                   </div>
                 </div>
 
-                <div className="mt-3 bg-gray-50 border rounded-md p-3">
+                <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <div className="text-xs font-semibold text-gray-500">Suggested action</div>
-                  <div className="text-sm text-gray-900">{fields.recommendedAction}</div>
+                  <div className="mt-1 text-base font-semibold text-gray-950">{fields.recommendedAction}</div>
                 </div>
 
                 {item.relatedPatterns.length > 1 && (
@@ -519,15 +540,16 @@ export default function Dashboard({
                 </div>
 
                 {selectedCard && selected?.pattern && (
-                  <div className="mt-4 border-t pt-4">
+                  <div className="mt-5 border-t border-gray-200 pt-5">
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="text-lg font-bold text-gray-950">
                           Chronological evidence timeline
                         </h3>
                         <div className="mt-2 space-y-2">
                           {selected.pattern.evidence.map((evidence) => (
-                            <div key={evidence.id} className="text-xs border rounded-md p-2">
+                            <div key={evidence.id} className="text-xs border border-gray-200 rounded-lg bg-white p-3">
                               <div className="font-semibold text-gray-800">
                                 {formatDate(evidence.observedAt)} · {evidence.type}
                               </div>
@@ -536,7 +558,7 @@ export default function Dashboard({
                           ))}
                         </div>
                         <div className="mt-4">
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="text-lg font-bold text-gray-950">
                             Relevant senior messages
                           </h3>
                           <div className="mt-2 space-y-2">
@@ -548,7 +570,7 @@ export default function Dashboard({
                               seniorMessages.map((message) => (
                                 <div
                                   key={message.id}
-                                  className="text-xs border rounded-md p-2 bg-gray-50"
+                                  className="text-xs border border-gray-200 rounded-lg p-3 bg-white"
                                 >
                                   <div className="font-semibold text-gray-700">
                                     {formatDate(message.timestamp)}
@@ -561,7 +583,7 @@ export default function Dashboard({
                         </div>
                       </div>
                       <div className="space-y-3 text-sm">
-                        <div>
+                        <div className="rounded-lg bg-white border border-gray-200 p-3">
                           <div className="text-xs font-semibold text-gray-500">
                             Supporting patterns
                           </div>
@@ -571,18 +593,18 @@ export default function Dashboard({
                               .join(", ") || "No supporting patterns yet."}
                           </div>
                         </div>
-                        <div>
+                        <div className="rounded-lg bg-white border border-gray-200 p-3">
                           <div className="text-xs font-semibold text-gray-500">
                             Deterministic Pattern Watch
                           </div>
                           <div className="text-gray-900">{selected.pattern.triggerExplanation}</div>
                         </div>
-                        <div>
+                        <div className="rounded-lg bg-white border border-gray-200 p-3">
                           <div className="text-xs font-semibold text-gray-500">Compared with usual</div>
                           <div className="text-gray-900">{selected.pattern.comparison}</div>
                         </div>
                         {selected.pattern.usualRoutine && selected.pattern.usualRoutine.length > 0 && (
-                          <div>
+                          <div className="rounded-lg bg-white border border-gray-200 p-3">
                             <div className="text-xs font-semibold text-gray-500">
                               Usual routine
                             </div>
@@ -594,7 +616,7 @@ export default function Dashboard({
                           </div>
                         )}
                         {selected.pattern.knownContext && selected.pattern.knownContext.length > 0 && (
-                          <div>
+                          <div className="rounded-lg bg-white border border-gray-200 p-3">
                             <div className="text-xs font-semibold text-gray-500">
                               Known context
                             </div>
@@ -606,7 +628,7 @@ export default function Dashboard({
                           </div>
                         )}
                         {selected.pattern.memoryNotes && selected.pattern.memoryNotes.length > 0 && (
-                          <div>
+                          <div className="rounded-lg bg-white border border-gray-200 p-3">
                             <div className="text-xs font-semibold text-gray-500">
                               Helpful preference
                             </div>
@@ -618,7 +640,7 @@ export default function Dashboard({
                           </div>
                         )}
                         {briefing && (
-                          <div className="rounded-md border bg-gray-50 p-3">
+                          <div className="rounded-lg border border-gray-200 bg-white p-3">
                             <div className="text-xs font-semibold text-gray-500">
                               AI-generated summary
                             </div>
@@ -630,7 +652,7 @@ export default function Dashboard({
                             )}
                           </div>
                         )}
-                        <div>
+                        <div className="rounded-lg bg-white border border-gray-200 p-3">
                           <div className="text-xs font-semibold text-gray-500">
                             Caregiver-recorded action history
                           </div>
@@ -647,7 +669,7 @@ export default function Dashboard({
                             </div>
                           )}
                         </div>
-                        <details className="text-xs rounded-md border p-3">
+                        <details className="text-xs rounded-lg border border-gray-200 bg-white p-3">
                           <summary className="cursor-pointer font-semibold text-gray-700">
                             How TrustKaki reached this recommendation
                           </summary>
@@ -681,6 +703,7 @@ export default function Dashboard({
                         </details>
                       </div>
                     </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -691,6 +714,7 @@ export default function Dashboard({
         <div className="text-xs text-gray-500 px-1">
           Current profile: {senior.name}, {senior.age}. This queue is operational
           guidance only and does not provide medical diagnosis.
+        </div>
         </div>
       </div>
     </div>
