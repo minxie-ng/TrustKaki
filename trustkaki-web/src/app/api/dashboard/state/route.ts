@@ -13,9 +13,17 @@ export async function GET(request: Request) {
   if (!authResult.ok) return authJsonError(authResult);
 
   try {
-    const state = await readDashboardState({ auth: authResult.auth });
+    const url = new URL(request.url);
+    const seniorId = url.searchParams.get("seniorId");
+    const state = await readDashboardState({
+      auth: authResult.auth,
+      seniorId: seniorId?.trim() || undefined,
+    });
     return NextResponse.json(state);
   } catch (error) {
+    if (error instanceof Error && error.message === "Forbidden") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return jsonError("Failed to read dashboard state", { error, status: 500 });
   }
 }

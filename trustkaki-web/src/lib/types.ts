@@ -49,6 +49,16 @@ export interface SeniorProfile {
   lastCheckIn: string | null;
 }
 
+export interface SeniorListItem {
+  id: string;
+  name: string;
+  riskLevel: RiskLevel;
+  lastCheckIn: string | null;
+  followUpCount: number;
+  primaryCaregiver: string | null;
+  aacVolunteer: string | null;
+}
+
 export interface CheckInSession {
   id: string;
   startedAt: string;
@@ -61,6 +71,8 @@ export interface CheckInSession {
 }
 
 export interface DashboardData {
+  selectedSeniorId?: string;
+  seniors?: SeniorListItem[];
   senior: SeniorProfile;
   activeSessions: CheckInSession[];
   recentAlerts: AlertItem[];
@@ -141,6 +153,7 @@ export interface RelatedPatternSummary {
 
 export interface FollowUpQueueItem {
   id: string;
+  seniorId: string;
   seniorName: string;
   riskLevel: RiskLevel;
   headline: string;

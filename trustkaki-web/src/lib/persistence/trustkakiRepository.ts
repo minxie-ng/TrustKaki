@@ -35,6 +35,7 @@ import {
   type PersistenceMeta,
 } from "./orchestration";
 import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
+import { selectDashboardSeniorId } from "./dashboardSelection";
 import {
   evaluatePatternWatch,
   type PatternCandidate,
@@ -831,8 +832,8 @@ export async function findSeniorContextByPhone(
 
   if (!senior) return null;
 
-  const caregiver = await getCaregiverName(client, "caregiver");
-  const aacVolunteer = await getCaregiverName(client, "aac_volunteer");
+  const caregiver = await getCaregiverName(client, senior.id, "caregiver");
+  const aacVolunteer = await getCaregiverName(client, senior.id, "aac_volunteer");
 
   return {
     seniorId: senior.id,
@@ -1152,6 +1153,7 @@ async function buildFollowUpQueue(
 
       return {
         id: row.id,
+        seniorId: senior.id,
         seniorName: senior.display_name,
         riskLevel: senior.risk_level,
         headline: `${senior.risk_level[0].toUpperCase()}${senior.risk_level.slice(1)} · Follow-up suggested`,
@@ -1180,12 +1182,13 @@ async function buildFollowUpQueue(
 
 async function getCaregiverName(
   client: TrustKakiClient,
+  seniorId: string,
   role: "caregiver" | "aac_volunteer"
 ): Promise<string> {
   const { data, error } = await client
     .from("senior_caregivers")
     .select("caregiver_id, caregivers(display_name)")
-    .eq("senior_id", DEMO_SENIOR_ID)
+    .eq("senior_id", seniorId)
     .eq("role", role)
     .maybeSingle();
   throwIfError(error, `select ${role}`);
@@ -1194,6 +1197,50 @@ async function getCaregiverName(
     | { caregivers?: { display_name?: string | null } | null }
     | null;
   return relation?.caregivers?.display_name ?? (role === "caregiver" ? uncleTan.caregiver : uncleTan.aacVolunteer);
+}
+
+async function listCaregiverNamesBySenior(
+  client: TrustKakiClient,
+  seniorIds: string[]
+): Promise<
+  Map<string, { caregiver: string | null; aacVolunteer: string | null }>
+> {
+  if (seniorIds.length === 0) return new Map();
+
+  const { data, error } = await client
+    .from("senior_caregivers")
+    .select("senior_id, role, caregivers(display_name)")
+    .in("senior_id", seniorIds);
+  throwIfError(error, "select senior caregiver names");
+
+  const result = new Map<
+    string,
+    { caregiver: string | null; aacVolunteer: string | null }
+  >();
+  for (const seniorId of seniorIds) {
+    result.set(seniorId, { caregiver: null, aacVolunteer: null });
+  }
+
+  const rows = (data ?? []) as Array<{
+    senior_id: string;
+    role: "caregiver" | "aac_volunteer";
+    caregivers?: { display_name?: string | null } | null;
+  }>;
+  for (const row of rows) {
+    const current = result.get(row.senior_id) ?? {
+      caregiver: null,
+      aacVolunteer: null,
+    };
+    if (row.role === "caregiver") {
+      current.caregiver = row.caregivers?.display_name ?? current.caregiver;
+    }
+    if (row.role === "aac_volunteer") {
+      current.aacVolunteer =
+        row.caregivers?.display_name ?? current.aacVolunteer;
+    }
+    result.set(row.senior_id, current);
+  }
+  return result;
 }
 
 export interface DashboardStateResult {
@@ -1205,14 +1252,8 @@ export interface DashboardStateResult {
 
 export async function readDashboardState(options: {
   auth?: AuthenticatedCaregiver;
+  seniorId?: string;
 } = {}): Promise<DashboardStateResult> {
-  if (
-    options.auth &&
-    !options.auth.accessibleSeniorIds.includes(DEMO_SENIOR_ID)
-  ) {
-    throw new Error("Forbidden");
-  }
-
   const client = getClient();
   if (!client) {
     const mapped = dashboardSnapshotToData(emptyDemoDashboardSnapshot());
@@ -1224,23 +1265,74 @@ export async function readDashboardState(options: {
 
   await ensureDemoPeople(client);
 
-  const { data: senior, error: seniorError } = await client
+  const accessibleSeniorIds = options.auth?.accessibleSeniorIds.length
+    ? options.auth.accessibleSeniorIds
+    : [DEMO_SENIOR_ID];
+  const selectedSeniorId = selectDashboardSeniorId({
+    accessibleSeniorIds,
+    requestedSeniorId: options.seniorId,
+    preferredSeniorId: DEMO_SENIOR_ID,
+  });
+
+  const { data: seniorRows, error: seniorsError } = await client
     .from("seniors")
     .select("*")
-    .eq("id", DEMO_SENIOR_ID)
-    .single();
-  throwIfError(seniorError, "select senior");
+    .in("id", accessibleSeniorIds)
+    .order("risk_level", { ascending: false })
+    .order("last_check_in_at", { ascending: false });
+  throwIfError(seniorsError, "select accessible seniors");
+  const seniors = seniorRows ?? [];
+  if (seniors.length === 0) throw new Error("Forbidden");
+  const orderedSeniors = [...seniors].sort((a, b) => {
+    const riskDelta = riskPriority(a.risk_level) - riskPriority(b.risk_level);
+    if (riskDelta !== 0) return riskDelta;
+    return (
+      new Date(b.last_check_in_at ?? 0).getTime() -
+      new Date(a.last_check_in_at ?? 0).getTime()
+    );
+  });
+
+  const senior = seniors.find((row) => row.id === selectedSeniorId);
+  if (!senior) throw new Error("Forbidden");
 
   const { data: checkIn } = await client
     .from("check_ins")
     .select("*")
-    .eq("senior_id", DEMO_SENIOR_ID)
+    .eq("senior_id", selectedSeniorId)
     .eq("status", "active")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   const checkInId = checkIn?.id;
+
+  const allFollowUpQueue = (
+    await Promise.all(
+      orderedSeniors.map((seniorRow) =>
+        buildFollowUpQueue(client, {
+          id: seniorRow.id,
+          display_name: seniorRow.display_name,
+          risk_level: seniorRow.risk_level,
+          last_check_in_at: seniorRow.last_check_in_at,
+        })
+      )
+    )
+  )
+    .flat()
+    .sort((a, b) => a.priority - b.priority);
+
+  const activeQueueCounts = new Map<string, number>();
+  for (const item of allFollowUpQueue) {
+    activeQueueCounts.set(
+      item.seniorId,
+      (activeQueueCounts.get(item.seniorId) ?? 0) + 1
+    );
+  }
+
+  const caregiverNames = await listCaregiverNamesBySenior(
+    client,
+    orderedSeniors.map((seniorRow) => seniorRow.id)
+  );
 
   const [{ data: messages }, { data: traces }, { data: alerts }, { data: brief }] =
     await Promise.all([
@@ -1261,27 +1353,22 @@ export async function readDashboardState(options: {
       client
         .from("alerts")
         .select("*")
-        .eq("senior_id", DEMO_SENIOR_ID)
+        .eq("senior_id", selectedSeniorId)
         .eq("acknowledged", false)
         .order("created_at", { ascending: false })
         .limit(20),
       client
         .from("briefs")
         .select("*")
-        .eq("senior_id", DEMO_SENIOR_ID)
+        .eq("senior_id", selectedSeniorId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
     ]);
 
-  const caregiver = await getCaregiverName(client, "caregiver");
-  const aacVolunteer = await getCaregiverName(client, "aac_volunteer");
-  const followUpQueue = await buildFollowUpQueue(client, {
-    id: senior.id,
-    display_name: senior.display_name,
-    risk_level: senior.risk_level,
-    last_check_in_at: senior.last_check_in_at,
-  });
+  const selectedNames = caregiverNames.get(selectedSeniorId);
+  const caregiver = selectedNames?.caregiver ?? uncleTan.caregiver;
+  const aacVolunteer = selectedNames?.aacVolunteer ?? uncleTan.aacVolunteer;
 
   const mapped = dashboardSnapshotToData({
     senior: {
@@ -1327,7 +1414,20 @@ export async function readDashboardState(options: {
     persistence: { mode: "supabase", configured: true, persisted: true },
     data: {
       ...mapped.data,
-      followUpQueue,
+      selectedSeniorId,
+      seniors: orderedSeniors.map((seniorRow) => {
+        const names = caregiverNames.get(seniorRow.id);
+        return {
+          id: seniorRow.id,
+          name: seniorRow.display_name,
+          riskLevel: seniorRow.risk_level,
+          lastCheckIn: seniorRow.last_check_in_at,
+          followUpCount: activeQueueCounts.get(seniorRow.id) ?? 0,
+          primaryCaregiver: names?.caregiver ?? null,
+          aacVolunteer: names?.aacVolunteer ?? null,
+        };
+      }),
+      followUpQueue: allFollowUpQueue,
     },
     briefing: mapped.briefing,
     traces: mapped.traces,

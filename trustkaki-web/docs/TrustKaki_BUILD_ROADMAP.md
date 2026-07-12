@@ -939,6 +939,33 @@ Phase 7A implementation note:
 - Context is explicitly non-diagnostic and should support human follow-up
   questions only.
 
+## 16B. Multi-Senior and Caregiver Relationship Foundation
+
+TrustKaki must support many seniors and many caregivers/AAC staff concurrently.
+The demo can stay focused on Uncle Tan, but production paths must not assume
+there is only one senior.
+
+Phase 7B target:
+
+1. Dashboard state reads all seniors accessible to the signed-in caregiver.
+2. The follow-up queue is aggregated across accessible seniors.
+3. The selected senior controls detailed messages, traces, alerts, and briefing.
+4. The UI shows a compact senior coverage strip before the detailed senior view.
+5. The API accepts a selected `seniorId` and rejects inaccessible seniors.
+6. Seed data includes more than one senior and more than one caregiver
+   relationship.
+
+What this does not finish yet:
+
+- organisation/AAC centre tenancy
+- caregiver notification preferences
+- multi-recipient WhatsApp outbound fan-out
+- consent and escalation policies
+- production caregiver roster management
+
+Those should be built before broad pilots, but Phase 7B gives the app the right
+shape for concurrent real use.
+
 ## 17. Build Rules
 
 For every implementation task:

@@ -28,6 +28,7 @@ interface DashboardProps {
   authToken: string | null;
   isDemoAdmin?: boolean;
   onUnauthorized?: () => void;
+  onSelectSenior?: (seniorId: string) => void;
 }
 
 const riskConfig = {
@@ -66,8 +67,11 @@ export default function Dashboard({
   authToken,
   isDemoAdmin = false,
   onUnauthorized,
+  onSelectSenior,
 }: DashboardProps) {
   const { senior, followUpQueue } = data;
+  const seniors = data.seniors ?? [];
+  const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
   const [selectedId, setSelectedId] = useState<string | null>(
     followUpQueue[0]?.id ?? null
   );
@@ -245,6 +249,55 @@ export default function Dashboard({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {seniors.length > 1 && (
+          <section className="bg-white border rounded-lg p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-gray-900">Seniors covered</h3>
+                <p className="text-xs text-gray-500">
+                  Shared queue across assigned seniors and caregivers.
+                </p>
+              </div>
+              <div className="text-xs text-gray-500">
+                {seniors.length} seniors
+              </div>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {seniors.map((item) => {
+                const risk = riskConfig[item.riskLevel];
+                const selectedSenior = item.id === selectedSeniorId;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onSelectSenior?.(item.id)}
+                    disabled={busyAction !== null}
+                    className={`text-left border rounded-md p-3 disabled:opacity-50 ${
+                      selectedSenior ? "border-gray-900" : "border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-semibold text-gray-900">{item.name}</div>
+                      <span className={`text-[11px] font-semibold px-2 py-1 rounded ${risk.bg} ${risk.text}`}>
+                        {risk.label}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600">
+                      {item.followUpCount === 0
+                        ? "No active follow-up"
+                        : `${item.followUpCount} active follow-up item${item.followUpCount === 1 ? "" : "s"}`}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {item.primaryCaregiver ?? "No primary caregiver"} ·{" "}
+                      {formatDate(item.lastCheckIn)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {isDemoAdmin && (
         <section className="bg-white border rounded-lg p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

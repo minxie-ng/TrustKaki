@@ -32,6 +32,26 @@ insert into public.seniors (
   age = excluded.age,
   living_situation = excluded.living_situation;
 
+insert into public.seniors (
+  id,
+  external_ref,
+  display_name,
+  age,
+  living_situation,
+  risk_level
+) values (
+  '00000000-0000-4000-8000-000000000011',
+  'demo_aunty_lim',
+  'Aunty Lim',
+  81,
+  'Lives with her son in Bishan',
+  'green'
+) on conflict (id) do update set
+  external_ref = excluded.external_ref,
+  display_name = excluded.display_name,
+  age = excluded.age,
+  living_situation = excluded.living_situation;
+
 insert into public.caregivers (
   id,
   external_ref,
@@ -49,6 +69,12 @@ insert into public.caregivers (
     'demo_mei_ling',
     'Mei Ling',
     'AAC volunteer'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000012',
+    'demo_daniel_lim',
+    'Daniel Lim',
+    'son'
   )
 on conflict (id) do update set
   external_ref = excluded.external_ref,
@@ -67,6 +93,21 @@ insert into public.senior_caregivers (
   ),
   (
     '00000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000003',
+    'aac_volunteer'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000011',
+    '00000000-0000-4000-8000-000000000002',
+    'caregiver'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000011',
+    '00000000-0000-4000-8000-000000000012',
+    'caregiver'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000011',
     '00000000-0000-4000-8000-000000000003',
     'aac_volunteer'
   )

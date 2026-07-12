@@ -212,6 +212,12 @@ senior-specific context instead of generic keyword-like assumptions:
 These records are operational support only. They should guide follow-up
 questions and caregiver/AAC action, not diagnose medical conditions.
 
+Phase 7B multi-senior foundation is the next production hardening step. The
+dashboard should read all seniors accessible to the authenticated caregiver,
+aggregate the follow-up queue across those seniors, and use an explicit selected
+senior for messages, traces, alerts, and briefing. Uncle Tan remains the judge
+demo seed, not the production data model.
+
 ## Current caveats
 
 1. Tone later needs tuning:
@@ -223,10 +229,11 @@ questions and caregiver/AAC action, not diagnose medical conditions.
 3. Do not deploy or configure Meta callback URL until explicitly requested.
 
 ## Immediate next task
-Finish Phase 7A live migration/seed verification, then run Quick Demo to confirm
-the queue explains change-from-usual using stored routine and context. After
-that, proceed to scheduler/proactive check-ins and real Meta callback
-configuration.
+Verify Phase 7B locally and in production: apply the updated seed, sign in as
+Rachel, confirm the senior coverage strip shows multiple accessible seniors,
+switch selected senior detail context, and confirm the active queue still works
+for Uncle Tan. After that, build caregiver contact preferences and proactive
+scheduled check-ins.
 
 ## Working rules
 - inspect before modifying

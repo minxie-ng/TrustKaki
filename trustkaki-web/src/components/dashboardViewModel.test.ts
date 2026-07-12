@@ -12,6 +12,7 @@ import {
 
 const queueItem: FollowUpQueueItem = {
   id: "queue-1",
+  seniorId: "senior-1",
   seniorName: "Uncle Tan",
   riskLevel: "yellow",
   headline: "Yellow · Follow-up suggested",

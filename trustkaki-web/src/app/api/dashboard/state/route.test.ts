@@ -95,6 +95,45 @@ describe("/api/dashboard/state", () => {
     expect(readDashboardStateMock).toHaveBeenCalledWith({ auth });
   });
 
+  it("passes an optional selected senior id to dashboard state reads", async () => {
+    const { GET } = await import("./route");
+    readDashboardStateMock.mockResolvedValue({
+      persistence: {
+        mode: "supabase",
+        configured: true,
+        persisted: true,
+      },
+      data: {
+        selectedSeniorId: "senior-2",
+        seniors: [],
+        senior: {
+          name: "Aunty Lim",
+          age: 81,
+          livingSituation: "Lives with son",
+          caregiver: "Daniel Lim",
+          aacVolunteer: "Mei Ling",
+          riskLevel: "green",
+          lastCheckIn: null,
+        },
+        activeSessions: [],
+        recentAlerts: [],
+        followUpQueue: [],
+      },
+      briefing: null,
+      traces: [],
+    });
+
+    const response = await GET(
+      new Request("http://localhost/api/dashboard/state?seniorId=senior-2")
+    );
+
+    expect(response.status).toBe(200);
+    expect(readDashboardStateMock).toHaveBeenCalledWith({
+      auth,
+      seniorId: "senior-2",
+    });
+  });
+
   it("sanitizes production errors from persistence failures", async () => {
     vi.stubEnv("NODE_ENV", "production");
     readDashboardStateMock.mockRejectedValue(
@@ -109,6 +148,19 @@ describe("/api/dashboard/state", () => {
     expect(json).toEqual({ error: "Failed to read dashboard state" });
     expect(JSON.stringify(json)).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(JSON.stringify(json)).not.toContain("+6591234567");
+  });
+
+  it("returns 403 when the selected senior is not accessible", async () => {
+    readDashboardStateMock.mockRejectedValue(new Error("Forbidden"));
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request("http://localhost/api/dashboard/state?seniorId=senior-unauthorized")
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(json).toEqual({ error: "Forbidden" });
   });
 
   it("keeps development route errors useful but redacted", async () => {

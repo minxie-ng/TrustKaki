@@ -37,6 +37,7 @@ export default function Home() {
     useState<DashboardData>(dashboardData);
   const [liveTraces, setLiveTraces] = useState<AgentTrace[]>(demoTraces);
   const [liveBriefing, setLiveBriefing] = useState<BriefingOutput | null>(null);
+  const [selectedSeniorId, setSelectedSeniorId] = useState<string | null>(null);
   const latestSession = liveDashboardData.activeSessions[0];
   const chatMessages =
     latestSession?.messages.length > 0 ? latestSession.messages : demoMessages;
@@ -52,9 +53,13 @@ export default function Home() {
     setAuthError("Please sign in again to continue.");
   }, []);
 
-  const refreshDashboardState = useCallback(() => {
+  const refreshDashboardState = useCallback((nextSeniorId?: string | null) => {
     if (!authToken) return;
-    void fetch("/api/dashboard/state", {
+    const seniorId = nextSeniorId ?? selectedSeniorId;
+    const url = seniorId
+      ? `/api/dashboard/state?seniorId=${encodeURIComponent(seniorId)}`
+      : "/api/dashboard/state";
+    void fetch(url, {
       cache: "no-store",
       headers: authHeader(authToken),
     })
@@ -72,11 +77,20 @@ export default function Home() {
         setLiveTraces(state.traces);
         setLiveBriefing(state.briefing ?? null);
         setRiskLevel(state.data.senior.riskLevel);
+        setSelectedSeniorId(state.data.selectedSeniorId ?? null);
       })
       .catch((error) => {
         console.error("Failed to hydrate dashboard state:", error);
       });
-  }, [authToken, handleUnauthorized]);
+  }, [authToken, handleUnauthorized, selectedSeniorId]);
+
+  const selectSenior = useCallback(
+    (seniorId: string) => {
+      setSelectedSeniorId(seniorId);
+      refreshDashboardState(seniorId);
+    },
+    [refreshDashboardState]
+  );
 
   const handleCheckinComplete = () => {
     setRiskLevel("yellow");
@@ -195,6 +209,7 @@ export default function Home() {
             authToken={authToken}
             isDemoAdmin={isDemoAdmin}
             onUnauthorized={handleUnauthorized}
+            onSelectSenior={selectSenior}
           />
         </div>
 
