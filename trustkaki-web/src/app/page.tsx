@@ -161,15 +161,12 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <div className="relative">
-        <NavBar activeTab={activeTab} onTabChange={setActiveTab} riskLevel={riskLevel} />
-        <button
-          onClick={signOut}
-          className="absolute right-3 top-3 rounded-md border border-white/30 px-3 py-1 text-xs font-semibold text-white"
-        >
-          Sign out
-        </button>
-      </div>
+      <NavBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        riskLevel={riskLevel}
+        onSignOut={signOut}
+      />
 
       <div className="flex-1 flex overflow-hidden">
         <div

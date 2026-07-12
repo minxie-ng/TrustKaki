@@ -4,9 +4,15 @@ interface NavProps {
   activeTab: "chat" | "dashboard";
   onTabChange: (tab: "chat" | "dashboard") => void;
   riskLevel: "green" | "yellow" | "red";
+  onSignOut?: () => void;
 }
 
-export default function NavBar({ activeTab, onTabChange, riskLevel }: NavProps) {
+export default function NavBar({
+  activeTab,
+  onTabChange,
+  riskLevel,
+  onSignOut,
+}: NavProps) {
   const riskBadge = {
     green: "🟢",
     yellow: "🟡",
@@ -14,8 +20,8 @@ export default function NavBar({ activeTab, onTabChange, riskLevel }: NavProps) 
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between shrink-0">
-      <div className="flex items-center gap-3">
+    <nav className="bg-white border-b border-gray-200 px-4 py-2 flex flex-col gap-2 shrink-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">🫂</span>
           <span className="font-bold text-gray-800">TrustKaki</span>
@@ -28,7 +34,7 @@ export default function NavBar({ activeTab, onTabChange, riskLevel }: NavProps) 
         </span>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1 sm:justify-end">
         <button
           onClick={() => onTabChange("chat")}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -50,6 +56,14 @@ export default function NavBar({ activeTab, onTabChange, riskLevel }: NavProps) 
           📊 Dashboard
         </button>
         <div className="ml-2 text-sm">{riskBadge[riskLevel]}</div>
+        {onSignOut && (
+          <button
+            onClick={onSignOut}
+            className="ml-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+          >
+            Sign out
+          </button>
+        )}
       </div>
     </nav>
   );

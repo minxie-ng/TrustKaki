@@ -1,6 +1,10 @@
 "use client";
 
 import type { AgentTrace } from "@/lib/types";
+import {
+  formatAgentOutputForCaregiver,
+  formatStateChangeForCaregiver,
+} from "./agentTraceViewModel";
 
 interface AgentTracePanelProps {
   traces: AgentTrace[];
@@ -40,14 +44,6 @@ function formatTime(ts: string) {
   });
 }
 
-function compactOutput(output: string): string {
-  try {
-    return JSON.stringify(JSON.parse(output), null, 2);
-  } catch {
-    return output.length > 600 ? `${output.slice(0, 597)}...` : output;
-  }
-}
-
 export default function AgentTracePanel({ traces, visible, onToggle }: AgentTracePanelProps) {
   return (
     <div className="flex flex-col h-full">
@@ -57,7 +53,7 @@ export default function AgentTracePanel({ traces, visible, onToggle }: AgentTrac
       >
         <div className="flex items-center gap-2">
           <span>🧠</span>
-          <span className="font-semibold text-sm">Agent Trace</span>
+          <span className="font-semibold text-sm">TrustKaki Reasoning</span>
           <span className="text-xs bg-gray-700 px-2 py-0.5 rounded-full">{traces.length}</span>
         </div>
         <span className="text-xs">{visible ? "▼" : "▲"}</span>
@@ -83,14 +79,18 @@ export default function AgentTracePanel({ traces, visible, onToggle }: AgentTrac
                 </div>
                 <div>
                   <span className="font-semibold">Structured output:</span>
-                  <pre className="mt-0.5 whitespace-pre-wrap opacity-90 font-mono text-[10px]">
-                    {trace.outputSummary ?? compactOutput(trace.output)}
-                  </pre>
+                  <p className="mt-0.5 opacity-90 leading-relaxed">
+                    {formatAgentOutputForCaregiver(trace)}
+                  </p>
                 </div>
                 {trace.stateChanges && trace.stateChanges.length > 0 && (
                   <div>
                     <span className="font-semibold">Tool/state changes:</span>
-                    <p className="mt-0.5 opacity-90">{trace.stateChanges.join(", ")}</p>
+                    <ul className="mt-0.5 list-disc pl-4 opacity-90">
+                      {trace.stateChanges.slice(0, 4).map((change) => (
+                        <li key={change}>{formatStateChangeForCaregiver(change)}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
                 {trace.errorMessage && (
@@ -101,11 +101,13 @@ export default function AgentTracePanel({ traces, visible, onToggle }: AgentTrac
                 )}
                 <details>
                   <summary className="cursor-pointer font-semibold opacity-80">
-                    Advanced raw JSON
+                    More details
                   </summary>
-                  <pre className="mt-1 whitespace-pre-wrap font-mono text-[10px] opacity-80">
-                    {compactOutput(trace.output)}
-                  </pre>
+                  <div className="mt-1 space-y-1 opacity-80">
+                    <p>Model: {trace.modelUsed ?? "not recorded"}</p>
+                    <p>Duration: {trace.durationMs ? `${trace.durationMs} ms` : "not recorded"}</p>
+                    <p>Fallback used: {trace.fallback ? "yes" : "no"}</p>
+                  </div>
                 </details>
               </div>
 
