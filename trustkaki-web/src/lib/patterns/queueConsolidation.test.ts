@@ -37,9 +37,22 @@ describe("buildConsolidatedQueueEpisode", () => {
           type: "combined_wellbeing_decline",
         }),
         reason: "Mobility, appetite and routine changes across 4 days.",
-        recommendedAction:
-          "Call today and check whether he needs mobility or meal support.",
+        recommendedAction: "combined_wellbeing_decline action",
       })
+    );
+  });
+
+  it("uses context-backed comparison when a pattern supplies one", () => {
+    const episode = buildConsolidatedQueueEpisode("senior-1", [
+      {
+        ...pattern("pattern-1", "combined_wellbeing_decline"),
+        comparison:
+          "Different from known routine: Morning check-in: Usually replies before 9am.",
+      },
+    ]);
+
+    expect(episode?.changeFromUsual).toBe(
+      "Different from known routine: Morning check-in: Usually replies before 9am."
     );
   });
 

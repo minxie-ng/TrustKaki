@@ -9,6 +9,32 @@ export interface PatternSignal {
   observedAt: string;
 }
 
+export interface RoutineBaselineContext {
+  id: string;
+  baselineType: string;
+  label: string;
+  usualPattern: string;
+}
+
+export interface SeniorHealthContext {
+  id: string;
+  contextType: string;
+  description: string;
+  safeUseNotes?: string | null;
+}
+
+export interface SeniorMemoryContext {
+  id: string;
+  memoryType: string;
+  content: string;
+}
+
+export interface SeniorPatternContext {
+  routineBaselines: RoutineBaselineContext[];
+  healthContexts: SeniorHealthContext[];
+  memories: SeniorMemoryContext[];
+}
+
 export interface PatternCandidate {
   patternType: PatternType;
   status: "active";
@@ -18,6 +44,10 @@ export interface PatternCandidate {
   latestObservedAt: string;
   conciseSummary: string;
   recommendedAction: string;
+  comparison: string;
+  usualRoutine: string[];
+  knownContext: string[];
+  memoryNotes: string[];
 }
 
 const ROLLING_WINDOW_DAYS = 7;
@@ -106,13 +136,67 @@ function severityFrom(signals: PatternSignal[]): PatternSeverity {
   return signals.length >= 3 ? "medium" : "low";
 }
 
+function contextList(context?: SeniorPatternContext): {
+  usualRoutine: string[];
+  knownContext: string[];
+  memoryNotes: string[];
+} {
+  return {
+    usualRoutine: (context?.routineBaselines ?? [])
+      .slice(0, 4)
+      .map((baseline) => `${baseline.label}: ${baseline.usualPattern}`),
+    knownContext: (context?.healthContexts ?? [])
+      .slice(0, 3)
+      .map((item) => item.description),
+    memoryNotes: (context?.memories ?? [])
+      .slice(0, 3)
+      .map((memory) => memory.content),
+  };
+}
+
+function comparisonFromContext(
+  fallback: string,
+  context?: SeniorPatternContext
+): string {
+  const routine = contextList(context).usualRoutine;
+  if (routine.length === 0) return fallback;
+  return `Different from known routine: ${routine.join(" ")}`;
+}
+
+function actionFromContext(
+  fallback: string,
+  context?: SeniorPatternContext
+): string {
+  const { knownContext, memoryNotes } = contextList(context);
+  const prefersMeiLing = memoryNotes.some((note) =>
+    note.toLowerCase().includes("mei ling")
+  );
+  const hasMobilityContext = knownContext.some((item) =>
+    /knee|mobility|downstairs|walking|leg/i.test(item)
+  );
+
+  if (prefersMeiLing && hasMobilityContext) {
+    return "Ask Mei Ling to make a low-pressure one-to-one check-in today and ask whether knee pain is affecting meals or downstairs trips.";
+  }
+  if (prefersMeiLing) {
+    return "Ask Mei Ling to make a low-pressure one-to-one check-in today.";
+  }
+  if (hasMobilityContext) {
+    return "Call today and ask whether knee pain is affecting meals, movement, or downstairs trips.";
+  }
+  return fallback;
+}
+
 function buildCandidate(args: {
   patternType: PatternType;
   signals: PatternSignal[];
   summary: string;
   action: string;
+  comparison: string;
+  context?: SeniorPatternContext;
 }): PatternCandidate {
   const sorted = sortByObservedAt(args.signals);
+  const context = contextList(args.context);
   return {
     patternType: args.patternType,
     status: "active",
@@ -121,7 +205,11 @@ function buildCandidate(args: {
     firstObservedAt: sorted[0].observedAt,
     latestObservedAt: sorted[sorted.length - 1].observedAt,
     conciseSummary: args.summary,
-    recommendedAction: args.action,
+    recommendedAction: actionFromContext(args.action, args.context),
+    comparison: comparisonFromContext(args.comparison, args.context),
+    usualRoutine: context.usualRoutine,
+    knownContext: context.knownContext,
+    memoryNotes: context.memoryNotes,
   };
 }
 
@@ -131,7 +219,10 @@ function combineUnique(...groups: PatternSignal[][]): PatternSignal[] {
   return [...byId.values()];
 }
 
-export function evaluatePatternWatch(signals: PatternSignal[]): PatternCandidate[] {
+export function evaluatePatternWatch(
+  signals: PatternSignal[],
+  context?: SeniorPatternContext
+): PatternCandidate[] {
   if (signals.length < 2) return [];
 
   const recent = signals.filter((signal) => {
@@ -172,6 +263,8 @@ export function evaluatePatternWatch(signals: PatternSignal[]): PatternCandidate
         signals: mobilityEvidence,
         summary: "Mobility discomfort and reduced movement across multiple observations.",
         action: "Call today and consider a gentle one-to-one AAC lunch or lift-lobby check-in.",
+        comparison: "Different from his usual movement and downstairs routine.",
+        context,
       })
     );
   }
@@ -189,6 +282,8 @@ export function evaluatePatternWatch(signals: PatternSignal[]): PatternCandidate
         signals: socialEvidence,
         summary: "Reduced participation plus unusual missed or delayed check-in.",
         action: "Ask Mei Ling to try a low-pressure one-to-one contact today.",
+        comparison: "Different from his usual response and AAC participation pattern.",
+        context,
       })
     );
   }
@@ -213,6 +308,9 @@ export function evaluatePatternWatch(signals: PatternSignal[]): PatternCandidate
         signals: combinedEvidence,
         summary: "Appetite disruption, mobility reduction, and withdrawal/non-response within a week.",
         action: "Call today; if unable to reach, refer to AAC staff for follow-up.",
+        comparison:
+          "Different from his usual appetite, movement, response, and AAC participation routine.",
+        context,
       })
     );
   }

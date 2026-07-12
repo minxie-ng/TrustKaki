@@ -503,6 +503,42 @@ export default function Dashboard({
                           <div className="text-xs font-semibold text-gray-500">Compared with usual</div>
                           <div className="text-gray-900">{selected.pattern.comparison}</div>
                         </div>
+                        {selected.pattern.usualRoutine && selected.pattern.usualRoutine.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-500">
+                              Usual routine
+                            </div>
+                            <ul className="mt-1 space-y-1 text-gray-900">
+                              {selected.pattern.usualRoutine.map((routine) => (
+                                <li key={routine}>{routine}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selected.pattern.knownContext && selected.pattern.knownContext.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-500">
+                              Known context
+                            </div>
+                            <ul className="mt-1 space-y-1 text-gray-900">
+                              {selected.pattern.knownContext.map((context) => (
+                                <li key={context}>{context}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selected.pattern.memoryNotes && selected.pattern.memoryNotes.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-500">
+                              Helpful preference
+                            </div>
+                            <ul className="mt-1 space-y-1 text-gray-900">
+                              {selected.pattern.memoryNotes.map((note) => (
+                                <li key={note}>{note}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                         {briefing && (
                           <div className="rounded-md border bg-gray-50 p-3">
                             <div className="text-xs font-semibold text-gray-500">

@@ -38,6 +38,7 @@ import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contract
 import {
   evaluatePatternWatch,
   type PatternCandidate,
+  type SeniorPatternContext,
   type PatternSignal,
 } from "@/lib/patterns/patternWatch";
 import {
@@ -72,6 +73,15 @@ function getClient(): TrustKakiClient | null {
 
 function throwIfError(error: { message: string } | null, operation: string): void {
   if (error) throw new Error(`${operation}: ${error.message}`);
+}
+
+function isMissingRelationError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    /relation .* does not exist|schema cache/i.test(error.message ?? "")
+  );
 }
 
 async function ensureDemoPeople(client: TrustKakiClient, context?: AgentRunContext) {
@@ -299,6 +309,64 @@ async function readPatternSignals(
   );
 }
 
+async function readSeniorPatternContext(
+  client: TrustKakiClient,
+  seniorId: string
+): Promise<SeniorPatternContext> {
+  const [baselinesResult, healthResult, memoriesResult] = await Promise.all([
+    client
+      .from("routine_baselines")
+      .select("id, baseline_type, label, usual_pattern")
+      .eq("senior_id", seniorId)
+      .eq("status", "active")
+      .order("baseline_type", { ascending: true }),
+    client
+      .from("senior_health_contexts")
+      .select("id, context_type, description, safe_use_notes")
+      .eq("senior_id", seniorId)
+      .eq("status", "active")
+      .order("created_at", { ascending: true }),
+    client
+      .from("senior_memories")
+      .select("id, memory_type, content")
+      .eq("senior_id", seniorId)
+      .eq("status", "active")
+      .order("importance", { ascending: false }),
+  ]);
+
+  const missingRelation =
+    isMissingRelationError(baselinesResult.error) ||
+    isMissingRelationError(healthResult.error) ||
+    isMissingRelationError(memoriesResult.error);
+  if (missingRelation) {
+    return { routineBaselines: [], healthContexts: [], memories: [] };
+  }
+
+  throwIfError(baselinesResult.error, "select routine baselines");
+  throwIfError(healthResult.error, "select senior health contexts");
+  throwIfError(memoriesResult.error, "select senior memories");
+
+  return {
+    routineBaselines: (baselinesResult.data ?? []).map((row) => ({
+      id: row.id,
+      baselineType: row.baseline_type,
+      label: row.label,
+      usualPattern: row.usual_pattern,
+    })),
+    healthContexts: (healthResult.data ?? []).map((row) => ({
+      id: row.id,
+      contextType: row.context_type,
+      description: row.description,
+      safeUseNotes: row.safe_use_notes,
+    })),
+    memories: (memoriesResult.data ?? []).map((row) => ({
+      id: row.id,
+      memoryType: row.memory_type,
+      content: row.content,
+    })),
+  };
+}
+
 function patternRowToQueueInput(row: TableRow<"patterns">): QueuePatternInput {
   return {
     id: row.id,
@@ -309,6 +377,8 @@ function patternRowToQueueInput(row: TableRow<"patterns">): QueuePatternInput {
     latestObservedAt: row.latest_observed_at,
     conciseSummary: row.concise_summary,
     recommendedAction: row.recommended_action,
+    comparison: row.comparison,
+    usualRoutine: row.usual_routine,
   };
 }
 
@@ -342,6 +412,10 @@ async function upsertPattern(
     ),
     concise_summary: candidate.conciseSummary,
     recommended_action: candidate.recommendedAction,
+    comparison: candidate.comparison,
+    usual_routine: candidate.usualRoutine,
+    known_context: candidate.knownContext,
+    memory_notes: candidate.memoryNotes,
   };
 
   const { data: pattern, error: patternError } = existing
@@ -424,7 +498,8 @@ async function upsertConsolidatedQueue(
 
 async function runPatternWatchForSenior(client: TrustKakiClient, seniorId: string) {
   const signals = await readPatternSignals(client, seniorId);
-  const candidates = evaluatePatternWatch(signals);
+  const context = await readSeniorPatternContext(client, seniorId);
+  const candidates = evaluatePatternWatch(signals, context);
   for (const candidate of candidates) {
     await upsertPattern(client, seniorId, candidate);
   }
@@ -1015,6 +1090,10 @@ async function buildFollowUpQueue(
       contributing_signal_ids: string[];
       concise_summary: string;
       recommended_action: string;
+      comparison: string | null;
+      usual_routine: string[];
+      known_context: string[];
+      memory_notes: string[];
     } | null;
   }>;
 
@@ -1057,9 +1136,12 @@ async function buildFollowUpQueue(
             latestObservedAt: primaryPattern.latest_observed_at,
             evidence,
             triggerExplanation: triggerExplanation(primaryPattern.pattern_type),
-            comparison: row.change_from_usual,
+            comparison: primaryPattern.comparison ?? row.change_from_usual,
             previousActions: actions,
             relatedPatterns,
+            usualRoutine: primaryPattern.usual_routine,
+            knownContext: primaryPattern.known_context,
+            memoryNotes: primaryPattern.memory_notes,
           }
         : null;
 

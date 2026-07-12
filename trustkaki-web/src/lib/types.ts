@@ -127,6 +127,9 @@ export interface PatternDetail {
   comparison: string;
   previousActions: CaregiverActionItem[];
   relatedPatterns?: RelatedPatternSummary[];
+  usualRoutine?: string[];
+  knownContext?: string[];
+  memoryNotes?: string[];
 }
 
 export interface RelatedPatternSummary {

@@ -929,6 +929,16 @@ Immediate implementation target:
 Do not rename `patterns` or `caregiver_queue_items` yet. They already serve the
 roles of `pattern_watch_items` and `today_follow_up_queue`.
 
+Phase 7A implementation note:
+
+- Pattern Watch remains deterministic and signal-driven.
+- Stored senior context now shapes the caregiver-facing comparison and suggested
+  action.
+- The dashboard main card remains concise; the details view can show usual
+  routine, known context, and helpful preferences.
+- Context is explicitly non-diagnostic and should support human follow-up
+  questions only.
+
 ## 17. Build Rules
 
 For every implementation task:

@@ -9,6 +9,8 @@ export interface QueuePatternInput {
   latestObservedAt: string;
   conciseSummary: string;
   recommendedAction: string;
+  comparison?: string | null;
+  usualRoutine?: string[];
 }
 
 export interface ConsolidatedQueueEpisode {
@@ -48,6 +50,13 @@ function daysCovered(patterns: QueuePatternInput[]): number {
     ...patterns.map((pattern) => new Date(pattern.latestObservedAt).getTime())
   );
   return Math.max(1, Math.round((latest - first) / 86400000) + 1);
+}
+
+function strongestComparison(patterns: QueuePatternInput[], fallback: string): string {
+  const primary = [...patterns]
+    .sort((a, b) => patternPriority(a) - patternPriority(b))
+    .find((pattern) => pattern.comparison && pattern.comparison.trim().length > 0);
+  return primary?.comparison ?? fallback;
 }
 
 export function supportingPatternLabel(types: PatternType[]): string {
@@ -94,10 +103,11 @@ export function buildConsolidatedQueueEpisode(
       relatedPatternIds: activePatterns.map((pattern) => pattern.id),
       relatedPatternTypes,
       reason: `Mobility, appetite and routine changes across ${coveredDays} days.`,
-      changeFromUsual:
-        "Different from his usual appetite, movement, response, and AAC participation routine.",
-      recommendedAction:
-        "Call today and check whether he needs mobility or meal support.",
+      changeFromUsual: strongestComparison(
+        activePatterns,
+        "Different from his usual appetite, movement, response, and AAC participation routine."
+      ),
+      recommendedAction: primaryPattern.recommendedAction,
       lastEvidenceAt,
     };
   }
@@ -112,10 +122,11 @@ export function buildConsolidatedQueueEpisode(
       relatedPatternIds: activePatterns.map((pattern) => pattern.id),
       relatedPatternTypes,
       reason: `Mobility changes and social hesitation across ${coveredDays} days.`,
-      changeFromUsual:
-        "Different from his usual movement and AAC participation pattern.",
-      recommendedAction:
-        "Ask Mei Ling to make a low-pressure check-in and offer practical help.",
+      changeFromUsual: strongestComparison(
+        activePatterns,
+        "Different from his usual movement and AAC participation pattern."
+      ),
+      recommendedAction: primaryPattern.recommendedAction,
       lastEvidenceAt,
     };
   }
@@ -126,10 +137,12 @@ export function buildConsolidatedQueueEpisode(
     relatedPatternIds: activePatterns.map((pattern) => pattern.id),
     relatedPatternTypes,
     reason: primaryPattern.conciseSummary,
-    changeFromUsual:
+    changeFromUsual: strongestComparison(
+      [primaryPattern],
       primaryPattern.type === "mobility_and_frailty"
         ? "Different from his usual movement and downstairs routine."
-        : "Different from his usual response and AAC participation pattern.",
+        : "Different from his usual response and AAC participation pattern."
+    ),
     recommendedAction: primaryPattern.recommendedAction,
     lastEvidenceAt,
   };

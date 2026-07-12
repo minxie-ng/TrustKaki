@@ -116,6 +116,141 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["senior_caregivers"]["Insert"]>;
       };
+      routine_baselines: {
+        Row: {
+          id: string;
+          senior_id: string;
+          baseline_type:
+            | "response_cadence"
+            | "meal"
+            | "mobility"
+            | "aac_participation"
+            | "social_comfort"
+            | "medication"
+            | "other";
+          label: string;
+          usual_pattern: string;
+          schedule_json: Json;
+          source: string;
+          confidence: number;
+          status: "active" | "superseded" | "archived";
+          safe_use_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          baseline_type:
+            | "response_cadence"
+            | "meal"
+            | "mobility"
+            | "aac_participation"
+            | "social_comfort"
+            | "medication"
+            | "other";
+          label: string;
+          usual_pattern: string;
+          schedule_json?: Json;
+          source?: string;
+          confidence?: number;
+          status?: "active" | "superseded" | "archived";
+          safe_use_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["routine_baselines"]["Insert"]>;
+      };
+      senior_health_contexts: {
+        Row: {
+          id: string;
+          senior_id: string;
+          context_type:
+            | "mobility"
+            | "appetite"
+            | "medication"
+            | "sensory"
+            | "cognitive"
+            | "social"
+            | "other";
+          description: string;
+          source: string;
+          first_observed_at: string | null;
+          last_observed_at: string | null;
+          status: "active" | "resolved" | "archived";
+          safe_use_notes: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          context_type:
+            | "mobility"
+            | "appetite"
+            | "medication"
+            | "sensory"
+            | "cognitive"
+            | "social"
+            | "other";
+          description: string;
+          source?: string;
+          first_observed_at?: string | null;
+          last_observed_at?: string | null;
+          status?: "active" | "resolved" | "archived";
+          safe_use_notes?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["senior_health_contexts"]["Insert"]>;
+      };
+      senior_memories: {
+        Row: {
+          id: string;
+          senior_id: string;
+          memory_type:
+            | "communication_preference"
+            | "family_context"
+            | "food_preference"
+            | "routine_preference"
+            | "aac_preference"
+            | "other";
+          content: string;
+          source: string;
+          source_message_id: string | null;
+          importance: number;
+          status: "active" | "archived";
+          remembered_at: string;
+          follow_up_after: string | null;
+          expires_at: string | null;
+          safe_use_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          memory_type:
+            | "communication_preference"
+            | "family_context"
+            | "food_preference"
+            | "routine_preference"
+            | "aac_preference"
+            | "other";
+          content: string;
+          source?: string;
+          source_message_id?: string | null;
+          importance?: number;
+          status?: "active" | "archived";
+          remembered_at?: string;
+          follow_up_after?: string | null;
+          expires_at?: string | null;
+          safe_use_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["senior_memories"]["Insert"]>;
+      };
       check_ins: {
         Row: {
           id: string;
@@ -403,6 +538,10 @@ export interface Database {
           contributing_signal_ids: string[];
           concise_summary: string;
           recommended_action: string;
+          comparison: string | null;
+          usual_routine: string[];
+          known_context: string[];
+          memory_notes: string[];
           created_at: string;
           updated_at: string;
         };
@@ -417,6 +556,10 @@ export interface Database {
           contributing_signal_ids?: string[];
           concise_summary: string;
           recommended_action: string;
+          comparison?: string | null;
+          usual_routine?: string[];
+          known_context?: string[];
+          memory_notes?: string[];
           created_at?: string;
           updated_at?: string;
         };

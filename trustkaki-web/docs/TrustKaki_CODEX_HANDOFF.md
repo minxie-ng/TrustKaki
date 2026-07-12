@@ -30,8 +30,8 @@ TrustKaki must be a real deployable product, not a scripted mock. Final target:
 - Zod 4
 - OpenAI-compatible provider
 - tested model: `gpt-4o-mini-2024-07-18`
-- Supabase not yet added
-- WhatsApp not yet added
+- Supabase persistence, Auth, RLS, Pattern Watch, and caregiver queue
+- Meta WhatsApp Cloud API webhook and async inbox foundation
 
 ## Local run command
 The user is in China and OpenAI requires V2RayU proxy:
@@ -201,6 +201,17 @@ Phase 5 Judge View work focuses on making the real flow understandable in under
 one minute: reset demo, run Quick Demo, inspect timeline/evidence, assign,
 record outcome, resolve, and see the active queue clear.
 
+Phase 7A senior context foundation is in progress. The intended production
+direction is to make Pattern Watch compare new signals against stored
+senior-specific context instead of generic keyword-like assumptions:
+
+- `routine_baselines`
+- `senior_health_contexts`
+- `senior_memories`
+
+These records are operational support only. They should guide follow-up
+questions and caregiver/AAC action, not diagnose medical conditions.
+
 ## Current caveats
 
 1. Tone later needs tuning:
@@ -212,8 +223,10 @@ record outcome, resolve, and see the active queue clear.
 3. Do not deploy or configure Meta callback URL until explicitly requested.
 
 ## Immediate next task
-Proceed after Phase 5 to deployment preparation, real Meta callback
-configuration, scheduler/proactive check-ins, and senior memory/health context.
+Finish Phase 7A live migration/seed verification, then run Quick Demo to confirm
+the queue explains change-from-usual using stored routine and context. After
+that, proceed to scheduler/proactive check-ins and real Meta callback
+configuration.
 
 ## Working rules
 - inspect before modifying
