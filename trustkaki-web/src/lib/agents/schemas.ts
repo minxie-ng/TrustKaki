@@ -27,24 +27,24 @@ export const triageSignalSchema = z.object({
       "emergency_high_risk",
     ])
     .optional(),
-  description: z.string().min(1),
+  description: z.string().min(1).max(1000),
   severity: z.enum(["low", "medium", "high"]),
 });
 
 export const agentRunContextSchema = z.object({
   senior: z.object({
-    name: z.string().min(1),
+    name: z.string().min(1).max(120),
     age: z.number(),
-    livingSituation: z.string().min(1),
-    caregiver: z.string().min(1),
-    aacVolunteer: z.string().min(1),
+    livingSituation: z.string().min(1).max(500),
+    caregiver: z.string().min(1).max(120),
+    aacVolunteer: z.string().min(1).max(120),
   }),
   messages: z.array(
     z.object({
-      id: z.string().min(1),
+      id: z.string().min(1).max(120),
       sender: z.enum(["senior", "trustkaki", "system"]),
-      text: z.string(),
-      timestamp: z.string(),
+      text: z.string().max(5000),
+      timestamp: z.string().max(80),
       agentId: agentIdSchema.optional(),
     })
   ),
@@ -52,8 +52,10 @@ export const agentRunContextSchema = z.object({
 });
 
 export const orchestratorInputSchema = z.object({
-  message: z.string().min(1),
-  context: agentRunContextSchema,
+  message: z.string().trim().min(1).max(5000),
+  context: agentRunContextSchema.extend({
+    messages: agentRunContextSchema.shape.messages.max(50),
+  }),
 });
 
 export const orchestratorOutputSchema = z.object({

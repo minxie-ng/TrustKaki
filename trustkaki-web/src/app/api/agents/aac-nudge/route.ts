@@ -2,34 +2,36 @@
 // Crafts gentle social engagement nudges for seniors showing withdrawal signals
 
 import { NextRequest, NextResponse } from "next/server";
+import { jsonError } from "@/lib/api/responses";
+import { checkRateLimit } from "@/lib/api/rateLimit";
+import { parseJsonBody, specialistAgentRequestSchema } from "@/lib/api/schemas";
+import {
+  authJsonError,
+  requireAuthenticatedCaregiver,
+} from "@/lib/auth/session";
 import { runAACNudgeAgent } from "@/lib/agents/orchestrator";
 import { getLLMProvider } from "@/lib/agents/provider";
-import type { AgentRunContext, TriageSignal } from "@/lib/agents/contracts";
 
+export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuthenticatedCaregiver(request);
+  if (!authResult.ok) return authJsonError(authResult);
+  const rateLimit = checkRateLimit({
+    key: authResult.auth.userId,
+    route: "agent:aac_nudge",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
-    const body = await request.json();
-    const { message, context, triageSignals } = body as {
-      message: string;
-      context: AgentRunContext;
-      triageSignals?: TriageSignal[];
-    };
-
-    if (!message || typeof message !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'message' field" },
-        { status: 400 }
-      );
-    }
-
-    if (!context || !context.senior) {
-      return NextResponse.json(
-        { error: "Missing or invalid 'context' field" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, specialistAgentRequestSchema);
+    if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: parsed.status });
+    const { message, context, triageSignals } = parsed.data;
 
     const result = await runAACNudgeAgent(
       message,
@@ -38,11 +40,7 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "AAC Nudge agent failed", detail: message },
-      { status: 500 }
-    );
+    return jsonError("AAC Nudge agent failed", { error, status: 500 });
   }
 }
 

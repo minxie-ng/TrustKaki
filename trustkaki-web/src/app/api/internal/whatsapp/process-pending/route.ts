@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { retryPendingWhatsAppEvents } from "@/lib/whatsapp/service";
 import { logWhatsAppError } from "@/lib/whatsapp/logging";
 
+export const runtime = "nodejs";
 export const maxDuration = 60;
 
 function isAuthorized(request: NextRequest): boolean {

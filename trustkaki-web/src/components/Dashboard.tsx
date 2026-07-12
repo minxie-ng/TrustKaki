@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { authHeader } from "@/lib/auth/client";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type {
   AgentTrace,
@@ -24,6 +25,9 @@ interface DashboardProps {
   traces?: AgentTrace[];
   briefing?: BriefingOutput | null;
   onRefresh?: () => void;
+  authToken: string | null;
+  isDemoAdmin?: boolean;
+  onUnauthorized?: () => void;
 }
 
 const riskConfig = {
@@ -59,6 +63,9 @@ export default function Dashboard({
   traces = [],
   briefing,
   onRefresh,
+  authToken,
+  isDemoAdmin = false,
+  onUnauthorized,
 }: DashboardProps) {
   const { senior, followUpQueue } = data;
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -90,13 +97,17 @@ export default function Dashboard({
     try {
       const response = await fetch("/api/caregiver/queue-action", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeader(authToken) },
         body: JSON.stringify({
           queueItemId: item.id,
           actionType,
           ...extra,
         }),
       });
+      if (response.status === 401) {
+        onUnauthorized?.();
+        throw new Error("unauthorized");
+      }
       if (!response.ok) throw new Error("caregiver_action_failed");
       setActionState("success");
       setStatusMessage(
@@ -126,7 +137,14 @@ export default function Dashboard({
       window.setTimeout(() => setDemoProgress(step), 500 + index * 900)
     );
     try {
-      const response = await fetch(demoEndpoint(mode), { method: "POST" });
+      const response = await fetch(demoEndpoint(mode), {
+        method: "POST",
+        headers: authHeader(authToken),
+      });
+      if (response.status === 401) {
+        onUnauthorized?.();
+        throw new Error("unauthorized");
+      }
       if (!response.ok) throw new Error("demo_failed");
       setDemoProgress("Ready");
       setDemoState("success");
@@ -160,7 +178,14 @@ export default function Dashboard({
     setDemoState("pending");
     setStatusMessage("Resetting demo data...");
     try {
-      const response = await fetch("/api/demo/reset", { method: "POST" });
+      const response = await fetch("/api/demo/reset", {
+        method: "POST",
+        headers: authHeader(authToken),
+      });
+      if (response.status === 401) {
+        onUnauthorized?.();
+        throw new Error("unauthorized");
+      }
       if (!response.ok) throw new Error("reset_failed");
       setDemoState("success");
       setStatusMessage("Demo reset. Run Quick Demo to rebuild the case.");
@@ -186,7 +211,8 @@ export default function Dashboard({
               Ordered by risk, active patterns, response change, and unresolved follow-up.
             </p>
           </div>
-          <div className="flex flex-col gap-2 md:items-end">
+            {isDemoAdmin && (
+            <div className="flex flex-col gap-2 md:items-end">
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={resetDemo}
@@ -214,10 +240,12 @@ export default function Dashboard({
               <div className="text-xs text-gray-500">{demoProgress}</div>
             )}
           </div>
+            )}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {isDemoAdmin && (
         <section className="bg-white border rounded-lg p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -276,6 +304,7 @@ export default function Dashboard({
             </div>
           )}
         </section>
+        )}
 
         {followUpQueue.length === 0 ? (
           <div className="bg-white border rounded-lg p-5">
@@ -287,6 +316,8 @@ export default function Dashboard({
               to show the full workflow again.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
+              {isDemoAdmin && (
+              <>
               <button
                 onClick={resetDemo}
                 disabled={busyAction !== null}
@@ -301,6 +332,8 @@ export default function Dashboard({
               >
                 Run Quick Demo
               </button>
+              </>
+              )}
             </div>
           </div>
         ) : (

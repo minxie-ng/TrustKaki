@@ -2,6 +2,13 @@
 // Synthesizes agent findings into caregiver and AAC volunteer briefings
 
 import { NextRequest, NextResponse } from "next/server";
+import { jsonError } from "@/lib/api/responses";
+import { checkRateLimit } from "@/lib/api/rateLimit";
+import { manualBriefingRequestSchema, parseJsonBody } from "@/lib/api/schemas";
+import {
+  authJsonError,
+  requireAuthenticatedCaregiver,
+} from "@/lib/auth/session";
 import { runBriefingAgent } from "@/lib/agents/orchestrator";
 import { getLLMProvider } from "@/lib/agents/provider";
 import { persistManualBriefingResult } from "@/lib/persistence/trustkakiRepository";
@@ -12,36 +19,39 @@ import type {
   DigitalSafetyOutput,
 } from "@/lib/agents/contracts";
 
+export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuthenticatedCaregiver(request);
+  if (!authResult.ok) return authJsonError(authResult);
+  const rateLimit = checkRateLimit({
+    key: authResult.auth.userId,
+    route: "agent:briefing",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
-    const body = await request.json();
+    const parsed = await parseJsonBody(request, manualBriefingRequestSchema);
+    if (!parsed.ok) {
+      const error =
+        parsed.status === 400
+          ? 'Manual briefing requests must include trigger: "manual_override"'
+          : parsed.error;
+      return NextResponse.json({ error }, { status: parsed.status });
+    }
     const { context, triageResult, aacNudgeResult, digitalSafetyResult, trigger } =
-      body as {
+      parsed.data as {
         context: AgentRunContext;
         triageResult?: TriageOutput;
         aacNudgeResult?: AACNudgeOutput;
         digitalSafetyResult?: DigitalSafetyOutput;
-        trigger?: "manual_override";
+        trigger: "manual_override";
       };
-
-    if (!context || !context.senior) {
-      return NextResponse.json(
-        { error: "Missing or invalid 'context' field" },
-        { status: 400 }
-      );
-    }
-
-    if (trigger !== "manual_override") {
-      return NextResponse.json(
-        {
-          error:
-            "Manual briefing requests must include trigger: \"manual_override\"",
-        },
-        { status: 400 }
-      );
-    }
 
     const result = await runBriefingAgent(
       context,
@@ -69,11 +79,7 @@ export async function POST(request: NextRequest) {
       data,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "Briefing agent failed", detail: message },
-      { status: 500 }
-    );
+    return jsonError("Briefing agent failed", { error, status: 500 });
   }
 }
 

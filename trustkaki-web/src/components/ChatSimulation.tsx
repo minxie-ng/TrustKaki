@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { authHeader } from "@/lib/auth/client";
 import type { Message, RiskLevel } from "@/lib/types";
 
 interface ChatSimulationProps {
   messages: Message[];
   onComplete: () => void;
+  authToken: string | null;
+  onUnauthorized?: () => void;
 }
 
 interface OrchestrateResult {
@@ -20,7 +23,12 @@ function formatTime(ts: string) {
   });
 }
 
-export default function ChatSimulation({ messages, onComplete }: ChatSimulationProps) {
+export default function ChatSimulation({
+  messages,
+  onComplete,
+  authToken,
+  onUnauthorized,
+}: ChatSimulationProps) {
   const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -52,7 +60,7 @@ export default function ChatSimulation({ messages, onComplete }: ChatSimulationP
 
     const response = await fetch("/api/agents/orchestrate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeader(authToken) },
       body: JSON.stringify({
         message: seniorMessage.text,
         context: {
@@ -68,6 +76,10 @@ export default function ChatSimulation({ messages, onComplete }: ChatSimulationP
         },
       }),
     });
+    if (response.status === 401) {
+      onUnauthorized?.();
+      throw new Error("Unauthorized");
+    }
     if (!response.ok) throw new Error("Orchestration request failed");
     const result = (await response.json()) as OrchestrateResult;
     const now = Date.now();

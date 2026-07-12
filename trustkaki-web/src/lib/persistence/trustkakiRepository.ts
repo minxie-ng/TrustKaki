@@ -8,6 +8,7 @@ import type {
   TriageOutput,
   TriageTimelineOutput,
 } from "@/lib/agents/contracts";
+import type { AuthenticatedCaregiver } from "@/lib/auth/session";
 import type { AgentTrace, DashboardData, Message } from "@/lib/types";
 import type {
   CaregiverActionItem,
@@ -1120,7 +1121,16 @@ export interface DashboardStateResult {
   traces: AgentTrace[];
 }
 
-export async function readDashboardState(): Promise<DashboardStateResult> {
+export async function readDashboardState(options: {
+  auth?: AuthenticatedCaregiver;
+} = {}): Promise<DashboardStateResult> {
+  if (
+    options.auth &&
+    !options.auth.accessibleSeniorIds.includes(DEMO_SENIOR_ID)
+  ) {
+    throw new Error("Forbidden");
+  }
+
   const client = getClient();
   if (!client) {
     const mapped = dashboardSnapshotToData(emptyDemoDashboardSnapshot());
@@ -1246,7 +1256,7 @@ export async function resetDemoPersistence(): Promise<PersistenceMeta> {
   const client = getClient();
   if (!client) return localDemoMeta();
 
-  await Promise.all([
+  const resetSteps = await Promise.all([
     client.from("caregiver_actions").delete().eq("senior_id", DEMO_SENIOR_ID),
     client.from("caregiver_queue_items").delete().eq("senior_id", DEMO_SENIOR_ID),
     client.from("patterns").delete().eq("senior_id", DEMO_SENIOR_ID),
@@ -1256,6 +1266,9 @@ export async function resetDemoPersistence(): Promise<PersistenceMeta> {
     client.from("risk_events").delete().eq("senior_id", DEMO_SENIOR_ID),
     client.from("check_ins").delete().eq("senior_id", DEMO_SENIOR_ID),
   ]);
+  resetSteps.forEach((result, index) => {
+    throwIfError(result.error, `reset demo step ${index + 1}`);
+  });
 
   await ensureDemoPeople(client);
   const { error } = await client
@@ -1268,6 +1281,7 @@ export async function resetDemoPersistence(): Promise<PersistenceMeta> {
 }
 
 export async function recordCaregiverQueueAction(args: {
+  auth?: AuthenticatedCaregiver;
   queueItemId: string;
   actionType: CaregiverActionItem["actionType"];
   outcomeType?: ContactOutcome | null;
@@ -1285,6 +1299,9 @@ export async function recordCaregiverQueueAction(args: {
     .single();
   throwIfError(queueError, "select caregiver queue item");
   if (!queueItem) throw new Error("select caregiver queue item: not found");
+  if (args.auth && !args.auth.accessibleSeniorIds.includes(queueItem.senior_id)) {
+    throw new Error("Forbidden");
+  }
 
   const caregiverId =
     args.assignedCaregiverId === "aac_volunteer"
@@ -1292,6 +1309,18 @@ export async function recordCaregiverQueueAction(args: {
       : args.assignedCaregiverId === "caregiver" || !args.assignedCaregiverId
         ? DEMO_CAREGIVER_ID
         : args.assignedCaregiverId;
+
+  if (args.auth && args.actionType === "assign" && caregiverId !== args.auth.caregiverId) {
+    const { data: assignmentRows, error: assignmentError } = await client
+      .from("senior_caregivers")
+      .select("caregiver_id")
+      .eq("senior_id", queueItem.senior_id)
+      .eq("caregiver_id", caregiverId);
+    throwIfError(assignmentError, "select assignment caregiver");
+    if (!assignmentRows || assignmentRows.length === 0) {
+      throw new Error("Forbidden");
+    }
+  }
 
   const { error: actionError } = await client.from("caregiver_actions").insert({
     queue_item_id: queueItem.id,

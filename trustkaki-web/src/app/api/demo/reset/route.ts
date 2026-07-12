@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/api/responses";
+import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
 import { resetDemoPersistence } from "@/lib/persistence/trustkakiRepository";
 
-export async function POST() {
+export const runtime = "nodejs";
+
+export async function POST(request: Request) {
+  const authResult = await requireDemoAdmin(request);
+  if (!authResult.ok) return authJsonError(authResult);
+
   try {
     const persistence = await resetDemoPersistence();
     return NextResponse.json({ persistence });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "Failed to reset demo data", detail: message },
-      { status: 500 }
-    );
+    return jsonError("Failed to reset demo data", { error, status: 500 });
   }
 }

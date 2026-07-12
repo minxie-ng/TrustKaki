@@ -24,12 +24,14 @@ export class LLMProvider {
   private apiKey: string | undefined;
   private baseUrl: string;
   private defaultModel: string;
+  private timeoutMs: number;
 
   constructor() {
     this.apiKey = process.env.TRUSTKAKI_LLM_API_KEY;
     this.baseUrl =
       process.env.TRUSTKAKI_LLM_BASE_URL || "https://api.openai.com/v1";
     this.defaultModel = process.env.TRUSTKAKI_LLM_MODEL || "gpt-4o-mini";
+    this.timeoutMs = boundedTimeoutMs(process.env.TRUSTKAKI_LLM_TIMEOUT_MS);
   }
 
   get isConfigured(): boolean {
@@ -49,23 +51,32 @@ export class LLMProvider {
 
     const model = params.model || this.defaultModel;
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: params.systemPrompt },
-          { role: "user", content: params.userPrompt },
-        ],
-        temperature: params.temperature ?? 0.7,
-        max_tokens: params.maxTokens ?? 1024,
-        response_format: { type: "json_object" },
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        signal: AbortSignal.timeout(this.timeoutMs),
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: params.systemPrompt },
+            { role: "user", content: params.userPrompt },
+          ],
+          temperature: params.temperature ?? 0.7,
+          max_tokens: params.maxTokens ?? 1024,
+          response_format: { type: "json_object" },
+        }),
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("LLM request timed out");
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
@@ -90,6 +101,12 @@ export class LLMProvider {
       },
     };
   }
+}
+
+function boundedTimeoutMs(raw: string | undefined): number {
+  const parsed = raw ? Number(raw) : 30_000;
+  if (!Number.isFinite(parsed)) return 30_000;
+  return Math.min(120_000, Math.max(1_000, Math.floor(parsed)));
 }
 
 // Singleton — avoids re-reading env vars on every call

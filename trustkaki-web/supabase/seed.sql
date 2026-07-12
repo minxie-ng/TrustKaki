@@ -1,5 +1,16 @@
 -- TrustKaki demo seed data.
 -- Fixed UUIDs make the demo repository deterministic across local resets.
+--
+-- Production auth setup is intentionally not seeded with credentials.
+-- After creating the private judge user in Supabase Auth, set trusted
+-- app_metadata.role = 'demo_admin' through an administrator-controlled path,
+-- then link that Auth user to Rachel Tan with:
+--
+-- update public.caregivers
+-- set auth_user_id = '<judge-auth-user-uuid>'
+-- where external_ref = 'demo_rachel_tan';
+--
+-- Do not store judge email, password, or Auth UUID values in Git.
 
 insert into public.seniors (
   id,

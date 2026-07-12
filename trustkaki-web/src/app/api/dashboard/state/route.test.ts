@@ -1,16 +1,54 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const readDashboardStateMock = vi.fn();
+const requireAuthenticatedCaregiverMock = vi.fn();
+
+const auth = {
+  userId: "auth-user-1",
+  email: "judge@example.com",
+  role: "demo_admin",
+  caregiverId: "caregiver-1",
+  caregiverName: "Rachel Tan",
+  accessibleSeniorIds: ["00000000-0000-0000-0000-000000000001"],
+};
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   readDashboardState: readDashboardStateMock,
 }));
 
+vi.mock("@/lib/auth/session", () => ({
+  requireAuthenticatedCaregiver: requireAuthenticatedCaregiverMock,
+  authJsonError: (result: { error: string; status: number }) =>
+    Response.json({ error: result.error }, { status: result.status }),
+}));
+
 beforeEach(() => {
+  vi.resetModules();
+  vi.unstubAllEnvs();
   readDashboardStateMock.mockReset();
+  requireAuthenticatedCaregiverMock.mockReset();
+  requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("/api/dashboard/state", () => {
+  it("requires an authenticated caregiver", async () => {
+    requireAuthenticatedCaregiverMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/dashboard/state"));
+
+    expect(response.status).toBe(401);
+    expect(readDashboardStateMock).not.toHaveBeenCalled();
+  });
+
   it("returns stored dashboard state for refresh hydration", async () => {
     const { GET } = await import("./route");
     readDashboardStateMock.mockResolvedValue({
@@ -47,12 +85,45 @@ describe("/api/dashboard/state", () => {
       traces: [],
     });
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/dashboard/state"));
     const json = await response.json();
 
     expect(response.status).toBe(200);
     expect(json.persistence.persisted).toBe(true);
     expect(json.data.senior.riskLevel).toBe("yellow");
     expect(json.data.activeSessions[0].summary).toBe("Stored summary");
+    expect(readDashboardStateMock).toHaveBeenCalledWith({ auth });
+  });
+
+  it("sanitizes production errors from persistence failures", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    readDashboardStateMock.mockRejectedValue(
+      new Error("Supabase failed with SUPABASE_SERVICE_ROLE_KEY and +6591234567")
+    );
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/dashboard/state"));
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json).toEqual({ error: "Failed to read dashboard state" });
+    expect(JSON.stringify(json)).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+    expect(JSON.stringify(json)).not.toContain("+6591234567");
+  });
+
+  it("keeps development route errors useful but redacted", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    readDashboardStateMock.mockRejectedValue(
+      new Error("Supabase failed with token abc123 and +6591234567")
+    );
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/dashboard/state"));
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json.error).toBe("Failed to read dashboard state");
+    expect(json.detail).toContain("token [redacted]");
+    expect(json.detail).toContain("[phone]");
   });
 });

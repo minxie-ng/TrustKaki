@@ -2,42 +2,41 @@
 // Analyzes a senior's message for health, daily living, digital safety, and social signals
 
 import { NextRequest, NextResponse } from "next/server";
+import { jsonError } from "@/lib/api/responses";
+import { checkRateLimit } from "@/lib/api/rateLimit";
+import { agentMessageRequestSchema, parseJsonBody } from "@/lib/api/schemas";
+import {
+  authJsonError,
+  requireAuthenticatedCaregiver,
+} from "@/lib/auth/session";
 import { runTriageAgent } from "@/lib/agents/orchestrator";
 import { getLLMProvider } from "@/lib/agents/provider";
-import type { AgentRunContext } from "@/lib/agents/contracts";
 
+export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuthenticatedCaregiver(request);
+  if (!authResult.ok) return authJsonError(authResult);
+  const rateLimit = checkRateLimit({
+    key: authResult.auth.userId,
+    route: "agent:triage",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
-    const body = await request.json();
-    const { message, context } = body as {
-      message: string;
-      context: AgentRunContext;
-    };
-
-    if (!message || typeof message !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'message' field" },
-        { status: 400 }
-      );
-    }
-
-    if (!context || !context.senior) {
-      return NextResponse.json(
-        { error: "Missing or invalid 'context' field" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, agentMessageRequestSchema);
+    if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: parsed.status });
+    const { message, context } = parsed.data;
 
     const result = await runTriageAgent(message, context);
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "Triage agent failed", detail: message },
-      { status: 500 }
-    );
+    return jsonError("Triage agent failed", { error, status: 500 });
   }
 }
 

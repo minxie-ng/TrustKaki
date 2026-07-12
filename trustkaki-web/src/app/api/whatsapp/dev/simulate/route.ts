@@ -5,7 +5,9 @@ import {
   processWhatsAppEventById,
 } from "@/lib/whatsapp/service";
 import { logWhatsAppError } from "@/lib/whatsapp/logging";
+import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
 
+export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
@@ -15,6 +17,8 @@ export async function POST(request: NextRequest) {
   if (process.env.ENABLE_WHATSAPP_DEV_SIMULATOR !== "true") {
     return NextResponse.json({ error: "Simulator disabled" }, { status: 404 });
   }
+  const authResult = await requireDemoAdmin(request);
+  if (!authResult.ok) return authJsonError(authResult);
 
   try {
     const body = (await request.json()) as {

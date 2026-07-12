@@ -1,66 +1,37 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/api/responses";
+import { parseJsonBody, queueActionRequestSchema } from "@/lib/api/schemas";
+import {
+  authJsonError,
+  requireAuthenticatedCaregiver,
+} from "@/lib/auth/session";
 import { recordCaregiverQueueAction } from "@/lib/persistence/trustkakiRepository";
-import type { CaregiverActionItem, ContactOutcome } from "@/lib/types";
 
-const ACTIONS = new Set([
-  "mark_for_follow_up",
-  "assign",
-  "record_outcome",
-  "snooze",
-  "resolve",
-]);
-
-const OUTCOMES = new Set([
-  "reached_and_okay",
-  "needs_follow_up",
-  "referred_to_aac_staff",
-  "unable_to_reach",
-  "resolved",
-]);
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const authResult = await requireAuthenticatedCaregiver(request);
+  if (!authResult.ok) return authJsonError(authResult);
+
   try {
-    const body = (await request.json()) as {
-      queueItemId?: unknown;
-      actionType?: unknown;
-      outcomeType?: unknown;
-      note?: unknown;
-      assignedCaregiverId?: unknown;
-      snoozedUntil?: unknown;
-    };
-
-    if (
-      typeof body.queueItemId !== "string" ||
-      typeof body.actionType !== "string" ||
-      !ACTIONS.has(body.actionType)
-    ) {
-      return NextResponse.json({ error: "Invalid queue action" }, { status: 400 });
+    const parsed = await parseJsonBody(request, queueActionRequestSchema);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status });
     }
-
-    const outcomeType =
-      typeof body.outcomeType === "string" && OUTCOMES.has(body.outcomeType)
-        ? (body.outcomeType as ContactOutcome)
-        : null;
+    const body = parsed.data;
 
     const persistence = await recordCaregiverQueueAction({
+      auth: authResult.auth,
       queueItemId: body.queueItemId,
-      actionType: body.actionType as CaregiverActionItem["actionType"],
-      outcomeType,
-      note: typeof body.note === "string" ? body.note.slice(0, 500) : null,
-      assignedCaregiverId:
-        typeof body.assignedCaregiverId === "string"
-          ? body.assignedCaregiverId
-          : null,
-      snoozedUntil:
-        typeof body.snoozedUntil === "string" ? body.snoozedUntil : null,
+      actionType: body.actionType,
+      outcomeType: body.outcomeType ?? null,
+      note: body.note ?? null,
+      assignedCaregiverId: body.assignedCaregiverId ?? null,
+      snoozedUntil: body.snoozedUntil ?? null,
     });
 
     return NextResponse.json({ status: "ok", persistence });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "Failed to record caregiver action", detail: message },
-      { status: 500 }
-    );
+    return jsonError("Failed to record caregiver action", { error, status: 500 });
   }
 }

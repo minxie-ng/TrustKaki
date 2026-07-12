@@ -4,6 +4,16 @@ const runTriageTimelineAgentMock = vi.fn();
 const persistQuickDemoTimelineResultMock = vi.fn();
 const readDashboardStateMock = vi.fn();
 const resetDemoPersistenceMock = vi.fn();
+const requireDemoAdminMock = vi.fn();
+
+const auth = {
+  userId: "auth-user-1",
+  email: "judge@example.com",
+  role: "demo_admin",
+  caregiverId: "caregiver-1",
+  caregiverName: "Rachel Tan",
+  accessibleSeniorIds: ["00000000-0000-0000-0000-000000000001"],
+};
 
 vi.mock("@/lib/agents/orchestrator", () => ({
   runTriageTimelineAgent: runTriageTimelineAgentMock,
@@ -13,6 +23,12 @@ vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistQuickDemoTimelineResult: persistQuickDemoTimelineResultMock,
   readDashboardState: readDashboardStateMock,
   resetDemoPersistence: resetDemoPersistenceMock,
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  requireDemoAdmin: requireDemoAdminMock,
+  authJsonError: (result: { error: string; status: number }) =>
+    Response.json({ error: result.error }, { status: result.status }),
 }));
 
 function timelineResult(signalCount: number) {
@@ -58,6 +74,8 @@ describe("/api/demo/pattern-watch/quick", () => {
     persistQuickDemoTimelineResultMock.mockReset();
     readDashboardStateMock.mockReset();
     resetDemoPersistenceMock.mockReset();
+    requireDemoAdminMock.mockReset();
+    requireDemoAdminMock.mockResolvedValue({ ok: true, auth });
 
     resetDemoPersistenceMock.mockResolvedValue({
       mode: "supabase",
@@ -77,11 +95,25 @@ describe("/api/demo/pattern-watch/quick", () => {
     });
   });
 
+  it("requires demo_admin authorization", async () => {
+    requireDemoAdminMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/demo/pattern-watch/quick"));
+
+    expect(response.status).toBe(403);
+    expect(runTriageTimelineAgentMock).not.toHaveBeenCalled();
+  });
+
   it("does not hardcode a final pattern or queue result", async () => {
     runTriageTimelineAgentMock.mockResolvedValue(timelineResult(0));
     const { POST } = await import("./route");
 
-    const response = await POST();
+    const response = await POST(new Request("http://localhost/api/demo/pattern-watch/quick"));
     const json = await response.json();
 
     expect(response.status).toBe(200);
@@ -97,7 +129,7 @@ describe("/api/demo/pattern-watch/quick", () => {
     const { POST } = await import("./route");
 
     const startedAt = Date.now();
-    const response = await POST();
+    const response = await POST(new Request("http://localhost/api/demo/pattern-watch/quick"));
     const elapsed = Date.now() - startedAt;
 
     expect(response.status).toBe(200);

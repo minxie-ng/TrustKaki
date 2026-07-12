@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { uncleTan } from "@/data/demo";
+import { jsonError } from "@/lib/api/responses";
+import { checkRateLimit } from "@/lib/api/rateLimit";
+import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
 import { orchestrate } from "@/lib/agents/orchestrator";
 import {
   persistOrchestrationResult,
@@ -8,6 +11,9 @@ import {
 } from "@/lib/persistence/trustkakiRepository";
 import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
 import type { Message, RiskLevel } from "@/lib/types";
+
+export const runtime = "nodejs";
+export const maxDuration = 120;
 
 const SCENARIO = [
   {
@@ -32,7 +38,38 @@ const SCENARIO = [
   },
 ];
 
-export async function POST() {
+export async function POST(request: Request) {
+  const authResult = await requireDemoAdmin(request);
+  if (!authResult.ok) return authJsonError(authResult);
+  const rateLimit = checkRateLimit({
+    key: authResult.auth.userId,
+    route: "demo:full",
+    limit: 2,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests", retryAfterSeconds: rateLimit.retryAfterSeconds },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      }
+    );
+  }
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.ENABLE_FULL_AGENT_REPLAY !== "true"
+  ) {
+    return NextResponse.json(
+      {
+        error: "Full Agent Replay is not available",
+        demo: "full_agent_replay",
+      },
+      { status: 404 }
+    );
+  }
+
   const startedAt = Date.now();
   try {
     await resetDemoPersistence();
@@ -67,6 +104,8 @@ export async function POST() {
     const state = await readDashboardState();
     return NextResponse.json({
       status: "ok",
+      warning:
+        "Full Agent Replay may take over one minute. Quick Demo is the primary judge path.",
       scenario: "4-day mobility and withdrawal pattern",
       messagesRun: SCENARIO.length,
       signalsDetected: results.reduce((sum, result) => sum + result.signals.length, 0),
@@ -76,10 +115,6 @@ export async function POST() {
       persistence: state.persistence,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "Failed to run Pattern Watch demo", detail: message },
-      { status: 500 }
-    );
+    return jsonError("Failed to run Pattern Watch demo", { error, status: 500 });
   }
 }

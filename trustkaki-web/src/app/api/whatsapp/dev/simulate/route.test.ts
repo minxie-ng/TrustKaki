@@ -5,10 +5,26 @@ vi.mock("server-only", () => ({}));
 
 const acceptWhatsAppWebhookEventMock = vi.fn();
 const processWhatsAppEventByIdMock = vi.fn();
+const requireDemoAdminMock = vi.fn();
+
+const auth = {
+  userId: "auth-user-1",
+  email: "judge@example.com",
+  role: "demo_admin",
+  caregiverId: "caregiver-1",
+  caregiverName: "Rachel Tan",
+  accessibleSeniorIds: ["00000000-0000-0000-0000-000000000001"],
+};
 
 vi.mock("@/lib/whatsapp/service", () => ({
   acceptWhatsAppWebhookEvent: acceptWhatsAppWebhookEventMock,
   processWhatsAppEventById: processWhatsAppEventByIdMock,
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  requireDemoAdmin: requireDemoAdminMock,
+  authJsonError: (result: { error: string; status: number }) =>
+    Response.json({ error: result.error }, { status: result.status }),
 }));
 
 function request(body: Record<string, unknown>): NextRequest {
@@ -22,6 +38,8 @@ describe("/api/whatsapp/dev/simulate", () => {
   beforeEach(() => {
     acceptWhatsAppWebhookEventMock.mockReset();
     processWhatsAppEventByIdMock.mockReset();
+    requireDemoAdminMock.mockReset();
+    requireDemoAdminMock.mockResolvedValue({ ok: true, auth });
     delete process.env.ENABLE_WHATSAPP_DEV_SIMULATOR;
   });
 
@@ -37,6 +55,27 @@ describe("/api/whatsapp/dev/simulate", () => {
     );
 
     expect(response.status).toBe(404);
+    expect(acceptWhatsAppWebhookEventMock).not.toHaveBeenCalled();
+  });
+
+  it("requires demo_admin authorization when the simulator is enabled", async () => {
+    const { POST } = await import("./route");
+    process.env.ENABLE_WHATSAPP_DEV_SIMULATOR = "true";
+    requireDemoAdminMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+
+    const response = await POST(
+      request({
+        messageId: "wamid.local",
+        from: "6581234567",
+        text: "Not hungry today. Knee pain.",
+      })
+    );
+
+    expect(response.status).toBe(403);
     expect(acceptWhatsAppWebhookEventMock).not.toHaveBeenCalled();
   });
 

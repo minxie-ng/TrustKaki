@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { uncleTan } from "@/data/demo";
+import { jsonError } from "@/lib/api/responses";
+import { checkRateLimit } from "@/lib/api/rateLimit";
+import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
 import { runTriageTimelineAgent } from "@/lib/agents/orchestrator";
 import {
   persistQuickDemoTimelineResult,
@@ -8,6 +11,9 @@ import {
 } from "@/lib/persistence/trustkakiRepository";
 import type { AgentRunContext } from "@/lib/agents/contracts";
 import type { Message, RiskLevel } from "@/lib/types";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const SCENARIO = [
   {
@@ -47,7 +53,25 @@ function contextFor(index: number, currentRiskLevel: RiskLevel): AgentRunContext
   };
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const authResult = await requireDemoAdmin(request);
+  if (!authResult.ok) return authJsonError(authResult);
+  const rateLimit = checkRateLimit({
+    key: authResult.auth.userId,
+    route: "demo:quick",
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests", retryAfterSeconds: rateLimit.retryAfterSeconds },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const startedAt = Date.now();
   try {
     await resetDemoPersistence();
@@ -76,10 +100,9 @@ export async function POST() {
       persistence: state.persistence,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "Failed to run quick Pattern Watch demo", detail: message },
-      { status: 500 }
-    );
+    return jsonError("Failed to run quick Pattern Watch demo", {
+      error,
+      status: 500,
+    });
   }
 }

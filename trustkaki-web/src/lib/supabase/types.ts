@@ -87,6 +87,7 @@ export interface Database {
           display_name: string;
           relationship: string | null;
           phone: string | null;
+          auth_user_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -95,6 +96,7 @@ export interface Database {
           display_name: string;
           relationship?: string | null;
           phone?: string | null;
+          auth_user_id?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["caregivers"]["Insert"]>;

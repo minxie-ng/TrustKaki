@@ -2,8 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
 import type { AgentRunContext, AgentRunResult, BriefingOutput } from "@/lib/agents/contracts";
 
+vi.mock("server-only", () => ({}));
+
 const runBriefingAgentMock = vi.fn();
 const persistManualBriefingResultMock = vi.fn();
+const requireAuthenticatedCaregiverMock = vi.fn();
+
+const auth = {
+  userId: "auth-user-1",
+  email: "judge@example.com",
+  role: "demo_admin",
+  caregiverId: "caregiver-1",
+  caregiverName: "Rachel Tan",
+  accessibleSeniorIds: ["senior-1"],
+};
 
 vi.mock("@/lib/agents/orchestrator", () => ({
   runBriefingAgent: runBriefingAgentMock,
@@ -18,6 +30,12 @@ vi.mock("@/lib/agents/provider", () => ({
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistManualBriefingResult: persistManualBriefingResultMock,
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  requireAuthenticatedCaregiver: requireAuthenticatedCaregiverMock,
+  authJsonError: (result: { error: string; status: number }) =>
+    Response.json({ error: result.error }, { status: result.status }),
 }));
 
 const context = (
@@ -64,8 +82,11 @@ function jsonRequest(body: unknown): NextRequest {
 }
 
 beforeEach(() => {
+  vi.resetModules();
   runBriefingAgentMock.mockReset();
   persistManualBriefingResultMock.mockReset();
+  requireAuthenticatedCaregiverMock.mockReset();
+  requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth });
   persistManualBriefingResultMock.mockResolvedValue({
     mode: "local_demo",
     configured: false,
