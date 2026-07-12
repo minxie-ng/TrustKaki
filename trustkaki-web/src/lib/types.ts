@@ -42,6 +42,7 @@ export interface Message {
 export interface SeniorProfile {
   name: string;
   age: number;
+  address?: string | null;
   livingSituation: string;
   caregiver: string;
   aacVolunteer: string;
@@ -52,6 +53,9 @@ export interface SeniorProfile {
 export interface SeniorListItem {
   id: string;
   name: string;
+  age?: number | null;
+  address?: string | null;
+  livingSituation?: string | null;
   riskLevel: RiskLevel;
   lastCheckIn: string | null;
   followUpCount: number;

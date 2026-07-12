@@ -85,6 +85,10 @@ function isMissingRelationError(error: { code?: string; message?: string } | nul
   );
 }
 
+function addressFromSeniorRow(row: { address_text?: string | null }): string | null {
+  return row.address_text ?? null;
+}
+
 async function ensureDemoPeople(client: TrustKakiClient, context?: AgentRunContext) {
   const senior = context?.senior;
   const demoSeniorPhone = normalizePhoneNumber(process.env.TRUSTKAKI_DEMO_SENIOR_PHONE);
@@ -1374,6 +1378,7 @@ export async function readDashboardState(options: {
     senior: {
       name: senior.display_name,
       age: senior.age ?? uncleTan.age,
+      address: addressFromSeniorRow(senior),
       livingSituation: senior.living_situation ?? uncleTan.livingSituation,
       caregiver,
       aacVolunteer,
@@ -1420,6 +1425,9 @@ export async function readDashboardState(options: {
         return {
           id: seniorRow.id,
           name: seniorRow.display_name,
+          age: seniorRow.age,
+          address: addressFromSeniorRow(seniorRow),
+          livingSituation: seniorRow.living_situation,
           riskLevel: seniorRow.risk_level,
           lastCheckIn: seniorRow.last_check_in_at,
           followUpCount: activeQueueCounts.get(seniorRow.id) ?? 0,

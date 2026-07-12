@@ -104,6 +104,7 @@ export interface DashboardPersistenceSnapshot {
   senior: {
     name: string;
     age: number;
+    address?: string | null;
     livingSituation: string;
     caregiver: string;
     aacVolunteer: string;

@@ -17,6 +17,7 @@ insert into public.seniors (
   external_ref,
   display_name,
   age,
+  address_text,
   living_situation,
   risk_level
 ) values (
@@ -24,12 +25,14 @@ insert into public.seniors (
   'demo_uncle_tan',
   'Uncle Tan',
   76,
+  'Block 123 Toa Payoh Lorong 1, #08-456',
   'Lives alone in a HDB flat in Toa Payoh',
   'green'
 ) on conflict (id) do update set
   external_ref = excluded.external_ref,
   display_name = excluded.display_name,
   age = excluded.age,
+  address_text = excluded.address_text,
   living_situation = excluded.living_situation;
 
 insert into public.seniors (
@@ -37,6 +40,7 @@ insert into public.seniors (
   external_ref,
   display_name,
   age,
+  address_text,
   living_situation,
   risk_level
 ) values (
@@ -44,12 +48,14 @@ insert into public.seniors (
   'demo_aunty_lim',
   'Aunty Lim',
   81,
+  'Block 218 Bishan Street 23, #06-112',
   'Lives with her son in Bishan',
   'green'
 ) on conflict (id) do update set
   external_ref = excluded.external_ref,
   display_name = excluded.display_name,
   age = excluded.age,
+  address_text = excluded.address_text,
   living_situation = excluded.living_situation;
 
 insert into public.caregivers (

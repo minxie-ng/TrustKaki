@@ -61,6 +61,7 @@ export interface Database {
           external_ref: string | null;
           display_name: string;
           age: number | null;
+          address_text: string | null;
           living_situation: string | null;
           phone_e164: string | null;
           risk_level: RiskLevel;
@@ -72,6 +73,7 @@ export interface Database {
           external_ref?: string | null;
           display_name: string;
           age?: number | null;
+          address_text?: string | null;
           living_situation?: string | null;
           phone_e164?: string | null;
           risk_level?: RiskLevel;

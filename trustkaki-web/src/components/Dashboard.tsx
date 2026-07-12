@@ -74,6 +74,7 @@ export default function Dashboard({
   const { senior, followUpQueue } = data;
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
+  const selectedSenior = seniors.find((item) => item.id === selectedSeniorId);
   const [manualSelectedId, setManualSelectedId] = useState<string | null>(
     followUpQueue[0]?.id ?? null
   );
@@ -250,8 +251,9 @@ export default function Dashboard({
                     type="button"
                     onClick={() => onSelectSenior?.(item.id)}
                     disabled={busyAction !== null}
-                    className={`text-left border rounded-md p-3 disabled:opacity-50 ${
-                      selectedSenior ? "border-gray-900" : "border-gray-200"
+                    aria-pressed={selectedSenior}
+                    className={`text-left border rounded-md p-3 disabled:opacity-50 hover:border-gray-500 ${
+                      selectedSenior ? "border-gray-900 bg-gray-50" : "border-gray-200"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -260,6 +262,11 @@ export default function Dashboard({
                         {risk.label}
                       </span>
                     </div>
+                    {selectedSenior && (
+                      <div className="mt-2 text-[11px] font-semibold text-gray-700">
+                        Selected
+                      </div>
+                    )}
                     <div className="mt-2 text-xs text-gray-600">
                       {item.followUpCount === 0
                         ? "No active follow-up"
@@ -275,6 +282,51 @@ export default function Dashboard({
             </div>
           </section>
         )}
+
+        <section className="bg-white border rounded-lg p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Selected senior
+              </div>
+              <h3 className="mt-1 text-lg font-bold text-gray-900">
+                {senior.name}
+              </h3>
+              <div className="mt-1 text-sm text-gray-700">
+                {senior.age} years old · {senior.livingSituation}
+              </div>
+              <div className="mt-1 text-sm text-gray-700">
+                {senior.address ?? selectedSenior?.address ?? "Address not recorded"}
+              </div>
+            </div>
+            <div className="grid gap-2 text-sm text-gray-700 sm:grid-cols-2 md:min-w-96">
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Primary caregiver
+                </div>
+                <div>{selectedSenior?.primaryCaregiver ?? senior.caregiver}</div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  AAC volunteer
+                </div>
+                <div>{selectedSenior?.aacVolunteer ?? senior.aacVolunteer}</div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Current risk
+                </div>
+                <div>{riskConfig[senior.riskLevel].label}</div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Last response
+                </div>
+                <div>{formatDate(senior.lastCheckIn)}</div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {isDemoAdmin && demoMode && (
         <section className="bg-white border rounded-lg p-4">
@@ -443,7 +495,7 @@ export default function Dashboard({
                     onClick={() => setManualSelectedId(selectedCard ? null : item.id)}
                     className="text-xs font-semibold bg-gray-900 text-white px-3 py-2 rounded-md"
                   >
-                    View details
+                    {selectedCard ? "Hide details" : "View details"}
                   </button>
                   <button
                     onClick={() =>
