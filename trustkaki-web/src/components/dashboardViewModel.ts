@@ -24,6 +24,12 @@ export function demoEndpoint(mode: DemoMode): string {
     : "/api/demo/pattern-watch";
 }
 
+export function dashboardStateEndpoint(seniorId?: string | null): string {
+  return seniorId
+    ? `/api/dashboard/state?seniorId=${encodeURIComponent(seniorId)}`
+    : "/api/dashboard/state";
+}
+
 export function canSubmit(currentRequest: string | null): boolean {
   return currentRequest === null;
 }

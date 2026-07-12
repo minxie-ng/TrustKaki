@@ -72,7 +72,7 @@ export default function Dashboard({
   const { senior, followUpQueue } = data;
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
-  const [selectedId, setSelectedId] = useState<string | null>(
+  const [manualSelectedId, setManualSelectedId] = useState<string | null>(
     followUpQueue[0]?.id ?? null
   );
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -81,6 +81,9 @@ export default function Dashboard({
   const [actionState, setActionState] = useState<RequestState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [lastDemoMode, setLastDemoMode] = useState<DemoMode>("quick");
+  const selectedId = followUpQueue.some((item) => item.id === manualSelectedId)
+    ? manualSelectedId
+    : followUpQueue[0]?.id ?? null;
   const selected = followUpQueue.find((item) => item.id === selectedId) ?? null;
   const seniorMessages = useMemo(() => recentSeniorMessages(data), [data]);
   const proof = useMemo(
@@ -193,7 +196,7 @@ export default function Dashboard({
       if (!response.ok) throw new Error("reset_failed");
       setDemoState("success");
       setStatusMessage("Demo reset. Run Quick Demo to rebuild the case.");
-      setSelectedId(null);
+      setManualSelectedId(null);
       onRefresh?.();
     } catch {
       setDemoState("error");
@@ -215,36 +218,9 @@ export default function Dashboard({
               Ordered by risk, active patterns, response change, and unresolved follow-up.
             </p>
           </div>
-            {isDemoAdmin && (
-            <div className="flex flex-col gap-2 md:items-end">
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={resetDemo}
-                disabled={busyAction !== null}
-                className="text-xs font-semibold border px-3 py-2 rounded-md disabled:opacity-50"
-              >
-                Reset demo
-              </button>
-              <button
-                onClick={() => runPatternDemo("quick")}
-                disabled={busyAction !== null}
-                className="text-xs font-semibold bg-gray-900 text-white px-3 py-2 rounded-md disabled:opacity-50"
-              >
-                Quick Demo
-              </button>
-              <button
-                onClick={() => runPatternDemo("full")}
-                disabled={busyAction !== null}
-                className="text-xs font-semibold border px-3 py-2 rounded-md disabled:opacity-50"
-              >
-                Full Agent Replay
-              </button>
-            </div>
-            {demoProgress && (
-              <div className="text-xs text-gray-500">{demoProgress}</div>
-            )}
-          </div>
-            )}
+          {demoProgress && isDemoAdmin && (
+            <div className="text-xs text-gray-500">{demoProgress}</div>
+          )}
         </div>
       </div>
 
@@ -328,12 +304,24 @@ export default function Dashboard({
                 Start Quick Demo
               </button>
               <button
-                onClick={() => runPatternDemo("full")}
+                onClick={resetDemo}
                 disabled={busyAction !== null}
                 className="text-sm font-semibold border px-4 py-2 rounded-md disabled:opacity-50"
               >
-                Run Full Agent Replay
+                Reset demo
               </button>
+              <details className="text-xs text-gray-600">
+                <summary className="cursor-pointer font-semibold">
+                  Technical validation
+                </summary>
+                <button
+                  onClick={() => runPatternDemo("full")}
+                  disabled={busyAction !== null}
+                  className="mt-2 w-full text-sm font-semibold border px-4 py-2 rounded-md disabled:opacity-50"
+                >
+                  Run Full Agent Replay
+                </button>
+              </details>
               {demoState === "error" && (
                 <button
                   onClick={() => runPatternDemo(lastDemoMode)}
@@ -451,20 +439,10 @@ export default function Dashboard({
 
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button
-                    onClick={() => postAction(item, "mark_for_follow_up")}
-                    className="text-xs font-semibold border px-3 py-2 rounded-md"
-                    disabled={busyAction !== null}
+                    onClick={() => setManualSelectedId(selectedCard ? null : item.id)}
+                    className="text-xs font-semibold bg-gray-900 text-white px-3 py-2 rounded-md"
                   >
-                    Mark for follow-up
-                  </button>
-                  <button
-                    onClick={() =>
-                      postAction(item, "assign", { assignedCaregiverId: "aac_volunteer" })
-                    }
-                    className="text-xs font-semibold border px-3 py-2 rounded-md"
-                    disabled={busyAction !== null}
-                  >
-                    Assign
+                    View details
                   </button>
                   <button
                     onClick={() =>
@@ -484,12 +462,6 @@ export default function Dashboard({
                     disabled={busyAction !== null}
                   >
                     Resolve
-                  </button>
-                  <button
-                    onClick={() => setSelectedId(selectedCard ? null : item.id)}
-                    className="text-xs font-semibold bg-gray-900 text-white px-3 py-2 rounded-md"
-                  >
-                    View details
                   </button>
                 </div>
 

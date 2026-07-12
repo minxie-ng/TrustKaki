@@ -4,6 +4,7 @@ import {
   advancedTraceDefaultOpen,
   canSubmit,
   containsSensitiveText,
+  dashboardStateEndpoint,
   demoEndpoint,
   mainQueueCardFields,
   recentSeniorMessages,
@@ -100,6 +101,13 @@ describe("dashboard view model", () => {
   it("uses the real Quick Demo endpoint", () => {
     expect(demoEndpoint("quick")).toBe("/api/demo/pattern-watch/quick");
     expect(demoEndpoint("full")).toBe("/api/demo/pattern-watch");
+  });
+
+  it("builds a stable selected-senior dashboard endpoint", () => {
+    expect(dashboardStateEndpoint(null)).toBe("/api/dashboard/state");
+    expect(dashboardStateEndpoint("senior 2")).toBe(
+      "/api/dashboard/state?seniorId=senior%202"
+    );
   });
 
   it("exposes concise queue card fields without internal ids", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import NavBar from "@/components/NavBar";
 import ChatSimulation from "@/components/ChatSimulation";
@@ -10,6 +10,7 @@ import SignInForm from "@/components/SignInForm";
 import { demoMessages, demoTraces, dashboardData } from "@/data/demo";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
+import { dashboardStateEndpoint } from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { AgentTrace, DashboardData, RiskLevel } from "@/lib/types";
 
@@ -37,7 +38,8 @@ export default function Home() {
     useState<DashboardData>(dashboardData);
   const [liveTraces, setLiveTraces] = useState<AgentTrace[]>(demoTraces);
   const [liveBriefing, setLiveBriefing] = useState<BriefingOutput | null>(null);
-  const [selectedSeniorId, setSelectedSeniorId] = useState<string | null>(null);
+  const selectedSeniorIdRef = useRef<string | null>(null);
+  const dashboardRequestSeq = useRef(0);
   const latestSession = liveDashboardData.activeSessions[0];
   const chatMessages =
     latestSession?.messages.length > 0 ? latestSession.messages : demoMessages;
@@ -55,10 +57,10 @@ export default function Home() {
 
   const refreshDashboardState = useCallback((nextSeniorId?: string | null) => {
     if (!authToken) return;
-    const seniorId = nextSeniorId ?? selectedSeniorId;
-    const url = seniorId
-      ? `/api/dashboard/state?seniorId=${encodeURIComponent(seniorId)}`
-      : "/api/dashboard/state";
+    const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
+    const requestId = dashboardRequestSeq.current + 1;
+    dashboardRequestSeq.current = requestId;
+    const url = dashboardStateEndpoint(seniorId);
     void fetch(url, {
       cache: "no-store",
       headers: authHeader(authToken),
@@ -72,21 +74,23 @@ export default function Home() {
         return (await response.json()) as DashboardStateResponse;
       })
       .then((state) => {
+        if (requestId !== dashboardRequestSeq.current) return;
         if (!state?.persistence?.persisted) return;
         setLiveDashboardData(state.data);
         setLiveTraces(state.traces);
         setLiveBriefing(state.briefing ?? null);
         setRiskLevel(state.data.senior.riskLevel);
-        setSelectedSeniorId(state.data.selectedSeniorId ?? null);
+        const nextSelectedSeniorId = state.data.selectedSeniorId ?? null;
+        selectedSeniorIdRef.current = nextSelectedSeniorId;
       })
       .catch((error) => {
         console.error("Failed to hydrate dashboard state:", error);
       });
-  }, [authToken, handleUnauthorized, selectedSeniorId]);
+  }, [authToken, handleUnauthorized]);
 
   const selectSenior = useCallback(
     (seniorId: string) => {
-      setSelectedSeniorId(seniorId);
+      selectedSeniorIdRef.current = seniorId;
       refreshDashboardState(seniorId);
     },
     [refreshDashboardState]
