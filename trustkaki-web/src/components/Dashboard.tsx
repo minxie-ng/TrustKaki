@@ -27,6 +27,7 @@ interface DashboardProps {
   onRefresh?: () => void;
   authToken: string | null;
   isDemoAdmin?: boolean;
+  demoMode?: boolean;
   onUnauthorized?: () => void;
   onSelectSenior?: (seniorId: string) => void;
 }
@@ -66,6 +67,7 @@ export default function Dashboard({
   onRefresh,
   authToken,
   isDemoAdmin = false,
+  demoMode = false,
   onUnauthorized,
   onSelectSenior,
 }: DashboardProps) {
@@ -218,7 +220,7 @@ export default function Dashboard({
               Ordered by risk, active patterns, response change, and unresolved follow-up.
             </p>
           </div>
-          {demoProgress && isDemoAdmin && (
+          {demoProgress && isDemoAdmin && demoMode && (
             <div className="text-xs text-gray-500">{demoProgress}</div>
           )}
         </div>
@@ -274,7 +276,7 @@ export default function Dashboard({
           </section>
         )}
 
-        {isDemoAdmin && (
+        {isDemoAdmin && demoMode && (
         <section className="bg-white border rounded-lg p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -289,7 +291,7 @@ export default function Dashboard({
                 <li>2. Run Quick Demo</li>
                 <li>3. Review four-day senior timeline</li>
                 <li>4. Open the consolidated priority case</li>
-                <li>5. Assign or mark follow-up</li>
+                <li>5. Open details</li>
                 <li>6. Record outcome</li>
                 <li>7. Resolve case</li>
                 <li>8. Confirm active queue clears</li>
@@ -353,11 +355,10 @@ export default function Dashboard({
               No seniors currently require follow-up.
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              The active caregiver queue is clear. You can reset or rerun the demo
-              to show the full workflow again.
+              The active caregiver queue is clear.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {isDemoAdmin && (
+              {isDemoAdmin && demoMode && (
               <>
               <button
                 onClick={resetDemo}

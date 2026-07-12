@@ -31,9 +31,9 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "dashboard">("chat");
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("green");
   const [traceVisible, setTraceVisible] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
     useState<DashboardData>(dashboardData);
   const [liveTraces, setLiveTraces] = useState<AgentTrace[]>(demoTraces);
@@ -180,18 +180,16 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <NavBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
         riskLevel={riskLevel}
         onSignOut={signOut}
+        canShowDemoMode={isDemoAdmin}
+        demoMode={demoMode}
+        onDemoModeChange={setDemoMode}
       />
 
       <div className="flex-1 flex overflow-hidden">
-        <div
-          className={`${
-            activeTab === "chat" ? "flex" : "hidden md:flex"
-          } flex-col flex-1 md:max-w-md border-r border-gray-200`}
-        >
+        {demoMode && (
+        <div className="hidden flex-col flex-1 border-r border-gray-200 md:flex md:max-w-md">
           <ChatSimulation
             messages={chatMessages}
             onComplete={handleCheckinComplete}
@@ -199,12 +197,9 @@ export default function Home() {
             onUnauthorized={handleUnauthorized}
           />
         </div>
+        )}
 
-        <div
-          className={`${
-            activeTab === "dashboard" ? "flex" : "hidden md:flex"
-          } flex-col flex-1`}
-        >
+        <div className="flex flex-col flex-1">
           <Dashboard
             data={liveDashboardData}
             traces={liveTraces}
@@ -212,11 +207,13 @@ export default function Home() {
             onRefresh={refreshDashboardState}
             authToken={authToken}
             isDemoAdmin={isDemoAdmin}
+            demoMode={demoMode}
             onUnauthorized={handleUnauthorized}
             onSelectSenior={selectSenior}
           />
         </div>
 
+        {demoMode && (
         <div className="hidden lg:flex flex-col w-96 border-l border-gray-200">
           <AgentTracePanel
             traces={liveTraces}
@@ -224,8 +221,10 @@ export default function Home() {
             onToggle={() => setTraceVisible(!traceVisible)}
           />
         </div>
+        )}
       </div>
 
+      {demoMode && (
       <div className="lg:hidden">
         <AgentTracePanel
           traces={liveTraces}
@@ -233,6 +232,7 @@ export default function Home() {
           onToggle={() => setTraceVisible(!traceVisible)}
         />
       </div>
+      )}
     </div>
   );
 }

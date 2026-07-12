@@ -1,17 +1,19 @@
 "use client";
 
 interface NavProps {
-  activeTab: "chat" | "dashboard";
-  onTabChange: (tab: "chat" | "dashboard") => void;
   riskLevel: "green" | "yellow" | "red";
   onSignOut?: () => void;
+  canShowDemoMode?: boolean;
+  demoMode?: boolean;
+  onDemoModeChange?: (enabled: boolean) => void;
 }
 
 export default function NavBar({
-  activeTab,
-  onTabChange,
   riskLevel,
   onSignOut,
+  canShowDemoMode = false,
+  demoMode = false,
+  onDemoModeChange,
 }: NavProps) {
   const riskBadge = {
     green: "🟢",
@@ -35,26 +37,18 @@ export default function NavBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-1 sm:justify-end">
-        <button
-          onClick={() => onTabChange("chat")}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "chat"
-              ? "bg-emerald-100 text-emerald-800"
-              : "text-gray-500 hover:bg-gray-100"
-          }`}
-        >
-          💬 Chat
-        </button>
-        <button
-          onClick={() => onTabChange("dashboard")}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "dashboard"
-              ? "bg-emerald-100 text-emerald-800"
-              : "text-gray-500 hover:bg-gray-100"
-          }`}
-        >
-          📊 Dashboard
-        </button>
+        {canShowDemoMode && (
+          <button
+            onClick={() => onDemoModeChange?.(!demoMode)}
+            className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
+              demoMode
+                ? "border-gray-900 bg-gray-900 text-white"
+                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {demoMode ? "Exit demo mode" : "Demo mode"}
+          </button>
+        )}
         <div className="ml-2 text-sm">{riskBadge[riskLevel]}</div>
         {onSignOut && (
           <button
