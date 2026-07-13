@@ -16,6 +16,13 @@ describe("Gate 0 structural regression", () => {
     expect(repository).not.toMatch(/seniorId\s*=\s*DEMO_SENIOR_ID/);
   });
 
+  it("keeps TrustKaki persistence behind a small compatibility facade", () => {
+    const facade = read("src/lib/persistence/trustkakiRepository.ts");
+    expect(facade.split("\n").length).toBeLessThan(100);
+    expect(facade).not.toContain(".from(");
+    expect(facade).toContain("export {");
+  });
+
   it("provides one validation command", () => {
     const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
     expect(pkg.scripts.validate).toBeTruthy();
