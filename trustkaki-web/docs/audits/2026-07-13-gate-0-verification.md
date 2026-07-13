@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Branch: `codex/gate-0-audit-remediation`
 
-Reviewer status: **pending re-audit**
+Reviewer status: **focused re-audit completed; requested changes addressed**
 
 ## Scope
 
@@ -33,17 +33,34 @@ analytics, memory, or Pattern Watch features.
 - Generated migration: `20260713101217_gate_0_auth_transaction_hardening.sql`.
 - Linked project metadata was checked and identified the project as
   `trustkaki` before any remote operation.
-- Only the Gate 0 SQL file was executed through the linked Management API.
-- Remote migration history records `20260713101217` as applied.
+- The Gate 0 SQL file was executed through the linked Management API.
+- The focused re-audit identified two older local migrations missing from
+  remote history. A dry run confirmed that only those two files were pending,
+  and they were then applied to the linked `trustkaki` project:
+  `20260712030000_senior_address_details.sql` and
+  `20260713010000_senior_profile_gender.sql`.
+- Remote migration history now matches all twelve local migrations through
+  `20260713101217`.
+- Read-only schema verification confirmed both `public.seniors.address_text`
+  and `public.seniors.gender` exist as nullable text columns.
 - No secret, project reference, token, password, email, or raw row was printed.
 
-The remote migration history still lacks two earlier local migrations:
-`20260712030000_senior_address_details.sql` and
-`20260713010000_senior_profile_gender.sql`. A read-only check confirmed those
-columns are absent remotely. They were intentionally not applied during this
-Gate 0 task because the approved scope required applying only the generated
-hardening migration. This history divergence must be reconciled before
-deployment promotion.
+## Demo-reset rollback proof
+
+`supabase/tests/database/reset_trustkaki_demo_rollback.test.sql` runs inside an
+explicit transaction against the linked database. It:
+
+- authenticates as the linked demo administrator without embedding credentials;
+- inserts uniquely identified check-in, scheduled-job, and alert fixture rows;
+- installs a transaction-local trigger that forces the alert deletion to fail;
+- calls `public.reset_trustkaki_demo()` and requires the injected error;
+- verifies a row targeted before the failure, the triggering row, and a row
+  targeted after the failure all remain; and
+- ends with `ROLLBACK`, removing the fixture and trigger.
+
+The direct linked SQL run returned
+`ok - failed demo reset left no partial state`. A separate read-only cleanup
+query confirmed zero fixture rows and zero test triggers remained.
 
 ## Two-user database proof
 
@@ -114,20 +131,15 @@ No generic CRUD layer or disconnected dashboard state system was introduced.
   protection. They were not introduced by Gate 0 and remain deployment review
   items.
 
-## Limitations before deployment
+## Remaining release checks
 
-1. Independent reviewer acceptance is pending.
-2. The two earlier remote migration-history gaps must be reconciled.
-3. A successful live `reset_trustkaki_demo()` was not invoked because it would
-   clear the shared judge demo state. Static migration tests and authenticated
-   repository/route tests cover the command; a disposable-project or isolated
-   fixture is still needed for successful live reset proof.
-4. Authenticated dashboard visual verification in the isolated worktree was
+1. Authenticated dashboard visual verification in the isolated worktree was
    blocked because the available browser had no caregiver session and creating
    a privileged temporary browser user was not permitted. The sign-in surface,
    component tests, typecheck, lint, and production build passed.
-5. Supabase advisor warnings listed above require explicit reviewer disposition.
-6. The in-process API rate limiter remains single-instance and is not a
+2. Supabase advisor warnings listed above require explicit disposition before
+   public production use; they were classified as non-blocking for Gate 0.
+3. The in-process API rate limiter remains single-instance and is not a
    production distributed abuse-control mechanism.
 
 No deployment, merge, or push was performed.

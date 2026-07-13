@@ -1152,10 +1152,16 @@ rg -n "SUPABASE_SERVICE_ROLE_KEY|WHATSAPP_ACCESS_TOKEN|TRUSTKAKI_LLM_API_KEY" sr
 Expected: no secrets are present, no whitespace errors exist, and only intended
 Gate 0 source, migration, tests, and documentation changed.
 
-- [ ] **Step 5: Request independent reviewer re-audit**
+- [x] **Step 5: Request independent reviewer re-audit**
 
 Give the reviewer the Gate 0 design, this plan, verification report, migration,
 and branch commit range. Ask the reviewer to retest every original finding.
+
+The focused re-audit confirmed all ten original findings resolved and requested
+two narrow deployment blockers: reconcile the two older remote migration gaps
+and prove failed demo-reset rollback against an isolated database fixture. Both
+follow-up actions were completed on 2026-07-13 and recorded in the verification
+report.
 
 - [x] **Step 6: Stop before deployment promotion**
 
