@@ -43,6 +43,38 @@ export function canSubmit(currentRequest: string | null): boolean {
   return currentRequest === null;
 }
 
+export function optimisticDashboardForSenior(
+  data: DashboardData,
+  seniorId: string
+): DashboardData {
+  const senior = data.seniors?.find((item) => item.id === seniorId);
+  if (!senior) return data;
+
+  return {
+    ...data,
+    selectedSeniorId: seniorId,
+    senior: {
+      name: senior.name,
+      age: senior.age ?? data.senior.age,
+      gender: senior.gender ?? null,
+      address: senior.address ?? null,
+      livingSituation: senior.livingSituation ?? data.senior.livingSituation,
+      caregiver: senior.primaryCaregiver ?? data.senior.caregiver,
+      aacVolunteer: senior.aacVolunteer ?? data.senior.aacVolunteer,
+      riskLevel: senior.riskLevel,
+      lastCheckIn: senior.lastCheckIn,
+    },
+  };
+}
+
+export function followUpQueueForSenior(
+  queue: FollowUpQueueItem[],
+  seniorId: string | null
+): FollowUpQueueItem[] {
+  if (!seniorId) return queue;
+  return queue.filter((item) => item.seniorId === seniorId);
+}
+
 export function concise(text: string, max = 120): string {
   return text.length > max ? `${text.slice(0, max - 3)}...` : text;
 }

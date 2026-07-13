@@ -15,6 +15,7 @@ import {
   demoProgressSteps,
   mainQueueCardFields,
   recentSeniorMessages,
+  followUpQueueForSenior,
   systemProof,
   type DemoMode,
   type RequestState,
@@ -90,6 +91,7 @@ export default function Dashboard({
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
   const selectedSenior = seniors.find((item) => item.id === selectedSeniorId);
+  const selectedSeniorQueue = followUpQueueForSenior(followUpQueue, selectedSeniorId);
   const [manualSelectedId, setManualSelectedId] = useState<string | null>(
     followUpQueue[0]?.id ?? null
   );
@@ -99,15 +101,12 @@ export default function Dashboard({
   const [actionState, setActionState] = useState<RequestState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [lastDemoMode, setLastDemoMode] = useState<DemoMode>("quick");
-  const selectedId = followUpQueue.some((item) => item.id === manualSelectedId)
+  const selectedId = selectedSeniorQueue.some((item) => item.id === manualSelectedId)
     ? manualSelectedId
-    : followUpQueue[0]?.id ?? null;
-  const selected = followUpQueue.find((item) => item.id === selectedId) ?? null;
+    : selectedSeniorQueue[0]?.id ?? null;
+  const selected = selectedSeniorQueue.find((item) => item.id === selectedId) ?? null;
   const seniorMessages = useMemo(() => recentSeniorMessages(data), [data]);
-  const proof = useMemo(
-    () => systemProof({ data, traces, selected }),
-    [data, traces, selected]
-  );
+  const proof = systemProof({ data, traces, selected });
 
   async function postAction(
     item: FollowUpQueueItem,
@@ -291,6 +290,11 @@ export default function Dashboard({
                         ? "No active follow-up"
                         : `${item.followUpCount} active follow-up item${item.followUpCount === 1 ? "" : "s"}`}
                     </div>
+                    <div className="mt-1 text-xs text-gray-600">
+                      {[item.gender, item.age ? `${item.age} years old` : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
                     <div className="mt-1 text-xs text-gray-500">
                       {item.primaryCaregiver ?? "No primary caregiver"} ·{" "}
                       {formatDate(item.lastCheckIn)}
@@ -312,7 +316,9 @@ export default function Dashboard({
                 {senior.name}
               </h3>
               <div className="mt-2 text-sm text-gray-700">
-                {senior.age} years old · {senior.livingSituation}
+                {[senior.gender, `${senior.age} years old`, senior.livingSituation]
+                  .filter(Boolean)
+                  .join(" · ")}
               </div>
               <div className="mt-1 text-sm text-gray-700">
                 {senior.address ?? selectedSenior?.address ?? "Address not recorded"}
@@ -420,13 +426,13 @@ export default function Dashboard({
         </section>
         )}
 
-        {followUpQueue.length === 0 ? (
+        {selectedSeniorQueue.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
             <div className="font-semibold text-gray-900">
-              No seniors currently require follow-up.
+              {senior.name} does not currently require follow-up.
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              The active caregiver queue is clear.
+              No active priority case is open for this selected senior.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {isDemoAdmin && demoMode && (
@@ -450,7 +456,7 @@ export default function Dashboard({
             </div>
           </div>
         ) : (
-          followUpQueue.map((item) => {
+          selectedSeniorQueue.map((item) => {
             const risk = riskConfig[item.riskLevel];
             const selectedCard = item.id === selected?.id;
             const fields = mainQueueCardFields(item);

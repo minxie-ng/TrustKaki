@@ -212,11 +212,17 @@ senior-specific context instead of generic keyword-like assumptions:
 These records are operational support only. They should guide follow-up
 questions and caregiver/AAC action, not diagnose medical conditions.
 
-Phase 7B multi-senior foundation is the next production hardening step. The
-dashboard should read all seniors accessible to the authenticated caregiver,
-aggregate the follow-up queue across those seniors, and use an explicit selected
-senior for messages, traces, alerts, and briefing. Uncle Tan remains the judge
-demo seed, not the production data model.
+Phase 7B multi-senior foundation is partially implemented. The dashboard reads
+all seniors accessible to the authenticated caregiver, aggregates the follow-up
+queue across those seniors, and uses an explicit selected senior for messages,
+traces, alerts, briefing, and the detailed case view. Senior switching uses
+optimistic local selection so the profile changes immediately while Supabase
+hydration completes in the background.
+
+Demo seed profiles should be respectful and realistic rather than generic
+"Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
+Siew Lan, and a high-risk Mdm Siti Fatimah Binte Rahman case to demonstrate
+different household contexts, caregiver relationships, and risk levels.
 
 ## Current caveats
 
@@ -232,7 +238,7 @@ demo seed, not the production data model.
 Verify Phase 7B locally and in production: apply the updated seed, sign in as
 Rachel, confirm the senior coverage strip shows multiple accessible seniors,
 switch selected senior detail context, and confirm the active queue still works
-for Uncle Tan. After that, build caregiver contact preferences and proactive
+for Mr Tan and the red-risk Fatimah profile. After that, build caregiver contact preferences and proactive
 scheduled check-ins.
 
 ## Working rules

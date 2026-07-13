@@ -8,7 +8,11 @@ import SignInForm from "@/components/SignInForm";
 import { demoTraces, dashboardData } from "@/data/demo";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
-import { appShellSurface, dashboardStateEndpoint } from "@/components/dashboardViewModel";
+import {
+  appShellSurface,
+  dashboardStateEndpoint,
+  optimisticDashboardForSenior,
+} from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { AgentTrace, DashboardData, RiskLevel } from "@/lib/types";
 
@@ -86,6 +90,9 @@ export default function Home() {
   const selectSenior = useCallback(
     (seniorId: string) => {
       selectedSeniorIdRef.current = seniorId;
+      setLiveDashboardData((current) =>
+        optimisticDashboardForSenior(current, seniorId)
+      );
       refreshDashboardState(seniorId);
     },
     [refreshDashboardState]

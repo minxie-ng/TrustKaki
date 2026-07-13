@@ -89,6 +89,18 @@ function addressFromSeniorRow(row: { address_text?: string | null }): string | n
   return row.address_text ?? null;
 }
 
+function genderFromSeniorRow(row: {
+  gender?: string | null;
+  external_ref?: string | null;
+  display_name?: string | null;
+}): string | null {
+  if (row.gender) return row.gender;
+  if (row.external_ref === "demo_uncle_tan") return "Male";
+  if (row.external_ref === "demo_aunty_lim") return "Female";
+  if (row.external_ref === "demo_siti_fatimah") return "Female";
+  return null;
+}
+
 async function ensureDemoPeople(client: TrustKakiClient, context?: AgentRunContext) {
   const senior = context?.senior;
   const demoSeniorPhone = normalizePhoneNumber(process.env.TRUSTKAKI_DEMO_SENIOR_PHONE);
@@ -1378,6 +1390,7 @@ export async function readDashboardState(options: {
     senior: {
       name: senior.display_name,
       age: senior.age ?? uncleTan.age,
+      gender: genderFromSeniorRow(senior),
       address: addressFromSeniorRow(senior),
       livingSituation: senior.living_situation ?? uncleTan.livingSituation,
       caregiver,
@@ -1426,6 +1439,7 @@ export async function readDashboardState(options: {
           id: seniorRow.id,
           name: seniorRow.display_name,
           age: seniorRow.age,
+          gender: genderFromSeniorRow(seniorRow),
           address: addressFromSeniorRow(seniorRow),
           livingSituation: seniorRow.living_situation,
           riskLevel: seniorRow.risk_level,

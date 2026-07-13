@@ -942,8 +942,10 @@ Phase 7A implementation note:
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
 TrustKaki must support many seniors and many caregivers/AAC staff concurrently.
-The demo can stay focused on Uncle Tan, but production paths must not assume
-there is only one senior.
+The demo should now show a small but realistic coverage list, not a single
+generic senior. Seed profiles should use respectful full names, gender/context
+for outreach, different household situations, and at least one high-risk case
+so the queue demonstrates real prioritisation.
 
 Phase 7B target:
 
@@ -954,6 +956,8 @@ Phase 7B target:
 5. The API accepts a selected `seniorId` and rejects inaccessible seniors.
 6. Seed data includes more than one senior and more than one caregiver
    relationship.
+7. Senior switching should feel immediate through optimistic local selection,
+   with Supabase hydration updating details in the background.
 
 What this does not finish yet:
 

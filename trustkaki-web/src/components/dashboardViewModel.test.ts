@@ -7,7 +7,9 @@ import {
   containsSensitiveText,
   dashboardStateEndpoint,
   demoEndpoint,
+  followUpQueueForSenior,
   mainQueueCardFields,
+  optimisticDashboardForSenior,
   recentSeniorMessages,
   systemProof,
 } from "./dashboardViewModel";
@@ -61,8 +63,9 @@ const queueItem: FollowUpQueueItem = {
 
 const dashboardData: DashboardData = {
   senior: {
-    name: "Uncle Tan",
+    name: "Mr Tan Ah Hock",
     age: 76,
+    gender: "Male",
     livingSituation: "Lives alone",
     caregiver: "Rachel",
     aacVolunteer: "Mei Ling",
@@ -96,6 +99,35 @@ const dashboardData: DashboardData = {
   ],
   recentAlerts: [],
   followUpQueue: [queueItem],
+  selectedSeniorId: "senior-1",
+  seniors: [
+    {
+      id: "senior-1",
+      name: "Mr Tan Ah Hock",
+      age: 76,
+      gender: "Male",
+      address: "Block 123",
+      livingSituation: "Lives alone",
+      riskLevel: "yellow",
+      lastCheckIn: "2026-07-10T08:00:00.000Z",
+      followUpCount: 1,
+      primaryCaregiver: "Rachel",
+      aacVolunteer: "Mei Ling",
+    },
+    {
+      id: "senior-2",
+      name: "Mdm Lim Siew Lan",
+      age: 81,
+      gender: "Female",
+      address: "Block 218",
+      livingSituation: "Lives with son",
+      riskLevel: "green",
+      lastCheckIn: null,
+      followUpCount: 0,
+      primaryCaregiver: "Daniel Lim",
+      aacVolunteer: "Mei Ling",
+    },
+  ],
 };
 
 describe("dashboard view model", () => {
@@ -136,6 +168,24 @@ describe("dashboard view model", () => {
     });
     expect(JSON.stringify(fields)).not.toContain("pattern-1");
     expect(JSON.stringify(fields)).not.toContain("signal-1");
+  });
+
+  it("optimistically switches selected senior details before the API returns", () => {
+    const next = optimisticDashboardForSenior(dashboardData, "senior-2");
+
+    expect(next.selectedSeniorId).toBe("senior-2");
+    expect(next.senior).toMatchObject({
+      name: "Mdm Lim Siew Lan",
+      gender: "Female",
+      caregiver: "Daniel Lim",
+      riskLevel: "green",
+      lastCheckIn: null,
+    });
+  });
+
+  it("shows only the selected senior's queue case in the detail area", () => {
+    expect(followUpQueueForSenior(dashboardData.followUpQueue, "senior-1")).toHaveLength(1);
+    expect(followUpQueueForSenior(dashboardData.followUpQueue, "senior-2")).toHaveLength(0);
   });
 
   it("provides supporting evidence inputs for the details view", () => {

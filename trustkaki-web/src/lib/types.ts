@@ -42,6 +42,7 @@ export interface Message {
 export interface SeniorProfile {
   name: string;
   age: number;
+  gender?: string | null;
   address?: string | null;
   livingSituation: string;
   caregiver: string;
@@ -54,6 +55,7 @@ export interface SeniorListItem {
   id: string;
   name: string;
   age?: number | null;
+  gender?: string | null;
   address?: string | null;
   livingSituation?: string | null;
   riskLevel: RiskLevel;

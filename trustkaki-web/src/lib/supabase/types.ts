@@ -61,6 +61,7 @@ export interface Database {
           external_ref: string | null;
           display_name: string;
           age: number | null;
+          gender: string | null;
           address_text: string | null;
           living_situation: string | null;
           phone_e164: string | null;
@@ -73,6 +74,7 @@ export interface Database {
           external_ref?: string | null;
           display_name: string;
           age?: number | null;
+          gender?: string | null;
           address_text?: string | null;
           living_situation?: string | null;
           phone_e164?: string | null;

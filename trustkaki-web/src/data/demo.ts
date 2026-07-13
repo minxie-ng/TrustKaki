@@ -8,8 +8,9 @@ import type {
   } from "@/lib/types";
   
   export const uncleTan: SeniorProfile = {
-    name: "Uncle Tan",
+    name: "Mr Tan Ah Hock",
     age: 76,
+    gender: "Male",
     livingSituation: "Lives alone in 3-room HDB, Toa Payoh",
     caregiver: "Rachel (daughter)",
     aacVolunteer: "Mei Ling",
