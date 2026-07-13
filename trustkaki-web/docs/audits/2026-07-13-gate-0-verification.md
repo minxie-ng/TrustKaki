@@ -1,7 +1,9 @@
 # Gate 0 Verification Report
 
-Date: 2026-07-13  
-Branch: `codex/gate-0-audit-remediation`  
+Date: 2026-07-13
+
+Branch: `codex/gate-0-audit-remediation`
+
 Reviewer status: **pending re-audit**
 
 ## Scope
