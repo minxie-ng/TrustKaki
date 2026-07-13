@@ -11,8 +11,9 @@ const auth = {
   caregiverName: "Rachel Tan",
   accessibleSeniorIds: ["senior-1"],
 };
+const accessToken = "verified-access-token";
 
-vi.mock("@/lib/persistence/trustkakiRepository", () => ({
+vi.mock("@/lib/persistence/caregiverCaseRepository", () => ({
   recordCaregiverQueueAction: recordCaregiverQueueActionMock,
 }));
 
@@ -27,11 +28,10 @@ describe("/api/caregiver/queue-action", () => {
     vi.resetModules();
     recordCaregiverQueueActionMock.mockReset();
     requireAuthenticatedCaregiverMock.mockReset();
-    requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth });
+    requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth, accessToken });
     recordCaregiverQueueActionMock.mockResolvedValue({
-      mode: "supabase",
-      configured: true,
-      persisted: true,
+      actorCaregiverId: "caregiver-1",
+      persistence: { mode: "supabase", configured: true, persisted: true },
     });
   });
 
@@ -77,7 +77,7 @@ describe("/api/caregiver/queue-action", () => {
     expect(json.status).toBe("ok");
     expect(recordCaregiverQueueActionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        auth,
+        accessToken,
         queueItemId: "queue_1",
         actionType: "record_outcome",
         outcomeType: "needs_follow_up",

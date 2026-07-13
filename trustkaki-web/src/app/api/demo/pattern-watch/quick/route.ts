@@ -6,9 +6,9 @@ import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
 import { runTriageTimelineAgent } from "@/lib/agents/orchestrator";
 import {
   persistQuickDemoTimelineResult,
-  readDemoDashboardState,
-  resetDemoPersistence,
+  readDashboardState,
 } from "@/lib/persistence/trustkakiRepository";
+import { resetDemoPersistence } from "@/lib/persistence/demoRepository";
 import { DEMO_SENIOR_ID } from "@/lib/persistence/orchestration";
 import type { AgentRunContext } from "@/lib/agents/contracts";
 import type { Message, RiskLevel } from "@/lib/types";
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
   const startedAt = Date.now();
   try {
-    await resetDemoPersistence();
+    await resetDemoPersistence({ accessToken: authResult.accessToken });
 
     const context = contextFor(SCENARIO.length - 1, "green");
     const triageResult = await runTriageTimelineAgent(context);
@@ -86,7 +86,10 @@ export async function POST(request: Request) {
       result: triageResult,
     });
 
-    const state = await readDemoDashboardState();
+    const state = await readDashboardState({
+      auth: authResult.auth,
+      seniorId: DEMO_SENIOR_ID,
+    });
     return NextResponse.json({
       status: "ok",
       demo: "quick",

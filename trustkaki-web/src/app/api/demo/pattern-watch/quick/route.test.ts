@@ -4,7 +4,7 @@ const DEMO_SENIOR_ID = "00000000-0000-4000-8000-000000000001";
 
 const runTriageTimelineAgentMock = vi.fn();
 const persistQuickDemoTimelineResultMock = vi.fn();
-const readDemoDashboardStateMock = vi.fn();
+const readDashboardStateMock = vi.fn();
 const resetDemoPersistenceMock = vi.fn();
 const requireDemoAdminMock = vi.fn();
 
@@ -16,6 +16,7 @@ const auth = {
   caregiverName: "Rachel Tan",
   accessibleSeniorIds: ["00000000-0000-0000-0000-000000000001"],
 };
+const accessToken = "verified-access-token";
 
 vi.mock("@/lib/agents/orchestrator", () => ({
   runTriageTimelineAgent: runTriageTimelineAgentMock,
@@ -23,7 +24,9 @@ vi.mock("@/lib/agents/orchestrator", () => ({
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistQuickDemoTimelineResult: persistQuickDemoTimelineResultMock,
-  readDemoDashboardState: readDemoDashboardStateMock,
+  readDashboardState: readDashboardStateMock,
+}));
+vi.mock("@/lib/persistence/demoRepository", () => ({
   resetDemoPersistence: resetDemoPersistenceMock,
 }));
 
@@ -74,10 +77,10 @@ describe("/api/demo/pattern-watch/quick", () => {
     vi.resetModules();
     runTriageTimelineAgentMock.mockReset();
     persistQuickDemoTimelineResultMock.mockReset();
-    readDemoDashboardStateMock.mockReset();
+    readDashboardStateMock.mockReset();
     resetDemoPersistenceMock.mockReset();
     requireDemoAdminMock.mockReset();
-    requireDemoAdminMock.mockResolvedValue({ ok: true, auth });
+    requireDemoAdminMock.mockResolvedValue({ ok: true, auth, accessToken });
 
     resetDemoPersistenceMock.mockResolvedValue({
       mode: "supabase",
@@ -89,7 +92,7 @@ describe("/api/demo/pattern-watch/quick", () => {
       configured: true,
       persisted: true,
     });
-    readDemoDashboardStateMock.mockResolvedValue({
+    readDashboardStateMock.mockResolvedValue({
       persistence: { mode: "supabase", configured: true, persisted: true },
       data: {
         followUpQueue: [],
@@ -124,6 +127,11 @@ describe("/api/demo/pattern-watch/quick", () => {
     expect(persistQuickDemoTimelineResultMock).toHaveBeenCalledWith(
       expect.objectContaining({ seniorId: DEMO_SENIOR_ID })
     );
+    expect(resetDemoPersistenceMock).toHaveBeenCalledWith({ accessToken });
+    expect(readDashboardStateMock).toHaveBeenCalledWith({
+      auth,
+      seniorId: DEMO_SENIOR_ID,
+    });
   });
 
   it("uses one timeline extraction call for faster quick demo timing", async () => {

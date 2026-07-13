@@ -5,7 +5,7 @@ import {
   authJsonError,
   requireAuthenticatedCaregiver,
 } from "@/lib/auth/session";
-import { recordCaregiverQueueAction } from "@/lib/persistence/trustkakiRepository";
+import { recordCaregiverQueueAction } from "@/lib/persistence/caregiverCaseRepository";
 
 export const runtime = "nodejs";
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const body = parsed.data;
 
     const persistence = await recordCaregiverQueueAction({
-      auth: authResult.auth,
+      accessToken: authResult.accessToken,
       queueItemId: body.queueItemId,
       actionType: body.actionType,
       outcomeType: body.outcomeType ?? null,
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       snoozedUntil: body.snoozedUntil ?? null,
     });
 
-    return NextResponse.json({ status: "ok", persistence });
+    return NextResponse.json({ status: "ok", ...persistence });
   } catch (error) {
     return jsonError("Failed to record caregiver action", { error, status: 500 });
   }

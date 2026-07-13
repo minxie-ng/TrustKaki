@@ -11,8 +11,9 @@ const auth = {
   caregiverName: "Rachel Tan",
   accessibleSeniorIds: ["00000000-0000-0000-0000-000000000001"],
 };
+const accessToken = "verified-access-token";
 
-vi.mock("@/lib/persistence/trustkakiRepository", () => ({
+vi.mock("@/lib/persistence/demoRepository", () => ({
   resetDemoPersistence: resetDemoPersistenceMock,
 }));
 
@@ -27,7 +28,7 @@ describe("/api/demo/reset", () => {
     vi.resetModules();
     resetDemoPersistenceMock.mockReset();
     requireDemoAdminMock.mockReset();
-    requireDemoAdminMock.mockResolvedValue({ ok: true, auth });
+    requireDemoAdminMock.mockResolvedValue({ ok: true, auth, accessToken });
   });
 
   it("requires demo_admin authorization", async () => {
@@ -57,7 +58,7 @@ describe("/api/demo/reset", () => {
 
     expect(response.status).toBe(200);
     expect(json.persistence.persisted).toBe(true);
-    expect(resetDemoPersistenceMock).toHaveBeenCalledTimes(1);
+    expect(resetDemoPersistenceMock).toHaveBeenCalledWith({ accessToken });
   });
 
   it("returns a safe error when reset fails", async () => {

@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 
 const orchestrateMock = vi.fn();
 const persistOrchestrationResultMock = vi.fn();
-const readDemoDashboardStateMock = vi.fn();
+const readDashboardStateMock = vi.fn();
 const resetDemoPersistenceMock = vi.fn();
 const requireDemoAdminMock = vi.fn();
 
@@ -18,6 +18,7 @@ const auth = {
   caregiverName: "Rachel Tan",
   accessibleSeniorIds: ["00000000-0000-0000-0000-000000000001"],
 };
+const accessToken = "verified-access-token";
 
 vi.mock("@/lib/agents/orchestrator", () => ({
   orchestrate: orchestrateMock,
@@ -25,7 +26,9 @@ vi.mock("@/lib/agents/orchestrator", () => ({
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistOrchestrationResult: persistOrchestrationResultMock,
-  readDemoDashboardState: readDemoDashboardStateMock,
+  readDashboardState: readDashboardStateMock,
+}));
+vi.mock("@/lib/persistence/demoRepository", () => ({
   resetDemoPersistence: resetDemoPersistenceMock,
 }));
 
@@ -42,10 +45,10 @@ describe("/api/demo/pattern-watch full replay", () => {
     vi.resetModules();
     orchestrateMock.mockReset();
     persistOrchestrationResultMock.mockReset();
-    readDemoDashboardStateMock.mockReset();
+    readDashboardStateMock.mockReset();
     resetDemoPersistenceMock.mockReset();
     requireDemoAdminMock.mockReset();
-    requireDemoAdminMock.mockResolvedValue({ ok: true, auth });
+    requireDemoAdminMock.mockResolvedValue({ ok: true, auth, accessToken });
     vi.unstubAllEnvs();
     if (originalFullReplay === undefined) {
       delete process.env.ENABLE_FULL_AGENT_REPLAY;
@@ -83,7 +86,7 @@ describe("/api/demo/pattern-watch full replay", () => {
       policy: { finalRisk: "yellow" },
       signals: [{ type: "health" }],
     });
-    readDemoDashboardStateMock.mockResolvedValue({
+    readDashboardStateMock.mockResolvedValue({
       persistence: { mode: "supabase", configured: true, persisted: true },
       data: { followUpQueue: [] },
     });
@@ -98,6 +101,11 @@ describe("/api/demo/pattern-watch full replay", () => {
     expect(persistOrchestrationResultMock).toHaveBeenCalledWith(
       expect.objectContaining({ seniorId: DEMO_SENIOR_ID })
     );
+    expect(resetDemoPersistenceMock).toHaveBeenCalledWith({ accessToken });
+    expect(readDashboardStateMock).toHaveBeenCalledWith({
+      auth,
+      seniorId: DEMO_SENIOR_ID,
+    });
     expect(json.warning).toContain("Full Agent Replay may take over one minute");
   });
 });

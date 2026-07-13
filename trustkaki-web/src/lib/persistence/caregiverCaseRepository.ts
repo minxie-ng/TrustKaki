@@ -1,0 +1,108 @@
+import "server-only";
+
+import { z } from "zod";
+import type { CaregiverActionType, ContactOutcome, QueueStatus } from "@/lib/supabase/types";
+import { createTrustKakiUserClient } from "@/lib/supabase/server";
+import type { PersistenceMeta } from "./orchestration";
+
+const resultSchema = z.object({
+  queue_item_id: z.string(),
+  senior_id: z.string(),
+  actor_caregiver_id: z.string(),
+  assigned_caregiver_id: z.string().nullable(),
+  previous_status: z.enum([
+    "pending",
+    "acknowledged",
+    "followed_up",
+    "snoozed",
+    "resolved",
+  ]),
+  resulting_status: z.enum([
+    "pending",
+    "acknowledged",
+    "followed_up",
+    "snoozed",
+    "resolved",
+  ]),
+});
+
+function localDemoMeta(): PersistenceMeta {
+  return {
+    mode: "local_demo",
+    configured: false,
+    persisted: false,
+    reason: "Supabase env vars are not configured. Caregiver action was not persisted.",
+  };
+}
+
+export interface CaregiverQueueActionResult {
+  queueItemId: string | null;
+  seniorId: string | null;
+  actorCaregiverId: string | null;
+  assignedCaregiverId: string | null;
+  previousStatus: QueueStatus | null;
+  resultingStatus: QueueStatus | null;
+  persistence: PersistenceMeta;
+}
+
+export async function recordCaregiverQueueAction(args: {
+  accessToken: string;
+  queueItemId: string;
+  actionType: CaregiverActionType;
+  outcomeType?: ContactOutcome | null;
+  note?: string | null;
+  assignedCaregiverId?: string | null;
+  snoozedUntil?: string | null;
+}): Promise<CaregiverQueueActionResult> {
+  const client = createTrustKakiUserClient(args.accessToken);
+  if (!client) {
+    return {
+      queueItemId: null,
+      seniorId: null,
+      actorCaregiverId: null,
+      assignedCaregiverId: null,
+      previousStatus: null,
+      resultingStatus: null,
+      persistence: localDemoMeta(),
+    };
+  }
+
+  type RpcArgs = {
+      p_queue_item_id: string;
+      p_action_type: CaregiverActionType;
+      p_outcome_type: ContactOutcome | null;
+      p_note: string | null;
+      p_assigned_caregiver_id: string | null;
+      p_snoozed_until: string | null;
+  };
+  // supabase-js 2.110 mis-infers defaulted RPC arguments as `never` for this
+  // hand-maintained database type; the response is still validated below.
+  const rpcClient = client as unknown as {
+    rpc: (
+      name: "record_caregiver_queue_action",
+      payload: RpcArgs
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+  const { data, error } = await rpcClient.rpc("record_caregiver_queue_action", {
+    p_queue_item_id: args.queueItemId,
+    p_action_type: args.actionType,
+    p_outcome_type: args.outcomeType ?? null,
+    p_note: args.note ?? null,
+    p_assigned_caregiver_id: args.assignedCaregiverId ?? null,
+    p_snoozed_until: args.snoozedUntil ?? null,
+  });
+  if (error) throw new Error("record caregiver queue action failed");
+
+  const parsed = resultSchema.safeParse(data);
+  if (!parsed.success) throw new Error("record caregiver queue action failed");
+
+  return {
+    queueItemId: parsed.data.queue_item_id,
+    seniorId: parsed.data.senior_id,
+    actorCaregiverId: parsed.data.actor_caregiver_id,
+    assignedCaregiverId: parsed.data.assigned_caregiver_id,
+    previousStatus: parsed.data.previous_status,
+    resultingStatus: parsed.data.resulting_status,
+    persistence: { mode: "supabase", configured: true, persisted: true },
+  };
+}
