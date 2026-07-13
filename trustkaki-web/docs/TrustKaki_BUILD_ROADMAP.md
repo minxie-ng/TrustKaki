@@ -958,17 +958,22 @@ Phase 7B target:
    relationship.
 7. Senior switching should feel immediate through optimistic local selection,
    with Supabase hydration updating details in the background.
+8. Shared-caregiver dashboard state should stay reasonably fresh through
+   authenticated lightweight polling and refresh-on-focus while the app remains
+   simple enough for the hackathon build.
 
 What this does not finish yet:
 
 - organisation/AAC centre tenancy
 - caregiver notification preferences
+- true Supabase Realtime subscriptions for sub-second multi-user updates
 - multi-recipient WhatsApp outbound fan-out
 - consent and escalation policies
 - production caregiver roster management
 
 Those should be built before broad pilots, but Phase 7B gives the app the right
-shape for concurrent real use.
+shape for concurrent real use. The current sync layer is persisted and
+multi-user aware, but it is not yet a live collaborative websocket experience.
 
 ## 17. Build Rules
 

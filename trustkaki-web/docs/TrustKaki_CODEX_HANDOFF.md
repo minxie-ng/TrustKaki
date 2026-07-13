@@ -219,6 +219,12 @@ traces, alerts, briefing, and the detailed case view. Senior switching uses
 optimistic local selection so the profile changes immediately while Supabase
 hydration completes in the background.
 
+Shared caregiver sync currently uses authenticated lightweight dashboard
+polling every 20 seconds plus refresh-on-focus. This means another caregiver's
+persisted queue update appears after the next poll or when the tab is refocused.
+It is not yet Supabase Realtime; add subscriptions later before broad pilots if
+sub-second collaborative updates are required.
+
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
 Siew Lan, and a high-risk Mdm Siti Fatimah Binte Rahman case to demonstrate
@@ -238,8 +244,10 @@ different household contexts, caregiver relationships, and risk levels.
 Verify Phase 7B locally and in production: apply the updated seed, sign in as
 Rachel, confirm the senior coverage strip shows multiple accessible seniors,
 switch selected senior detail context, and confirm the active queue still works
-for Mr Tan and the red-risk Fatimah profile. After that, build caregiver contact preferences and proactive
-scheduled check-ins.
+for Mr Tan and the red-risk Fatimah profile. Confirm shared-caregiver polling by
+opening two signed-in sessions and checking that an action in one appears in the
+other within the polling window or after refocus. After that, build caregiver
+contact preferences and proactive scheduled check-ins.
 
 ## Working rules
 - inspect before modifying

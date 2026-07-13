@@ -11,7 +11,9 @@ import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
 import {
   appShellSurface,
   dashboardStateEndpoint,
+  dashboardSyncIntervalMs,
   optimisticDashboardForSenior,
+  shouldPollDashboard,
 } from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { AgentTrace, DashboardData, RiskLevel } from "@/lib/types";
@@ -125,11 +127,31 @@ export default function Home() {
 
   useEffect(() => {
     if (!authToken) return;
-    const timer = window.setTimeout(() => {
-      refreshDashboardState();
-    }, 0);
 
-    return () => window.clearTimeout(timer);
+    const refreshIfVisible = () => {
+      if (
+        shouldPollDashboard({
+          hasAuthToken: Boolean(authToken),
+          visibilityState: document.visibilityState,
+        })
+      ) {
+        refreshDashboardState();
+      }
+    };
+
+    const initialTimer = window.setTimeout(refreshIfVisible, 0);
+    const interval = window.setInterval(
+      refreshIfVisible,
+      dashboardSyncIntervalMs
+    );
+
+    window.addEventListener("focus", refreshIfVisible);
+
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshIfVisible);
+    };
   }, [authToken, refreshDashboardState]);
 
   async function signIn(email: string, password: string) {

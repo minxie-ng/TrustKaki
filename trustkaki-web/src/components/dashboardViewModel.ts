@@ -17,6 +17,14 @@ export const demoProgressSteps = [
 ] as const;
 
 export const advancedTraceDefaultOpen = false;
+export const dashboardSyncIntervalMs = 20_000;
+
+export function shouldPollDashboard(args: {
+  hasAuthToken: boolean;
+  visibilityState?: DocumentVisibilityState;
+}): boolean {
+  return args.hasAuthToken && args.visibilityState !== "hidden";
+}
 
 export function appShellSurface(args: { isDemoAdmin: boolean; demoMode: boolean }) {
   return {

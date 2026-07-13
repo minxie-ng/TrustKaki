@@ -7,12 +7,14 @@ import {
   canSubmit,
   containsSensitiveText,
   dashboardStateEndpoint,
+  dashboardSyncIntervalMs,
   demoEndpoint,
   followUpQueueForSenior,
   mainQueueCardFields,
   optimisticDashboardForSenior,
   recentSeniorMessages,
   selectedQueueItem,
+  shouldPollDashboard,
   systemProof,
 } from "./dashboardViewModel";
 
@@ -157,6 +159,13 @@ describe("dashboard view model", () => {
     expect(dashboardStateEndpoint("senior 2")).toBe(
       "/api/dashboard/state?seniorId=senior%202"
     );
+  });
+
+  it("uses lightweight polling for shared caregiver dashboard sync", () => {
+    expect(dashboardSyncIntervalMs).toBe(20_000);
+    expect(shouldPollDashboard({ hasAuthToken: true, visibilityState: "visible" })).toBe(true);
+    expect(shouldPollDashboard({ hasAuthToken: true, visibilityState: "hidden" })).toBe(false);
+    expect(shouldPollDashboard({ hasAuthToken: false, visibilityState: "visible" })).toBe(false);
   });
 
   it("exposes concise queue card fields without internal ids", () => {
