@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# isolated Codex implementation worktrees
+.worktrees/
+
 # supabase local cli state
 supabase/.temp/
 
