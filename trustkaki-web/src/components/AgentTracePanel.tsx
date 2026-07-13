@@ -2,6 +2,7 @@
 
 import type { AgentTrace } from "@/lib/types";
 import {
+  formatAgentInputForCaregiver,
   formatAgentOutputForCaregiver,
   formatStateChangeForCaregiver,
 } from "./agentTraceViewModel";
@@ -74,11 +75,13 @@ export default function AgentTracePanel({ traces, visible, onToggle }: AgentTrac
 
               <div className="space-y-1.5">
                 <div>
-                  <span className="font-semibold">Input summary:</span>
-                  <p className="mt-0.5 opacity-90">{trace.inputSummary ?? "No summary available"}</p>
+                  <span className="font-semibold">What it reviewed:</span>
+                  <p className="mt-0.5 opacity-90">
+                    {formatAgentInputForCaregiver(trace)}
+                  </p>
                 </div>
                 <div>
-                  <span className="font-semibold">Caregiver-readable result:</span>
+                  <span className="font-semibold">Result:</span>
                   <p className="mt-0.5 opacity-90 leading-relaxed">
                     {formatAgentOutputForCaregiver(trace)}
                   </p>

@@ -1,10 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatAgentInputForCaregiver,
   formatAgentOutputForCaregiver,
   formatStateChangeForCaregiver,
 } from "./agentTraceViewModel";
 
 describe("agent trace caregiver formatting", () => {
+  it("turns raw JSON agent input into a plain summary", () => {
+    const formatted = formatAgentInputForCaregiver({
+      input:
+        '{"messages":[{"messageId":"quick_pattern_demo_day_1","signals":[{"description":"Knee pain while walking."}]}]}',
+      inputSummary: '{"messages":[{"messageId":"quick_pattern_demo_day_1"}]}',
+    });
+
+    expect(formatted).toContain("Knee pain while walking.");
+    expect(formatted).not.toContain("{");
+    expect(formatted).not.toContain("quick_pattern_demo_day_1");
+  });
+
   it("uses the output summary when present", () => {
     expect(
       formatAgentOutputForCaregiver({

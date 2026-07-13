@@ -18,6 +18,15 @@ export const demoProgressSteps = [
 
 export const advancedTraceDefaultOpen = false;
 
+export function appShellSurface(args: { isDemoAdmin: boolean; demoMode: boolean }) {
+  return {
+    showChatSimulator: false,
+    showReasoningRail: false,
+    showDemoControls: args.isDemoAdmin && args.demoMode,
+    proofPlacement: "collapsed_details" as const,
+  };
+}
+
 export function demoEndpoint(mode: DemoMode): string {
   return mode === "quick"
     ? "/api/demo/pattern-watch/quick"

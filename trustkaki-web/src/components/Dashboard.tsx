@@ -225,15 +225,18 @@ export default function Dashboard({
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <main className="flex flex-col h-full bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-5 py-5 shrink-0">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="font-bold text-2xl text-gray-950">
-              Who may need attention today?
+            <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Today&apos;s follow-up queue
+            </div>
+            <h2 className="mt-1 font-bold text-3xl text-gray-950 tracking-tight">
+              Who needs human attention?
             </h2>
             <p className="mt-1 text-sm text-gray-500">
-              Ordered by risk, active patterns, response change, and unresolved follow-up.
+              Prioritised by risk, pattern changes, response gaps, and unresolved follow-up.
             </p>
           </div>
           {demoProgress && isDemoAdmin && demoMode && (
@@ -243,14 +246,14 @@ export default function Dashboard({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-screen-2xl space-y-5 p-4 md:p-6">
+        <div className="mx-auto w-full max-w-7xl space-y-5 p-4 md:p-6">
         {seniors.length > 1 && (
-          <section className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-gray-950">Seniors covered</h3>
+                <h3 className="text-lg font-bold text-gray-950">Seniors covered</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Shared queue across assigned seniors and caregivers.
+                  Select a senior to review their current follow-up context.
                 </p>
               </div>
               <div className="text-xs text-gray-500">
@@ -268,8 +271,8 @@ export default function Dashboard({
                     onClick={() => onSelectSenior?.(item.id)}
                     disabled={busyAction !== null}
                     aria-pressed={selectedSenior}
-                    className={`text-left border rounded-lg p-4 transition disabled:opacity-50 hover:border-gray-400 hover:shadow-sm ${
-                      selectedSenior ? "border-gray-900 bg-gray-50 shadow-sm" : "border-gray-200"
+                    className={`text-left border rounded-xl p-4 transition disabled:opacity-50 hover:border-emerald-400 hover:shadow-sm ${
+                      selectedSenior ? "border-emerald-500 bg-emerald-50 shadow-sm" : "border-gray-200 bg-white"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -279,7 +282,7 @@ export default function Dashboard({
                       </span>
                     </div>
                     {selectedSenior && (
-                      <div className="mt-2 text-[11px] font-semibold text-gray-700">
+                      <div className="mt-2 text-[11px] font-semibold text-emerald-700">
                         Selected
                       </div>
                     )}
@@ -299,7 +302,7 @@ export default function Dashboard({
           </section>
         )}
 
-        <section className="border border-emerald-200 bg-emerald-50 rounded-xl p-5 shadow-sm">
+        <section className="border border-gray-200 bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -316,25 +319,25 @@ export default function Dashboard({
               </div>
             </div>
             <div className="grid gap-3 text-sm text-gray-700 sm:grid-cols-2 md:min-w-96">
-              <div className="rounded-lg bg-white/70 p-3">
+              <div className="rounded-xl bg-gray-50 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   Primary caregiver
                 </div>
                 <div className="mt-1 font-semibold text-gray-900">{selectedSenior?.primaryCaregiver ?? senior.caregiver}</div>
               </div>
-              <div className="rounded-lg bg-white/70 p-3">
+              <div className="rounded-xl bg-gray-50 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   AAC volunteer
                 </div>
                 <div className="mt-1 font-semibold text-gray-900">{selectedSenior?.aacVolunteer ?? senior.aacVolunteer}</div>
               </div>
-              <div className="rounded-lg bg-white/70 p-3">
+              <div className="rounded-xl bg-gray-50 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   Current risk
                 </div>
                 <div className="mt-1 font-semibold text-gray-900">{riskConfig[senior.riskLevel].label}</div>
               </div>
-              <div className="rounded-lg bg-white/70 p-3">
+              <div className="rounded-xl bg-gray-50 p-3">
                 <div className="text-xs font-semibold text-gray-500">
                   Last response
                 </div>
@@ -345,16 +348,16 @@ export default function Dashboard({
         </section>
 
         {isDemoAdmin && demoMode && (
-        <section className="bg-white border rounded-lg p-4">
+        <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Judge View
               </div>
-              <h3 className="mt-1 font-bold text-gray-900">
+              <h3 className="mt-1 text-xl font-bold text-gray-950">
                 One-minute TrustKaki demo flow
               </h3>
-              <ol className="mt-2 grid gap-1 text-sm text-gray-700 sm:grid-cols-2">
+              <ol className="mt-3 grid gap-1.5 text-sm text-gray-700 sm:grid-cols-2">
                 <li>1. Reset demo</li>
                 <li>2. Run Quick Demo</li>
                 <li>3. Review four-day senior timeline</li>
@@ -369,14 +372,14 @@ export default function Dashboard({
               <button
                 onClick={() => runPatternDemo("quick")}
                 disabled={busyAction !== null}
-                className="text-sm font-semibold bg-gray-900 text-white px-4 py-2 rounded-md disabled:opacity-50"
+                className="text-sm font-semibold bg-gray-900 text-white px-4 py-3 rounded-lg disabled:opacity-50"
               >
                 Start Quick Demo
               </button>
               <button
                 onClick={resetDemo}
                 disabled={busyAction !== null}
-                className="text-sm font-semibold border px-4 py-2 rounded-md disabled:opacity-50"
+                className="text-sm font-semibold border border-gray-300 px-4 py-2 rounded-lg disabled:opacity-50"
               >
                 Reset demo
               </button>
@@ -387,7 +390,7 @@ export default function Dashboard({
                 <button
                   onClick={() => runPatternDemo("full")}
                   disabled={busyAction !== null}
-                  className="mt-2 w-full text-sm font-semibold border px-4 py-2 rounded-md disabled:opacity-50"
+                  className="mt-2 w-full text-sm font-semibold border border-gray-300 px-4 py-2 rounded-lg disabled:opacity-50"
                 >
                   Run Full Agent Replay
                 </button>
@@ -418,7 +421,7 @@ export default function Dashboard({
         )}
 
         {followUpQueue.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
             <div className="font-semibold text-gray-900">
               No seniors currently require follow-up.
             </div>
@@ -454,7 +457,7 @@ export default function Dashboard({
             return (
               <div
                 key={item.id}
-                className={`bg-white border border-l-4 rounded-xl p-5 shadow-sm ${
+                className={`bg-white border border-l-4 rounded-2xl p-6 shadow-sm ${
                   risk.border
                 } ${
                   selectedCard ? "border-gray-300 shadow-md" : "border-gray-200"
@@ -465,23 +468,23 @@ export default function Dashboard({
                     <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Priority case
                     </div>
-                    <div className="mt-1 text-xl font-bold text-gray-950">{fields.seniorName}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded ${risk.bg} ${risk.text}`}>
+                    <div className="mt-1 text-2xl font-bold text-gray-950">{fields.seniorName}</div>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${risk.bg} ${risk.text}`}>
                         {risk.label}
                       </span>
-                      <span className="text-xs text-gray-600">{item.headline}</span>
+                      <span className="text-sm font-medium text-gray-700">{item.headline}</span>
                     </div>
                   </div>
-                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                  <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
                     {statusLabel[item.status]}
                   </span>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4 mt-5 text-sm">
+                <div className="grid md:grid-cols-2 gap-5 mt-6 text-sm">
                   <div>
                     <div className="text-xs font-semibold text-gray-500">Why</div>
-                    <div className="mt-1 text-base font-semibold text-gray-950">{fields.reason}</div>
+                    <div className="mt-1 text-lg font-bold leading-snug text-gray-950">{fields.reason}</div>
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-gray-500">Change</div>
@@ -497,7 +500,7 @@ export default function Dashboard({
                   </div>
                 </div>
 
-                <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4">
                   <div className="text-xs font-semibold text-gray-500">Suggested action</div>
                   <div className="mt-1 text-base font-semibold text-gray-950">{fields.recommendedAction}</div>
                 </div>
@@ -514,7 +517,7 @@ export default function Dashboard({
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button
                     onClick={() => setManualSelectedId(selectedCard ? null : item.id)}
-                    className="text-xs font-semibold bg-gray-900 text-white px-3 py-2 rounded-md"
+                    className="text-sm font-semibold bg-gray-900 text-white px-4 py-2 rounded-lg"
                   >
                     {selectedCard ? "Hide details" : "View details"}
                   </button>
@@ -525,14 +528,14 @@ export default function Dashboard({
                         note: "Needs another human check-in.",
                       })
                     }
-                    className="text-xs font-semibold border px-3 py-2 rounded-md"
+                    className="text-sm font-semibold border border-gray-300 px-4 py-2 rounded-lg"
                     disabled={busyAction !== null}
                   >
                     Record outcome
                   </button>
                   <button
                     onClick={() => postAction(item, "resolve")}
-                    className="text-xs font-semibold border px-3 py-2 rounded-md"
+                    className="text-sm font-semibold border border-gray-300 px-4 py-2 rounded-lg"
                     disabled={busyAction !== null}
                   >
                     Resolve
@@ -717,6 +720,6 @@ export default function Dashboard({
         </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

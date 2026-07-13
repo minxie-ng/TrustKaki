@@ -3,14 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import NavBar from "@/components/NavBar";
-import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
-import AgentTracePanel from "@/components/AgentTracePanel";
 import SignInForm from "@/components/SignInForm";
-import { demoMessages, demoTraces, dashboardData } from "@/data/demo";
+import { demoTraces, dashboardData } from "@/data/demo";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
-import { dashboardStateEndpoint } from "@/components/dashboardViewModel";
+import { appShellSurface, dashboardStateEndpoint } from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { AgentTrace, DashboardData, RiskLevel } from "@/lib/types";
 
@@ -32,7 +30,6 @@ export default function Home() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("green");
-  const [traceVisible, setTraceVisible] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
     useState<DashboardData>(dashboardData);
@@ -40,12 +37,10 @@ export default function Home() {
   const [liveBriefing, setLiveBriefing] = useState<BriefingOutput | null>(null);
   const selectedSeniorIdRef = useRef<string | null>(null);
   const dashboardRequestSeq = useRef(0);
-  const latestSession = liveDashboardData.activeSessions[0];
-  const chatMessages =
-    latestSession?.messages.length > 0 ? latestSession.messages : demoMessages;
   const authToken = session?.access_token ?? null;
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
+  const surface = appShellSurface({ isDemoAdmin, demoMode });
 
   const handleUnauthorized = useCallback(() => {
     const client = createTrustKakiBrowserClient();
@@ -95,11 +90,6 @@ export default function Home() {
     },
     [refreshDashboardState]
   );
-
-  const handleCheckinComplete = () => {
-    setRiskLevel("yellow");
-    refreshDashboardState();
-  };
 
   useEffect(() => {
     const client = createTrustKakiBrowserClient();
@@ -188,17 +178,6 @@ export default function Home() {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        {demoMode && (
-        <div className="hidden flex-col flex-1 border-r border-gray-200 md:flex md:max-w-md">
-          <ChatSimulation
-            messages={chatMessages}
-            onComplete={handleCheckinComplete}
-            authToken={authToken}
-            onUnauthorized={handleUnauthorized}
-          />
-        </div>
-        )}
-
         <div className="flex flex-col flex-1">
           <Dashboard
             data={liveDashboardData}
@@ -207,32 +186,12 @@ export default function Home() {
             onRefresh={refreshDashboardState}
             authToken={authToken}
             isDemoAdmin={isDemoAdmin}
-            demoMode={demoMode}
+            demoMode={surface.showDemoControls}
             onUnauthorized={handleUnauthorized}
             onSelectSenior={selectSenior}
           />
         </div>
-
-        {demoMode && (
-        <div className="hidden lg:flex flex-col w-96 border-l border-gray-200">
-          <AgentTracePanel
-            traces={liveTraces}
-            visible={traceVisible}
-            onToggle={() => setTraceVisible(!traceVisible)}
-          />
-        </div>
-        )}
       </div>
-
-      {demoMode && (
-      <div className="lg:hidden">
-        <AgentTracePanel
-          traces={liveTraces}
-          visible={traceVisible}
-          onToggle={() => setTraceVisible(!traceVisible)}
-        />
-      </div>
-      )}
     </div>
   );
 }

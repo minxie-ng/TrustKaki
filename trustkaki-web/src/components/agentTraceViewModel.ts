@@ -1,4 +1,6 @@
 interface AgentOutputFormatInput {
+  inputSummary?: string | null;
+  input?: string | null;
   outputSummary?: string | null;
   output?: string | null;
 }
@@ -39,9 +41,40 @@ function collectSignalDescriptions(value: unknown): string[] {
   ];
 }
 
+function readableSummaryFromParsed(value: unknown): string | null {
+  const signalText = collectSignalDescriptions(value).slice(0, 3);
+  if (signalText.length > 0) return signalText.join(" ");
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const parts = [
+    record.summary,
+    record.message,
+    record.text,
+    record.recommendedAction,
+    record.route ? `Route: ${String(record.route).replaceAll("_", " ")}.` : null,
+  ].filter((item): item is string => typeof item === "string" && item.length > 0);
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
 function riskText(value: unknown): string | null {
   if (typeof value !== "string" || value.length === 0) return null;
   return `Risk level: ${value}.`;
+}
+
+export function formatAgentInputForCaregiver(input: AgentOutputFormatInput): string {
+  const summary = input.inputSummary?.trim();
+  if (summary && !looksTechnical(summary)) return summary;
+
+  const rawInput = input.input?.trim();
+  if (!rawInput) return "Relevant senior context and recent messages.";
+  if (!looksTechnical(rawInput)) return rawInput;
+
+  try {
+    const parsed = JSON.parse(rawInput) as unknown;
+    return readableSummaryFromParsed(parsed) ?? "Relevant senior context and recent messages.";
+  } catch {
+    return "Relevant senior context and recent messages.";
+  }
 }
 
 export function formatAgentOutputForCaregiver(input: AgentOutputFormatInput): string {

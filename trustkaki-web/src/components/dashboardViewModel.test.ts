@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AgentTrace, DashboardData, FollowUpQueueItem } from "@/lib/types";
 import {
   advancedTraceDefaultOpen,
+  appShellSurface,
   canSubmit,
   containsSensitiveText,
   dashboardStateEndpoint,
@@ -98,6 +99,20 @@ const dashboardData: DashboardData = {
 };
 
 describe("dashboard view model", () => {
+  it("keeps caregiver and judge surfaces focused on the dashboard", () => {
+    expect(appShellSurface({ isDemoAdmin: false, demoMode: false })).toMatchObject({
+      showChatSimulator: false,
+      showReasoningRail: false,
+      showDemoControls: false,
+    });
+    expect(appShellSurface({ isDemoAdmin: true, demoMode: true })).toMatchObject({
+      showChatSimulator: false,
+      showReasoningRail: false,
+      showDemoControls: true,
+      proofPlacement: "collapsed_details",
+    });
+  });
+
   it("uses the real Quick Demo endpoint", () => {
     expect(demoEndpoint("quick")).toBe("/api/demo/pattern-watch/quick");
     expect(demoEndpoint("full")).toBe("/api/demo/pattern-watch");
