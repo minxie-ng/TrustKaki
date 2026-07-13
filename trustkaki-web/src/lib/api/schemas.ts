@@ -43,6 +43,28 @@ export const queueActionRequestSchema = z.object({
   note: z.string().max(500).optional(),
   assignedCaregiverId: z.string().trim().min(1).max(120).optional(),
   snoozedUntil: z.string().trim().min(1).max(80).optional(),
+}).superRefine((value, ctx) => {
+  const actionNeedsOutcome = value.actionType === "record_outcome" || value.actionType === "resolve";
+  const actionNeedsNote =
+    value.actionType === "record_outcome" ||
+    value.actionType === "snooze" ||
+    value.actionType === "resolve";
+
+  if (actionNeedsOutcome && !value.outcomeType) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Outcome type is required for this action.",
+      path: ["outcomeType"],
+    });
+  }
+
+  if (actionNeedsNote && (value.note?.trim().length ?? 0) < 10) {
+    ctx.addIssue({
+      code: "custom",
+      message: "A short note is required for this action.",
+      path: ["note"],
+    });
+  }
 });
 
 export async function parseJsonBody<T>(

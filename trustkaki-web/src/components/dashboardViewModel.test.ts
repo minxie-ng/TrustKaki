@@ -11,6 +11,7 @@ import {
   mainQueueCardFields,
   optimisticDashboardForSenior,
   recentSeniorMessages,
+  selectedQueueItem,
   systemProof,
 } from "./dashboardViewModel";
 
@@ -186,6 +187,14 @@ describe("dashboard view model", () => {
   it("shows only the selected senior's queue case in the detail area", () => {
     expect(followUpQueueForSenior(dashboardData.followUpQueue, "senior-1")).toHaveLength(1);
     expect(followUpQueueForSenior(dashboardData.followUpQueue, "senior-2")).toHaveLength(0);
+  });
+
+  it("allows details to stay collapsed after the caregiver hides them", () => {
+    expect(selectedQueueItem(dashboardData.followUpQueue, queueItem.id)?.id).toBe(
+      queueItem.id
+    );
+    expect(selectedQueueItem(dashboardData.followUpQueue, null)).toBeNull();
+    expect(selectedQueueItem(dashboardData.followUpQueue, "missing")).toBeNull();
   });
 
   it("provides supporting evidence inputs for the details view", () => {

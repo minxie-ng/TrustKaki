@@ -75,6 +75,14 @@ export function followUpQueueForSenior(
   return queue.filter((item) => item.seniorId === seniorId);
 }
 
+export function selectedQueueItem(
+  queue: FollowUpQueueItem[],
+  selectedId: string | null
+): FollowUpQueueItem | null {
+  if (!selectedId) return null;
+  return queue.find((item) => item.id === selectedId) ?? null;
+}
+
 export function concise(text: string, max = 120): string {
   return text.length > max ? `${text.slice(0, max - 3)}...` : text;
 }

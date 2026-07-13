@@ -62,7 +62,9 @@ describe("API request schemas", () => {
     expect(
       queueActionRequestSchema.safeParse({
         queueItemId: "queue-1",
-        actionType: "resolve",
+        actionType: "record_outcome",
+        outcomeType: "needs_follow_up",
+        note: "Rachel will call after work today.",
       }).success
     ).toBe(true);
     expect(
@@ -72,6 +74,38 @@ describe("API request schemas", () => {
         note: "x".repeat(501),
       }).success
     ).toBe(false);
+  });
+
+  it("requires an audit note when snoozing or resolving a queue case", () => {
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        actionType: "snooze",
+        snoozedUntil: "2026-07-14T10:00:00.000Z",
+      }).success
+    ).toBe(false);
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        actionType: "snooze",
+        note: "Handling a Red case first; will call after medication round.",
+        snoozedUntil: "2026-07-14T10:00:00.000Z",
+      }).success
+    ).toBe(true);
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        actionType: "resolve",
+      }).success
+    ).toBe(false);
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        actionType: "resolve",
+        outcomeType: "reached_and_okay",
+        note: "Rachel spoke to him. He ate lunch and does not need further support today.",
+      }).success
+    ).toBe(true);
   });
 
   it("validates specialist agent requests with optional triage signals", () => {

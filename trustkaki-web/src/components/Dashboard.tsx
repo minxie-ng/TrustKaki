@@ -5,6 +5,7 @@ import { authHeader } from "@/lib/auth/client";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type {
   AgentTrace,
+  ContactOutcome,
   DashboardData,
   FollowUpQueueItem,
   FollowUpStatus,
@@ -16,6 +17,7 @@ import {
   mainQueueCardFields,
   recentSeniorMessages,
   followUpQueueForSenior,
+  selectedQueueItem,
   systemProof,
   type DemoMode,
   type RequestState,
@@ -62,6 +64,16 @@ const statusLabel: Record<FollowUpStatus, string> = {
   resolved: "Resolved",
 };
 
+type CaseUpdateAction = "record_outcome" | "snooze" | "resolve";
+
+const outcomeOptions: Array<{ value: ContactOutcome; label: string }> = [
+  { value: "reached_and_okay", label: "Reached and okay" },
+  { value: "needs_follow_up", label: "Needs follow-up" },
+  { value: "referred_to_aac_staff", label: "Referred to AAC staff" },
+  { value: "unable_to_reach", label: "Unable to reach" },
+  { value: "resolved", label: "Resolved" },
+];
+
 function formatDate(ts: string | null) {
   if (!ts) return "No response yet";
   return new Date(ts).toLocaleString("en-SG", {
@@ -74,6 +86,10 @@ function formatDate(ts: string | null) {
 
 function labelPattern(type: string) {
   return type.replaceAll("_", " ");
+}
+
+function snoozedUntilFromHours(hours: number) {
+  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 }
 
 export default function Dashboard({
@@ -92,19 +108,19 @@ export default function Dashboard({
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
   const selectedSenior = seniors.find((item) => item.id === selectedSeniorId);
   const selectedSeniorQueue = followUpQueueForSenior(followUpQueue, selectedSeniorId);
-  const [manualSelectedId, setManualSelectedId] = useState<string | null>(
-    followUpQueue[0]?.id ?? null
-  );
+  const [manualSelectedId, setManualSelectedId] = useState<string | null>(null);
+  const [caseFormItemId, setCaseFormItemId] = useState<string | null>(null);
+  const [caseAction, setCaseAction] = useState<CaseUpdateAction>("record_outcome");
+  const [caseOutcome, setCaseOutcome] = useState<ContactOutcome>("needs_follow_up");
+  const [caseNote, setCaseNote] = useState("");
+  const [snoozeHours, setSnoozeHours] = useState("4");
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [demoProgress, setDemoProgress] = useState<string | null>(null);
   const [demoState, setDemoState] = useState<RequestState>("idle");
   const [actionState, setActionState] = useState<RequestState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [lastDemoMode, setLastDemoMode] = useState<DemoMode>("quick");
-  const selectedId = selectedSeniorQueue.some((item) => item.id === manualSelectedId)
-    ? manualSelectedId
-    : selectedSeniorQueue[0]?.id ?? null;
-  const selected = selectedSeniorQueue.find((item) => item.id === selectedId) ?? null;
+  const selected = selectedQueueItem(selectedSeniorQueue, manualSelectedId);
   const seniorMessages = useMemo(() => recentSeniorMessages(data), [data]);
   const proof = systemProof({ data, traces, selected });
 
@@ -146,6 +162,39 @@ export default function Dashboard({
     } finally {
       setBusyAction(null);
     }
+  }
+
+  function resetCaseForm() {
+    setCaseAction("record_outcome");
+    setCaseOutcome("needs_follow_up");
+    setCaseNote("");
+    setSnoozeHours("4");
+  }
+
+  async function submitCaseUpdate(item: FollowUpQueueItem) {
+    const note = caseNote.trim();
+    if (note.length < 10) {
+      setActionState("error");
+      setStatusMessage("Please add a short note so the follow-up record is clear.");
+      return;
+    }
+
+    const extra: Record<string, unknown> = {
+      note,
+    };
+
+    if (caseAction === "record_outcome" || caseAction === "resolve") {
+      extra.outcomeType = caseOutcome;
+    }
+
+    if (caseAction === "snooze") {
+      const hours = Math.max(1, Number.parseInt(snoozeHours, 10) || 4);
+      extra.snoozedUntil = snoozedUntilFromHours(hours);
+    }
+
+    await postAction(item, caseAction, extra);
+    setCaseFormItemId(null);
+    resetCaseForm();
   }
 
   async function runPatternDemo(mode: DemoMode) {
@@ -528,25 +577,109 @@ export default function Dashboard({
                     {selectedCard ? "Hide details" : "View details"}
                   </button>
                   <button
-                    onClick={() =>
-                      postAction(item, "record_outcome", {
-                        outcomeType: "needs_follow_up",
-                        note: "Needs another human check-in.",
-                      })
-                    }
+                    onClick={() => setCaseFormItemId(caseFormItemId === item.id ? null : item.id)}
                     className="text-sm font-semibold border border-gray-300 px-4 py-2 rounded-lg"
                     disabled={busyAction !== null}
                   >
-                    Record outcome
-                  </button>
-                  <button
-                    onClick={() => postAction(item, "resolve")}
-                    className="text-sm font-semibold border border-gray-300 px-4 py-2 rounded-lg"
-                    disabled={busyAction !== null}
-                  >
-                    Resolve
+                    {caseFormItemId === item.id ? "Close update" : "Update case"}
                   </button>
                 </div>
+
+                {caseFormItemId === item.id && (
+                  <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="text-sm font-bold text-gray-950">Case update report</div>
+                    <p className="mt-1 text-xs text-gray-600">
+                      Record what happened before the queue changes. Snooze and resolve
+                      require a reason so the staff decision is auditable.
+                    </p>
+
+                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                      <label className="text-xs font-semibold text-gray-600">
+                        Action
+                        <select
+                          value={caseAction}
+                          onChange={(event) => setCaseAction(event.target.value as CaseUpdateAction)}
+                          className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                          disabled={busyAction !== null}
+                        >
+                          <option value="record_outcome">Record outcome</option>
+                          <option value="snooze">Snooze with reason</option>
+                          <option value="resolve">Resolve case</option>
+                        </select>
+                      </label>
+
+                      {(caseAction === "record_outcome" || caseAction === "resolve") && (
+                        <label className="text-xs font-semibold text-gray-600">
+                          Outcome
+                          <select
+                            value={caseOutcome}
+                            onChange={(event) => setCaseOutcome(event.target.value as ContactOutcome)}
+                            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                            disabled={busyAction !== null}
+                          >
+                            {outcomeOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+
+                      {caseAction === "snooze" && (
+                        <label className="text-xs font-semibold text-gray-600">
+                          Snooze for
+                          <select
+                            value={snoozeHours}
+                            onChange={(event) => setSnoozeHours(event.target.value)}
+                            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                            disabled={busyAction !== null}
+                          >
+                            <option value="2">2 hours</option>
+                            <option value="4">4 hours</option>
+                            <option value="24">Tomorrow</option>
+                          </select>
+                        </label>
+                      )}
+                    </div>
+
+                    <label className="mt-3 block text-xs font-semibold text-gray-600">
+                      Short note
+                      <textarea
+                        value={caseNote}
+                        onChange={(event) => setCaseNote(event.target.value)}
+                        rows={3}
+                        placeholder={
+                          caseAction === "snooze"
+                            ? "Example: Handling a red-risk case first. Mei Ling will call after lunch."
+                            : "Example: Rachel spoke to him. He ate lunch and agrees to a check-in tomorrow."
+                        }
+                        className="mt-1 w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                        disabled={busyAction !== null}
+                      />
+                    </label>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => submitCaseUpdate(item)}
+                        disabled={busyAction !== null}
+                        className="text-sm font-semibold bg-gray-900 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                      >
+                        Save update
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCaseFormItemId(null);
+                          resetCaseForm();
+                        }}
+                        disabled={busyAction !== null}
+                        className="text-sm font-semibold border border-gray-300 px-4 py-2 rounded-lg disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {selectedCard && selected?.pattern && (
                   <div className="mt-5 border-t border-gray-200 pt-5">
