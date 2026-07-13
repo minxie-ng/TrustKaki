@@ -53,12 +53,13 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
     expect(count).toBe(0);
   });
 
-  it("derives the actor from auth and shares the action with linked caregivers", async () => {
+  it("derives the actor from auth while keeping the assignment target separate", async () => {
     const { data, error } = await fixture.caregiverA.client.rpc(
       "record_caregiver_queue_action",
       {
         p_queue_item_id: fixture.sharedQueueId,
-        p_action_type: "mark_for_follow_up",
+        p_action_type: "assign",
+        p_assigned_caregiver_id: fixture.caregiverB.caregiverId,
       }
     );
     const result = data as unknown as Record<string, Json>;
@@ -66,9 +67,18 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
       .from("caregiver_actions")
       .select("caregiver_id, previous_status, resulting_status")
       .eq("queue_item_id", fixture.sharedQueueId);
+    const { data: assignedQueue } = await fixture.caregiverB.client
+      .from("caregiver_queue_items")
+      .select("assigned_caregiver_id")
+      .eq("id", fixture.sharedQueueId)
+      .single();
 
     expect(error).toBeNull();
     expect(result.actor_caregiver_id).toBe(fixture.caregiverA.caregiverId);
+    expect(result.assigned_caregiver_id).toBe(fixture.caregiverB.caregiverId);
+    expect(assignedQueue?.assigned_caregiver_id).toBe(
+      fixture.caregiverB.caregiverId
+    );
     expect(sharedActions).toEqual([
       expect.objectContaining({
         caregiver_id: fixture.caregiverA.caregiverId,

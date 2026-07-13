@@ -6,7 +6,10 @@
     "dev": "./node_modules/.bin/next dev",
     "build": "./node_modules/.bin/next build",
     "start": "./node_modules/.bin/next start",
-    "lint": "./node_modules/.bin/eslint"
+    "lint": "./node_modules/.bin/eslint",
+    "test": "./node_modules/.bin/vitest run",
+    "typecheck": "./node_modules/.bin/tsc --noEmit",
+    "validate": "npm run test && npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.0",

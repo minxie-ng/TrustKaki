@@ -67,6 +67,16 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+Run the complete local quality gate:
+
+```bash
+npm run validate
+```
+
+This runs all unit tests, TypeScript checking, ESLint, and the production build.
+The live two-user Supabase suite remains separately opt-in because it creates
+and removes temporary Auth users and database rows.
+
 ## Environment Variables
 
 Required for Judge View:
