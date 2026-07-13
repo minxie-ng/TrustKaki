@@ -124,6 +124,21 @@ supabase/seed.sql
 
 Do not point deployment environment variables at unrelated Supabase projects.
 
+### Supabase Integration Tests
+
+The caregiver isolation suite is opt-in because it creates temporary Auth users
+and database rows in the configured TrustKaki Supabase project:
+
+```bash
+TRUSTKAKI_RUN_DB_INTEGRATION=1 ./node_modules/.bin/vitest run src/lib/security/rls.integration.test.ts
+```
+
+It uses the existing Supabase URL, anon key, and service-role key from the test
+process environment. Privileged access is limited to fixture setup, assertions,
+and cleanup. The tested operations run as two real authenticated caregivers.
+Temporary rows and Auth users are removed after the suite, including when setup
+or an assertion fails. Generated credentials and database rows are never logged.
+
 ### Supabase Auth Setup
 
 Public sign-up is intentionally not exposed. Create caregiver and judge users in Supabase Auth through an administrator-controlled process.
