@@ -718,11 +718,15 @@ Exit criteria:
 
 ## 16. Production Roadmap From Deployed Baseline
 
-TrustKaki is now deployed and should be treated as a product candidate, not a
-hackathon-only demo. The next three weeks should improve the product in layers:
-each phase must keep the deployed app working, preserve the judge demo path, and
-move the system closer to something an AAC or caregiver organisation could
-actually operate.
+TrustKaki is deployed as a product candidate, but deployment does not imply
+production readiness. An independent audit identified authorization, RLS,
+transaction, timeout, test-evidence, and maintainability blockers. Feature
+development is paused until the mandatory audit-remediation gate passes and the
+reviewer accepts the result.
+
+The detailed approved gate design is:
+
+`docs/superpowers/specs/2026-07-13-production-release-gates-design.md`
 
 ### Current deployed baseline
 
@@ -732,7 +736,8 @@ Implemented and deployed:
 2. Supabase persistence for messages, check-ins, signals, risk events, agent runs, alerts, briefs, Pattern Watch, queue items, and caregiver actions.
 3. Supabase Auth sign-in with caregiver identity linked through `caregivers.auth_user_id`.
 4. Demo-admin role gating through trusted `app_metadata.role = demo_admin`.
-5. Caregiver-scoped protected API routes.
+5. Authentication guards and initial caregiver-scoped API routes; Gate 0 must
+   complete authoritative senior binding and database isolation proof.
 6. Deterministic policy layer for final risk and alerts.
 7. Real multi-agent orchestration with typed schemas and persisted traces.
 8. Pattern Watch and consolidated caregiver follow-up queue.
@@ -759,16 +764,11 @@ TrustKaki must become strong across five dimensions:
 
 #### B. Senior Context and Memory
 
-- Add structured senior memory that makes TrustKaki non-generic.
-- Add health/body-condition context for safe personalisation.
-- Add routine baselines so Pattern Watch can compare today's signals against the senior's usual pattern.
-- Use this context for explanation and follow-up planning, not diagnosis.
-
-Required next tables:
-
-- `senior_memories`
-- `senior_health_contexts`
-- `routine_baselines`
+- Structured `senior_memories`, `senior_health_contexts`, and
+  `routine_baselines` tables already exist.
+- Complete caregiver review, provenance, expiry, retention, and safe extraction
+  before treating memory as operationally authoritative.
+- Use context for explanation and follow-up planning, not diagnosis.
 
 Do not add duplicate `pattern_watch_items` or `today_follow_up_queue` tables
 unless there is a deliberate rename/refactor. The current equivalents are:
@@ -805,139 +805,79 @@ unless there is a deliberate rename/refactor. The current equivalents are:
   - It does not replace caregivers, AAC volunteers, doctors, or emergency services.
   - It turns quiet daily changes into one actionable follow-up case.
 
-### Three-week build sequence
+### Current production gate sequence
 
-#### Week 1 — Product Depth and Baseline Intelligence
+#### Gate 0 — Audit Remediation (mandatory now)
 
-Goal: make Pattern Watch meaningfully personal to each senior.
+- bind every senior operation to an authorized `seniorId`
+- load authoritative senior context server-side
+- remove demo-senior defaults from normal authenticated paths
+- record authenticated caregiver as actor and keep assignee separate
+- repair recursive RLS helpers and prove isolation with two real users
+- make caregiver case mutation and demo reset transactional
+- fix real `AbortSignal.timeout()` behavior and tests
+- split oversized dashboard and persistence modules by existing responsibilities
+- add `npm run validate` and update implementation evidence
+- obtain reviewer re-audit approval before deployment promotion
 
-Build:
+#### Gate 1 — Caregiver Case Operations
 
-1. `routine_baselines`
-   - usual reply windows
-   - usual breakfast/lunch participation
-   - usual mobility/activity level
-   - usual AAC participation/social comfort
-   - usual response cadence
-2. `senior_health_contexts`
-   - knee pain, weak legs, dizziness, eyesight, hearing, mobility limitations
-   - source and confidence
-   - safe-use notes
-3. `senior_memories`
-   - preferences, family details, food/items, social preferences, reminders
-   - expiry/follow-up dates where relevant
-4. Pattern Watch reads baseline and health context before writing patterns.
-5. Dashboard details explain "different from usual" from stored baseline, not hardcoded text.
+- auditable acknowledge, assign, snooze, contact outcome, escalation, and resolve
+- required snooze and resolution reasons
+- duplicate protection, conflict handling, immutable action history
+- reliable shared-caregiver updates
 
-Exit criteria:
+#### Gate 2 — Contacts, Consent, and Escalation
 
-- Quick Demo shows baseline comparison from persisted baseline rows.
-- Pattern Watch can explain why Uncle Tan's signals matter for Uncle Tan specifically.
-- Caregiver detail view separates:
-  - observed facts
-  - baseline comparison
-  - health context
-  - AI summary
-  - suggested human action
+- multiple verified contacts per senior
+- relationship, priority, language, quiet hours, consent, and permitted alerts
+- deterministic recipient selection and escalation order
+- separate action actor, case assignee, and notification recipient
 
-#### Week 2 — Real Messaging and Proactive Check-ins
+#### Gate 3 — Production WhatsApp
 
-Goal: make TrustKaki operate through real WhatsApp, not only the web demo.
+- configure live callback only after Gates 0-2
+- multiple-senior phone resolution
+- real senior replies and policy-approved human notifications
+- delivery/read/failure statuses, templates, retries, and deduplication
 
-Build:
+#### Gate 4 — Proactive Check-ins
 
-1. Configure Meta callback URL on the deployed Vercel webhook.
-2. Verify real inbound WhatsApp message reaches production.
-3. Verify production outbound reply.
-4. Add scheduled morning check-in job.
-5. Add duplicate-send protection.
-6. Add protected/manual pending-event processor runbook.
-7. Add operational logging for webhook accepted, processed, failed, retried.
+- senior-specific schedules and quiet hours
+- idempotent template sends
+- missed-response detection, retries, pause, and manual override
 
-Exit criteria:
+#### Gate 5 — Memory Operationalisation
 
-- A real WhatsApp message from the verified senior number updates Supabase and the dashboard.
-- TrustKaki replies through WhatsApp.
-- A scheduled check-in can send once and not duplicate.
-- Failed or pending WhatsApp events can be retried safely.
+The `routine_baselines`, `senior_health_contexts`, and `senior_memories` tables
+already exist. This gate completes caregiver review, provenance, expiry,
+retention, safe extraction proposals, and memory-aware check-ins.
 
-#### Week 3 — Organisation Readiness and Final Judge Story
+#### Gate 6 — Organisation and Scale Readiness
 
-Goal: make the product feel credible for AAC/caregiver organisation use.
+- organisation tenancy and staff roles
+- roster management and true shared-case realtime updates
+- distributed rate limiting, worker observability, backup/recovery
+- audit retention, data export/deletion, concurrency and load tests
 
-Build:
+#### Gate 7 — Adoption and UI Refinement
 
-1. Caregiver queue operational polish:
-   - assignee
-   - status transitions
-   - action history
-   - acknowledgement and completion timestamps
-2. Lightweight metrics:
-   - active follow-up cases
-   - completed follow-ups
-   - time to follow-up
-   - false alarm/usefulness feedback
-3. Admin/judge setup runbook:
-   - Supabase Auth user creation
-   - role configuration
-   - caregiver linking
-   - Vercel env checklist
-   - WhatsApp callback checklist
-4. Final demo walkthrough:
-   - one-minute judge flow
-   - technical architecture flow
-   - product/business value flow
-5. Final safety language:
-   - non-diagnosis
-   - human-in-loop
-   - escalation boundaries
-   - privacy and auditability
+- caregiver/AAC usability testing
+- accessibility, mobile, multilingual readiness
+- reduced reading and action burden
+- technical traces outside the default operational workflow
 
-Exit criteria:
+#### Gate 8 — Pilot and Deployment Approval
 
-- A judge can understand the product in one minute.
-- A technical judge can see real multi-agent, policy, persistence, and WhatsApp architecture.
-- A business judge can see why AACs/caregivers would use it.
-- The deployed app remains stable under the demo flow.
+- security/privacy review, monitoring, incident ownership, rollback rehearsal
+- production Meta credentials and controlled AAC pilot
+- metrics-based go/no-go decision
 
 ## 16A. Best Next Step
 
-The best next step is **Senior Context, Routine Baselines, and Memory**.
-
-Do this before adding more UI polish or new agent types. This is the product
-moat: TrustKaki should not alert because one message contains a keyword; it
-should compare today's signals against what is usual for that senior, then
-produce one actionable human follow-up.
-
-Immediate implementation target:
-
-1. Add migrations for:
-   - `routine_baselines`
-   - `senior_health_contexts`
-   - `senior_memories`
-2. Seed Uncle Tan with:
-   - usual morning reply window
-   - usual breakfast routine
-   - usual downstairs/AAC participation
-   - knee/leg mobility context
-   - social hesitation context
-   - preference for low-pressure 1-to-1 check-ins
-3. Update Pattern Watch to read these rows.
-4. Update queue/detail copy so "change from usual" is backed by stored baseline.
-5. Add tests proving Pattern Watch changes when baseline/context changes.
-
-Do not rename `patterns` or `caregiver_queue_items` yet. They already serve the
-roles of `pattern_watch_items` and `today_follow_up_queue`.
-
-Phase 7A implementation note:
-
-- Pattern Watch remains deterministic and signal-driven.
-- Stored senior context now shapes the caregiver-facing comparison and suggested
-  action.
-- The dashboard main card remains concise; the details view can show usual
-  routine, known context, and helpful preferences.
-- Context is explicitly non-diagnostic and should support human follow-up
-  questions only.
+The only immediate implementation target is **Gate 0 — Audit Remediation**.
+Do not configure the live Meta callback, add scheduler behavior, expand memory,
+or add new product features until its tests pass and the reviewer re-audits it.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
@@ -971,9 +911,9 @@ What this does not finish yet:
 - consent and escalation policies
 - production caregiver roster management
 
-Those should be built before broad pilots, but Phase 7B gives the app the right
-shape for concurrent real use. The current sync layer is persisted and
-multi-user aware, but it is not yet a live collaborative websocket experience.
+Those capabilities are now sequenced explicitly in Gates 1, 2, 3, and 6. The
+current sync layer is persisted and multi-user aware, but it is not yet a live
+collaborative websocket experience.
 
 ## 17. Build Rules
 

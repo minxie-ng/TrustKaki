@@ -201,9 +201,10 @@ Phase 5 Judge View work focuses on making the real flow understandable in under
 one minute: reset demo, run Quick Demo, inspect timeline/evidence, assign,
 record outcome, resolve, and see the active queue clear.
 
-Phase 7A senior context foundation is in progress. The intended production
-direction is to make Pattern Watch compare new signals against stored
-senior-specific context instead of generic keyword-like assumptions:
+Phase 7A senior context schema foundation exists. Operational memory workflows
+remain incomplete. The intended production direction is to make Pattern Watch
+compare new signals against stored senior-specific context instead of generic
+keyword-like assumptions:
 
 - `routine_baselines`
 - `senior_health_contexts`
@@ -225,6 +226,23 @@ persisted queue update appears after the next poll or when the tab is refocused.
 It is not yet Supabase Realtime; add subscriptions later before broad pilots if
 sub-second collaborative updates are required.
 
+The production roadmap is now gate-based following an independent security and
+reliability audit. Feature development is paused at Gate 0. The approved design
+is `docs/superpowers/specs/2026-07-13-production-release-gates-design.md`.
+
+Gate 0 must close these blockers before further WhatsApp, scheduler, memory, or
+product expansion:
+
+- bind every agent and manual-briefing request to an authorized `seniorId`
+- load senior context server-side and remove implicit demo-senior persistence
+- record authenticated caregiver as action actor, separate from assignee
+- replace recursive RLS helpers and prove two-user database isolation
+- make caregiver case updates and demo reset transactional
+- fix real `AbortSignal.timeout()` `TimeoutError` behavior
+- add regression tests, `npm run validate`, and accurate plan evidence
+- split the oversized dashboard and repository by existing responsibilities
+- obtain reviewer re-audit approval before deployment promotion
+
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
 Siew Lan, and a high-risk Mdm Siti Fatimah Binte Rahman case to demonstrate
@@ -241,13 +259,11 @@ different household contexts, caregiver relationships, and risk levels.
 3. Do not deploy or configure Meta callback URL until explicitly requested.
 
 ## Immediate next task
-Verify Phase 7B locally and in production: apply the updated seed, sign in as
-Rachel, confirm the senior coverage strip shows multiple accessible seniors,
-switch selected senior detail context, and confirm the active queue still works
-for Mr Tan and the red-risk Fatimah profile. Confirm shared-caregiver polling by
-opening two signed-in sessions and checking that an action in one appears in the
-other within the polling window or after refocus. After that, build caregiver
-contact preferences and proactive scheduled check-ins.
+
+Write and execute the scoped implementation plan for Gate 0 audit remediation.
+Do not begin contact preferences, live WhatsApp callback configuration,
+scheduler work, memory expansion, or further feature/UI development until Gate
+0 verification passes and the reviewer accepts the result.
 
 ## Working rules
 - inspect before modifying
