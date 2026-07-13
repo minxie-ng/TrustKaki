@@ -121,7 +121,11 @@ describe("/api/agents/orchestrate", () => {
       })
     );
     expect(persistOrchestrationResultMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Not hungry today." })
+      expect.objectContaining({
+        seniorId,
+        message: "Not hungry today.",
+        clientMessageId: "web-1",
+      })
     );
     expect(JSON.stringify(json)).not.toContain("verified-access-token");
   });

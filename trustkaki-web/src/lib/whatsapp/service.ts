@@ -4,10 +4,10 @@ import { orchestrate } from "@/lib/agents/orchestrator";
 import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
 import type { AgentId, Message } from "@/lib/types";
 import {
-  findSeniorContextByPhone,
   persistOrchestrationResult,
   recordOutboundMessageMetadata,
 } from "@/lib/persistence/trustkakiRepository";
+import { loadSeniorContextByVerifiedPhone } from "@/lib/persistence/seniorContextRepository";
 import { buildOutboundClientMessageId } from "@/lib/persistence/orchestration";
 import {
   acceptWhatsAppEvent,
@@ -114,12 +114,18 @@ async function getOrCreateOrchestration(args: {
   event: PersistedWhatsAppEvent;
   inbound: WhatsAppInboundTextMessage;
 }): Promise<{
+  seniorId: string;
   context: AgentRunContext;
   result: OrchestrateResponse;
   replyText: string | null;
   replyAgentId: AgentId | null;
   replyClientMessageId: string | null;
 }> {
+  const senior = await loadSeniorContextByVerifiedPhone({ phone: args.inbound.from });
+  if (!senior) {
+    throw new Error("No senior mapped to sender phone");
+  }
+
   if (
     args.event.orchestration_result &&
     args.event.orchestration_context &&
@@ -127,17 +133,13 @@ async function getOrCreateOrchestration(args: {
     isAgentRunContext(args.event.orchestration_context)
   ) {
     return {
+      seniorId: senior.seniorId,
       context: args.event.orchestration_context,
       result: args.event.orchestration_result,
       replyText: args.event.selected_reply_text,
       replyAgentId: args.event.selected_reply_agent_id,
       replyClientMessageId: args.event.selected_reply_client_message_id,
     };
-  }
-
-  const senior = await findSeniorContextByPhone(args.inbound.from);
-  if (!senior) {
-    throw new Error("No senior mapped to sender phone");
   }
 
   const inboundMessage: Message = {
@@ -167,6 +169,7 @@ async function getOrCreateOrchestration(args: {
   });
 
   return {
+    seniorId: senior.seniorId,
     context,
     result,
     replyText: reply ? conciseText(reply.text) : null,
@@ -178,13 +181,16 @@ async function getOrCreateOrchestration(args: {
 async function persistOrchestrationIfNeeded(args: {
   event: PersistedWhatsAppEvent;
   inbound: WhatsAppInboundTextMessage;
+  seniorId: string;
   context: AgentRunContext;
   result: OrchestrateResponse;
 }): Promise<void> {
   if (args.event.orchestration_completed_at) return;
 
   await persistOrchestrationResult({
+    seniorId: args.seniorId,
     message: args.inbound.text,
+    clientMessageId: args.inbound.id,
     context: args.context,
     result: args.result,
   });
@@ -298,6 +304,7 @@ export async function processWhatsAppEventById(
     await persistOrchestrationIfNeeded({
       event,
       inbound,
+      seniorId: orchestration.seniorId,
       context: orchestration.context,
       result: orchestration.result,
     });

@@ -55,6 +55,23 @@ export function canSaveCaseUpdate(note: string): boolean {
   return note.trim().length >= 10;
 }
 
+export function chatSimulationState(args: {
+  selectedSeniorId: string | null;
+  loadedSeniorId: string | null;
+  isSeniorLoading: boolean;
+}) {
+  const canSubmit = Boolean(
+    args.selectedSeniorId &&
+      args.selectedSeniorId === args.loadedSeniorId &&
+      !args.isSeniorLoading
+  );
+  return {
+    canSubmit,
+    instanceKey: args.selectedSeniorId ?? "no-senior",
+    submissionSeniorId: canSubmit ? args.selectedSeniorId : null,
+  };
+}
+
 export function optimisticDashboardForSenior(
   data: DashboardData,
   seniorId: string

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
+import type { AgentRunContext } from "@/lib/agents/contracts";
 
 vi.mock("server-only", () => ({}));
 
@@ -9,7 +10,17 @@ const loadContextMock = vi.fn();
 const runTriageAgentMock = vi.fn();
 const seniorId = "00000000-0000-4000-8000-000000000001";
 const auth = { userId: "user-1", accessibleSeniorIds: [seniorId] };
-const context = { senior: { name: "Mr Tan" }, messages: [], currentRiskLevel: "yellow" };
+const context: AgentRunContext = {
+  senior: {
+    name: "Mr Tan",
+    age: 78,
+    livingSituation: "Lives alone",
+    caregiver: "Rachel Tan",
+    aacVolunteer: "Mei Ling",
+  },
+  messages: [],
+  currentRiskLevel: "yellow",
+};
 
 vi.mock("@/lib/auth/session", () => ({
   requireAuthenticatedCaregiver: requireAuthMock,

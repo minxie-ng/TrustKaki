@@ -6,9 +6,10 @@ import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
 import { orchestrate } from "@/lib/agents/orchestrator";
 import {
   persistOrchestrationResult,
-  readDashboardState,
+  readDemoDashboardState,
   resetDemoPersistence,
 } from "@/lib/persistence/trustkakiRepository";
+import { DEMO_SENIOR_ID } from "@/lib/persistence/orchestration";
 import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
 import type { Message, RiskLevel } from "@/lib/types";
 
@@ -92,7 +93,9 @@ export async function POST(request: Request) {
       };
       const result = await orchestrate(item.text, context);
       await persistOrchestrationResult({
+        seniorId: DEMO_SENIOR_ID,
         message: item.text,
+        clientMessageId: item.id,
         context,
         result,
       });
@@ -101,7 +104,7 @@ export async function POST(request: Request) {
       results.push(result);
     }
 
-    const state = await readDashboardState();
+    const state = await readDemoDashboardState();
     return NextResponse.json({
       status: "ok",
       warning:

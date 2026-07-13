@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const DEMO_SENIOR_ID = "00000000-0000-4000-8000-000000000001";
+
 const runTriageTimelineAgentMock = vi.fn();
 const persistQuickDemoTimelineResultMock = vi.fn();
-const readDashboardStateMock = vi.fn();
+const readDemoDashboardStateMock = vi.fn();
 const resetDemoPersistenceMock = vi.fn();
 const requireDemoAdminMock = vi.fn();
 
@@ -21,7 +23,7 @@ vi.mock("@/lib/agents/orchestrator", () => ({
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistQuickDemoTimelineResult: persistQuickDemoTimelineResultMock,
-  readDashboardState: readDashboardStateMock,
+  readDemoDashboardState: readDemoDashboardStateMock,
   resetDemoPersistence: resetDemoPersistenceMock,
 }));
 
@@ -72,7 +74,7 @@ describe("/api/demo/pattern-watch/quick", () => {
     vi.resetModules();
     runTriageTimelineAgentMock.mockReset();
     persistQuickDemoTimelineResultMock.mockReset();
-    readDashboardStateMock.mockReset();
+    readDemoDashboardStateMock.mockReset();
     resetDemoPersistenceMock.mockReset();
     requireDemoAdminMock.mockReset();
     requireDemoAdminMock.mockResolvedValue({ ok: true, auth });
@@ -87,7 +89,7 @@ describe("/api/demo/pattern-watch/quick", () => {
       configured: true,
       persisted: true,
     });
-    readDashboardStateMock.mockResolvedValue({
+    readDemoDashboardStateMock.mockResolvedValue({
       persistence: { mode: "supabase", configured: true, persisted: true },
       data: {
         followUpQueue: [],
@@ -119,7 +121,9 @@ describe("/api/demo/pattern-watch/quick", () => {
     expect(response.status).toBe(200);
     expect(json.signalsDetected).toBe(0);
     expect(json.queueCount).toBe(0);
-    expect(persistQuickDemoTimelineResultMock).toHaveBeenCalledTimes(1);
+    expect(persistQuickDemoTimelineResultMock).toHaveBeenCalledWith(
+      expect.objectContaining({ seniorId: DEMO_SENIOR_ID })
+    );
   });
 
   it("uses one timeline extraction call for faster quick demo timing", async () => {

@@ -77,7 +77,7 @@ async function loadContext(
   const context = {
     senior: {
       name: senior.display_name,
-      age: senior.age,
+      age: senior.age ?? 0,
       livingSituation: senior.living_situation ?? "Not recorded",
       caregiver: displayNameFor("caregiver"),
       aacVolunteer: displayNameFor("aac_volunteer"),

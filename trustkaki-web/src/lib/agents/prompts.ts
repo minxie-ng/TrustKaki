@@ -4,9 +4,13 @@
 
 import type { AgentRunContext } from "./contracts";
 
+function seniorAgeForPrompt(age: number): string {
+  return age > 0 ? String(age) : "unknown";
+}
+
 const SENIOR_CONTEXT = (ctx: AgentRunContext): string => `Senior Profile:
 - Name: ${ctx.senior.name}
-- Age: ${ctx.senior.age}
+- Age: ${seniorAgeForPrompt(ctx.senior.age)}
 - Living situation: ${ctx.senior.livingSituation}
 - Caregiver: ${ctx.senior.caregiver}
 - AAC Volunteer: ${ctx.senior.aacVolunteer}
@@ -169,7 +173,7 @@ export const aacNudgeUserPrompt = (
   message: string,
   ctx: AgentRunContext,
   signals: { type: string; description: string; severity: string }[]
-): string => `The senior (${ctx.senior.name}, ${ctx.senior.age}) said:
+): string => `The senior (${ctx.senior.name}, age ${seniorAgeForPrompt(ctx.senior.age)}) said:
 
 "${message}"
 

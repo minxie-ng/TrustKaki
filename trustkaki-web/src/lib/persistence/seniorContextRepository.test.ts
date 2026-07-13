@@ -32,7 +32,11 @@ interface QueryRecord {
   order?: { column: string; ascending: boolean };
 }
 
-function createServiceClient(options?: { unknownPhone?: boolean; messageCount?: number }) {
+function createServiceClient(options?: {
+  age?: number | null;
+  unknownPhone?: boolean;
+  messageCount?: number;
+}) {
   const queries: QueryRecord[] = [];
 
   function responseFor(query: QueryRecord) {
@@ -43,7 +47,7 @@ function createServiceClient(options?: { unknownPhone?: boolean; messageCount?: 
         data: {
           id: seniorId,
           display_name: "Mr Tan Ah Hock",
-          age: 78,
+          age: options && "age" in options ? options.age : 78,
           living_situation: "Lives alone in Toa Payoh",
           risk_level: "yellow",
         },
@@ -182,6 +186,17 @@ describe("senior context repository", () => {
 
     expect(service.queries.find((query) => query.table === "messages")?.limit).toBe(50);
     expect(context.messages).toHaveLength(50);
+  });
+
+  it("uses a bounded unknown-age fallback when production age is null", async () => {
+    const service = createServiceClient({ age: null });
+    canAccessSeniorMock.mockReturnValue(true);
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { loadAuthorizedAgentContext } = await import("./seniorContextRepository");
+
+    const context = await loadAuthorizedAgentContext({ auth, seniorId });
+
+    expect(context.senior.age).toBe(0);
   });
 
   it("returns null for unknown phones without seeding or falling back", async () => {

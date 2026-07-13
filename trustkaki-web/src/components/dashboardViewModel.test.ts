@@ -5,6 +5,7 @@ import {
   appShellSurface,
   canSaveCaseUpdate,
   canSubmit,
+  chatSimulationState,
   containsSensitiveText,
   dashboardStateEndpoint,
   dashboardSyncIntervalMs,
@@ -191,6 +192,32 @@ describe("dashboard view model", () => {
       caregiver: "Daniel Lim",
       riskLevel: "green",
       lastCheckIn: null,
+    });
+  });
+
+  it("blocks chat until loaded messages belong to the selected senior", () => {
+    expect(
+      chatSimulationState({
+        selectedSeniorId: "senior-2",
+        loadedSeniorId: "senior-1",
+        isSeniorLoading: true,
+      })
+    ).toEqual({
+      canSubmit: false,
+      instanceKey: "senior-2",
+      submissionSeniorId: null,
+    });
+
+    expect(
+      chatSimulationState({
+        selectedSeniorId: "senior-2",
+        loadedSeniorId: "senior-2",
+        isSeniorLoading: false,
+      })
+    ).toEqual({
+      canSubmit: true,
+      instanceKey: "senior-2",
+      submissionSeniorId: "senior-2",
     });
   });
 

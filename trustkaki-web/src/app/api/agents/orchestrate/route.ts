@@ -59,7 +59,9 @@ export async function POST(request: NextRequest) {
 
     const result = await orchestrate(message, contextWithInbound);
     const persistence = await persistOrchestrationResult({
+      seniorId,
       message,
+      clientMessageId: inboundMessage.id,
       context: contextWithInbound,
       result,
     });

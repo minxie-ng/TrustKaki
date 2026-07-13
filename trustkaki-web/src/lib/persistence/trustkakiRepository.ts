@@ -159,12 +159,13 @@ async function ensureDemoPeople(client: TrustKakiClient, context?: AgentRunConte
 
 async function getOrCreateActiveCheckIn(
   client: TrustKakiClient,
+  seniorId: string,
   context: AgentRunContext
 ): Promise<TableRow<"check_ins">> {
   const { data: existing, error: selectError } = await client
     .from("check_ins")
     .select("*")
-    .eq("senior_id", DEMO_SENIOR_ID)
+    .eq("senior_id", seniorId)
     .eq("status", "active")
     .order("created_at", { ascending: false })
     .limit(1)
@@ -176,7 +177,7 @@ async function getOrCreateActiveCheckIn(
   const { data, error } = await client
     .from("check_ins")
     .insert({
-      senior_id: DEMO_SENIOR_ID,
+      senior_id: seniorId,
       status: "active",
       risk_before: context.currentRiskLevel,
       risk_after: context.currentRiskLevel,
@@ -191,7 +192,7 @@ async function upsertMessages(
   client: TrustKakiClient,
   checkInId: string,
   messages: OrchestrationPersistencePayload["outboundMessages"],
-  seniorId = DEMO_SENIOR_ID
+  seniorId: string
 ) {
   if (messages.length === 0) return;
 
@@ -282,10 +283,8 @@ async function persistSignals(
   throwIfError(error, "insert detected signals");
 }
 
-function observedAtFromContext(message: string, context: AgentRunContext): string {
-  const matching = [...context.messages]
-    .reverse()
-    .find((msg) => msg.sender === "senior" && msg.text === message);
+function observedAtFromContext(clientMessageId: string, context: AgentRunContext): string {
+  const matching = context.messages.find((msg) => msg.id === clientMessageId);
   return matching?.timestamp ?? new Date().toISOString();
 }
 
@@ -533,6 +532,7 @@ async function runPatternWatchForSenior(client: TrustKakiClient, seniorId: strin
 
 async function persistRiskEvent(
   client: TrustKakiClient,
+  seniorId: string,
   checkInId: string,
   payload: OrchestrationPersistencePayload,
   agentRuns: TableRow<"agent_runs">[]
@@ -544,7 +544,7 @@ async function persistRiskEvent(
   if (payload.riskEvent.riskChange !== "none") {
     const { error } = await client.from("risk_events").insert({
       check_in_id: checkInId,
-      senior_id: DEMO_SENIOR_ID,
+      senior_id: seniorId,
       previous_risk: payload.riskEvent.previousRisk,
       final_risk: payload.riskEvent.finalRisk,
       risk_change: payload.riskEvent.riskChange,
@@ -569,12 +569,13 @@ async function persistRiskEvent(
       risk_level: payload.riskEvent.finalRisk,
       last_check_in_at: now,
     })
-    .eq("id", DEMO_SENIOR_ID);
+    .eq("id", seniorId);
   throwIfError(seniorError, "update senior risk");
 }
 
 async function persistAlerts(
   client: TrustKakiClient,
+  seniorId: string,
   checkInId: string,
   payload: OrchestrationPersistencePayload
 ) {
@@ -583,7 +584,7 @@ async function persistAlerts(
   const { error } = await client.from("alerts").insert(
     payload.alerts.map((alert) => ({
       check_in_id: checkInId,
-      senior_id: DEMO_SENIOR_ID,
+      senior_id: seniorId,
       signal_type: alert.type,
       message: alert.message,
       severity: alert.severity,
@@ -596,6 +597,7 @@ async function persistAlerts(
 
 async function persistBrief(
   client: TrustKakiClient,
+  seniorId: string,
   checkInId: string,
   brief: OrchestrationPersistencePayload["brief"] | ManualBriefingPersistencePayload["brief"],
   agentRuns: TableRow<"agent_runs">[]
@@ -607,7 +609,7 @@ async function persistBrief(
 
   const { error } = await client.from("briefs").insert({
     check_in_id: checkInId,
-    senior_id: DEMO_SENIOR_ID,
+    senior_id: seniorId,
     trigger: brief.trigger,
     for_caregiver: brief.briefing.forCaregiver,
     for_aac_volunteer: brief.briefing.forAACVolunteer,
@@ -620,40 +622,38 @@ async function persistBrief(
 }
 
 export async function persistOrchestrationResult(args: {
+  seniorId: string;
   message: string;
+  clientMessageId: string;
   context: AgentRunContext;
   result: OrchestrateResponse;
 }): Promise<PersistenceMeta> {
   const client = getClient();
   if (!client) return localDemoMeta();
 
-  await ensureDemoPeople(client, args.context);
-  const checkIn = await getOrCreateActiveCheckIn(client, args.context);
-  const payload = buildOrchestrationPersistencePayload(
-    args.message,
-    args.context,
-    args.result
-  );
+  const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
+  const payload = buildOrchestrationPersistencePayload(args);
 
-  await upsertMessages(client, checkIn.id, [payload.inboundMessage]);
-  await upsertMessages(client, checkIn.id, payload.outboundMessages);
+  await upsertMessages(client, checkIn.id, [payload.inboundMessage], args.seniorId);
+  await upsertMessages(client, checkIn.id, payload.outboundMessages, args.seniorId);
   const agentRuns = await upsertAgentRuns(client, checkIn.id, payload.agentRuns);
   await persistSignals(
     client,
     checkIn.id,
     payload,
     agentRuns,
-    observedAtFromContext(args.message, args.context)
+    observedAtFromContext(args.clientMessageId, args.context)
   );
-  await persistRiskEvent(client, checkIn.id, payload, agentRuns);
-  await persistAlerts(client, checkIn.id, payload);
-  await persistBrief(client, checkIn.id, payload.brief, agentRuns);
-  await runPatternWatchForSenior(client, DEMO_SENIOR_ID);
+  await persistRiskEvent(client, args.seniorId, checkIn.id, payload, agentRuns);
+  await persistAlerts(client, args.seniorId, checkIn.id, payload);
+  await persistBrief(client, args.seniorId, checkIn.id, payload.brief, agentRuns);
+  await runPatternWatchForSenior(client, args.seniorId);
 
   return supabaseMeta();
 }
 
 export async function persistQuickDemoTriageResult(args: {
+  seniorId: string;
   messageId: string;
   message: string;
   timestamp: string;
@@ -664,12 +664,12 @@ export async function persistQuickDemoTriageResult(args: {
   if (!client) return localDemoMeta();
 
   await ensureDemoPeople(client, args.context);
-  const checkIn = await getOrCreateActiveCheckIn(client, args.context);
+  const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
 
   const { error: messageError } = await client.from("messages").upsert(
     {
       check_in_id: checkIn.id,
-      senior_id: DEMO_SENIOR_ID,
+      senior_id: args.seniorId,
       sender: "senior",
       text: args.message,
       client_message_id: args.messageId,
@@ -730,14 +730,15 @@ export async function persistQuickDemoTriageResult(args: {
       risk_level: args.result.data.riskLevel,
       last_check_in_at: args.timestamp,
     })
-    .eq("id", DEMO_SENIOR_ID);
+    .eq("id", args.seniorId);
   throwIfError(seniorError, "update quick demo senior");
 
-  await runPatternWatchForSenior(client, DEMO_SENIOR_ID);
+  await runPatternWatchForSenior(client, args.seniorId);
   return supabaseMeta();
 }
 
 export async function persistQuickDemoTimelineResult(args: {
+  seniorId: string;
   messages: Array<{ id: string; text: string; timestamp: string }>;
   context: AgentRunContext;
   result: AgentRunResult<TriageTimelineOutput>;
@@ -746,12 +747,12 @@ export async function persistQuickDemoTimelineResult(args: {
   if (!client) return localDemoMeta();
 
   await ensureDemoPeople(client, args.context);
-  const checkIn = await getOrCreateActiveCheckIn(client, args.context);
+  const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
 
   const { error: messagesError } = await client.from("messages").upsert(
     args.messages.map((message) => ({
       check_in_id: checkIn.id,
-      senior_id: DEMO_SENIOR_ID,
+      senior_id: args.seniorId,
       sender: "senior" as const,
       text: message.text,
       client_message_id: message.id,
@@ -818,53 +819,11 @@ export async function persistQuickDemoTimelineResult(args: {
       risk_level: args.result.data.overallRiskLevel,
       last_check_in_at: latestMessage?.timestamp ?? new Date().toISOString(),
     })
-    .eq("id", DEMO_SENIOR_ID);
+    .eq("id", args.seniorId);
   throwIfError(seniorError, "update quick demo timeline senior");
 
-  await runPatternWatchForSenior(client, DEMO_SENIOR_ID);
+  await runPatternWatchForSenior(client, args.seniorId);
   return supabaseMeta();
-}
-
-export async function findSeniorContextByPhone(
-  phone: string
-): Promise<{
-  seniorId: string;
-  context: AgentRunContext;
-} | null> {
-  const client = getClient();
-  if (!client) return null;
-
-  await ensureDemoPeople(client);
-
-  const normalized = normalizePhoneNumber(phone);
-  if (!normalized) return null;
-
-  const { data: senior, error } = await client
-    .from("seniors")
-    .select("*")
-    .eq("phone_e164", normalized)
-    .maybeSingle();
-  throwIfError(error, "select senior by phone");
-
-  if (!senior) return null;
-
-  const caregiver = await getCaregiverName(client, senior.id, "caregiver");
-  const aacVolunteer = await getCaregiverName(client, senior.id, "aac_volunteer");
-
-  return {
-    seniorId: senior.id,
-    context: {
-      senior: {
-        name: senior.display_name,
-        age: senior.age ?? uncleTan.age,
-        livingSituation: senior.living_situation ?? uncleTan.livingSituation,
-        caregiver,
-        aacVolunteer,
-      },
-      messages: [],
-      currentRiskLevel: senior.risk_level,
-    },
-  };
 }
 
 export async function hasPersistedMessageClientId(
@@ -906,6 +865,7 @@ export async function recordOutboundMessageMetadata(args: {
 }
 
 export async function persistManualBriefingResult(args: {
+  seniorId: string;
   context: AgentRunContext;
   result: AgentRunResult<BriefingOutput>;
   briefing: BriefingOutput;
@@ -913,15 +873,14 @@ export async function persistManualBriefingResult(args: {
   const client = getClient();
   if (!client) return localDemoMeta();
 
-  await ensureDemoPeople(client, args.context);
-  const checkIn = await getOrCreateActiveCheckIn(client, args.context);
+  const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
   const payload = buildManualBriefingPersistencePayload(
     args.context,
     args.result,
     args.briefing
   );
   const agentRuns = await upsertAgentRuns(client, checkIn.id, [payload.agentRun]);
-  await persistBrief(client, checkIn.id, payload.brief, agentRuns);
+  await persistBrief(client, args.seniorId, checkIn.id, payload.brief, agentRuns);
 
   return supabaseMeta();
 }
@@ -1196,25 +1155,6 @@ async function buildFollowUpQueue(
   });
 }
 
-async function getCaregiverName(
-  client: TrustKakiClient,
-  seniorId: string,
-  role: "caregiver" | "aac_volunteer"
-): Promise<string> {
-  const { data, error } = await client
-    .from("senior_caregivers")
-    .select("caregiver_id, caregivers(display_name)")
-    .eq("senior_id", seniorId)
-    .eq("role", role)
-    .maybeSingle();
-  throwIfError(error, `select ${role}`);
-
-  const relation = data as
-    | { caregivers?: { display_name?: string | null } | null }
-    | null;
-  return relation?.caregivers?.display_name ?? (role === "caregiver" ? uncleTan.caregiver : uncleTan.aacVolunteer);
-}
-
 async function listCaregiverNamesBySenior(
   client: TrustKakiClient,
   seniorIds: string[]
@@ -1278,8 +1218,6 @@ export async function readDashboardState(options: {
       ...mapped,
     };
   }
-
-  await ensureDemoPeople(client);
 
   const accessibleSeniorIds = options.auth?.accessibleSeniorIds.length
     ? options.auth.accessibleSeniorIds
@@ -1454,6 +1392,12 @@ export async function readDashboardState(options: {
     briefing: mapped.briefing,
     traces: mapped.traces,
   };
+}
+
+export async function readDemoDashboardState(): Promise<DashboardStateResult> {
+  const client = getClient();
+  if (client) await ensureDemoPeople(client);
+  return readDashboardState();
 }
 
 export async function resetDemoPersistence(): Promise<PersistenceMeta> {

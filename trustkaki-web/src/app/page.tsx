@@ -6,11 +6,12 @@ import NavBar from "@/components/NavBar";
 import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
 import SignInForm from "@/components/SignInForm";
-import { demoMessages, demoTraces, dashboardData } from "@/data/demo";
+import { demoTraces, dashboardData } from "@/data/demo";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
 import {
   appShellSurface,
+  chatSimulationState,
   dashboardStateEndpoint,
   dashboardSyncIntervalMs,
   optimisticDashboardForSenior,
@@ -42,6 +43,10 @@ export default function Home() {
     useState<DashboardData>(dashboardData);
   const [liveTraces, setLiveTraces] = useState<AgentTrace[]>(demoTraces);
   const [liveBriefing, setLiveBriefing] = useState<BriefingOutput | null>(null);
+  const [loadedSeniorId, setLoadedSeniorId] = useState<string | null>(
+    dashboardData.selectedSeniorId ?? null
+  );
+  const [loadingSeniorId, setLoadingSeniorId] = useState<string | null>(null);
   const selectedSeniorIdRef = useRef<string | null>(null);
   const dashboardRequestSeq = useRef(0);
   const authToken = session?.access_token ?? null;
@@ -49,8 +54,13 @@ export default function Home() {
   const isDemoAdmin = canShowDemoControls({ role });
   const surface = appShellSurface({ isDemoAdmin, demoMode });
   const latestSession = liveDashboardData.activeSessions[0];
-  const chatMessages =
-    latestSession?.messages.length > 0 ? latestSession.messages : demoMessages;
+  const chatMessages = latestSession?.messages ?? [];
+  const selectedSeniorId = liveDashboardData.selectedSeniorId ?? null;
+  const chatState = chatSimulationState({
+    selectedSeniorId,
+    loadedSeniorId,
+    isSeniorLoading: loadingSeniorId === selectedSeniorId,
+  });
 
   const handleUnauthorized = useCallback(() => {
     const client = createTrustKakiBrowserClient();
@@ -87,6 +97,10 @@ export default function Home() {
         setRiskLevel(state.data.senior.riskLevel);
         const nextSelectedSeniorId = state.data.selectedSeniorId ?? null;
         selectedSeniorIdRef.current = nextSelectedSeniorId;
+        setLoadedSeniorId(nextSelectedSeniorId);
+        setLoadingSeniorId((current) =>
+          current === nextSelectedSeniorId ? null : current
+        );
       })
       .catch((error) => {
         console.error("Failed to hydrate dashboard state:", error);
@@ -96,6 +110,7 @@ export default function Home() {
   const selectSenior = useCallback(
     (seniorId: string) => {
       selectedSeniorIdRef.current = seniorId;
+      setLoadingSeniorId(seniorId);
       setLiveDashboardData((current) =>
         optimisticDashboardForSenior(current, seniorId)
       );
@@ -214,8 +229,10 @@ export default function Home() {
         {surface.showDemoControls && (
           <div className="hidden flex-col flex-1 border-r border-gray-200 md:flex md:max-w-md">
             <ChatSimulation
+              key={chatState.instanceKey}
               messages={chatMessages}
-              seniorId={liveDashboardData.selectedSeniorId ?? null}
+              seniorId={chatState.submissionSeniorId}
+              isSeniorLoading={!chatState.canSubmit && Boolean(selectedSeniorId)}
               onComplete={refreshDashboardState}
               authToken={authToken}
               onUnauthorized={handleUnauthorized}

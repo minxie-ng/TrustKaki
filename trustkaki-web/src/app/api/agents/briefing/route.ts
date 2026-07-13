@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       overallRisk: context.currentRiskLevel,
     };
     const persistence = await persistManualBriefingResult({
+      seniorId,
       context,
       result,
       briefing: data,

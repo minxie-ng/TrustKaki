@@ -11,6 +11,9 @@ import {
   dashboardSnapshotToData,
 } from "./orchestration";
 
+const seniorId = "00000000-0000-4000-8000-000000000002";
+const clientMessageId = "message-b-1";
+
 const context = (
   currentRiskLevel: AgentRunContext["currentRiskLevel"] = "green"
 ): AgentRunContext => ({
@@ -118,11 +121,13 @@ const response = (
 
 describe("orchestration persistence mapping", () => {
   it("maps final policy risk as the persisted risk event", () => {
-    const payload = buildOrchestrationPersistencePayload(
-      "Not hungry today. Knee pain.",
-      context(),
-      response()
-    );
+    const payload = buildOrchestrationPersistencePayload({
+      seniorId,
+      message: "Not hungry today. Knee pain.",
+      clientMessageId,
+      context: context(),
+      result: response(),
+    });
 
     expect(payload.riskEvent).toMatchObject({
       previousRisk: "green",
@@ -133,11 +138,13 @@ describe("orchestration persistence mapping", () => {
   });
 
   it("does not let raw triage risk overwrite policy risk", () => {
-    const payload = buildOrchestrationPersistencePayload(
-      "Not hungry today. Knee pain.",
-      context(),
-      response({ riskLevel: "yellow" })
-    );
+    const payload = buildOrchestrationPersistencePayload({
+      seniorId,
+      message: "Not hungry today. Knee pain.",
+      clientMessageId,
+      context: context(),
+      result: response({ riskLevel: "yellow" }),
+    });
 
     const triageOutput = payload.agentRuns.find((run) => run.agentId === "triage")?.outputJson;
 
@@ -146,13 +153,15 @@ describe("orchestration persistence mapping", () => {
   });
 
   it("persists only policy-approved alerts", () => {
-    const payload = buildOrchestrationPersistencePayload(
-      "Good morning, I slept well.",
-      {
+    const payload = buildOrchestrationPersistencePayload({
+      seniorId,
+      message: "Good morning, I slept well.",
+      clientMessageId,
+      context: {
         ...context(),
         messages: [],
       },
-      response({
+      result: response({
         alerts: [],
         signals: [{ type: "social", severity: "low", description: "Mild reluctance" }],
         policy: {
@@ -163,8 +172,8 @@ describe("orchestration persistence mapping", () => {
           reasoning: ["Only one low-severity social signal"],
         },
         briefing: null,
-      })
-    );
+      }),
+    });
 
     expect(payload.signals).toHaveLength(1);
     expect(payload.alerts).toEqual([]);
@@ -172,11 +181,13 @@ describe("orchestration persistence mapping", () => {
   });
 
   it("marks automatic briefing trigger as policy", () => {
-    const payload = buildOrchestrationPersistencePayload(
-      "Not hungry today. Knee pain.",
-      context(),
-      response()
-    );
+    const payload = buildOrchestrationPersistencePayload({
+      seniorId,
+      message: "Not hungry today. Knee pain.",
+      clientMessageId,
+      context: context(),
+      result: response(),
+    });
 
     expect(payload.brief?.trigger).toBe("policy");
   });
@@ -212,14 +223,29 @@ describe("orchestration persistence mapping", () => {
     expect(payload.agentRun.tags).toContain("manual_override");
   });
 
-  it("uses the inbound client message id for duplicate protection", () => {
-    const payload = buildOrchestrationPersistencePayload(
-      "Not hungry today. Knee pain.",
-      context(),
-      response()
-    );
+  it("uses the explicit senior and inbound client message ids", () => {
+    const duplicateTextContext: AgentRunContext = {
+      ...context(),
+      messages: [
+        ...context().messages,
+        {
+          id: "wrong-text-match",
+          sender: "senior",
+          text: "Not hungry today. Knee pain.",
+          timestamp: "2026-07-11T00:01:00.000Z",
+        },
+      ],
+    };
+    const payload = buildOrchestrationPersistencePayload({
+      seniorId,
+      message: "Not hungry today. Knee pain.",
+      clientMessageId,
+      context: duplicateTextContext,
+      result: response(),
+    });
 
-    expect(payload.inboundMessage.clientMessageId).toBe("client_msg_1");
+    expect(payload.seniorId).toBe(seniorId);
+    expect(payload.inboundMessage.clientMessageId).toBe(clientMessageId);
     expect(payload.outboundMessages[0].clientMessageId).toBe("out_trace_triage_0");
   });
 

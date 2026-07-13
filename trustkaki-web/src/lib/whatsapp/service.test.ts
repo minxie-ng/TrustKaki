@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OrchestrateResponse } from "@/lib/agents/contracts";
+import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
 import type { Database, Json } from "@/lib/supabase/types";
 import { buildMetaStatusWebhookFixture, buildMetaTextWebhookFixture } from "./parser";
 
 vi.mock("server-only", () => ({}));
 
 const orchestrateMock = vi.fn();
-const findSeniorContextByPhoneMock = vi.fn();
+const loadSeniorContextByVerifiedPhoneMock = vi.fn();
 const persistOrchestrationResultMock = vi.fn();
 const recordOutboundMessageMetadataMock = vi.fn();
 const acceptWhatsAppEventMock = vi.fn();
@@ -23,9 +23,12 @@ vi.mock("@/lib/agents/orchestrator", () => ({
 }));
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
-  findSeniorContextByPhone: findSeniorContextByPhoneMock,
   persistOrchestrationResult: persistOrchestrationResultMock,
   recordOutboundMessageMetadata: recordOutboundMessageMetadataMock,
+}));
+
+vi.mock("@/lib/persistence/seniorContextRepository", () => ({
+  loadSeniorContextByVerifiedPhone: loadSeniorContextByVerifiedPhoneMock,
 }));
 
 vi.mock("@/lib/persistence/whatsappEventRepository", () => ({
@@ -42,9 +45,8 @@ vi.mock("@/lib/persistence/whatsappEventRepository", () => ({
 type WhatsAppEventRow =
   Database["public"]["Tables"]["whatsapp_webhook_events"]["Row"];
 
-const context = {
-  seniorId: "senior_1",
-  context: {
+const seniorId = "00000000-0000-4000-8000-00000000000b";
+const agentContext: AgentRunContext = {
     senior: {
       name: "Uncle Tan",
       age: 76,
@@ -53,8 +55,11 @@ const context = {
       aacVolunteer: "Mei Ling",
     },
     messages: [],
-    currentRiskLevel: "green" as const,
-  },
+    currentRiskLevel: "green",
+};
+const context = {
+  seniorId,
+  context: agentContext,
 };
 
 const orchestrationResponse: OrchestrateResponse = {
@@ -152,7 +157,7 @@ function eventRow(overrides: Partial<WhatsAppEventRow> = {}): WhatsAppEventRow {
 describe("WhatsApp async service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    findSeniorContextByPhoneMock.mockResolvedValue(context);
+    loadSeniorContextByVerifiedPhoneMock.mockResolvedValue(context);
     orchestrateMock.mockResolvedValue(orchestrationResponse);
     persistOrchestrationResultMock.mockResolvedValue({
       mode: "supabase",
@@ -206,6 +211,8 @@ describe("WhatsApp async service", () => {
     expect(orchestrateMock).toHaveBeenCalledTimes(1);
     expect(persistOrchestrationResultMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        seniorId,
+        clientMessageId: "wamid.inbound",
         result: expect.objectContaining({
           policy: expect.objectContaining({ finalRisk: "yellow" }),
         }),
@@ -218,6 +225,22 @@ describe("WhatsApp async service", () => {
         externalMessageId: "wamid.outbound",
       })
     );
+  });
+
+  it("does not map an unknown phone to demo identity or run orchestration", async () => {
+    const { processWhatsAppEventById } = await import("./service");
+    claimWhatsAppEventMock.mockResolvedValue(eventRow());
+    loadSeniorContextByVerifiedPhoneMock.mockResolvedValue(null);
+
+    const result = await processWhatsAppEventById("event_1", { sendText: vi.fn() });
+
+    expect(result.status).toBe("error");
+    expect(loadSeniorContextByVerifiedPhoneMock).toHaveBeenCalledWith({
+      phone: "6581234567",
+    });
+    expect(orchestrateMock).not.toHaveBeenCalled();
+    expect(persistOrchestrationResultMock).not.toHaveBeenCalled();
+    expect(markWhatsAppEventFailedMock).toHaveBeenCalledTimes(1);
   });
 
   it("does not rerun orchestration when retrying a stored outbound failure", async () => {
@@ -319,7 +342,7 @@ describe("WhatsApp async service", () => {
     claimWhatsAppEventMock.mockResolvedValue(
       eventRow({
         orchestration_result: orchestrationResponse as unknown as Json,
-        orchestration_context: context.context,
+        orchestration_context: context.context as unknown as Json,
         orchestration_completed_at: "2026-07-11T00:00:05.000Z",
         selected_reply_text: orchestrationResponse.messages[0].text,
         selected_reply_agent_id: "triage",

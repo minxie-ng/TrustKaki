@@ -7,6 +7,7 @@ import type { Message, RiskLevel } from "@/lib/types";
 interface ChatSimulationProps {
   messages: Message[];
   seniorId: string | null;
+  isSeniorLoading?: boolean;
   onComplete: () => void;
   authToken: string | null;
   onUnauthorized?: () => void;
@@ -27,6 +28,7 @@ function formatTime(ts: string) {
 export default function ChatSimulation({
   messages,
   seniorId,
+  isSeniorLoading = false,
   onComplete,
   authToken,
   onUnauthorized,
@@ -55,7 +57,7 @@ export default function ChatSimulation({
   }, [isRunning, currentIndex, messages]);
 
   async function runRealOrchestration(seedMessages: Message[]) {
-    if (!seniorId) return;
+    if (!seniorId || isSeniorLoading) return;
     const seniorMessage =
       seedMessages.find((message) => message.sender === "senior") ??
       messages.find((message) => message.sender === "senior");
@@ -88,7 +90,7 @@ export default function ChatSimulation({
   }
 
   const handleStart = () => {
-    if (!seniorId) return;
+    if (!seniorId || isSeniorLoading) return;
     completionCalledRef.current = false;
     setIsComplete(false);
     const seed = messages.slice(0, 2);
@@ -129,10 +131,14 @@ export default function ChatSimulation({
           <div className="flex items-center justify-center h-full">
             <button
               onClick={handleStart}
-              disabled={!seniorId}
+              disabled={!seniorId || isSeniorLoading}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl text-lg font-semibold shadow-lg transition-all hover:scale-105 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:scale-100"
             >
-              {seniorId ? "▶ Run Morning Check-in" : "Select a senior first"}
+              {isSeniorLoading
+                ? "Loading senior..."
+                : seniorId
+                  ? "▶ Run Morning Check-in"
+                  : "Select a senior first"}
             </button>
           </div>
         )}

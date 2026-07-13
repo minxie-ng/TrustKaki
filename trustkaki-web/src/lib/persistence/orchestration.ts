@@ -77,6 +77,7 @@ export interface PersistedBriefInput {
 }
 
 export interface OrchestrationPersistencePayload {
+  seniorId: string;
   senior: AgentRunContext["senior"];
   inboundMessage: PersistedMessageInput;
   outboundMessages: PersistedMessageInput[];
@@ -134,16 +135,6 @@ function safeParseOutputJson(output: string): unknown | null {
   }
 }
 
-function findInboundClientMessageId(
-  message: string,
-  context: AgentRunContext
-): string | null {
-  const matching = [...context.messages]
-    .reverse()
-    .find((msg) => msg.sender === "senior" && msg.text === message);
-  return matching?.id ?? null;
-}
-
 export function traceToPersistedAgentRun(trace: AgentTrace): PersistedAgentRunInput {
   return {
     agentId: trace.agentId,
@@ -165,47 +156,52 @@ export function traceToPersistedAgentRun(trace: AgentTrace): PersistedAgentRunIn
 }
 
 export function buildOrchestrationPersistencePayload(
-  message: string,
-  context: AgentRunContext,
-  result: OrchestrateResponse
+  args: {
+    seniorId: string;
+    message: string;
+    clientMessageId: string;
+    context: AgentRunContext;
+    result: OrchestrateResponse;
+  }
 ): OrchestrationPersistencePayload {
   return {
-    senior: context.senior,
+    seniorId: args.seniorId,
+    senior: args.context.senior,
     inboundMessage: {
       sender: "senior",
-      text: message,
+      text: args.message,
       agentId: null,
-      clientMessageId: findInboundClientMessageId(message, context),
+      clientMessageId: args.clientMessageId,
     },
-    outboundMessages: result.messages.map((outbound, index) => ({
+    outboundMessages: args.result.messages.map((outbound, index) => ({
       sender: "trustkaki",
       text: outbound.text,
       agentId: outbound.agentId ?? null,
-      clientMessageId: buildOutboundClientMessageId(result, index),
+      clientMessageId: buildOutboundClientMessageId(args.result, index),
     })),
-    agentRuns: result.traces.map(traceToPersistedAgentRun),
-    signals: result.signals.map((signal) => ({
+    agentRuns: args.result.traces.map(traceToPersistedAgentRun),
+    signals: args.result.signals.map((signal) => ({
       type: signal.type,
       description: signal.description,
       severity: signal.severity,
     })),
     riskEvent: {
-      previousRisk: context.currentRiskLevel,
-      finalRisk: result.policy.finalRisk,
-      riskChange: result.policy.riskChange,
-      reasoning: result.policy.reasoning,
+      previousRisk: args.context.currentRiskLevel,
+      finalRisk: args.result.policy.finalRisk,
+      riskChange: args.result.policy.riskChange,
+      reasoning: args.result.policy.reasoning,
     },
-    alerts: result.alerts.map((alert) => ({
+    alerts: args.result.alerts.map((alert) => ({
       type: alert.type,
       message: alert.message,
       severity: alert.severity,
       urgent: alert.urgent ?? false,
       reason: alert.reason ?? null,
     })),
-    brief: result.briefing
+    brief: args.result.briefing
       ? {
           trigger: "policy",
-          briefing: result.briefing,
+          briefing: args.result.briefing,
         }
       : null,
   };

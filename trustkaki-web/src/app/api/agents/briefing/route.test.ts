@@ -188,6 +188,7 @@ describe("/api/agents/briefing manual override", () => {
     expect(runBriefingAgentMock).toHaveBeenCalledWith(context("green"));
     expect(persistManualBriefingResultMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        seniorId,
         context: expect.objectContaining({ currentRiskLevel: "green" }),
         briefing: expect.objectContaining({ overallRisk: "green" }),
       })

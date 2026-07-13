@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const DEMO_SENIOR_ID = "00000000-0000-4000-8000-000000000001";
+
 vi.mock("server-only", () => ({}));
 
 const orchestrateMock = vi.fn();
 const persistOrchestrationResultMock = vi.fn();
-const readDashboardStateMock = vi.fn();
+const readDemoDashboardStateMock = vi.fn();
 const resetDemoPersistenceMock = vi.fn();
 const requireDemoAdminMock = vi.fn();
 
@@ -23,7 +25,7 @@ vi.mock("@/lib/agents/orchestrator", () => ({
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistOrchestrationResult: persistOrchestrationResultMock,
-  readDashboardState: readDashboardStateMock,
+  readDemoDashboardState: readDemoDashboardStateMock,
   resetDemoPersistence: resetDemoPersistenceMock,
 }));
 
@@ -40,7 +42,7 @@ describe("/api/demo/pattern-watch full replay", () => {
     vi.resetModules();
     orchestrateMock.mockReset();
     persistOrchestrationResultMock.mockReset();
-    readDashboardStateMock.mockReset();
+    readDemoDashboardStateMock.mockReset();
     resetDemoPersistenceMock.mockReset();
     requireDemoAdminMock.mockReset();
     requireDemoAdminMock.mockResolvedValue({ ok: true, auth });
@@ -81,7 +83,7 @@ describe("/api/demo/pattern-watch full replay", () => {
       policy: { finalRisk: "yellow" },
       signals: [{ type: "health" }],
     });
-    readDashboardStateMock.mockResolvedValue({
+    readDemoDashboardStateMock.mockResolvedValue({
       persistence: { mode: "supabase", configured: true, persisted: true },
       data: { followUpQueue: [] },
     });
@@ -92,6 +94,10 @@ describe("/api/demo/pattern-watch full replay", () => {
 
     expect(response.status).toBe(200);
     expect(orchestrateMock).toHaveBeenCalledTimes(4);
+    expect(persistOrchestrationResultMock).toHaveBeenCalledTimes(4);
+    expect(persistOrchestrationResultMock).toHaveBeenCalledWith(
+      expect.objectContaining({ seniorId: DEMO_SENIOR_ID })
+    );
     expect(json.warning).toContain("Full Agent Replay may take over one minute");
   });
 });
