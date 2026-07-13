@@ -99,6 +99,8 @@ describe("auth session helpers", () => {
       caregiverName: "Rachel Tan",
       accessibleSeniorIds: ["senior-1", "senior-2"],
     });
+    expect(result.accessToken).toBe("token");
+    expect(result.auth).not.toHaveProperty("accessToken");
     expect(canAccessSenior(result.auth, "senior-2")).toBe(true);
     expect(canAccessSenior(result.auth, "other-senior")).toBe(false);
   });

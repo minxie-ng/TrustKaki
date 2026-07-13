@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   agentMessageRequestSchema,
+  manualBriefingRequestSchema,
   queueActionRequestSchema,
   specialistAgentRequestSchema,
 } from "./schemas";
+
+const seniorId = "00000000-0000-4000-8000-000000000001";
 
 const validContext = {
   senior: {
@@ -25,35 +28,46 @@ const validContext = {
 };
 
 describe("API request schemas", () => {
-  it("accepts a bounded orchestration message request", () => {
+  it("accepts a senior-scoped orchestration message request", () => {
     expect(
       agentMessageRequestSchema.safeParse({
+        seniorId,
         message: "Not hungry today",
-        context: validContext,
+        clientMessageId: "web-message-1",
       }).success
     ).toBe(true);
   });
 
-  it("rejects oversized agent messages and oversized history", () => {
+  it("rejects invalid IDs and bounded message fields", () => {
     expect(
       agentMessageRequestSchema.safeParse({
+        seniorId,
         message: "x".repeat(5001),
-        context: validContext,
       }).success
     ).toBe(false);
 
     expect(
       agentMessageRequestSchema.safeParse({
+        seniorId: "not-a-uuid",
         message: "ok",
-        context: {
-          ...validContext,
-          messages: Array.from({ length: 51 }, (_, index) => ({
-            id: `m${index}`,
-            sender: "senior",
-            text: "hello",
-            timestamp: "2026-07-12T00:00:00.000Z",
-          })),
-        },
+      }).success
+    ).toBe(false);
+
+    expect(
+      agentMessageRequestSchema.safeParse({
+        seniorId,
+        message: "ok",
+        clientMessageId: "x".repeat(121),
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects browser-supplied authoritative context", () => {
+    expect(
+      agentMessageRequestSchema.safeParse({
+        seniorId,
+        message: "Hello",
+        context: validContext,
       }).success
     ).toBe(false);
   });
@@ -108,9 +122,17 @@ describe("API request schemas", () => {
     ).toBe(true);
   });
 
-  it("validates specialist agent requests with optional triage signals", () => {
+  it("uses the same strict bounded request for specialist agents", () => {
     expect(
       specialistAgentRequestSchema.safeParse({
+        seniorId,
+        message: "Don't want. Paiseh.",
+      }).success
+    ).toBe(true);
+
+    expect(
+      specialistAgentRequestSchema.safeParse({
+        seniorId,
         message: "Don't want. Paiseh.",
         context: validContext,
         triageSignals: [
@@ -121,6 +143,30 @@ describe("API request schemas", () => {
           },
         ],
       }).success
+    ).toBe(false);
+  });
+
+  it("accepts only a senior-scoped manual override briefing", () => {
+    expect(
+      manualBriefingRequestSchema.safeParse({
+        seniorId,
+        trigger: "manual_override",
+      }).success
     ).toBe(true);
+
+    for (const extra of [
+      { context: validContext },
+      { triageResult: {} },
+      { aacNudgeResult: {} },
+      { digitalSafetyResult: {} },
+    ]) {
+      expect(
+        manualBriefingRequestSchema.safeParse({
+          seniorId,
+          trigger: "manual_override",
+          ...extra,
+        }).success
+      ).toBe(false);
+    }
   });
 });

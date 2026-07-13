@@ -1,26 +1,19 @@
 import { z } from "zod";
-import { agentRunContextSchema, triageSignalSchema } from "@/lib/agents/schemas";
 
-const boundedContextSchema = agentRunContextSchema.extend({
-  messages: agentRunContextSchema.shape.messages.max(50),
-});
+const seniorIdSchema = z.string().uuid();
 
 export const agentMessageRequestSchema = z.object({
+  seniorId: seniorIdSchema,
   message: z.string().trim().min(1).max(5000),
-  context: boundedContextSchema,
-});
+  clientMessageId: z.string().trim().min(1).max(120).optional(),
+}).strict();
 
-export const specialistAgentRequestSchema = agentMessageRequestSchema.extend({
-  triageSignals: z.array(triageSignalSchema).max(20).optional(),
-});
+export const specialistAgentRequestSchema = agentMessageRequestSchema;
 
 export const manualBriefingRequestSchema = z.object({
-  context: boundedContextSchema,
-  triageResult: z.unknown().optional(),
-  aacNudgeResult: z.unknown().optional(),
-  digitalSafetyResult: z.unknown().optional(),
+  seniorId: seniorIdSchema,
   trigger: z.literal("manual_override"),
-});
+}).strict();
 
 export const queueActionRequestSchema = z.object({
   queueItemId: z.string().trim().min(1).max(120),

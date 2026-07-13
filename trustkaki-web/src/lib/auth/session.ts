@@ -30,6 +30,7 @@ export interface AuthFailure {
 export interface AuthSuccess {
   ok: true;
   auth: AuthenticatedCaregiver;
+  accessToken: string;
 }
 
 export type AuthResult = AuthSuccess | AuthFailure;
@@ -103,6 +104,7 @@ export async function requireAuthenticatedCaregiver(
 
   return {
     ok: true,
+    accessToken: token,
     auth: {
       userId: user.id,
       email: user.email ?? null,
