@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import NavBar from "@/components/NavBar";
+import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
 import SignInForm from "@/components/SignInForm";
-import { demoTraces, dashboardData } from "@/data/demo";
+import { demoMessages, demoTraces, dashboardData } from "@/data/demo";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
 import {
@@ -47,6 +48,9 @@ export default function Home() {
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
   const surface = appShellSurface({ isDemoAdmin, demoMode });
+  const latestSession = liveDashboardData.activeSessions[0];
+  const chatMessages =
+    latestSession?.messages.length > 0 ? latestSession.messages : demoMessages;
 
   const handleUnauthorized = useCallback(() => {
     const client = createTrustKakiBrowserClient();
@@ -207,6 +211,18 @@ export default function Home() {
       />
 
       <div className="flex-1 flex overflow-hidden">
+        {surface.showDemoControls && (
+          <div className="hidden flex-col flex-1 border-r border-gray-200 md:flex md:max-w-md">
+            <ChatSimulation
+              messages={chatMessages}
+              seniorId={liveDashboardData.selectedSeniorId ?? null}
+              onComplete={refreshDashboardState}
+              authToken={authToken}
+              onUnauthorized={handleUnauthorized}
+            />
+          </div>
+        )}
+
         <div className="flex flex-col flex-1">
           <Dashboard
             data={liveDashboardData}

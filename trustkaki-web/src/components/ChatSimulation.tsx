@@ -6,6 +6,7 @@ import type { Message, RiskLevel } from "@/lib/types";
 
 interface ChatSimulationProps {
   messages: Message[];
+  seniorId: string | null;
   onComplete: () => void;
   authToken: string | null;
   onUnauthorized?: () => void;
@@ -25,6 +26,7 @@ function formatTime(ts: string) {
 
 export default function ChatSimulation({
   messages,
+  seniorId,
   onComplete,
   authToken,
   onUnauthorized,
@@ -53,6 +55,7 @@ export default function ChatSimulation({
   }, [isRunning, currentIndex, messages]);
 
   async function runRealOrchestration(seedMessages: Message[]) {
+    if (!seniorId) return;
     const seniorMessage =
       seedMessages.find((message) => message.sender === "senior") ??
       messages.find((message) => message.sender === "senior");
@@ -62,18 +65,9 @@ export default function ChatSimulation({
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeader(authToken) },
       body: JSON.stringify({
+        seniorId,
         message: seniorMessage.text,
-        context: {
-          senior: {
-            name: "Uncle Tan",
-            age: 76,
-            livingSituation: "Lives alone in 3-room HDB, Toa Payoh",
-            caregiver: "Rachel Tan",
-            aacVolunteer: "Mei Ling",
-          },
-          messages: seedMessages,
-          currentRiskLevel: "green",
-        },
+        clientMessageId: seniorMessage.id,
       }),
     });
     if (response.status === 401) {
@@ -94,6 +88,7 @@ export default function ChatSimulation({
   }
 
   const handleStart = () => {
+    if (!seniorId) return;
     completionCalledRef.current = false;
     setIsComplete(false);
     const seed = messages.slice(0, 2);
@@ -121,8 +116,8 @@ export default function ChatSimulation({
           👴
         </div>
         <div>
-          <div className="font-semibold">Uncle Tan</div>
-          <div className="text-xs text-emerald-200">TrustKaki Check-in</div>
+          <div className="font-semibold">Selected senior</div>
+          <div className="text-xs text-emerald-200">TrustKaki check-in</div>
         </div>
         <div className="ml-auto text-xs bg-emerald-500 px-2 py-1 rounded-full">
           {isComplete ? "Complete ✅" : isRunning ? "Live 🔴" : "Ready"}
@@ -134,9 +129,10 @@ export default function ChatSimulation({
           <div className="flex items-center justify-center h-full">
             <button
               onClick={handleStart}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl text-lg font-semibold shadow-lg transition-all hover:scale-105"
+              disabled={!seniorId}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl text-lg font-semibold shadow-lg transition-all hover:scale-105 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:scale-100"
             >
-              ▶ Run Morning Check-in
+              {seniorId ? "▶ Run Morning Check-in" : "Select a senior first"}
             </button>
           </div>
         )}

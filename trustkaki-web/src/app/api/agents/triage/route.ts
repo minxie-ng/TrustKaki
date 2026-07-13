@@ -7,10 +7,12 @@ import { checkRateLimit } from "@/lib/api/rateLimit";
 import { agentMessageRequestSchema, parseJsonBody } from "@/lib/api/schemas";
 import {
   authJsonError,
+  canAccessSenior,
   requireAuthenticatedCaregiver,
 } from "@/lib/auth/session";
 import { runTriageAgent } from "@/lib/agents/orchestrator";
 import { getLLMProvider } from "@/lib/agents/provider";
+import { loadAuthorizedAgentContext } from "@/lib/persistence/seniorContextRepository";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -31,7 +33,14 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = await parseJsonBody(request, agentMessageRequestSchema);
     if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: parsed.status });
-    const { message, context } = parsed.data;
+    const { seniorId, message } = parsed.data;
+    if (!canAccessSenior(authResult.auth, seniorId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const context = await loadAuthorizedAgentContext({
+      auth: authResult.auth,
+      seniorId,
+    });
 
     const result = await runTriageAgent(message, context);
     return NextResponse.json(result);

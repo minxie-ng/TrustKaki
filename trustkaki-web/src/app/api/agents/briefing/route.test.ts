@@ -7,6 +7,10 @@ vi.mock("server-only", () => ({}));
 const runBriefingAgentMock = vi.fn();
 const persistManualBriefingResultMock = vi.fn();
 const requireAuthenticatedCaregiverMock = vi.fn();
+const canAccessSeniorMock = vi.fn();
+const loadAuthorizedAgentContextMock = vi.fn();
+
+const seniorId = "00000000-0000-4000-8000-000000000001";
 
 const auth = {
   userId: "auth-user-1",
@@ -14,7 +18,7 @@ const auth = {
   role: "demo_admin",
   caregiverId: "caregiver-1",
   caregiverName: "Rachel Tan",
-  accessibleSeniorIds: ["senior-1"],
+  accessibleSeniorIds: [seniorId],
 };
 
 vi.mock("@/lib/agents/orchestrator", () => ({
@@ -32,8 +36,13 @@ vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistManualBriefingResult: persistManualBriefingResultMock,
 }));
 
+vi.mock("@/lib/persistence/seniorContextRepository", () => ({
+  loadAuthorizedAgentContext: loadAuthorizedAgentContextMock,
+}));
+
 vi.mock("@/lib/auth/session", () => ({
   requireAuthenticatedCaregiver: requireAuthenticatedCaregiverMock,
+  canAccessSenior: canAccessSeniorMock,
   authJsonError: (result: { error: string; status: number }) =>
     Response.json({ error: result.error }, { status: result.status }),
 }));
@@ -86,7 +95,15 @@ beforeEach(() => {
   runBriefingAgentMock.mockReset();
   persistManualBriefingResultMock.mockReset();
   requireAuthenticatedCaregiverMock.mockReset();
-  requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth });
+  canAccessSeniorMock.mockReset();
+  loadAuthorizedAgentContextMock.mockReset();
+  requireAuthenticatedCaregiverMock.mockResolvedValue({
+    ok: true,
+    auth,
+    accessToken: "verified-access-token",
+  });
+  canAccessSeniorMock.mockReturnValue(true);
+  loadAuthorizedAgentContextMock.mockResolvedValue(context("green"));
   persistManualBriefingResultMock.mockResolvedValue({
     mode: "local_demo",
     configured: false,
@@ -95,10 +112,47 @@ beforeEach(() => {
 });
 
 describe("/api/agents/briefing manual override", () => {
-  it("rejects manual briefing requests without an explicit manual_override trigger", async () => {
+  it("returns 401 before loading context or running models", async () => {
+    requireAuthenticatedCaregiverMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
     const { POST } = await import("./route");
 
-    const response = await POST(jsonRequest({ context: context("green") }));
+    const response = await POST(
+      jsonRequest({ seniorId, trigger: "manual_override" })
+    );
+
+    expect(response.status).toBe(401);
+    expect(loadAuthorizedAgentContextMock).not.toHaveBeenCalled();
+    expect(runBriefingAgentMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 before model or persistence work", async () => {
+    canAccessSeniorMock.mockReturnValue(false);
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      jsonRequest({ seniorId, trigger: "manual_override" })
+    );
+
+    expect(response.status).toBe(403);
+    expect(loadAuthorizedAgentContextMock).not.toHaveBeenCalled();
+    expect(runBriefingAgentMock).not.toHaveBeenCalled();
+    expect(persistManualBriefingResultMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects browser-supplied context from manual briefing requests", async () => {
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      jsonRequest({
+        seniorId,
+        trigger: "manual_override",
+        context: context("green"),
+      })
+    );
     const json = await response.json();
 
     expect(response.status).toBe(400);
@@ -119,7 +173,7 @@ describe("/api/agents/briefing manual override", () => {
     );
 
     const response = await POST(
-      jsonRequest({ context: context("green"), trigger: "manual_override" })
+      jsonRequest({ seniorId, trigger: "manual_override" })
     );
     const json = await response.json();
 
@@ -130,11 +184,14 @@ describe("/api/agents/briefing manual override", () => {
     expect(json.reasoning).toContain("Manual override");
     expect(JSON.parse(json.output).overallRisk).toBe("green");
     expect(json.persistence.persisted).toBe(false);
+    expect(loadAuthorizedAgentContextMock).toHaveBeenCalledWith({ auth, seniorId });
+    expect(runBriefingAgentMock).toHaveBeenCalledWith(context("green"));
     expect(persistManualBriefingResultMock).toHaveBeenCalledWith(
       expect.objectContaining({
         context: expect.objectContaining({ currentRiskLevel: "green" }),
         briefing: expect.objectContaining({ overallRisk: "green" }),
       })
     );
+    expect(JSON.stringify(json)).not.toContain("verified-access-token");
   });
 });

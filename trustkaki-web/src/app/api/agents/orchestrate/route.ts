@@ -4,14 +4,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/responses";
 import { checkRateLimit } from "@/lib/api/rateLimit";
+import { agentMessageRequestSchema, parseJsonBody } from "@/lib/api/schemas";
 import {
   authJsonError,
+  canAccessSenior,
   requireAuthenticatedCaregiver,
 } from "@/lib/auth/session";
 import { orchestrate } from "@/lib/agents/orchestrator";
 import { getLLMProvider } from "@/lib/agents/provider";
-import { orchestratorInputSchema } from "@/lib/agents/schemas";
+import { loadAuthorizedAgentContext } from "@/lib/persistence/seniorContextRepository";
 import { persistOrchestrationResult } from "@/lib/persistence/trustkakiRepository";
+import type { Message } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,22 +33,34 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const parsed = orchestratorInputSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid orchestration input" },
-        { status: 400 }
-      );
+    const parsed = await parseJsonBody(request, agentMessageRequestSchema);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status });
+    }
+    const { seniorId, message, clientMessageId } = parsed.data;
+    if (!canAccessSenior(authResult.auth, seniorId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { message, context } = parsed.data;
+    const context = await loadAuthorizedAgentContext({
+      auth: authResult.auth,
+      seniorId,
+    });
+    const inboundMessage: Message = {
+      id: clientMessageId ?? crypto.randomUUID(),
+      sender: "senior",
+      text: message,
+      timestamp: new Date().toISOString(),
+    };
+    const contextWithInbound = {
+      ...context,
+      messages: [...context.messages, inboundMessage],
+    };
 
-    const result = await orchestrate(message, context);
+    const result = await orchestrate(message, contextWithInbound);
     const persistence = await persistOrchestrationResult({
       message,
-      context,
+      context: contextWithInbound,
       result,
     });
 
@@ -64,7 +79,7 @@ export async function GET() {
     llmConfigured: provider.isConfigured,
     model: provider.getModel(),
     endpoints: {
-      POST: "Send { message: string, context: AgentRunContext } to run full orchestration",
+      POST: "Send a senior-scoped message to run full orchestration",
     },
   });
 }
