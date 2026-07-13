@@ -617,6 +617,8 @@ export interface Database {
           action_type: CaregiverActionType;
           outcome_type: ContactOutcome | null;
           note: string | null;
+          previous_status: QueueStatus | null;
+          resulting_status: QueueStatus | null;
           created_at: string;
         };
         Insert: {
@@ -627,6 +629,8 @@ export interface Database {
           action_type: CaregiverActionType;
           outcome_type?: ContactOutcome | null;
           note?: string | null;
+          previous_status?: QueueStatus | null;
+          resulting_status?: QueueStatus | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["caregiver_actions"]["Insert"]>;
@@ -637,6 +641,21 @@ export interface Database {
       claim_whatsapp_webhook_event: {
         Args: { p_event_id: string };
         Returns: Database["public"]["Tables"]["whatsapp_webhook_events"]["Row"][];
+      };
+      record_caregiver_queue_action: {
+        Args: {
+          p_queue_item_id: string;
+          p_action_type: CaregiverActionType;
+          p_outcome_type?: ContactOutcome | null;
+          p_note?: string | null;
+          p_assigned_caregiver_id?: string | null;
+          p_snoozed_until?: string | null;
+        };
+        Returns: Json;
+      };
+      reset_trustkaki_demo: {
+        Args: Record<string, never>;
+        Returns: Json;
       };
     };
     Enums: {
