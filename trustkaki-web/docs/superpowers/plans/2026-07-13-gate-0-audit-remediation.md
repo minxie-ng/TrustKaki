@@ -71,7 +71,7 @@
 - Create: `src/lib/security/gate0Regression.test.ts`
 - Modify: `docs/superpowers/plans/2026-07-12-production-auth-security.md`
 
-- [ ] **Step 1: Create the implementation branch/worktree**
+- [x] **Step 1: Create the implementation branch/worktree**
 
 Run:
 
@@ -83,7 +83,7 @@ git worktree add ../trustkaki-web-gate0 -b codex/gate-0-audit-remediation main
 Expected: the current tree is clean and the new worktree checks out the latest
 roadmap commit without changing `main`.
 
-- [ ] **Step 2: Write a failing structural regression test**
+- [x] **Step 2: Write a failing structural regression test**
 
 Create `src/lib/security/gate0Regression.test.ts` with checks that describe the
 unsafe baseline without coupling to implementation formatting:
@@ -114,7 +114,7 @@ describe("Gate 0 structural regression", () => {
 });
 ```
 
-- [ ] **Step 3: Run the baseline test and verify red**
+- [x] **Step 3: Run the baseline test and verify red**
 
 Run:
 
@@ -125,13 +125,13 @@ Run:
 Expected: FAIL because browser context is still accepted, demo defaults remain,
 and `validate` does not exist.
 
-- [ ] **Step 4: Record the audit as pending evidence**
+- [x] **Step 4: Record the audit as pending evidence**
 
 Add a `Gate 0 follow-up` section to
 `docs/superpowers/plans/2026-07-12-production-auth-security.md` containing the
 auditor findings and links to this plan. Do not mark any finding complete yet.
 
-- [ ] **Step 5: Commit the red baseline**
+- [x] **Step 5: Commit the red baseline**
 
 ```bash
 git add src/lib/security/gate0Regression.test.ts docs/superpowers/plans/2026-07-12-production-auth-security.md
@@ -149,7 +149,7 @@ git commit -m "test: capture gate zero audit regressions"
 - Modify: `src/lib/auth/session.ts`
 - Modify: `src/lib/auth/session.test.ts`
 
-- [ ] **Step 1: Write failing request-schema tests**
+- [x] **Step 1: Write failing request-schema tests**
 
 Add these cases to `src/lib/api/schemas.test.ts`:
 
@@ -175,7 +175,7 @@ expect(manualBriefingRequestSchema.safeParse({
 The schemas must be `.strict()` so extra browser-supplied `context`, triage,
 AAC, or digital-safety outputs are rejected.
 
-- [ ] **Step 2: Run schema tests and verify red**
+- [x] **Step 2: Run schema tests and verify red**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/api/schemas.test.ts
@@ -183,7 +183,7 @@ AAC, or digital-safety outputs are rejected.
 
 Expected: FAIL because the schemas still require `context`.
 
-- [ ] **Step 3: Implement the bounded request contracts**
+- [x] **Step 3: Implement the bounded request contracts**
 
 Replace the agent request schemas in `src/lib/api/schemas.ts` with:
 
@@ -207,7 +207,7 @@ export const manualBriefingRequestSchema = z.object({
 Change `orchestratorInputSchema` in `src/lib/agents/schemas.ts` to validate only
 internal `OrchestratorInput`; no API route should parse browser payloads with it.
 
-- [ ] **Step 4: Write failing context-loader tests**
+- [x] **Step 4: Write failing context-loader tests**
 
 Create `src/lib/persistence/seniorContextRepository.test.ts` with a mocked
 service client proving:
@@ -233,7 +233,7 @@ expect(await loadAuthorizedAgentContext({
 Also assert every database query includes the explicit `seniorId` filter and
 the loader never calls demo seeding.
 
-- [ ] **Step 5: Run context tests and verify red**
+- [x] **Step 5: Run context tests and verify red**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/persistence/seniorContextRepository.test.ts
@@ -241,7 +241,7 @@ the loader never calls demo seeding.
 
 Expected: FAIL because the context repository does not exist.
 
-- [ ] **Step 6: Implement the authoritative context loader**
+- [x] **Step 6: Implement the authoritative context loader**
 
 Create a server-only module exporting:
 
@@ -264,7 +264,7 @@ and at most 50 recent messages, loads caregiver/AAC names from
 `senior_caregivers`, and uses the persisted `seniors.risk_level`. It throws only
 `Forbidden` or bounded repository errors; it does not call `ensureDemoPeople`.
 
-- [ ] **Step 7: Preserve the verified bearer token for authenticated RPCs**
+- [x] **Step 7: Preserve the verified bearer token for authenticated RPCs**
 
 Extend `AuthSuccess` in `src/lib/auth/session.ts`:
 
@@ -280,7 +280,7 @@ Return the already verified bearer token as `accessToken`. Add a session test
 asserting the token is available to server routes, and add a response regression
 test later proving it is never serialized.
 
-- [ ] **Step 8: Run focused tests and commit**
+- [x] **Step 8: Run focused tests and commit**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/api/schemas.test.ts src/lib/auth/session.test.ts src/lib/persistence/seniorContextRepository.test.ts
@@ -306,7 +306,7 @@ Expected: all focused tests PASS.
 - Modify: `src/components/ChatSimulation.tsx`
 - Modify: `src/app/page.tsx`
 
-- [ ] **Step 1: Write failing route authorization tests**
+- [x] **Step 1: Write failing route authorization tests**
 
 For each POST agent route, mock `requireAuthenticatedCaregiver`,
 `loadAuthorizedAgentContext`, and the relevant agent runner. Assert:
@@ -332,7 +332,7 @@ against the same senior, and forces `overallRisk` to the loaded current risk.
 For AAC Nudge, run Triage first using the loaded context and pass only its
 validated signals into `runAACNudgeAgent`; do not accept browser triage signals.
 
-- [ ] **Step 2: Run route tests and verify red**
+- [x] **Step 2: Run route tests and verify red**
 
 ```bash
 ./node_modules/.bin/vitest run src/app/api/agents
@@ -340,7 +340,7 @@ validated signals into `runAACNudgeAgent`; do not accept browser triage signals.
 
 Expected: FAIL because current routes still read `context` from request bodies.
 
-- [ ] **Step 3: Implement explicit route flow**
+- [x] **Step 3: Implement explicit route flow**
 
 Use this order in every route:
 
@@ -365,7 +365,7 @@ For orchestration, append one inbound `Message` with the bounded
 `clientMessageId ?? crypto.randomUUID()` before calling `orchestrate`. Pass the
 explicit `seniorId` into persistence. Do not spread `authResult` into responses.
 
-- [ ] **Step 4: Update the browser caller**
+- [x] **Step 4: Update the browser caller**
 
 Add `seniorId: string | null` to `ChatSimulationProps`. Disable the test chat
 action when no senior is selected. Send:
@@ -381,7 +381,7 @@ body: JSON.stringify({
 Remove the hard-coded senior profile and risk from `ChatSimulation.tsx`.
 Pass `liveDashboardData.selectedSeniorId` from `src/app/page.tsx`.
 
-- [ ] **Step 5: Add token-leak regression assertions**
+- [x] **Step 5: Add token-leak regression assertions**
 
 In each successful route test, serialize the response and assert:
 
@@ -389,7 +389,7 @@ In each successful route test, serialize the response and assert:
 expect(JSON.stringify(await response.json())).not.toContain("verified-access-token");
 ```
 
-- [ ] **Step 6: Run focused tests and commit**
+- [x] **Step 6: Run focused tests and commit**
 
 ```bash
 ./node_modules/.bin/vitest run src/app/api/agents src/lib/api/schemas.test.ts
@@ -412,7 +412,7 @@ Expected: route tests and typecheck PASS.
 - Modify: `src/app/api/demo/pattern-watch/route.ts`
 - Modify: corresponding demo route tests
 
-- [ ] **Step 1: Write failing non-demo persistence tests**
+- [x] **Step 1: Write failing non-demo persistence tests**
 
 Extend orchestration mapping and repository tests so a non-demo senior is
 propagated to every write:
@@ -434,7 +434,7 @@ Mock Supabase and assert `messages`, `check_ins`, `risk_events`, `alerts`,
 `briefs`, and Pattern Watch calls all use `SENIOR_B`, never
 `DEMO_SENIOR_ID`.
 
-- [ ] **Step 2: Run focused persistence tests and verify red**
+- [x] **Step 2: Run focused persistence tests and verify red**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/persistence/orchestration.test.ts src/lib/whatsapp/service.test.ts
@@ -442,7 +442,7 @@ Mock Supabase and assert `messages`, `check_ins`, `risk_events`, `alerts`,
 
 Expected: FAIL because helper writes still embed the demo senior.
 
-- [ ] **Step 3: Require explicit senior identity in normal functions**
+- [x] **Step 3: Require explicit senior identity in normal functions**
 
 Change the public signatures to:
 
@@ -468,7 +468,7 @@ Pass `seniorId` through `getOrCreateActiveCheckIn`, `upsertMessages`,
 `ensureDemoPeople` from both functions. Remove default parameters such as
 `seniorId = DEMO_SENIOR_ID`.
 
-- [ ] **Step 4: Keep demo persistence explicitly demo-only**
+- [x] **Step 4: Keep demo persistence explicitly demo-only**
 
 Rename demo helpers and require the demo route to pass `DEMO_SENIOR_ID`:
 
@@ -483,7 +483,7 @@ persistQuickDemoTimelineResult({
 
 The WhatsApp service passes the `seniorId` returned by verified phone lookup.
 
-- [ ] **Step 5: Run focused tests and commit**
+- [x] **Step 5: Run focused tests and commit**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/persistence src/lib/whatsapp src/app/api/demo
@@ -501,7 +501,7 @@ git commit -m "fix: persist orchestration with explicit senior identity"
 - Create: `src/lib/security/gate0Migration.test.ts`
 - Modify: `src/lib/supabase/types.ts`
 
-- [ ] **Step 1: Verify current Supabase CLI and docs**
+- [x] **Step 1: Verify current Supabase CLI and docs**
 
 Run:
 
@@ -513,7 +513,7 @@ npx supabase@2.81.3 migration new gate_0_auth_transaction_hardening
 Expected: CLI version is exactly `2.81.3` and one timestamped migration file is
 created. Record that version and generated filename in the verification report.
 
-- [ ] **Step 2: Write failing migration contract tests**
+- [x] **Step 2: Write failing migration contract tests**
 
 Create `src/lib/security/gate0Migration.test.ts` and read the generated migration
 by suffix. Assert it contains:
@@ -532,7 +532,7 @@ expect(sql).not.toContain("security invoker\nset search_path = public");
 Also assert every affected policy uses `TO authenticated` and the private
 relationship helper rather than querying `senior_caregivers` recursively.
 
-- [ ] **Step 3: Run migration test and verify red**
+- [x] **Step 3: Run migration test and verify red**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/security/gate0Migration.test.ts
@@ -540,7 +540,7 @@ relationship helper rather than querying `senior_caregivers` recursively.
 
 Expected: FAIL because the generated migration is empty.
 
-- [ ] **Step 4: Implement private authorization helpers**
+- [x] **Step 4: Implement private authorization helpers**
 
 The migration creates these non-exposed functions:
 
@@ -580,7 +580,7 @@ check-in access. Revoke from `PUBLIC` and `anon`; grant schema usage and only th
 minimum function execution required to `authenticated`. Fully qualify all
 relations and index every authorization predicate.
 
-- [ ] **Step 5: Replace recursive policies**
+- [x] **Step 5: Replace recursive policies**
 
 Drop and recreate policies for seniors, caregivers, relationships, messages,
 check-ins, signals, risk events, agent runs, alerts, briefs, scheduled jobs,
@@ -598,7 +598,7 @@ Keep `whatsapp_webhook_events` inaccessible to browser roles. Review explicit
 Data API grants separately because July 2026 Supabase projects may not expose
 new public tables automatically.
 
-- [ ] **Step 6: Implement the authenticated caregiver-action RPC**
+- [x] **Step 6: Implement the authenticated caregiver-action RPC**
 
 Create `public.record_caregiver_queue_action(...)` as `SECURITY DEFINER` with
 `search_path = ''`. It must:
@@ -618,7 +618,7 @@ and `anon`, then grant only to `authenticated` and `service_role`. Add
 `previous_status` and `resulting_status` columns to `caregiver_actions` for new
 audit records without fabricating historical actor data.
 
-- [ ] **Step 7: Implement the authenticated demo-reset RPC**
+- [x] **Step 7: Implement the authenticated demo-reset RPC**
 
 Create `public.reset_trustkaki_demo()` with no parameters. It verifies both:
 
@@ -631,7 +631,7 @@ order and resetting demo senior risk. Revoke from `PUBLIC` and `anon`; grant to
 `authenticated`. The fixed demo UUID is internal to this demo-only function and
 cannot be supplied by a caller.
 
-- [ ] **Step 8: Update generated database types**
+- [x] **Step 8: Update generated database types**
 
 Add typed RPC definitions:
 
@@ -650,7 +650,7 @@ record_caregiver_queue_action: {
 reset_trustkaki_demo: { Args: Record<string, never>; Returns: Json };
 ```
 
-- [ ] **Step 9: Run migration tests and commit**
+- [x] **Step 9: Run migration tests and commit**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/security/gate0Migration.test.ts src/lib/security/authSecurityMigration.test.ts
@@ -673,13 +673,13 @@ git commit -m "fix: harden caregiver rls and atomic commands"
 - Modify: `src/app/api/demo/reset/route.test.ts`
 - Modify: demo replay routes and tests
 
-- [ ] **Step 1: Write failing authenticated-client tests**
+- [x] **Step 1: Write failing authenticated-client tests**
 
 Test that `createTrustKakiUserClient("verified-token")` uses only public Supabase
 configuration and adds the token through `global.headers.Authorization`. Assert
 the service-role key is never passed to that client.
 
-- [ ] **Step 2: Implement the request-scoped user client**
+- [x] **Step 2: Implement the request-scoped user client**
 
 Add to `src/lib/supabase/server.ts`:
 
@@ -694,7 +694,7 @@ export function createTrustKakiUserClient(accessToken: string) {
 }
 ```
 
-- [ ] **Step 3: Write failing case-command tests**
+- [x] **Step 3: Write failing case-command tests**
 
 Test:
 
@@ -713,19 +713,19 @@ expect(result.actorCaregiverId).toBe("caregiver-1");
 No repository function accepts `actorCaregiverId`; the database derives it.
 Test an RPC failure returns no success metadata.
 
-- [ ] **Step 4: Implement case and reset repositories**
+- [x] **Step 4: Implement case and reset repositories**
 
 `recordCaregiverQueueAction` requires `accessToken` and delegates to the single
 RPC. `resetDemoPersistence` requires `accessToken` and delegates to
 `reset_trustkaki_demo`. Remove the former insert/update/delete sequences.
 
-- [ ] **Step 5: Update API routes**
+- [x] **Step 5: Update API routes**
 
 Pass `authResult.accessToken` from queue-action, reset, Quick Demo, and Full
 Replay routes. Pass `authResult.auth` into all dashboard reads after reset so
 demo-admin privilege never creates a senior-scope bypass.
 
-- [ ] **Step 6: Run focused tests and commit**
+- [x] **Step 6: Run focused tests and commit**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/supabase/server.test.ts src/lib/persistence/caregiverCaseRepository.test.ts src/lib/persistence/demoRepository.test.ts src/app/api/caregiver/queue-action/route.test.ts src/app/api/demo
@@ -742,7 +742,7 @@ git commit -m "fix: execute caregiver mutations atomically"
 - Modify: `.env.example`
 - Modify: `README.md`
 
-- [ ] **Step 1: Write the opt-in integration test fixture**
+- [x] **Step 1: Write the opt-in integration test fixture**
 
 `supabaseTestFixture.ts` uses the service client only for setup and cleanup. It
 creates random test identifiers with `crypto.randomUUID()`, two confirmed test
@@ -753,7 +753,7 @@ both users through anon-key clients and returns their access tokens/clients.
 Cleanup runs in `finally`, deletes test seniors/caregivers, and then deletes the
 Auth users. It never logs generated credentials or raw rows.
 
-- [ ] **Step 2: Write the real isolation tests**
+- [x] **Step 2: Write the real isolation tests**
 
 Create `rls.integration.test.ts` using:
 
@@ -785,7 +785,7 @@ Resolve the shared queue and assert the action row, queue status, and all linked
 pattern statuses change together. Submit an invalid/unauthorized command and
 assert none of those row counts or statuses changes.
 
-- [ ] **Step 3: Document the opt-in environment flag**
+- [x] **Step 3: Document the opt-in environment flag**
 
 Add only this non-secret flag to `.env.example`:
 
@@ -796,7 +796,7 @@ TRUSTKAKI_RUN_DB_INTEGRATION=0
 Document that the test uses the existing Supabase URL, anon key, and service
 role from `.env.local`, creates temporary test users/rows, and always cleans up.
 
-- [ ] **Step 4: Run unit mode and verify skip**
+- [x] **Step 4: Run unit mode and verify skip**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/security/rls.integration.test.ts
@@ -805,7 +805,7 @@ role from `.env.local`, creates temporary test users/rows, and always cleans up.
 Expected: test suite is skipped without the opt-in flag and makes no network
 calls.
 
-- [ ] **Step 5: Apply migration and run real integration mode**
+- [x] **Step 5: Apply migration and run real integration mode**
 
 Before applying, inspect CLI commands rather than guessing:
 
@@ -827,7 +827,7 @@ Expected: all two-user sharing, isolation, actor identity, and atomic-state test
 PASS; advisors report no unresolved security findings introduced by the
 migration. Do not print project secrets.
 
-- [ ] **Step 6: Commit the integration suite**
+- [x] **Step 6: Commit the integration suite**
 
 ```bash
 git add src/lib/security/supabaseTestFixture.ts src/lib/security/rls.integration.test.ts .env.example README.md
@@ -840,7 +840,7 @@ git commit -m "test: prove caregiver isolation in supabase"
 - Modify: `src/lib/agents/provider.ts`
 - Modify: `src/lib/agents/provider.test.ts`
 
-- [ ] **Step 1: Replace the synthetic abort test with the real timeout signal**
+- [x] **Step 1: Replace the synthetic abort test with the real timeout signal**
 
 Use a fetch stub that waits for the supplied signal and rejects with
 `signal.reason`:
@@ -862,7 +862,7 @@ Assert the observed error name is `TimeoutError` in the test runtime. Retain a
 separate compatibility test for `AbortError` only if the provider intentionally
 supports older runtimes.
 
-- [ ] **Step 2: Run provider test and verify red**
+- [x] **Step 2: Run provider test and verify red**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/agents/provider.test.ts
@@ -870,7 +870,7 @@ supports older runtimes.
 
 Expected: FAIL because the provider only maps `AbortError`.
 
-- [ ] **Step 3: Implement bounded timeout classification**
+- [x] **Step 3: Implement bounded timeout classification**
 
 Add a narrow helper:
 
@@ -884,7 +884,7 @@ function isTimeoutError(error: unknown): boolean {
 Use it only around the provider fetch. Do not include provider response bodies,
 URLs with credentials, or API keys in timeout errors.
 
-- [ ] **Step 4: Run focused tests and commit**
+- [x] **Step 4: Run focused tests and commit**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/agents/provider.test.ts
@@ -905,7 +905,7 @@ git commit -m "fix: handle runtime llm timeout errors"
 - Modify: `src/lib/persistence/trustkakiRepository.ts`
 - Modify: repository tests and imports as required
 
-- [ ] **Step 1: Add module-boundary tests**
+- [x] **Step 1: Add module-boundary tests**
 
 Extend `gate0Regression.test.ts`:
 
@@ -918,26 +918,26 @@ expect(facade).toContain("export {");
 
 Run the test and verify it fails against the 1,584-line repository.
 
-- [ ] **Step 2: Move shared primitives**
+- [x] **Step 2: Move shared primitives**
 
 Move only `getClient`, `throwIfError`, `localDemoMeta`, `supabaseMeta`, and shared
 table type aliases to `persistenceSupport.ts`. Do not introduce a generic CRUD
 class or base repository.
 
-- [ ] **Step 3: Move orchestration and Pattern Watch persistence**
+- [x] **Step 3: Move orchestration and Pattern Watch persistence**
 
 Move message/check-in/agent-run/signal/risk/alert/brief writes to
 `orchestrationRepository.ts`. Move Pattern Watch/context/queue consolidation to
 `patternRepository.ts`. Preserve exact public signatures established in Tasks
 2-4.
 
-- [ ] **Step 4: Move dashboard reads**
+- [x] **Step 4: Move dashboard reads**
 
 Move trace/message mapping, caregiver names, queue read model, and
 `readDashboardState` to `dashboardRepository.ts`. Keep explicit filters even
 when RLS also applies so Postgres can plan indexed queries efficiently.
 
-- [ ] **Step 5: Replace the original file with a compatibility facade**
+- [x] **Step 5: Replace the original file with a compatibility facade**
 
 `trustkakiRepository.ts` contains only named re-exports during Gate 0:
 
@@ -949,7 +949,7 @@ export { resetDemoPersistence, persistQuickDemoTimelineResult } from "./demoRepo
 export { loadAuthorizedAgentContext, loadSeniorContextByVerifiedPhone } from "./seniorContextRepository";
 ```
 
-- [ ] **Step 6: Run repository and route tests**
+- [x] **Step 6: Run repository and route tests**
 
 ```bash
 ./node_modules/.bin/vitest run src/lib/persistence src/lib/security/gate0Regression.test.ts src/app/api
@@ -958,7 +958,7 @@ export { loadAuthorizedAgentContext, loadSeniorContextByVerifiedPhone } from "./
 
 Expected: PASS with no behavior change.
 
-- [ ] **Step 7: Commit the persistence split**
+- [x] **Step 7: Commit the persistence split**
 
 ```bash
 git add src/lib/persistence src/app/api src/lib/whatsapp
@@ -978,7 +978,7 @@ git commit -m "refactor: split trustkaki persistence responsibilities"
 - Modify: `src/components/dashboardViewModel.test.ts`
 - Modify: `src/lib/security/gate0Regression.test.ts`
 
-- [ ] **Step 1: Add the dashboard boundary regression**
+- [x] **Step 1: Add the dashboard boundary regression**
 
 Add:
 
@@ -991,14 +991,14 @@ expect(read("src/components/dashboard/CaseDetails.tsx")).toContain("Chronologica
 
 Run and verify failure against the current 916-line component.
 
-- [ ] **Step 2: Extract stateless display sections first**
+- [x] **Step 2: Extract stateless display sections first**
 
 Move senior coverage, selected senior summary, and case details into typed
 components. Pass only their required `DashboardData` or `FollowUpQueueItem`
 subsets. Preserve current classes, wording, disclosure defaults, and accessible
 button labels.
 
-- [ ] **Step 3: Extract case-update state as one bounded component**
+- [x] **Step 3: Extract case-update state as one bounded component**
 
 Move action/outcome/note/snooze state and submission UI into
 `CaseUpdateForm.tsx`. Its props are:
@@ -1016,19 +1016,19 @@ interface CaseUpdateFormProps {
 Keep duplicate submission prevention, pending state, success confirmation,
 failure retry, required note validation, and refresh behavior unchanged.
 
-- [ ] **Step 4: Extract demo-only controls**
+- [x] **Step 4: Extract demo-only controls**
 
 Move reset, Quick Demo, Full Replay, progress, and retry UI to
 `DemoControls.tsx`. Render it only when both `isDemoAdmin` and `demoMode` are
 true. Operational queue components do not import demo endpoints.
 
-- [ ] **Step 5: Compose the smaller dashboard**
+- [x] **Step 5: Compose the smaller dashboard**
 
 `Dashboard.tsx` selects the active senior/case, coordinates refresh callbacks,
 and composes the extracted sections. It contains no persistence logic and no
 raw agent output rendering.
 
-- [ ] **Step 6: Run tests, typecheck, lint, and build**
+- [x] **Step 6: Run tests, typecheck, lint, and build**
 
 ```bash
 ./node_modules/.bin/vitest run src/components src/lib/security/gate0Regression.test.ts
@@ -1040,7 +1040,7 @@ npm run build
 Expected: all commands PASS and the production build renders both operational
 and demo surfaces.
 
-- [ ] **Step 7: Commit the dashboard split**
+- [x] **Step 7: Commit the dashboard split**
 
 ```bash
 git add src/components
@@ -1055,7 +1055,7 @@ git commit -m "refactor: split caregiver dashboard sections"
 - Modify: `docs/superpowers/plans/2026-07-12-production-auth-security.md`
 - Create: `docs/audits/2026-07-13-gate-0-verification.md`
 
-- [ ] **Step 1: Make the structural validate test pass**
+- [x] **Step 1: Make the structural validate test pass**
 
 Add scripts without introducing a shell-specific dependency:
 
@@ -1069,7 +1069,7 @@ Add scripts without introducing a shell-specific dependency:
 }
 ```
 
-- [ ] **Step 2: Run `npm run validate`**
+- [x] **Step 2: Run `npm run validate`**
 
 ```bash
 npm run validate
@@ -1077,14 +1077,14 @@ npm run validate
 
 Expected: all unit tests, typecheck, lint, and production build PASS.
 
-- [ ] **Step 3: Update the original auth-security plan truthfully**
+- [x] **Step 3: Update the original auth-security plan truthfully**
 
 Mark completed checkboxes only where implementation and fresh evidence exist.
 Add a `Gate 0 remediation evidence` section mapping each original task and audit
 finding to its commit and exact verification command. Do not rewrite history or
 claim reviewer approval.
 
-- [ ] **Step 4: Write the Gate 0 verification report**
+- [x] **Step 4: Write the Gate 0 verification report**
 
 Record only non-secret evidence:
 
@@ -1100,7 +1100,7 @@ Record only non-secret evidence:
 - unresolved limitations;
 - reviewer status: `pending re-audit`.
 
-- [ ] **Step 5: Commit validation and evidence**
+- [x] **Step 5: Commit validation and evidence**
 
 ```bash
 git add package.json README.md docs/superpowers/plans/2026-07-12-production-auth-security.md docs/audits/2026-07-13-gate-0-verification.md src/lib/security/gate0Regression.test.ts
@@ -1113,7 +1113,7 @@ git commit -m "chore: add gate zero validation evidence"
 - Modify only if verification exposes a defect.
 - Update: `docs/audits/2026-07-13-gate-0-verification.md`
 
-- [ ] **Step 1: Run the complete local validation from a clean process**
+- [x] **Step 1: Run the complete local validation from a clean process**
 
 ```bash
 npm run validate
@@ -1122,7 +1122,7 @@ npm run validate
 Expected: PASS with no skipped unit tests other than the explicitly opt-in live
 database suite.
 
-- [ ] **Step 2: Run the real database suite again**
+- [x] **Step 2: Run the real database suite again**
 
 ```bash
 TRUSTKAKI_RUN_DB_INTEGRATION=1 ./node_modules/.bin/vitest run src/lib/security/rls.integration.test.ts
@@ -1130,7 +1130,7 @@ TRUSTKAKI_RUN_DB_INTEGRATION=1 ./node_modules/.bin/vitest run src/lib/security/r
 
 Expected: PASS with temporary users and rows removed in `finally`.
 
-- [ ] **Step 3: Run Supabase migration and security checks**
+- [x] **Step 3: Run Supabase migration and security checks**
 
 ```bash
 npx supabase@2.81.3 migration list
@@ -1140,7 +1140,7 @@ npx supabase@2.81.3 db advisors
 Expected: local/remote migration history includes the Gate 0 migration and no
 new unresolved security advisor findings remain.
 
-- [ ] **Step 4: Inspect repository hygiene**
+- [x] **Step 4: Inspect repository hygiene**
 
 ```bash
 git status --short
@@ -1157,7 +1157,7 @@ Gate 0 source, migration, tests, and documentation changed.
 Give the reviewer the Gate 0 design, this plan, verification report, migration,
 and branch commit range. Ask the reviewer to retest every original finding.
 
-- [ ] **Step 6: Stop before deployment promotion**
+- [x] **Step 6: Stop before deployment promotion**
 
 Do not merge/push to the deployment branch and do not claim Gate 0 complete
 until the reviewer accepts the remediation. Record reviewer findings in the
