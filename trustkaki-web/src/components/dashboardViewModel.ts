@@ -43,6 +43,10 @@ export function canSubmit(currentRequest: string | null): boolean {
   return currentRequest === null;
 }
 
+export function canSaveCaseUpdate(note: string): boolean {
+  return note.trim().length >= 10;
+}
+
 export function optimisticDashboardForSenior(
   data: DashboardData,
   seniorId: string

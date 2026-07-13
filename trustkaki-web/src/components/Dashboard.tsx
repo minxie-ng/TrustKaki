@@ -11,6 +11,7 @@ import type {
   FollowUpStatus,
 } from "@/lib/types";
 import {
+  canSaveCaseUpdate,
   canSubmit,
   demoEndpoint,
   demoProgressSteps,
@@ -74,6 +75,12 @@ const outcomeOptions: Array<{ value: ContactOutcome; label: string }> = [
   { value: "resolved", label: "Resolved" },
 ];
 
+const caseActionLabels: Record<CaseUpdateAction, string> = {
+  record_outcome: "Record follow-up",
+  snooze: "Snooze for later",
+  resolve: "Close as resolved",
+};
+
 function formatDate(ts: string | null) {
   if (!ts) return "No response yet";
   return new Date(ts).toLocaleString("en-SG", {
@@ -128,8 +135,8 @@ export default function Dashboard({
     item: FollowUpQueueItem,
     actionType: string,
     extra: Record<string, unknown> = {}
-  ) {
-    if (!canSubmit(busyAction)) return;
+  ): Promise<boolean> {
+    if (!canSubmit(busyAction)) return false;
     setBusyAction(`${item.id}:${actionType}`);
     setDemoState("idle");
     setActionState("pending");
@@ -156,9 +163,11 @@ export default function Dashboard({
           : "Caregiver action recorded."
       );
       onRefresh?.();
+      return true;
     } catch {
       setActionState("error");
       setStatusMessage("Could not save that action. Please retry.");
+      return false;
     } finally {
       setBusyAction(null);
     }
@@ -173,7 +182,7 @@ export default function Dashboard({
 
   async function submitCaseUpdate(item: FollowUpQueueItem) {
     const note = caseNote.trim();
-    if (note.length < 10) {
+    if (!canSaveCaseUpdate(note)) {
       setActionState("error");
       setStatusMessage("Please add a short note so the follow-up record is clear.");
       return;
@@ -192,9 +201,11 @@ export default function Dashboard({
       extra.snoozedUntil = snoozedUntilFromHours(hours);
     }
 
-    await postAction(item, caseAction, extra);
-    setCaseFormItemId(null);
-    resetCaseForm();
+    const saved = await postAction(item, caseAction, extra);
+    if (saved) {
+      setCaseFormItemId(null);
+      resetCaseForm();
+    }
   }
 
   async function runPatternDemo(mode: DemoMode) {
@@ -475,6 +486,20 @@ export default function Dashboard({
         </section>
         )}
 
+        {statusMessage && (!isDemoAdmin || !demoMode) && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              actionState === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : actionState === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-gray-200 bg-white text-gray-700"
+            }`}
+          >
+            {statusMessage}
+          </div>
+        )}
+
         {selectedSeniorQueue.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
             <div className="font-semibold text-gray-900">
@@ -587,30 +612,30 @@ export default function Dashboard({
 
                 {caseFormItemId === item.id && (
                   <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="text-sm font-bold text-gray-950">Case update report</div>
+                    <div className="text-sm font-bold text-gray-950">Update this case</div>
                     <p className="mt-1 text-xs text-gray-600">
-                      Record what happened before the queue changes. Snooze and resolve
-                      require a reason so the staff decision is auditable.
+                      Save a short human follow-up record. Snoozing or closing a case
+                      always needs a reason so the decision is visible later.
                     </p>
 
                     <div className="mt-3 grid gap-3 md:grid-cols-3">
                       <label className="text-xs font-semibold text-gray-600">
-                        Action
+                        What do you want to do?
                         <select
                           value={caseAction}
                           onChange={(event) => setCaseAction(event.target.value as CaseUpdateAction)}
                           className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                           disabled={busyAction !== null}
                         >
-                          <option value="record_outcome">Record outcome</option>
-                          <option value="snooze">Snooze with reason</option>
-                          <option value="resolve">Resolve case</option>
+                          <option value="record_outcome">{caseActionLabels.record_outcome}</option>
+                          <option value="snooze">{caseActionLabels.snooze}</option>
+                          <option value="resolve">{caseActionLabels.resolve}</option>
                         </select>
                       </label>
 
                       {(caseAction === "record_outcome" || caseAction === "resolve") && (
                         <label className="text-xs font-semibold text-gray-600">
-                          Outcome
+                          What happened?
                           <select
                             value={caseOutcome}
                             onChange={(event) => setCaseOutcome(event.target.value as ContactOutcome)}
@@ -644,7 +669,11 @@ export default function Dashboard({
                     </div>
 
                     <label className="mt-3 block text-xs font-semibold text-gray-600">
-                      Short note
+                      {caseAction === "snooze"
+                        ? "Why is it reasonable to delay?"
+                        : caseAction === "resolve"
+                          ? "Why can this be closed?"
+                          : "What happened and what is next?"}
                       <textarea
                         value={caseNote}
                         onChange={(event) => setCaseNote(event.target.value)}
@@ -658,14 +687,37 @@ export default function Dashboard({
                         disabled={busyAction !== null}
                       />
                     </label>
+                    <div
+                      className={`mt-1 text-xs ${
+                        canSaveCaseUpdate(caseNote) ? "text-emerald-700" : "text-gray-500"
+                      }`}
+                    >
+                      {canSaveCaseUpdate(caseNote)
+                        ? "Ready to save to action history."
+                        : "Add at least 10 characters so the record is useful later."}
+                    </div>
+
+                    {statusMessage && caseFormItemId === item.id && (
+                      <div
+                        className={`mt-3 rounded-lg border px-3 py-2 text-sm ${
+                          actionState === "error"
+                            ? "border-red-200 bg-red-50 text-red-700"
+                            : actionState === "success"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                              : "border-gray-200 bg-white text-gray-700"
+                        }`}
+                      >
+                        {statusMessage}
+                      </div>
+                    )}
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         onClick={() => submitCaseUpdate(item)}
-                        disabled={busyAction !== null}
+                        disabled={busyAction !== null || !canSaveCaseUpdate(caseNote)}
                         className="text-sm font-semibold bg-gray-900 text-white px-4 py-2 rounded-lg disabled:opacity-50"
                       >
-                        Save update
+                        {busyAction === `${item.id}:${caseAction}` ? "Saving..." : "Save update"}
                       </button>
                       <button
                         onClick={() => {

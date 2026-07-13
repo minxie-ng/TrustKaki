@@ -3,6 +3,7 @@ import type { AgentTrace, DashboardData, FollowUpQueueItem } from "@/lib/types";
 import {
   advancedTraceDefaultOpen,
   appShellSurface,
+  canSaveCaseUpdate,
   canSubmit,
   containsSensitiveText,
   dashboardStateEndpoint,
@@ -213,6 +214,12 @@ describe("dashboard view model", () => {
   it("prevents duplicate submissions while a request is pending", () => {
     expect(canSubmit(null)).toBe(true);
     expect(canSubmit("queue-1:resolve")).toBe(false);
+  });
+
+  it("requires a meaningful case update note before saving", () => {
+    expect(canSaveCaseUpdate("")).toBe(false);
+    expect(canSaveCaseUpdate("too short")).toBe(false);
+    expect(canSaveCaseUpdate("Rachel called and will check again tomorrow.")).toBe(true);
   });
 
   it("tracks caregiver action proof after an action exists", () => {
