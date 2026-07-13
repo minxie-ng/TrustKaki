@@ -308,3 +308,22 @@ git commit -m "feat: add production auth security foundation"
 - Tests: Tasks 1 through 8.
 - Deployment docs: Tasks 5 and 7.
 - Non-goals preserved: no public signup, no org admin UI, no distributed limiter, no WhatsApp model change, no orchestration replacement.
+
+## Gate 0 follow-up
+
+The independent audit identified the following pending release blockers. The
+approved direction is recorded in the [production release gates design](../specs/2026-07-13-production-release-gates-design.md),
+and implementation is tracked in the [Gate 0 audit remediation plan](2026-07-13-gate-0-audit-remediation.md).
+
+- [ ] Replace browser-supplied authoritative senior context with an authorized
+  `seniorId` and server-loaded context.
+- [ ] Remove demo-senior defaults from normal authenticated persistence paths.
+- [ ] Derive caregiver action actors from the authenticated caregiver, separate
+  from assignment targets.
+- [ ] Repair and prove relationship-scoped RLS with two authenticated users.
+- [ ] Make queue actions, linked pattern updates, and demo reset transactional.
+- [ ] Cover the runtime `TimeoutError` produced by `AbortSignal.timeout()`.
+- [ ] Split security-sensitive dashboard and persistence responsibilities into
+  reviewable modules.
+- [ ] Add one `npm run validate` command and reconcile plan evidence without
+  marking unaudited work complete.
