@@ -72,7 +72,7 @@ export class LLMProvider {
         }),
       });
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (isTimeoutError(error)) {
         throw new Error("LLM request timed out");
       }
       throw error;
@@ -101,6 +101,13 @@ export class LLMProvider {
       },
     };
   }
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return (
+    error instanceof DOMException &&
+    (error.name === "TimeoutError" || error.name === "AbortError")
+  );
 }
 
 function boundedTimeoutMs(raw: string | undefined): number {

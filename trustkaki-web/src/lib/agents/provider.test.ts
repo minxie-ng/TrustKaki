@@ -16,12 +16,16 @@ describe("LLMProvider timeout", () => {
     vi.unstubAllEnvs();
   });
 
-  it("aborts calls after the configured bounded timeout", async () => {
+  it("maps the runtime TimeoutError from AbortSignal.timeout", async () => {
+    let observedErrorName: string | undefined;
     globalThis.fetch = vi.fn(
       (_input: RequestInfo | URL, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
           init?.signal?.addEventListener("abort", () => {
-            reject(new DOMException("The operation was aborted.", "AbortError"));
+            const reason = init.signal?.reason;
+            observedErrorName =
+              reason instanceof DOMException ? reason.name : undefined;
+            reject(reason);
           });
         })
     ) as typeof fetch;
@@ -34,5 +38,6 @@ describe("LLMProvider timeout", () => {
         userPrompt: "Hello",
       })
     ).rejects.toThrow("LLM request timed out");
+    expect(observedErrorName).toBe("TimeoutError");
   });
 });
