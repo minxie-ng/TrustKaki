@@ -23,6 +23,17 @@ describe("Gate 0 structural regression", () => {
     expect(facade).toContain("export {");
   });
 
+  it("keeps the dashboard coordinator small and delegates bounded workflows", () => {
+    const dashboard = read("src/components/Dashboard.tsx");
+    expect(dashboard.split("\n").length).toBeLessThan(350);
+    expect(read("src/components/dashboard/CaseUpdateForm.tsx")).toContain(
+      "Save update"
+    );
+    expect(read("src/components/dashboard/CaseDetails.tsx")).toContain(
+      "Chronological evidence timeline"
+    );
+  });
+
   it("provides one validation command", () => {
     const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
     expect(pkg.scripts.validate).toBeTruthy();
