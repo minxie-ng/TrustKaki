@@ -820,7 +820,7 @@ unless there is a deliberate rename/refactor. The current equivalents are:
 - add `npm run validate` and update implementation evidence
 - focused reviewer re-audit completed; requested changes addressed
 
-#### Gate 1 — Caregiver Case Operations (audit correction verified; independent re-audit pending)
+#### Gate 1 — Caregiver Case Operations (complete)
 
 - auditable acknowledge, assign, snooze, contact outcome, escalation, and resolve
 - required snooze and resolution reasons
@@ -854,7 +854,7 @@ Implemented so far:
 
 Remaining before Gate 1 is accepted:
 
-- independent reviewer re-audit of the corrected Gate 1 evidence
+- independent reviewer re-audit passed on 14 July 2026
 
 #### Gate 2 — Contacts, Consent, and Escalation
 
@@ -908,10 +908,10 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate checkpoint is an **independent Gate 1 re-audit**. The audit correction
-and internal verification are complete. Begin Gate 2 contact consent and recipient
-selection only after the reviewer accepts the evidence; do not enable live Meta
-callbacks, scheduler behavior, or memory expansion first.
+The immediate work is **Gate 2 contacts, consent, and deterministic recipient
+selection**. Gate 1 passed independent audit on 14 July 2026. Implement the
+approved Gate 2 design before enabling live Meta callbacks, scheduler behavior,
+or memory expansion.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
