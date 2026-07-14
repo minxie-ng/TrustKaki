@@ -41,6 +41,13 @@ interface ProcessWhatsAppWebhookOptions {
   outboundClient?: WhatsAppOutboundClient;
 }
 
+class UnmappedWhatsAppSenderError extends Error {
+  constructor() {
+    super("No senior mapped to sender phone");
+    this.name = "UnmappedWhatsAppSenderError";
+  }
+}
+
 function chooseSeniorReply(
   result: OrchestrateResponse
 ): { text: string; agentId?: AgentId; index: number } | null {
@@ -156,7 +163,7 @@ async function getOrCreateOrchestration(args: {
 }> {
   const senior = await loadSeniorContextByVerifiedPhone({ phone: args.inbound.from });
   if (!senior) {
-    throw new Error("No senior mapped to sender phone");
+    throw new UnmappedWhatsAppSenderError();
   }
 
   if (
@@ -390,6 +397,14 @@ export async function processWhatsAppEventById(
       outboundMessageId: outboundMessageId ?? undefined,
     };
   } catch (error) {
+    if (error instanceof UnmappedWhatsAppSenderError) {
+      await markWhatsAppEventProcessed(event.id);
+      return {
+        status: "senior_not_found",
+        inboundMessageId: event.whatsapp_message_id,
+      };
+    }
+
     await markWhatsAppEventFailed({
       eventId: event.id,
       error,

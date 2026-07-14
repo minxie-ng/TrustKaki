@@ -70,6 +70,11 @@ The successful check-in created or updated:
   overwriting newer delivery state.
 - Leave a missing outbound-message race retryable through the existing protected
   pending-event processor.
+- Production replay processed the stored `sent` and `delivered` events and the
+  linked outbound message finished with structured `delivered` metadata.
+- The replay exposed an older unmapped-sender event that would otherwise retry
+  indefinitely. Unmapped numbers now close as `senior_not_found` without agent
+  execution, identity fallback, reply, or repeated retry.
 
 ## Remaining Gate 3 work
 

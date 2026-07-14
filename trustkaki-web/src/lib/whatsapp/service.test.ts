@@ -257,13 +257,14 @@ describe("WhatsApp async service", () => {
 
     const result = await processWhatsAppEventById("event_1", { sendText: vi.fn() });
 
-    expect(result.status).toBe("error");
+    expect(result.status).toBe("senior_not_found");
     expect(loadSeniorContextByVerifiedPhoneMock).toHaveBeenCalledWith({
       phone: "6581234567",
     });
     expect(orchestrateMock).not.toHaveBeenCalled();
     expect(persistOrchestrationResultMock).not.toHaveBeenCalled();
-    expect(markWhatsAppEventFailedMock).toHaveBeenCalledTimes(1);
+    expect(markWhatsAppEventProcessedMock).toHaveBeenCalledWith("event_1");
+    expect(markWhatsAppEventFailedMock).not.toHaveBeenCalled();
   });
 
   it("does not rerun orchestration when retrying a stored outbound failure", async () => {
