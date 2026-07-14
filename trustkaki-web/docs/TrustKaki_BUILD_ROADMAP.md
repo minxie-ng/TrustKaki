@@ -820,7 +820,7 @@ unless there is a deliberate rename/refactor. The current equivalents are:
 - add `npm run validate` and update implementation evidence
 - focused reviewer re-audit completed; requested changes addressed
 
-#### Gate 1 — Caregiver Case Operations (in progress)
+#### Gate 1 — Caregiver Case Operations (implementation verified; independent audit pending)
 
 - auditable acknowledge, assign, snooze, contact outcome, escalation, and resolve
 - required snooze and resolution reasons
@@ -843,10 +843,13 @@ Implemented so far:
 - escalation keeps the case active and visible to every authorized caregiver
 - emergency guidance clearly states that saving the record does not contact 995
 - live two-user database tests prove escalation idempotency and shared action visibility
+- caregiver UI exposes acknowledge and assignment without adding separate action buttons
+- visible action history distinguishes the authenticated actor from the assignment target
+- two isolated authenticated browser sessions proved shared updates, one-success/one-409 concurrency, resolution, unchanged risk, and unrelated-caregiver isolation
 
-Remaining before Gate 1 closes:
+Remaining before Gate 1 is accepted:
 
-- complete a two-browser caregiver workflow smoke test
+- independent reviewer audit of the recorded Gate 1 evidence
 
 #### Gate 2 — Contacts, Consent, and Escalation
 
@@ -900,10 +903,10 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate implementation target is **Gate 1 — Caregiver Case Operations**.
-Complete conflict-safe shared case handling and Realtime synchronization before
-moving to contact consent, recipient selection, live Meta callback setup,
-scheduler behavior, or memory expansion.
+The immediate checkpoint is an **independent Gate 1 audit**. Gate 1 implementation
+and internal verification are complete. Begin Gate 2 contact consent and recipient
+selection only after the reviewer accepts the evidence; do not enable live Meta
+callbacks, scheduler behavior, or memory expansion first.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 

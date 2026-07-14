@@ -134,39 +134,30 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
     const channel = fixture.caregiverB.client.channel(
       `gate1-shared-case-${randomUUID()}`
     );
-    const receivedUpdate = new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(
-        () => reject(new Error("Realtime shared case update timed out")),
-        10_000
-      );
-      channel.on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "caregiver_queue_items",
-          filter: `id=eq.${fixture.sharedQueueId}`,
-        },
-        () => {
-          clearTimeout(timer);
-          resolve();
-        }
-      );
+    let notifyUpdate: (() => void) | undefined;
+    const receivedUpdate = new Promise<void>((resolve) => {
+      notifyUpdate = resolve;
     });
+    channel.on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "caregiver_queue_items",
+        filter: `id=eq.${fixture.sharedQueueId}`,
+      },
+      () => notifyUpdate?.()
+    );
 
     try {
-      await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(
-          () => reject(new Error("Realtime subscription timed out")),
-          10_000
-        );
-        channel.subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            clearTimeout(timer);
-            resolve();
-          }
-        });
-      });
+      await bounded(
+        new Promise<void>((resolve) => {
+          channel.subscribe((status) => {
+            if (status === "SUBSCRIBED") resolve();
+          });
+        }),
+        "Realtime subscription"
+      );
       const { data: queue } = await fixture.serviceClient
         .from("caregiver_queue_items")
         .select("updated_at")
@@ -185,7 +176,7 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
       );
 
       expect(result.error).toBeNull();
-      await receivedUpdate;
+      await bounded(receivedUpdate, "Realtime shared case update");
     } finally {
       await fixture.caregiverB.client.removeChannel(channel);
     }

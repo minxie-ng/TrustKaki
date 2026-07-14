@@ -81,10 +81,17 @@ export interface CheckInSession {
 export interface DashboardData {
   selectedSeniorId?: string;
   seniors?: SeniorListItem[];
+  assignableCaregivers?: CaregiverOption[];
   senior: SeniorProfile;
   activeSessions: CheckInSession[];
   recentAlerts: AlertItem[];
   followUpQueue: FollowUpQueueItem[];
+}
+
+export interface CaregiverOption {
+  id: string;
+  name: string;
+  relationship: string | null;
 }
 
 export interface AlertItem {
@@ -135,6 +142,7 @@ export interface CaregiverActionItem {
   actionType: "mark_for_follow_up" | "assign" | "record_outcome" | "snooze" | "escalate" | "resolve";
   outcomeType?: ContactOutcome | null;
   escalationDestination?: EscalationDestination | null;
+  assignedCaregiver?: string | null;
   note?: string | null;
   caregiver?: string | null;
   createdAt: string;

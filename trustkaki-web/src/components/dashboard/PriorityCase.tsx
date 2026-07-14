@@ -138,6 +138,7 @@ function PriorityCaseCard({
         </button>
         <CaseUpdateForm
           item={item}
+          caregiverOptions={data.assignableCaregivers ?? []}
           authToken={authToken}
           disabled={disabled}
           onSaved={onSaved}

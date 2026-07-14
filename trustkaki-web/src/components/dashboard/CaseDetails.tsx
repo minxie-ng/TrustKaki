@@ -1,5 +1,10 @@
 import type { BriefingOutput } from "@/lib/agents/contracts";
-import type { AgentTrace, DashboardData, FollowUpQueueItem } from "@/lib/types";
+import type {
+  AgentTrace,
+  CaregiverActionItem,
+  DashboardData,
+  FollowUpQueueItem,
+} from "@/lib/types";
 import { recentSeniorMessages, systemProof } from "../dashboardViewModel";
 import {
   escalationDestinationLabel,
@@ -12,6 +17,21 @@ interface CaseDetailsProps {
   data: DashboardData;
   traces: AgentTrace[];
   briefing?: BriefingOutput | null;
+}
+
+export function formatCaregiverActionHistory(
+  action: CaregiverActionItem
+): string {
+  const destination = action.escalationDestination
+    ? ` to ${escalationDestinationLabel[action.escalationDestination]}`
+    : "";
+  const assignee = action.assignedCaregiver
+    ? ` to ${action.assignedCaregiver}`
+    : "";
+  const actor = action.caregiver ? ` · by ${action.caregiver}` : "";
+  const note = action.note ? ` · ${action.note}` : "";
+
+  return `${formatDate(action.createdAt)} · ${labelPattern(action.actionType)}${destination}${assignee}${actor}${note}`;
 }
 
 export function CaseDetails({ item, data, traces, briefing }: CaseDetailsProps) {
@@ -76,11 +96,7 @@ export function CaseDetails({ item, data, traces, briefing }: CaseDetailsProps) 
                 ? "No caregiver action recorded yet."
                 : pattern.previousActions.map((action) => (
                     <div key={action.id}>
-                      {formatDate(action.createdAt)} · {labelPattern(action.actionType)}
-                      {action.escalationDestination
-                        ? ` to ${escalationDestinationLabel[action.escalationDestination]}`
-                        : ""}
-                      {action.note ? ` · ${action.note}` : ""}
+                      {formatCaregiverActionHistory(action)}
                     </div>
                   ))}
             </Detail>

@@ -220,11 +220,10 @@ traces, alerts, briefing, and the detailed case view. Senior switching uses
 optimistic local selection so the profile changes immediately while Supabase
 hydration completes in the background.
 
-Shared caregiver sync currently uses authenticated lightweight dashboard
-polling every 20 seconds plus refresh-on-focus. This means another caregiver's
-persisted queue update appears after the next poll or when the tab is refocused.
-It is not yet Supabase Realtime; add subscriptions later before broad pilots if
-sub-second collaborative updates are required.
+Shared caregiver sync uses authorized Supabase Realtime change notifications as
+refresh hints, then rereads authoritative state through the authenticated
+dashboard API. Lightweight polling every 20 seconds and refresh-on-focus remain
+fallbacks when Realtime is disconnected.
 
 The production roadmap is gate-based following an independent security and
 reliability audit. Gate 0 remediation passed its focused re-audit and all
@@ -243,7 +242,8 @@ Gate 0 closed these blockers:
 - split the oversized dashboard and repository by existing responsibilities
 - completed focused reviewer re-audit and addressed requested changes
 
-Gate 1 caregiver case operations are now in progress. The current foundation
+Gate 1 caregiver case operations have completed internal implementation and
+verification and are ready for independent audit. The current foundation
 uses authenticated transactional commands, preserves action history, separates
 case closure from policy-authoritative risk, and stores caregiver relationship
 and primary-contact status on each senior-caregiver link. Explicit escalation
@@ -251,8 +251,12 @@ now records one of four operational destinations and a required reason, keeps
 the case active, and does not change policy risk or claim to contact anyone.
 Conflict-safe commands, retry idempotency, escalation visibility, and Supabase
 Realtime shared-caregiver refresh are live verified against two authenticated
-temporary caregivers. The remaining Gate 1 task is a two-browser caregiver
-workflow smoke test.
+temporary caregivers. Two isolated authenticated browser sessions also proved
+acknowledge, assignment, contact outcome, escalation, stale-update rejection,
+resolution, unchanged policy risk, and unrelated-caregiver isolation. The
+automation used separate cookie domains in one controlled browser engine, not
+two separate browser engines. Temporary users and records were removed after
+verification.
 
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
@@ -271,10 +275,10 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Complete the final Gate 1 two-browser caregiver workflow smoke test. After that,
-begin Gate 2 verified contacts, consent, quiet hours, and deterministic recipient
-selection. Do not enable external escalation notifications or the live WhatsApp
-callback before those controls exist.
+Request an independent Gate 1 audit using the dated verification evidence. After
+reviewer acceptance, begin Gate 2 verified contacts, consent, quiet hours, and
+deterministic recipient selection. Do not enable external escalation
+notifications or the live WhatsApp callback before those controls exist.
 
 ## Working rules
 - inspect before modifying

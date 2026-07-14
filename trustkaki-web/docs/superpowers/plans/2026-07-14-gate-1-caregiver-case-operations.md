@@ -15,15 +15,17 @@
 
 ## Implementation
 
-1. Add command identity and immutable action metadata to `caregiver_actions`.
-2. Replace the caregiver queue RPC with an idempotent, conflict-aware transaction.
-3. Extend typed API and repository contracts and return HTTP 409 for conflicts.
-4. Keep one command ID across network retries in the case form.
-5. Subscribe to authorized queue/action Postgres changes and debounce dashboard refresh.
-6. Prove duplicate, conflict, rollback, and shared refresh behavior with unit and live database tests.
-7. Apply the migration, run `npm run validate`, update roadmap evidence, commit, push, and deploy.
-8. Add an explicit escalation command with destination, reason, active-case status,
+- [x] Add command identity and immutable action metadata to `caregiver_actions`.
+- [x] Replace the caregiver queue RPC with an idempotent, conflict-aware transaction.
+- [x] Extend typed API and repository contracts and return HTTP 409 for conflicts.
+- [x] Keep one command ID across network retries in the case form.
+- [x] Subscribe to authorized queue/action Postgres changes and debounce dashboard refresh.
+- [x] Prove duplicate, conflict, rollback, and shared refresh behavior with unit and live database tests.
+- [x] Expose acknowledge and assignment in the caregiver case form and preserve actor/assignee separation in visible history.
+- [x] Add an explicit escalation command with destination, reason, active-case status,
    emergency guidance, and no automatic external notification.
+- [x] Run the two-caregiver browser workflow, linked migration check, advisors, and `npm run validate`.
+- [x] Record internal verification evidence for independent Gate 1 audit.
 
 ## Exit Criteria
 
@@ -35,7 +37,7 @@
 ## Verification Evidence
 
 - Migration dry-run and application completed against the linked `trustkaki` project.
-- Six live two-user tests passed: isolation, actor/assignee separation,
+- Seven live two-user tests passed: isolation, actor/assignee separation,
   idempotent replay, atomic resolution, stale-write conflict, and Realtime refresh.
 - `PT409` is used for a prompt business conflict response; retryable PostgreSQL
   serialization code `40001` is intentionally not used.
@@ -43,3 +45,10 @@
 - Live database verification proves one idempotent escalation action, shared
   caregiver visibility, active `escalated` queue status, and later atomic resolve.
 - Escalation records intent only; external recipient notification remains Gate 2.
+- Two isolated authenticated browser sessions proved shared acknowledge,
+  assignment, contact outcome, escalation, one-success/one-409 concurrency,
+  resolution, unchanged policy risk, and unrelated-caregiver isolation.
+- Browser automation used separate `localhost` and `127.0.0.1` cookie domains
+  in one controlled browser engine; this is not evidence from two browser engines.
+- Full evidence is recorded in
+  `docs/superpowers/verification/2026-07-14-gate-1-caregiver-case-operations.md`.

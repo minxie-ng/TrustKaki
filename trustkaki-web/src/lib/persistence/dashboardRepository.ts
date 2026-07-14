@@ -7,6 +7,7 @@ import { getPersistenceStatus, type PersistenceStatus } from "@/lib/supabase/con
 import type {
   AgentTrace,
   CaregiverActionItem,
+  CaregiverOption,
   DashboardData,
   FollowUpQueueItem,
   Message,
@@ -136,7 +137,9 @@ async function readCaregiverActions(
 ): Promise<CaregiverActionItem[]> {
   const { data, error } = await client
     .from("caregiver_actions")
-    .select("id, action_type, outcome_type, escalation_destination, note, created_at, caregivers(display_name)")
+    .select(
+      "id, action_type, outcome_type, escalation_destination, note, created_at, actor_caregiver:caregivers!caregiver_actions_caregiver_id_fkey(display_name), assigned_caregiver:caregivers!caregiver_actions_assigned_caregiver_id_fkey(display_name)"
+    )
     .eq("queue_item_id", queueItemId)
     .order("created_at", { ascending: false });
   throwIfError(error, "select caregiver actions");
@@ -148,7 +151,11 @@ async function readCaregiverActions(
     escalation_destination: CaregiverActionItem["escalationDestination"];
     note: string | null;
     created_at: string;
-    caregivers?: { display_name?: string | null } | Array<{ display_name?: string | null }> | null;
+    actor_caregiver?:
+      | { display_name?: string | null }
+      | Array<{ display_name?: string | null }>
+      | null;
+    assigned_caregiver?: { display_name?: string | null } | Array<{ display_name?: string | null }> | null;
   }>;
 
   return rows.map(
@@ -159,16 +166,23 @@ async function readCaregiverActions(
       escalation_destination: CaregiverActionItem["escalationDestination"];
       note: string | null;
       created_at: string;
-      caregivers?: { display_name?: string | null } | Array<{ display_name?: string | null }> | null;
+      actor_caregiver?:
+        | { display_name?: string | null }
+        | Array<{ display_name?: string | null }>
+        | null;
+      assigned_caregiver?: { display_name?: string | null } | Array<{ display_name?: string | null }> | null;
     }) => ({
       id: row.id,
       actionType: row.action_type,
       outcomeType: row.outcome_type,
       escalationDestination: row.escalation_destination,
+      assignedCaregiver: Array.isArray(row.assigned_caregiver)
+        ? row.assigned_caregiver[0]?.display_name ?? null
+        : row.assigned_caregiver?.display_name ?? null,
       note: row.note,
-      caregiver: Array.isArray(row.caregivers)
-        ? row.caregivers[0]?.display_name ?? null
-        : row.caregivers?.display_name ?? null,
+      caregiver: Array.isArray(row.actor_caregiver)
+        ? row.actor_caregiver[0]?.display_name ?? null
+        : row.actor_caregiver?.display_name ?? null,
       createdAt: row.created_at,
     })
   );
@@ -327,13 +341,14 @@ async function listCaregiverNamesBySenior(
     caregiverRelationship: string | null;
     caregiverIsPrimary: boolean;
     aacVolunteer: string | null;
+    assignableCaregivers: CaregiverOption[];
   }>
 > {
   if (seniorIds.length === 0) return new Map();
 
   const { data, error } = await client
     .from("senior_caregivers")
-    .select("senior_id, role, relationship, is_primary, caregivers(display_name)")
+    .select("senior_id, caregiver_id, role, relationship, is_primary, caregivers(display_name)")
     .in("senior_id", seniorIds)
     .order("is_primary", { ascending: false });
   throwIfError(error, "select senior caregiver names");
@@ -345,6 +360,7 @@ async function listCaregiverNamesBySenior(
       caregiverRelationship: string | null;
       caregiverIsPrimary: boolean;
       aacVolunteer: string | null;
+      assignableCaregivers: CaregiverOption[];
     }
   >();
   for (const seniorId of seniorIds) {
@@ -353,11 +369,13 @@ async function listCaregiverNamesBySenior(
       caregiverRelationship: null,
       caregiverIsPrimary: false,
       aacVolunteer: null,
+      assignableCaregivers: [],
     });
   }
 
   const rows = (data ?? []) as Array<{
     senior_id: string;
+    caregiver_id: string;
     role: "caregiver" | "aac_volunteer";
     relationship?: string | null;
     is_primary: boolean;
@@ -369,7 +387,16 @@ async function listCaregiverNamesBySenior(
       caregiverRelationship: null,
       caregiverIsPrimary: false,
       aacVolunteer: null,
+      assignableCaregivers: [],
     };
+    const caregiverName = row.caregivers?.display_name ?? "Linked caregiver";
+    if (!current.assignableCaregivers.some((option) => option.id === row.caregiver_id)) {
+      current.assignableCaregivers.push({
+        id: row.caregiver_id,
+        name: caregiverName,
+        relationship: row.relationship ?? null,
+      });
+    }
     if (
       row.role === "caregiver" &&
       (!current.caregiver || (row.is_primary && !current.caregiverIsPrimary))
@@ -563,6 +590,7 @@ export async function readDashboardState(options: {
     data: {
       ...mapped.data,
       selectedSeniorId,
+      assignableCaregivers: selectedNames?.assignableCaregivers ?? [],
       seniors: orderedSeniors.map((seniorRow) => {
         const names = caregiverNames.get(seniorRow.id);
         return {
