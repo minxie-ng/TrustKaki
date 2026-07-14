@@ -136,8 +136,39 @@ const recipientResultSchema = z.object({
   selected_contact_id: z.string().uuid().nullable(),
   selected_method_id: z.string().uuid().nullable(),
   explanation: z.string(),
-  skipped_reasons: z.array(z.unknown()),
+  skipped_reasons: z.array(z.object({
+    contact_id: z.string().uuid(),
+    method_id: z.string().uuid(),
+    reason_codes: z.array(z.enum([
+      "inactive_contact",
+      "inactive_method",
+      "destination_mismatch",
+      "channel_mismatch",
+      "unverified_method",
+      "consent_missing",
+      "consent_revoked",
+      "consent_expired",
+      "category_not_permitted",
+      "quiet_hours",
+    ])),
+  })),
 });
+
+export function mapRecipientResult(value: unknown): RecipientSelectionResult {
+  const parsed = recipientResultSchema.parse(value);
+  return {
+    result: parsed.result,
+    selectedContactId: parsed.selected_contact_id,
+    selectedMethodId: parsed.selected_method_id,
+    explanation: parsed.explanation,
+    candidates: [],
+    skippedReasons: parsed.skipped_reasons.map((reason) => ({
+      contactId: reason.contact_id,
+      methodId: reason.method_id,
+      reasonCodes: reason.reason_codes,
+    })),
+  };
+}
 
 async function rpcCommand(
   accessToken: string,
@@ -242,12 +273,5 @@ export async function previewRecipient(args: {
       p_requested_channel: args.requestedChannel ?? null,
     });
   if (error) throw new Error("Recipient preview failed");
-  const parsed = recipientResultSchema.parse(data);
-  return {
-    result: parsed.result,
-    selectedContactId: parsed.selected_contact_id,
-    selectedMethodId: parsed.selected_method_id,
-    explanation: parsed.explanation,
-    candidates: [],
-  };
+  return mapRecipientResult(data);
 }

@@ -67,6 +67,19 @@ async function pollContactVersion(args: {
   throw new Error("Contact polling fallback did not observe the committed update");
 }
 
+function waitForContactEvent(args: {
+  event: Promise<string>;
+  statuses: string[];
+}) {
+  return Promise.race([
+    args.event,
+    new Promise<never>((_, reject) => setTimeout(
+      () => reject(new Error(`Realtime event timed out: ${args.statuses.join(",")}`)),
+      5_000
+    )),
+  ]);
+}
+
 async function createAdminFixture(
   fixture: SupabaseRlsFixture
 ): Promise<AdminFixture> {
@@ -112,19 +125,10 @@ async function createAdminFixture(
     if (signedIn.error || !signedIn.data.session) {
       throw new Error("Gate 2 admin sign-in failed");
     }
-    const client = createClient(config.url, config.anonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${signedIn.data.session.access_token}`,
-        },
-      },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
     return {
       userId: created.data.user.id,
       caregiverId,
-      client,
+      client: authClient,
       cleanup: async () => {
         await fixture.serviceClient.from("caregivers").delete().eq("id", caregiverId);
         await fixture.serviceClient.auth.admin.deleteUser(created.data.user.id);
@@ -206,8 +210,32 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
     expect(duplicate.error).toBeNull();
     expect(replayed.duplicate).toBe(true);
     expect(audit.data).toEqual([{ actor_caregiver_id: admin.caregiverId }]);
+    const differentActor = await observer.client.rpc("create_senior_contact", payload);
+    expect(differentActor.error?.code).toBe("22023");
     contactId = String(created.id);
     contactUpdatedAt = String(created.updated_at);
+  });
+
+  it("rejects a reused contact command ID when its normalized payload changes", async () => {
+    const commandId = randomUUID();
+    const payload = {
+      p_senior_id: fixture.sharedSeniorId,
+      p_command_id: commandId,
+      p_display_name: "Payload Bound Contact",
+      p_relationship: "daughter",
+      p_contact_kind: "family_guardian",
+      p_preferred_language: "en",
+      p_timezone: "Asia/Singapore",
+      p_escalation_priority: 2,
+    } as const;
+    const first = await admin.client.rpc("create_senior_contact", payload);
+    const changed = await admin.client.rpc("create_senior_contact", {
+      ...payload,
+      p_relationship: "son",
+    });
+
+    expect(first.error).toBeNull();
+    expect(changed.error?.code).toBe("22023");
   });
 
   it("verifies a method without replacing its destination and records consent once", async () => {
@@ -227,9 +255,10 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
 
     const verifiedAt = new Date().toISOString();
     consentConfirmedAt = verifiedAt;
-    const verifyMethod = await admin.client.rpc("update_contact_method", {
+    const verifyCommandId = randomUUID();
+    const verifyPayload = {
       p_method_id: methodId,
-      p_command_id: randomUUID(),
+      p_command_id: verifyCommandId,
       p_expected_updated_at: methodUpdatedAt,
       p_channel: "whatsapp",
       p_destination_normalized: null,
@@ -241,8 +270,17 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
       p_quiet_hours_start: "22:00:00",
       p_quiet_hours_end: "07:00:00",
       p_active: true,
+    } as const;
+    const verifyMethod = await admin.client.rpc("update_contact_method", verifyPayload);
+    const verifyDuplicate = await admin.client.rpc("update_contact_method", verifyPayload);
+    const verifyChanged = await admin.client.rpc("update_contact_method", {
+      ...verifyPayload,
+      p_method_priority: 2,
     });
     expect(verifyMethod.error).toBeNull();
+    expect(verifyDuplicate.error).toBeNull();
+    expect(result(verifyDuplicate.data).duplicate).toBe(true);
+    expect(verifyChanged.error?.code).toBe("22023");
     methodUpdatedAt = String(result(verifyMethod.data).updated_at);
     const storedMethod = await fixture.serviceClient
       .from("contact_methods")
@@ -284,6 +322,39 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
     expect(duplicate.error).toBeNull();
     expect(result(duplicate.data).duplicate).toBe(true);
     expect(events.data).toEqual([{ actor_caregiver_id: admin.caregiverId }]);
+    const changedConsent = await admin.client.rpc("record_contact_consent", {
+      ...consentPayload,
+      p_note: "A different note must not reuse the same consent command ID.",
+    });
+    expect(changedConsent.error?.code).toBe("22023");
+  });
+
+  it("rejects a reused method command ID when its normalized destination changes", async () => {
+    const commandId = randomUUID();
+    const payload = {
+      p_contact_id: contactId,
+      p_command_id: commandId,
+      p_channel: "sms",
+      p_destination_normalized: "+65 9000 5678",
+      p_method_priority: 2,
+      p_timezone: "Asia/Singapore",
+      p_quiet_hours_start: null,
+      p_quiet_hours_end: null,
+    } as const;
+    const first = await admin.client.rpc("create_contact_method", payload);
+    const duplicate = await admin.client.rpc("create_contact_method", {
+      ...payload,
+      p_destination_normalized: "+6590005678",
+    });
+    const changed = await admin.client.rpc("create_contact_method", {
+      ...payload,
+      p_destination_normalized: "+6599995678",
+    });
+
+    expect(first.error).toBeNull();
+    expect(duplicate.error).toBeNull();
+    expect(result(duplicate.data).duplicate).toBe(true);
+    expect(changed.error?.code).toBe("22023");
   });
 
   it("authorizes before consent replay and explains quiet-hour decisions", async () => {
@@ -337,9 +408,10 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
     );
   });
 
-  it("shares contact updates and rejects stale writes without partial history", async () => {
+  it("delivers contact updates through Realtime and rejects stale writes without partial history", async () => {
     const statuses: string[] = [];
-    let eventReceived = false;
+    let resolveEvent: (updatedAt: string) => void = () => undefined;
+    const event = new Promise<string>((resolve) => { resolveEvent = resolve; });
     const channel = observer.client
       .channel(`gate2-contact-${randomUUID()}`)
       .on(
@@ -350,8 +422,8 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
           table: "senior_contacts",
           filter: `id=eq.${contactId}`,
         },
-        () => {
-          eventReceived = true;
+        (payload) => {
+          resolveEvent(String((payload.new as { updated_at?: string }).updated_at ?? ""));
         }
       );
     await subscribe(channel, statuses);
@@ -370,13 +442,20 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
         p_active: true,
       });
       expect(first.error).toBeNull();
-      await expect(
-        pollContactVersion({
-          client: observer.client,
-          contactId,
-          previousUpdatedAt: contactUpdatedAt,
-        })
-      ).resolves.not.toBe(contactUpdatedAt);
+      const deliveredUpdatedAt = await waitForContactEvent({ event, statuses });
+      expect(deliveredUpdatedAt).not.toBe("");
+      const changedReplay = await admin.client.rpc("update_senior_contact", {
+        p_contact_id: contactId,
+        p_command_id: firstCommand,
+        p_expected_updated_at: contactUpdatedAt,
+        p_display_name: "Changed replay",
+        p_relationship: "daughter",
+        p_contact_kind: "family_guardian",
+        p_preferred_language: "en",
+        p_timezone: "Asia/Singapore",
+        p_escalation_priority: 1,
+        p_active: true,
+      });
       await new Promise((resolve) => setTimeout(resolve, 1_000));
 
       const staleCommand = randomUUID();
@@ -398,13 +477,42 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
         .eq("command_id", staleCommand);
 
       expect(statuses).toContain("SUBSCRIBED");
-      expect(eventReceived || statuses.includes("SUBSCRIBED")).toBe(true);
+      expect(changedReplay.error?.code).toBe("22023");
       expect(stale.error?.code).toBe("PT409");
       expect(staleAudits.count).toBe(0);
     } finally {
       await observer.client.removeChannel(channel);
     }
-  });
+  }, 15_000);
+
+  it("observes contact changes through the bounded polling fallback independently", async () => {
+    const before = await observer.client
+      .from("senior_contacts")
+      .select("updated_at")
+      .eq("id", contactId)
+      .single();
+    expect(before.error).toBeNull();
+    const previousUpdatedAt = String(before.data?.updated_at);
+    const update = await admin.client.rpc("update_senior_contact", {
+      p_contact_id: contactId,
+      p_command_id: randomUUID(),
+      p_expected_updated_at: previousUpdatedAt,
+      p_display_name: "Gate 2 Family Contact",
+      p_relationship: "daughter",
+      p_contact_kind: "family_guardian",
+      p_preferred_language: "en",
+      p_timezone: "Asia/Singapore",
+      p_escalation_priority: 1,
+      p_active: true,
+    });
+
+    expect(update.error).toBeNull();
+    await expect(pollContactVersion({
+      client: observer.client,
+      contactId,
+      previousUpdatedAt,
+    })).resolves.not.toBe(previousUpdatedAt);
+  }, 10_000);
 
   it("persists one consent-bound escalation decision without claiming delivery", async () => {
     const before = await fixture.serviceClient

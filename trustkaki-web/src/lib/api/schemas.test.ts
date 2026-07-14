@@ -286,6 +286,50 @@ describe("API request schemas", () => {
     }).success).toBe(false);
   });
 
+  it("normalizes destinations according to their channel", () => {
+    const whatsapp = contactMethodCreateRequestSchema.parse({
+      commandId,
+      channel: "whatsapp",
+      destination: "+65 8123-4567",
+      methodPriority: 1,
+      timezone: "Asia/Singapore",
+    });
+    const email = contactMethodCreateRequestSchema.parse({
+      commandId,
+      channel: "email",
+      destination: " Rachel.Tan@Example.COM ",
+      methodPriority: 1,
+      timezone: "Asia/Singapore",
+    });
+
+    expect(whatsapp.destination).toBe("+6581234567");
+    expect(email.destination).toBe("rachel.tan@example.com");
+  });
+
+  it("rejects destinations that are invalid for the selected channel", () => {
+    const base = {
+      commandId,
+      methodPriority: 1,
+      timezone: "Asia/Singapore",
+    };
+
+    expect(contactMethodCreateRequestSchema.safeParse({
+      ...base,
+      channel: "email",
+      destination: "+6581234567",
+    }).success).toBe(false);
+    expect(contactMethodCreateRequestSchema.safeParse({
+      ...base,
+      channel: "sms",
+      destination: "rachel@example.com",
+    }).success).toBe(false);
+    expect(contactMethodCreateRequestSchema.safeParse({
+      ...base,
+      channel: "voice",
+      destination: "81234567",
+    }).success).toBe(false);
+  });
+
   it("validates auditable consent and urgent override", () => {
     expect(contactConsentRequestSchema.safeParse({
       commandId,

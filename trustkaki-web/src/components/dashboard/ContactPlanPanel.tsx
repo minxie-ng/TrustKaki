@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { authHeader } from "@/lib/auth/client";
 import type { NotificationCategory } from "@/lib/contacts/contracts";
+import type { RecipientSelectionResult } from "@/lib/contacts/contracts";
 import type { MaskedContactMethod, MaskedContactPlan } from "@/lib/types";
 
 export function contactPlanPresentation(plan: MaskedContactPlan, isAdmin: boolean) {
@@ -31,6 +32,36 @@ export function contactPlanPresentation(plan: MaskedContactPlan, isAdmin: boolea
 
 export function contactPlanInstanceKey(seniorId: string | null) {
   return `contact-plan:${seniorId ?? "none"}`;
+}
+
+const recipientReasonLabels = {
+  inactive_contact: "the contact is inactive",
+  inactive_method: "the contact method is inactive",
+  destination_mismatch: "the contact does not match this alert destination",
+  channel_mismatch: "the requested contact channel is unavailable",
+  unverified_method: "the contact method is not verified",
+  consent_missing: "notification consent is not recorded",
+  consent_revoked: "notification consent was revoked",
+  consent_expired: "notification consent has expired",
+  category_not_permitted: "consent does not cover this alert",
+  quiet_hours: "quiet hours are active",
+} as const;
+
+export function recipientPreviewPresentation(
+  decision: RecipientSelectionResult,
+  plan: MaskedContactPlan
+) {
+  if (decision.result === "candidate_selected") return decision.explanation;
+  if (decision.skippedReasons.length === 0) return decision.explanation;
+  return decision.skippedReasons.map((skipped) => {
+    const contact = plan.contacts.find((item) => item.id === skipped.contactId);
+    const method = contact?.methods.find((item) => item.id === skipped.methodId);
+    const identity = contact && method
+      ? `${contact.displayName} (${method.channel === "whatsapp" ? "WhatsApp" : method.channel} · ${method.maskedDestination})`
+      : "Configured contact";
+    const reasons = skipped.reasonCodes.map((reason) => recipientReasonLabels[reason]);
+    return `${identity} was excluded: ${reasons.join("; ")}.`;
+  }).join(" ");
 }
 
 interface ContactPlanPanelProps {
@@ -126,8 +157,10 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
           evaluationTime: new Date().toISOString(),
           requestedChannel: "whatsapp",
         },
-      }) as { recipientDecision?: { explanation?: string } };
-      setPreview(result.recipientDecision?.explanation ?? "No eligible contact found.");
+      }) as { recipientDecision?: RecipientSelectionResult };
+      setPreview(result.recipientDecision
+        ? recipientPreviewPresentation(result.recipientDecision, props.plan ?? empty)
+        : "No eligible contact found.");
     } catch {
       setPreview("Preview unavailable. Please retry.");
     } finally {

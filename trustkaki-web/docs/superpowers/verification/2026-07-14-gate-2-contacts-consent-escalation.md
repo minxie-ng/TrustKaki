@@ -4,8 +4,9 @@ Date: 14 July 2026
 
 ## Status
 
-Implementation, live database verification, and authenticated browser proof
-pass. Gate 2 is ready for independent audit and does not send notifications.
+Implementation, live database verification, authenticated browser proof, and
+independent-audit remediation pass. Gate 2 is ready for independent re-audit
+and does not send notifications.
 
 ## Implemented
 
@@ -21,7 +22,8 @@ pass. Gate 2 is ready for independent audit and does not send notifications.
 
 ## Database Evidence
 
-- Applied migrations: `20260714053148`, `20260714055223`, `20260714060530`.
+- Applied migrations: `20260714053148`, `20260714055223`, `20260714060530`,
+  and `20260714064523`.
 - Local and remote migration history aligned.
 - Seed execution produced four demo contacts, four methods, and four consent
   events. All destinations are fictional.
@@ -39,7 +41,7 @@ pass. Gate 2 is ready for independent audit and does not send notifications.
 
 Command: `npm run validate`
 
-- Tests: 246 passed, 16 skipped live-by-default tests.
+- Tests: 253 passed, 19 skipped live-by-default tests.
 - Typecheck: passed.
 - Lint: passed.
 - Production build: passed.
@@ -67,5 +69,33 @@ and credential file were removed, and seed ownership references were restored.
 
 ## Remaining Evidence
 
-Independent Gate 2 audit. Gate 2 must not be described as accepted until that
-review passes.
+Independent Gate 2 re-audit. Gate 2 must not be described as accepted until
+that review passes.
+
+## Independent Audit Remediation
+
+On 14 July 2026, the Gate 2 audit identified command-replay binding,
+recipient-explanation, Realtime-test, and destination-validation gaps. The
+additive migration `20260714064523_gate_2_audit_remediation.sql` now binds each
+contact/method command ID to the authenticated actor and a fingerprint of its
+normalized payload. Phone destinations require E.164 format after safe
+normalization; email destinations are trimmed, lowercased, and validated.
+
+The repository now preserves deterministic `skipped_reasons`, and the admin
+preview names the configured masked contact method with plain-language exclusion
+reasons. No raw destination is added to the response or audit summary.
+
+Live verification after migration:
+
+- migration dry run listed only `20260714064523_gate_2_audit_remediation.sql`;
+- migration applied successfully and local/remote histories align;
+- Gate 2 live suite passed three consecutive runs, 9/9 each, followed by one
+  final 9/9 run with changed-payload assertions across create/update commands;
+- Realtime proof uses the signed-in Supabase client and requires the actual
+  `senior_contacts` update event;
+- bounded polling fallback is exercised by an independent update without using
+  the Realtime event result;
+- security advisor: no error-level issues;
+- performance advisor: no error-level issues.
+- `npm run validate`: 253 tests passed, 19 live-by-default tests skipped,
+  typecheck passed, lint passed, and the production build passed.

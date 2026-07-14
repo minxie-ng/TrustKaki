@@ -144,6 +144,29 @@ const methodBaseSchema = z.object({
   quietHoursEnd: hhmmSchema.nullable().optional(),
 });
 
+function normalizeContactDestination(channel: z.infer<typeof contactChannelSchema>, value: string) {
+  if (channel === "email") return value.trim().toLowerCase();
+  return value.trim().replace(/[\s().-]/g, "");
+}
+
+function validateContactDestination(
+  value: { channel: z.infer<typeof contactChannelSchema>; destination?: string | null },
+  ctx: z.RefinementCtx
+) {
+  if (value.destination == null) return;
+  const normalized = normalizeContactDestination(value.channel, value.destination);
+  const valid = value.channel === "email"
+    ? z.string().email().safeParse(normalized).success
+    : /^\+[1-9]\d{7,14}$/.test(normalized);
+  if (!valid) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["destination"],
+      message: "Destination is invalid for the selected channel.",
+    });
+  }
+}
+
 function requireQuietHoursPair(
   value: { quietHoursStart?: string | null; quietHoursEnd?: string | null },
   ctx: z.RefinementCtx
@@ -158,7 +181,14 @@ function requireQuietHoursPair(
 
 export const contactMethodCreateRequestSchema = methodBaseSchema
   .strict()
-  .superRefine(requireQuietHoursPair);
+  .superRefine((value, ctx) => {
+    requireQuietHoursPair(value, ctx);
+    validateContactDestination(value, ctx);
+  })
+  .transform((value) => ({
+    ...value,
+    destination: normalizeContactDestination(value.channel, value.destination),
+  }));
 
 export const contactMethodUpdateRequestSchema = methodBaseSchema.extend({
   destination: z.string().trim().min(3).max(320).nullable().optional(),
@@ -171,13 +201,19 @@ export const contactMethodUpdateRequestSchema = methodBaseSchema.extend({
   active: z.boolean(),
 }).strict().superRefine((value, ctx) => {
   requireQuietHoursPair(value, ctx);
+  validateContactDestination(value, ctx);
   if (
     value.verificationStatus === "verified" &&
     (!value.verificationMethod || !value.verifiedAt)
   ) {
     ctx.addIssue({ code: "custom", message: "Verified methods require evidence." });
   }
-});
+}).transform((value) => ({
+  ...value,
+  destination: value.destination == null
+    ? value.destination
+    : normalizeContactDestination(value.channel, value.destination),
+}));
 
 export const contactConsentRequestSchema = z.object({
   commandId: commandIdSchema,

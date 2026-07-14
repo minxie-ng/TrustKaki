@@ -779,6 +779,7 @@ export interface Database {
           after_summary: Json;
           actor_caregiver_id: string;
           command_id: string;
+          payload_fingerprint: string | null;
           created_at: string;
         };
         Insert: {
@@ -791,6 +792,7 @@ export interface Database {
           after_summary: Json;
           actor_caregiver_id: string;
           command_id: string;
+          payload_fingerprint?: string | null;
           created_at?: string;
         };
         Update: never;

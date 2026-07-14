@@ -3,6 +3,7 @@ import type { MaskedContactPlan } from "@/lib/types";
 import {
   contactPlanInstanceKey,
   contactPlanPresentation,
+  recipientPreviewPresentation,
 } from "./ContactPlanPanel";
 
 const plan: MaskedContactPlan = {
@@ -51,6 +52,23 @@ describe("contact plan presentation", () => {
       availability: "Quiet hours 22:00–07:00 · urgent override allowed",
     });
     expect(JSON.stringify(view)).not.toContain("+658");
+  });
+
+  it("explains why configured recipients were excluded", () => {
+    expect(recipientPreviewPresentation({
+      result: "no_eligible_contact",
+      selectedContactId: null,
+      selectedMethodId: null,
+      explanation: "No eligible contact.",
+      candidates: [],
+      skippedReasons: [{
+        contactId: "contact-1",
+        methodId: "method-1",
+        reasonCodes: ["quiet_hours", "category_not_permitted"],
+      }],
+    }, plan)).toBe(
+      "Rachel Tan (WhatsApp · •••• 4567) was excluded: quiet hours are active; consent does not cover this alert."
+    );
   });
 
   it("enables management only for admins", () => {

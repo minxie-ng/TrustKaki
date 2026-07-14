@@ -856,7 +856,7 @@ Remaining before Gate 1 is accepted:
 
 - independent reviewer re-audit passed on 14 July 2026
 
-#### Gate 2 — Contacts, Consent, and Escalation (ready for independent audit)
+#### Gate 2 — Contacts, Consent, and Escalation (ready for independent re-audit)
 
 - multiple verified contacts per senior
 - relationship, priority, language, quiet hours, consent, and permitted alerts
@@ -870,6 +870,15 @@ Remaining before Gate 1 is accepted:
 - three live database runs and security/performance advisors pass
 - authenticated browser proof passed for masked plans, consent update, recipient
   preview, senior switching, and raw-number absence
+- contact and method command IDs are bound to the authenticated actor and
+  normalized payload; changed-payload replay is rejected
+- phone and email destinations are normalized and validated by channel at both
+  API and database boundaries
+- admin preview preserves and explains deterministic recipient exclusions
+- Realtime verification requires a real authenticated row event, while bounded
+  polling is proven independently
+- four remediation live runs, full validation, aligned migration history, and
+  security/performance advisors pass
 
 Gate 1 records escalation intent only. It does not send a message or contact an
 external party. Actual notifications require the verified contacts, consent,
@@ -916,9 +925,9 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate work is the **independent Gate 2 audit**. Implementation, live
-database checks, and authenticated browser proof pass. After the evidence is
-accepted, proceed to Gate 3 production WhatsApp; do not enable live Meta
+The immediate work is the **independent Gate 2 re-audit**. Audit remediation,
+live database checks, and authenticated browser proof pass. After the evidence
+is accepted, proceed to Gate 3 production WhatsApp; do not enable live Meta
 callbacks, scheduler behavior, or memory expansion before Gate 2 is accepted.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation

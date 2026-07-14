@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 import {
+  mapRecipientResult,
   mapMaskedContactPlan,
   maskContactDestination,
 } from "./contactPlanRepository";
@@ -69,5 +70,27 @@ describe("contact plan read model", () => {
     expect(plan.contacts[0].methods[0].maskedDestination).toBe("•••• 4567");
     expect(plan.contacts[0].methods[0].consent?.eventType).toBe("revoked");
     expect(JSON.stringify(plan)).not.toContain("+6581234567");
+  });
+});
+
+describe("recipient preview read model", () => {
+  it("preserves deterministic exclusion reasons returned by Supabase", () => {
+    const result = mapRecipientResult({
+      result: "no_eligible_contact",
+      selected_contact_id: null,
+      selected_method_id: null,
+      explanation: "No eligible contact.",
+      skipped_reasons: [{
+        contact_id: "00000000-0000-4000-8000-000000000001",
+        method_id: "00000000-0000-4000-8000-000000000002",
+        reason_codes: ["quiet_hours", "category_not_permitted"],
+      }],
+    });
+
+    expect(result.skippedReasons).toEqual([{
+      contactId: "00000000-0000-4000-8000-000000000001",
+      methodId: "00000000-0000-4000-8000-000000000002",
+      reasonCodes: ["quiet_hours", "category_not_permitted"],
+    }]);
   });
 });

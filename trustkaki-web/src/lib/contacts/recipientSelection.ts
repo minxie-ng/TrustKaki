@@ -139,6 +139,11 @@ export function selectNotificationRecipient(
         ...candidate,
         reasonCodes: ["destination_mismatch"],
       })),
+      skippedReasons: candidates.map((candidate) => ({
+        contactId: candidate.contactId,
+        methodId: candidate.methodId,
+        reasonCodes: ["destination_mismatch"],
+      })),
     };
   }
 
@@ -157,5 +162,12 @@ export function selectNotificationRecipient(
       ? "Selected the first verified, consented contact in the configured escalation order."
       : "No verified and consented contact is currently eligible; staff follow-up is required.",
     candidates: evaluated,
+    skippedReasons: evaluated
+      .filter((candidate) => candidate.reasonCodes.length > 0)
+      .map((candidate) => ({
+        contactId: candidate.contactId,
+        methodId: candidate.methodId,
+        reasonCodes: candidate.reasonCodes,
+      })),
   };
 }

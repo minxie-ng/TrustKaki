@@ -8,11 +8,13 @@
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript, Zod 4, Supabase Postgres/Auth/RLS/Realtime, Vitest, Tailwind CSS.
 
-**Status (14 July 2026):** Implementation, migrations, seed data, focused tests,
-three live Gate 2 database runs, database advisors, `npm run validate`, and the
-authenticated browser workflow pass. Browser proof covered masked contact
-display, consent recording, recipient preview, senior switching, and raw-number
-absence. Gate 2 is ready for independent audit; it does not send notifications.
+**Status (14 July 2026):** Independent audit remediation is implemented. Contact
+and method idempotency keys are actor/payload-bound, destinations are validated
+per channel, recipient exclusions survive the API boundary, and Realtime tests
+now require an authenticated row event with a separate polling-fallback proof.
+Three live remediation runs and database advisors pass. Final repository
+validation is recorded in the verification evidence; Gate 2 does not send
+notifications.
 
 **Migration note:** The CLI-created foundation migration is
 `20260714053148_gate_2_contacts_consent_escalation.sql`. Review found two
@@ -20,7 +22,8 @@ security/integrity corrections before final verification, recorded normally as
 `20260714055223_gate_2_contact_security_corrections.sql`. Contact-table Realtime
 publication is recorded in
 `20260714060530_gate_2_contact_realtime_publication.sql`. Local and remote
-migration history are aligned.
+migration history are aligned. Independent-audit fixes are additive in
+`20260714064523_gate_2_audit_remediation.sql`.
 
 ---
 
@@ -73,7 +76,7 @@ as the only fix.
 - Create: `src/lib/contacts/recipientSelection.ts`
 - Create: `src/lib/contacts/recipientSelection.test.ts`
 
-- [ ] **Step 1: Write failing rule tests**
+- [x] **Step 1: Write failing rule tests**
 
 Cover stable priority order, unverified/inactive/revoked/expired/category mismatch,
 normal quiet hours, overnight quiet hours, urgent consent-bound bypass, latest-event
@@ -104,13 +107,13 @@ it("does not revive an older grant after the latest grant expires", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and verify RED**
+- [x] **Step 2: Run the tests and verify RED**
 
 Run: `npm test -- src/lib/contacts/recipientSelection.test.ts`
 
 Expected: FAIL because the contact contracts and selector do not exist.
 
-- [ ] **Step 3: Implement the minimum typed selector**
+- [x] **Step 3: Implement the minimum typed selector**
 
 Define explicit unions and return explainable reason codes.
 
@@ -152,13 +155,13 @@ export function selectNotificationRecipient(
 
 Use `Intl.DateTimeFormat(..., { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" })` to derive local minutes. Treat null quiet-hour fields as no quiet hours and correctly handle windows crossing midnight.
 
-- [ ] **Step 4: Run tests and verify GREEN**
+- [x] **Step 4: Run tests and verify GREEN**
 
 Run: `npm test -- src/lib/contacts/recipientSelection.test.ts`
 
 Expected: all selection tests pass.
 
-- [ ] **Step 5: Commit the domain increment**
+- [x] **Step 5: Commit the domain increment**
 
 ```bash
 git add src/lib/contacts
@@ -174,7 +177,7 @@ git commit -m "feat: add deterministic contact selection"
 - Create: `src/lib/security/gate2ContactsMigration.test.ts`
 - Modify: `src/lib/supabase/types.ts`
 
-- [ ] **Step 1: Write a failing migration contract test**
+- [x] **Step 1: Write a failing migration contract test**
 
 The test locates the one migration ending in `_gate_2_contacts_consent_escalation.sql` and asserts RLS, append-only consent/audit protections, indexes, admin identity checks, empty search paths, revoked public execution, deterministic ordering, latest-event selection, idempotency, conflict checks, and atomic recipient-decision insertion.
 
@@ -195,13 +198,13 @@ it("selects from the latest consent event only", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `npm test -- src/lib/security/gate2ContactsMigration.test.ts`
 
 Expected: FAIL because no Gate 2 migration exists.
 
-- [ ] **Step 3: Create the migration using the normal workflow**
+- [x] **Step 3: Create the migration using the normal workflow**
 
 Run: `npx supabase migration new gate_2_contacts_consent_escalation`
 
@@ -245,11 +248,11 @@ order by contact.escalation_priority,
          method.id
 ```
 
-- [ ] **Step 4: Update hand-maintained database types**
+- [x] **Step 4: Update hand-maintained database types**
 
 Add all row/insert/update shapes and RPC arguments/results to `src/lib/supabase/types.ts`. Keep raw destination fields server-only by never adding them to `src/lib/types.ts` caregiver read models.
 
-- [ ] **Step 5: Run focused tests and local static checks**
+- [x] **Step 5: Run focused tests and local static checks**
 
 Run:
 
@@ -261,7 +264,7 @@ npm run typecheck
 
 Expected: migration and selector tests pass; typecheck passes.
 
-- [ ] **Step 6: Commit schema increment**
+- [x] **Step 6: Commit schema increment**
 
 ```bash
 git add supabase/migrations src/lib/security/gate2ContactsMigration.test.ts src/lib/supabase/types.ts
@@ -279,7 +282,7 @@ git commit -m "feat: add gate two contact schema"
 - Create: `src/lib/persistence/contactPlanRepository.test.ts`
 - Modify: `src/lib/types.ts`
 
-- [ ] **Step 1: Write failing schema and repository tests**
+- [x] **Step 1: Write failing schema and repository tests**
 
 Test strict rejection of unknown keys, invalid timezones/times, unmasked read data,
 short consent notes where required, category/override mismatch, stale conflict
@@ -299,13 +302,13 @@ expect(maskContactDestination("whatsapp", "+6581234567")).toBe("•••• 456
 expect(JSON.stringify(contactPlan)).not.toContain("+6581234567");
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `npm test -- src/lib/api/schemas.test.ts src/lib/persistence/contactPlanRepository.test.ts`
 
 Expected: FAIL because Gate 2 schemas and repository do not exist.
 
-- [ ] **Step 3: Add strict Zod schemas**
+- [x] **Step 3: Add strict Zod schemas**
 
 Add schemas for contact create/update, method create/update, consent event, and
 recipient preview. Use `.strict()`, UUID command IDs, expected ISO timestamps,
@@ -320,7 +323,7 @@ export const recipientPreviewRequestSchema = z.object({
 }).strict();
 ```
 
-- [ ] **Step 4: Implement focused repository methods**
+- [x] **Step 4: Implement focused repository methods**
 
 Expose only:
 
@@ -341,13 +344,13 @@ All writes use the authenticated user client and validate RPC output with Zod.
 Masked reads use the server client only after route authorization and map raw
 destinations immediately through `maskContactDestination`.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [x] **Step 5: Run focused tests and verify GREEN**
 
 Run: `npm test -- src/lib/api/schemas.test.ts src/lib/persistence/contactPlanRepository.test.ts`
 
 Expected: all schema/repository tests pass.
 
-- [ ] **Step 6: Commit contracts and persistence**
+- [x] **Step 6: Commit contracts and persistence**
 
 ```bash
 git add src/lib/api src/lib/contacts src/lib/persistence/contactPlanRepository* src/lib/types.ts
@@ -361,7 +364,7 @@ git commit -m "feat: add contact plan persistence contracts"
 **Files:**
 - Create the seven route and route-test pairs listed in File Structure.
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 For every mutation route prove 401 without a token, 403 for a non-admin, 400 for
 invalid input, 409 for stale version, bounded 500 for repository failure, and
@@ -377,13 +380,13 @@ it("does not let a linked non-admin change consent", async () => {
 });
 ```
 
-- [ ] **Step 2: Run route tests and verify RED**
+- [x] **Step 2: Run route tests and verify RED**
 
 Run: `npm test -- src/app/api/admin src/app/api/seniors/[seniorId]/contact-plan/route.test.ts`
 
 Expected: FAIL because routes do not exist.
 
-- [ ] **Step 3: Implement narrow routes using existing auth helpers**
+- [x] **Step 3: Implement narrow routes using existing auth helpers**
 
 Read route:
 
@@ -400,11 +403,11 @@ Admin routes use `requireDemoAdmin`, verify access to the senior resolved from
 the target row, parse strict schemas, and map `ContactPlanConflictError` to 409.
 Never return repository error text or raw provider responses.
 
-- [ ] **Step 4: Run route tests and verify GREEN**
+- [x] **Step 4: Run route tests and verify GREEN**
 
 Run all new route tests plus `src/app/api/deployment-hardening.test.ts`.
 
-- [ ] **Step 5: Commit API increment**
+- [x] **Step 5: Commit API increment**
 
 ```bash
 git add src/app/api/admin src/app/api/seniors
@@ -424,7 +427,7 @@ git commit -m "feat: add contact plan APIs"
 - Modify: `src/components/dashboard/CaseUpdateForm.tsx`
 - Modify: `src/components/dashboard/CaseUpdateForm.test.ts`
 
-- [ ] **Step 1: Write failing escalation tests**
+- [x] **Step 1: Write failing escalation tests**
 
 Prove escalation requires a notification category, repository passes it to the
 new RPC signature, emergency guidance produces no recipient candidate, family
@@ -445,24 +448,24 @@ expect(result.recipientDecision).toEqual({
 });
 ```
 
-- [ ] **Step 2: Run focused tests and verify RED**
+- [x] **Step 2: Run focused tests and verify RED**
 
 Run the four modified test files. Expected: FAIL because notification category
 and recipient decision are not part of the current command.
 
-- [ ] **Step 3: Implement the minimum command changes**
+- [x] **Step 3: Implement the minimum command changes**
 
 Add `notificationCategory` only for `actionType === "escalate"`. Extend the RPC
 adapter and validated result with a non-delivery decision. Add a compact category
 select to the existing escalation fields, with `urgent_safety` automatically
 selected for `emergency_guidance` but still producing no external recipient.
 
-- [ ] **Step 4: Run focused tests and verify GREEN**
+- [x] **Step 4: Run focused tests and verify GREEN**
 
 Run the four modified test files and the Gate 1 transition tests. Expected: all
 pass and existing pending/acknowledged/escalated behavior remains unchanged.
 
-- [ ] **Step 5: Commit escalation integration**
+- [x] **Step 5: Commit escalation integration**
 
 ```bash
 git add src/lib/api src/lib/persistence/caregiverCaseRepository* \
@@ -481,7 +484,7 @@ git commit -m "feat: bind escalation to consented recipients"
 - Modify: `src/app/page.tsx`
 - Modify: `src/lib/supabase/dashboardRealtime.ts`
 
-- [ ] **Step 1: Write failing presentation/state tests**
+- [x] **Step 1: Write failing presentation/state tests**
 
 Test caregiver read-only mode, admin edit controls, masked destinations, concise
 default content, consent/quiet-hours labels, preview explanations, pending state,
@@ -498,13 +501,13 @@ expect(JSON.stringify(contactPlanPresentation(plan, { isAdmin: false })))
   .not.toContain("+6581234567");
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `npm test -- src/components/dashboard/ContactPlanPanel.test.ts`
 
 Expected: FAIL because the panel does not exist.
 
-- [ ] **Step 3: Implement the compact panel and page state**
+- [x] **Step 3: Implement the compact panel and page state**
 
 Mount `ContactPlanPanel` after `SelectedSeniorSummary`. Default caregiver view
 shows the first eligible contact, escalation order, masked method, consent scope,
@@ -515,13 +518,13 @@ Use a contact-plan request sequence ref mirroring the existing dashboard request
 protection so switching seniors cannot render stale contacts. Disable all admin
 actions while pending and retain command UUID across retry.
 
-- [ ] **Step 4: Add Realtime refresh hints**
+- [x] **Step 4: Add Realtime refresh hints**
 
 Subscribe to `senior_contacts`, `contact_methods`, and `contact_consent_events`.
 Callbacks only refetch the authorized masked API; never trust Realtime payload
 contents as the read model.
 
-- [ ] **Step 5: Run UI tests, typecheck, and lint**
+- [x] **Step 5: Run UI tests, typecheck, and lint**
 
 ```bash
 npm test -- src/components/dashboard/ContactPlanPanel.test.ts \
@@ -530,7 +533,7 @@ npm run typecheck
 npm run lint
 ```
 
-- [ ] **Step 6: Commit UI increment**
+- [x] **Step 6: Commit UI increment**
 
 ```bash
 git add src/components src/app/page.tsx src/lib/supabase/dashboardRealtime.ts
@@ -546,7 +549,7 @@ git commit -m "feat: add caregiver contact plan panel"
 - Modify: `src/lib/security/supabaseTestFixture.ts`
 - Create: `src/lib/security/gate2Contacts.integration.test.ts`
 
-- [ ] **Step 1: Write the skipped-by-default live suite**
+- [x] **Step 1: Write the skipped-by-default live suite**
 
 Create one admin user, two linked caregivers, one unrelated caregiver/senior,
 multiple contacts/methods, and consent events. Tests must prove:
@@ -562,7 +565,7 @@ multiple contacts/methods, and consent events. Tests must prove:
 - Realtime status diagnostics and independent bounded polling fallback;
 - complete temporary fixture cleanup.
 
-- [ ] **Step 2: Run before migration and verify RED**
+- [x] **Step 2: Run before migration and verify RED**
 
 ```bash
 TRUSTKAKI_RUN_DB_INTEGRATION=1 node --env-file=.env.local \
@@ -571,13 +574,13 @@ TRUSTKAKI_RUN_DB_INTEGRATION=1 node --env-file=.env.local \
 
 Expected: FAIL because remote Gate 2 tables/functions are absent.
 
-- [ ] **Step 3: Add safe demo seed contacts**
+- [x] **Step 3: Add safe demo seed contacts**
 
 Seed fictional contacts for all three demo seniors, including one expired consent,
 one quiet-hours method, and at least one eligible family/AAC path. Never put the
 user's real phone number or credentials in committed SQL.
 
-- [ ] **Step 4: Apply through normal Supabase workflow**
+- [x] **Step 4: Apply through normal Supabase workflow**
 
 ```bash
 npx supabase db push --linked --dry-run
@@ -588,12 +591,12 @@ npx supabase migration list --linked
 Verify only the Gate 2 migration is pending before push and local/remote history
 aligns afterward.
 
-- [ ] **Step 5: Run the live suite three consecutive times**
+- [x] **Step 5: Run the live suite three consecutive times**
 
 Run the command from Step 2 three times. All runs must pass, classify Realtime
 status, prove polling independently, and leave zero temporary rows/users.
 
-- [ ] **Step 6: Run database advisors**
+- [x] **Step 6: Run database advisors**
 
 ```bash
 npx supabase db advisors --linked --type security --level error --fail-on error
@@ -602,7 +605,7 @@ npx supabase db advisors --linked --type performance --level error --fail-on err
 
 Expected: no error-level findings.
 
-- [ ] **Step 7: Commit seed and live verification**
+- [x] **Step 7: Commit seed and live verification**
 
 ```bash
 git add supabase/seed.sql src/lib/security
@@ -619,7 +622,7 @@ git commit -m "test: verify gate two contact controls"
 - Modify: `docs/TrustKaki_BUILD_ROADMAP.md`
 - Modify: `docs/TrustKaki_CODEX_HANDOFF.md`
 
-- [ ] **Step 1: Run authenticated browser workflows**
+- [x] **Step 1: Run authenticated browser workflows**
 
 Using temporary data and real Supabase Auth:
 
@@ -636,14 +639,14 @@ Using temporary data and real Supabase Auth:
 
 Delete all temporary users and rows after collecting non-secret evidence.
 
-- [ ] **Step 2: Run the full repository gate**
+- [x] **Step 2: Run the full repository gate**
 
 Run: `npm run validate`
 
 Expected: all default tests pass, live-only suites skip with explicit reason,
 typecheck passes, lint passes, and production build succeeds.
 
-- [ ] **Step 3: Inspect hygiene and secret boundaries**
+- [x] **Step 3: Inspect hygiene and secret boundaries**
 
 ```bash
 git diff --check
@@ -655,19 +658,19 @@ Confirm `.env.local` remains ignored, no raw destination appears in snapshots or
 API fixtures, no unrelated dirty file is staged, and the existing unrelated
 `package-lock.json` modification remains untouched unless independently explained.
 
-- [ ] **Step 4: Write truthful verification evidence**
+- [x] **Step 4: Write truthful verification evidence**
 
 Record exact migration, commands, focused test counts, three live runs, advisor
 results, browser scenarios, cleanup, validation output, known limitations, and
 whether Gate 2 is ready for independent audit. Do not call Gate 2 complete before
 reviewer acceptance.
 
-- [ ] **Step 5: Update plan and roadmap status**
+- [x] **Step 5: Update plan and roadmap status**
 
 Mark only completed checklist items. Set roadmap status to `implementation
 verified; independent audit pending` if and only if every required check passes.
 
-- [ ] **Step 6: Commit the verified Gate 2 baseline**
+- [x] **Step 6: Commit the verified Gate 2 baseline**
 
 ```bash
 git add docs src supabase

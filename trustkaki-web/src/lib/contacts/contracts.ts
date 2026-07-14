@@ -74,4 +74,9 @@ export interface RecipientSelectionResult {
   selectedMethodId: string | null;
   explanation: string;
   candidates: EvaluatedRecipientCandidate[];
+  skippedReasons: Array<{
+    contactId: string;
+    methodId: string;
+    reasonCodes: RecipientReasonCode[];
+  }>;
 }
