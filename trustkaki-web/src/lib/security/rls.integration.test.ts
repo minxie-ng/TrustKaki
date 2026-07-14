@@ -310,6 +310,7 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
       p_command_id: commandId,
       p_expected_updated_at: queueBefore?.updated_at ?? "",
       p_escalation_destination: "aac_supervisor",
+      p_notification_category: "wellbeing_follow_up",
       p_note: "Two unsuccessful calls require an AAC supervisor review today.",
     } as const;
 

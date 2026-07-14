@@ -1,4 +1,11 @@
 import type { AgentId, RiskLevel } from "@/lib/types";
+import type {
+  ConsentEventType,
+  ContactChannel,
+  ContactKind,
+  ContactVerificationStatus,
+  NotificationCategory,
+} from "@/lib/contacts/contracts";
 
 export type Json =
   | string
@@ -654,6 +661,177 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["caregiver_actions"]["Insert"]>;
       };
+      senior_contacts: {
+        Row: {
+          id: string;
+          senior_id: string;
+          display_name: string;
+          relationship: string;
+          contact_kind: ContactKind;
+          preferred_language: string;
+          timezone: string;
+          escalation_priority: number;
+          active: boolean;
+          created_by_caregiver_id: string;
+          updated_by_caregiver_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          display_name: string;
+          relationship: string;
+          contact_kind: ContactKind;
+          preferred_language?: string;
+          timezone?: string;
+          escalation_priority: number;
+          active?: boolean;
+          created_by_caregiver_id: string;
+          updated_by_caregiver_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["senior_contacts"]["Insert"]>;
+      };
+      contact_methods: {
+        Row: {
+          id: string;
+          senior_contact_id: string;
+          channel: ContactChannel;
+          destination_normalized: string;
+          verification_status: ContactVerificationStatus;
+          verification_method: string | null;
+          verified_at: string | null;
+          method_priority: number;
+          quiet_hours_start: string | null;
+          quiet_hours_end: string | null;
+          timezone: string;
+          active: boolean;
+          created_by_caregiver_id: string;
+          updated_by_caregiver_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_contact_id: string;
+          channel: ContactChannel;
+          destination_normalized: string;
+          verification_status?: ContactVerificationStatus;
+          verification_method?: string | null;
+          verified_at?: string | null;
+          method_priority?: number;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
+          timezone?: string;
+          active?: boolean;
+          created_by_caregiver_id: string;
+          updated_by_caregiver_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["contact_methods"]["Insert"]>;
+      };
+      contact_consent_events: {
+        Row: {
+          id: string;
+          senior_id: string;
+          senior_contact_id: string;
+          contact_method_id: string;
+          event_type: ConsentEventType;
+          permitted_categories: NotificationCategory[];
+          allow_urgent_quiet_hours: boolean;
+          confirmation_method: string;
+          confirmed_at: string;
+          expires_at: string | null;
+          note: string | null;
+          actor_caregiver_id: string;
+          command_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          senior_contact_id: string;
+          contact_method_id: string;
+          event_type: ConsentEventType;
+          permitted_categories?: NotificationCategory[];
+          allow_urgent_quiet_hours?: boolean;
+          confirmation_method: string;
+          confirmed_at: string;
+          expires_at?: string | null;
+          note?: string | null;
+          actor_caregiver_id: string;
+          command_id: string;
+          created_at?: string;
+        };
+        Update: never;
+      };
+      contact_plan_audit_events: {
+        Row: {
+          id: string;
+          senior_id: string;
+          senior_contact_id: string | null;
+          contact_method_id: string | null;
+          event_type: string;
+          before_summary: Json | null;
+          after_summary: Json;
+          actor_caregiver_id: string;
+          command_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          senior_contact_id?: string | null;
+          contact_method_id?: string | null;
+          event_type: string;
+          before_summary?: Json | null;
+          after_summary: Json;
+          actor_caregiver_id: string;
+          command_id: string;
+          created_at?: string;
+        };
+        Update: never;
+      };
+      notification_recipient_decisions: {
+        Row: {
+          id: string;
+          senior_id: string;
+          queue_item_id: string | null;
+          caregiver_action_id: string | null;
+          notification_category: NotificationCategory;
+          escalation_destination: EscalationDestination;
+          requested_channel: ContactChannel | null;
+          evaluation_time: string;
+          selected_contact_id: string | null;
+          selected_method_id: string | null;
+          result: "candidate_selected" | "no_eligible_contact";
+          explanation: string;
+          skipped_reasons: Json;
+          command_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          queue_item_id?: string | null;
+          caregiver_action_id?: string | null;
+          notification_category: NotificationCategory;
+          escalation_destination: EscalationDestination;
+          requested_channel?: ContactChannel | null;
+          evaluation_time: string;
+          selected_contact_id?: string | null;
+          selected_method_id?: string | null;
+          result: "candidate_selected" | "no_eligible_contact";
+          explanation: string;
+          skipped_reasons?: Json;
+          command_id: string;
+          created_at?: string;
+        };
+        Update: never;
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -680,10 +858,17 @@ export interface Database {
           p_command_id: string;
           p_expected_updated_at: string;
           p_escalation_destination: EscalationDestination;
+          p_notification_category: NotificationCategory;
           p_note: string;
         };
         Returns: Json;
       };
+      create_senior_contact: { Args: Record<string, Json>; Returns: Json };
+      update_senior_contact: { Args: Record<string, Json>; Returns: Json };
+      create_contact_method: { Args: Record<string, Json>; Returns: Json };
+      update_contact_method: { Args: Record<string, Json>; Returns: Json };
+      record_contact_consent: { Args: Record<string, Json>; Returns: Json };
+      preview_notification_recipient: { Args: Record<string, Json>; Returns: Json };
       reset_trustkaki_demo: {
         Args: Record<string, never>;
         Returns: Json;

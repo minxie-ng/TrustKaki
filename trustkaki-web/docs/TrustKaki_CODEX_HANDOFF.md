@@ -268,6 +268,18 @@ the bounded authenticated polling fallback independently. Focused tests, three
 consecutive live two-user runs, the escalated-case browser workflow, and the full
 validation gate pass. The reviewer accepted the corrected Gate 1 evidence.
 
+Gate 2 contacts, consent, and escalation is implemented. It adds admin-managed
+multi-contact plans, verified methods, immutable consent events, quiet hours,
+deterministic recipient selection, masked caregiver reads, atomic escalation
+recipient decisions, and contact-plan Realtime refresh hints. Migrations
+`20260714053148`, `20260714055223`, and `20260714060530` are applied and aligned
+with the linked TrustKaki project. Three live Gate 2 database runs passed;
+security and performance advisors found no error-level issues; `npm run
+validate` passed with 246 tests. The full interactive browser workflow was
+stopped at the product owner's request after authenticated dashboard and masked
+contact-plan API reads returned HTTP 200, so do not call Gate 2 independently
+audited yet.
+
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
 Siew Lan, and a high-risk Mdm Siti Fatimah Binte Rahman case to demonstrate
@@ -285,10 +297,11 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Review the approved Gate 2 design, then create its implementation plan for
-verified contacts, auditable consent, quiet hours, and deterministic recipient
-selection. Do not enable external escalation notifications or the live WhatsApp
-callback before those controls pass Gate 2 verification.
+Complete one short authenticated Gate 2 browser workflow: inspect masked plans,
+add or update a fictional contact, record consent, preview a normal and urgent
+quiet-hours decision, and confirm no raw destination appears in caregiver UI.
+Then request independent Gate 2 audit. Do not enable external escalation
+notifications or the live WhatsApp callback before that audit passes.
 
 ## Working rules
 - inspect before modifying

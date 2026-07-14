@@ -196,6 +196,155 @@ on conflict (senior_id, caregiver_id, role) do update set
   relationship = excluded.relationship,
   is_primary = excluded.is_primary;
 
+-- Fictional Gate 2 contact plans. These destinations are reserved demo data,
+-- not real user phone numbers or production credentials.
+insert into public.senior_contacts (
+  id, senior_id, display_name, relationship, contact_kind,
+  preferred_language, timezone, escalation_priority,
+  created_by_caregiver_id, updated_by_caregiver_id
+) values
+  (
+    '00000000-0000-4000-8000-000000000601',
+    '00000000-0000-4000-8000-000000000001',
+    'Rachel Tan', 'daughter', 'family_guardian', 'en', 'Asia/Singapore', 1,
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000602',
+    '00000000-0000-4000-8000-000000000001',
+    'Mei Ling', 'AAC volunteer', 'aac_staff', 'en', 'Asia/Singapore', 1,
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000611',
+    '00000000-0000-4000-8000-000000000011',
+    'Daniel Lim', 'son', 'family_guardian', 'zh', 'Asia/Singapore', 1,
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000621',
+    '00000000-0000-4000-8000-000000000021',
+    'Nur Aishah', 'daughter', 'family_guardian', 'en', 'Asia/Singapore', 1,
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  )
+on conflict (id) do update set
+  display_name = excluded.display_name,
+  relationship = excluded.relationship,
+  contact_kind = excluded.contact_kind,
+  preferred_language = excluded.preferred_language,
+  timezone = excluded.timezone,
+  escalation_priority = excluded.escalation_priority,
+  active = true,
+  updated_by_caregiver_id = excluded.updated_by_caregiver_id,
+  updated_at = now();
+
+insert into public.contact_methods (
+  id, senior_contact_id, channel, destination_normalized,
+  verification_status, verification_method, verified_at,
+  method_priority, quiet_hours_start, quiet_hours_end, timezone,
+  created_by_caregiver_id, updated_by_caregiver_id
+) values
+  (
+    '00000000-0000-4000-8000-000000000701',
+    '00000000-0000-4000-8000-000000000601',
+    'whatsapp', '+6591110001', 'verified', 'imported_record',
+    '2026-07-01T02:00:00+00:00', 1, '22:00', '07:00', 'Asia/Singapore',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000702',
+    '00000000-0000-4000-8000-000000000602',
+    'whatsapp', '+6591110002', 'verified', 'imported_record',
+    '2026-07-01T02:00:00+00:00', 1, '21:00', '08:00', 'Asia/Singapore',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000711',
+    '00000000-0000-4000-8000-000000000611',
+    'voice', '+6591110011', 'verified', 'imported_record',
+    '2026-07-01T02:00:00+00:00', 1, '21:30', '08:00', 'Asia/Singapore',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000721',
+    '00000000-0000-4000-8000-000000000621',
+    'whatsapp', '+6591110021', 'verified', 'imported_record',
+    '2026-07-01T02:00:00+00:00', 1, '22:00', '07:00', 'Asia/Singapore',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000002'
+  )
+on conflict (id) do update set
+  channel = excluded.channel,
+  destination_normalized = excluded.destination_normalized,
+  verification_status = excluded.verification_status,
+  verification_method = excluded.verification_method,
+  verified_at = excluded.verified_at,
+  method_priority = excluded.method_priority,
+  quiet_hours_start = excluded.quiet_hours_start,
+  quiet_hours_end = excluded.quiet_hours_end,
+  timezone = excluded.timezone,
+  active = true,
+  updated_by_caregiver_id = excluded.updated_by_caregiver_id,
+  updated_at = now();
+
+insert into public.contact_consent_events (
+  id, senior_id, senior_contact_id, contact_method_id, event_type,
+  permitted_categories, allow_urgent_quiet_hours, confirmation_method,
+  confirmed_at, expires_at, note, actor_caregiver_id, command_id
+) values
+  (
+    '00000000-0000-4000-8000-000000000801',
+    '00000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000601',
+    '00000000-0000-4000-8000-000000000701',
+    'granted', array['wellbeing_follow_up', 'health_safety', 'urgent_safety'],
+    true, 'imported_record', '2026-07-01T02:00:00+00:00', null,
+    'Demo consent confirmed for family safety notifications.',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000901'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000802',
+    '00000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000602',
+    '00000000-0000-4000-8000-000000000702',
+    'granted', array['wellbeing_follow_up'], false, 'imported_record',
+    '2026-06-01T02:00:00+00:00', '2026-07-01T02:00:00+00:00',
+    'Expired demo consent retained as immutable history.',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000902'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000811',
+    '00000000-0000-4000-8000-000000000011',
+    '00000000-0000-4000-8000-000000000611',
+    '00000000-0000-4000-8000-000000000711',
+    'granted', array['wellbeing_follow_up', 'health_safety'], false,
+    'imported_record', '2026-07-01T02:00:00+00:00', null,
+    'Demo consent confirmed for routine and health follow-up.',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000911'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000821',
+    '00000000-0000-4000-8000-000000000021',
+    '00000000-0000-4000-8000-000000000621',
+    '00000000-0000-4000-8000-000000000721',
+    'granted', array['digital_safety', 'urgent_safety'], true,
+    'imported_record', '2026-07-01T02:00:00+00:00', null,
+    'Demo consent confirmed for digital and urgent safety follow-up.',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000921'
+  )
+on conflict (command_id) do nothing;
+
 insert into public.routine_baselines (
   id,
   senior_id,

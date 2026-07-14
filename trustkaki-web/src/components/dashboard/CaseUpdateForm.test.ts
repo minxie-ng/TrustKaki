@@ -5,6 +5,7 @@ import {
   canSaveCaseAction,
   initialCaseAction,
   outcomeForCaseAction,
+  notificationCategoryForEscalation,
 } from "./CaseUpdateForm";
 
 describe("case update semantics", () => {
@@ -69,5 +70,12 @@ describe("case update semantics", () => {
     expect(availableCaseActions("acknowledged")).toEqual(expected);
     expect(initialCaseAction("pending")).toBe("acknowledge");
     expect(initialCaseAction("acknowledged")).toBe("acknowledge");
+  });
+
+  it("uses urgent safety for emergency guidance", () => {
+    expect(notificationCategoryForEscalation("emergency_guidance", "health_safety"))
+      .toBe("urgent_safety");
+    expect(notificationCategoryForEscalation("family_guardian", "health_safety"))
+      .toBe("health_safety");
   });
 });

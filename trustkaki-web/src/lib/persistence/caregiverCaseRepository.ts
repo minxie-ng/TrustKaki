@@ -8,6 +8,7 @@ import type {
   QueueStatus,
 } from "@/lib/supabase/types";
 import { createTrustKakiUserClient } from "@/lib/supabase/server";
+import type { NotificationCategory } from "@/lib/contacts/contracts";
 import type { PersistenceMeta } from "./orchestration";
 
 const resultSchema = z.object({
@@ -34,6 +35,13 @@ const resultSchema = z.object({
   queue_updated_at: z.string(),
   command_id: z.string(),
   duplicate: z.boolean(),
+  recipient_decision: z.object({
+    result: z.enum(["candidate_selected", "no_eligible_contact"]),
+    selected_contact_id: z.string().uuid().nullable(),
+    selected_method_id: z.string().uuid().nullable(),
+    explanation: z.string(),
+    delivered: z.literal(false),
+  }).optional(),
 });
 
 export class CaregiverCaseConflictError extends Error {
@@ -62,6 +70,13 @@ export interface CaregiverQueueActionResult {
   queueUpdatedAt: string | null;
   commandId: string | null;
   duplicate: boolean;
+  recipientDecision: {
+    result: "candidate_selected" | "no_eligible_contact";
+    selectedContactId: string | null;
+    selectedMethodId: string | null;
+    explanation: string;
+    delivered: false;
+  } | null;
   persistence: PersistenceMeta;
 }
 
@@ -76,6 +91,7 @@ export async function recordCaregiverQueueAction(args: {
   assignedCaregiverId?: string | null;
   snoozedUntil?: string | null;
   escalationDestination?: EscalationDestination | null;
+  notificationCategory?: NotificationCategory | null;
 }): Promise<CaregiverQueueActionResult> {
   const client = createTrustKakiUserClient(args.accessToken);
   if (!client) {
@@ -89,15 +105,18 @@ export async function recordCaregiverQueueAction(args: {
       queueUpdatedAt: null,
       commandId: null,
       duplicate: false,
+      recipientDecision: null,
       persistence: localDemoMeta(),
     };
   }
 
   if (
     args.actionType === "escalate" &&
-    (!args.escalationDestination || (args.note?.trim().length ?? 0) < 10)
+    (!args.escalationDestination ||
+      !args.notificationCategory ||
+      (args.note?.trim().length ?? 0) < 10)
   ) {
-    throw new Error("Escalation destination and reason are required");
+    throw new Error("Escalation destination, category, and reason are required");
   }
 
   type StandardRpcArgs = {
@@ -115,6 +134,7 @@ export async function recordCaregiverQueueAction(args: {
     p_command_id: string;
     p_expected_updated_at: string;
     p_escalation_destination: EscalationDestination;
+    p_notification_category: NotificationCategory;
     p_note: string;
   };
   // supabase-js 2.110 mis-infers defaulted RPC arguments as `never` for this
@@ -131,6 +151,7 @@ export async function recordCaregiverQueueAction(args: {
         p_command_id: args.commandId,
         p_expected_updated_at: args.expectedUpdatedAt,
         p_escalation_destination: args.escalationDestination as EscalationDestination,
+        p_notification_category: args.notificationCategory as NotificationCategory,
         p_note: args.note as string,
       })
     : await rpcClient.rpc("record_caregiver_queue_action", {
@@ -162,6 +183,13 @@ export async function recordCaregiverQueueAction(args: {
     queueUpdatedAt: parsed.data.queue_updated_at,
     commandId: parsed.data.command_id,
     duplicate: parsed.data.duplicate,
+    recipientDecision: parsed.data.recipient_decision ? {
+      result: parsed.data.recipient_decision.result,
+      selectedContactId: parsed.data.recipient_decision.selected_contact_id,
+      selectedMethodId: parsed.data.recipient_decision.selected_method_id,
+      explanation: parsed.data.recipient_decision.explanation,
+      delivered: false,
+    } : null,
     persistence: { mode: "supabase", configured: true, persisted: true },
   };
 }

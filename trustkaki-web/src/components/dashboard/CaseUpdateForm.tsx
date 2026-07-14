@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { authHeader } from "@/lib/auth/client";
+import type { NotificationCategory } from "@/lib/contacts/contracts";
 import type {
   CaregiverOption,
   ContactOutcome,
@@ -101,6 +102,23 @@ const escalationOptions: Array<{
   { value: "emergency_guidance", label: "Emergency guidance" },
 ];
 
+const notificationCategoryOptions: Array<{
+  value: NotificationCategory;
+  label: string;
+}> = [
+  { value: "wellbeing_follow_up", label: "Wellbeing follow-up" },
+  { value: "health_safety", label: "Health or safety" },
+  { value: "digital_safety", label: "Digital safety" },
+  { value: "urgent_safety", label: "Urgent safety" },
+];
+
+export function notificationCategoryForEscalation(
+  destination: EscalationDestination,
+  selected: NotificationCategory
+): NotificationCategory {
+  return destination === "emergency_guidance" ? "urgent_safety" : selected;
+}
+
 interface CaseUpdateFormProps {
   item: FollowUpQueueItem;
   caregiverOptions: CaregiverOption[];
@@ -127,6 +145,8 @@ export function CaseUpdateForm({
   const [snoozeHours, setSnoozeHours] = useState("4");
   const [escalationDestination, setEscalationDestination] =
     useState<EscalationDestination>("family_guardian");
+  const [notificationCategory, setNotificationCategory] =
+    useState<NotificationCategory>("wellbeing_follow_up");
   const [assignedCaregiverId, setAssignedCaregiverId] = useState<string | null>(
     caregiverOptions[0]?.id ?? null
   );
@@ -148,6 +168,7 @@ export function CaseUpdateForm({
     setNote("");
     setSnoozeHours("4");
     setEscalationDestination("family_guardian");
+    setNotificationCategory("wellbeing_follow_up");
     setAssignedCaregiverId(caregiverOptions[0]?.id ?? null);
     commandIdRef.current = null;
   }
@@ -183,6 +204,10 @@ export function CaseUpdateForm({
     }
     if (action === "escalate") {
       body.escalationDestination = escalationDestination;
+      body.notificationCategory = notificationCategoryForEscalation(
+        escalationDestination,
+        notificationCategory
+      );
     }
     if (action === "assign") {
       body.assignedCaregiverId = assignedCaregiverId;
@@ -350,6 +375,7 @@ export function CaseUpdateForm({
               </label>
             )}
             {action === "escalate" && (
+              <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-xs font-semibold text-gray-600">
                 Escalate to
                 <select
@@ -371,6 +397,25 @@ export function CaseUpdateForm({
                   ))}
                 </select>
               </label>
+              <label className="text-xs font-semibold text-gray-600">
+                Reason category
+                <select
+                  value={notificationCategoryForEscalation(
+                    escalationDestination,
+                    notificationCategory
+                  )}
+                  onChange={(event) => changeCommandInput(() =>
+                    setNotificationCategory(event.target.value as NotificationCategory)
+                  )}
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  disabled={pending || escalationDestination === "emergency_guidance"}
+                >
+                  {notificationCategoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              </div>
             )}
           </div>
           {action === "escalate" && escalationDestination === "emergency_guidance" && (

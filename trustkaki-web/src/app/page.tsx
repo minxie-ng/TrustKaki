@@ -18,7 +18,7 @@ import {
   shouldPollDashboard,
 } from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
-import type { AgentTrace, DashboardData, RiskLevel } from "@/lib/types";
+import type { AgentTrace, DashboardData, MaskedContactPlan, RiskLevel } from "@/lib/types";
 
 interface DashboardStateResponse {
   persistence?: {
@@ -46,8 +46,12 @@ export default function Home() {
   const [loadedSeniorId, setLoadedSeniorId] = useState<string | null>(null);
   const [loadingSeniorId, setLoadingSeniorId] = useState<string | null>(null);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [contactPlan, setContactPlan] = useState<MaskedContactPlan | null>(null);
+  const [contactPlanLoading, setContactPlanLoading] = useState(false);
+  const [contactPlanError, setContactPlanError] = useState<string | null>(null);
   const selectedSeniorIdRef = useRef<string | null>(null);
   const dashboardRequestSeq = useRef(0);
+  const contactPlanRequestSeq = useRef(0);
   const authToken = session?.access_token ?? null;
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
@@ -110,10 +114,42 @@ export default function Home() {
       });
   }, [authToken, handleUnauthorized]);
 
+  const refreshContactPlan = useCallback((nextSeniorId?: string | null) => {
+    if (!authToken) return;
+    const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
+    if (!seniorId) return;
+    const requestId = contactPlanRequestSeq.current + 1;
+    contactPlanRequestSeq.current = requestId;
+    setContactPlanLoading(true);
+    setContactPlanError(null);
+    void fetch(`/api/seniors/${seniorId}/contact-plan`, {
+      cache: "no-store",
+      headers: authHeader(authToken),
+    }).then(async (response) => {
+      if (response.status === 401) {
+        handleUnauthorized();
+        return null;
+      }
+      if (!response.ok) throw new Error("contact_plan_request_failed");
+      return (await response.json()) as { contactPlan: MaskedContactPlan };
+    }).then((result) => {
+      if (requestId !== contactPlanRequestSeq.current || !result) return;
+      setContactPlan(result.contactPlan);
+    }).catch(() => {
+      if (requestId === contactPlanRequestSeq.current) {
+        setContactPlanError("Contact plan is temporarily unavailable.");
+      }
+    }).finally(() => {
+      if (requestId === contactPlanRequestSeq.current) setContactPlanLoading(false);
+    });
+  }, [authToken, handleUnauthorized]);
+
   const selectSenior = useCallback(
     (seniorId: string) => {
       selectedSeniorIdRef.current = seniorId;
       setLoadingSeniorId(seniorId);
+      setContactPlan(null);
+      setContactPlanLoading(true);
       setLiveDashboardData((current) =>
         current ? optimisticDashboardForSenior(current, seniorId) : current
       );
@@ -179,10 +215,17 @@ export default function Home() {
   useEffect(() => {
     if (!authToken) return;
     const subscription = subscribeToDashboardChanges({
-      onChange: () => refreshDashboardState(),
+      onChange: () => {
+        refreshDashboardState();
+        refreshContactPlan();
+      },
     });
     return () => subscription?.unsubscribe();
-  }, [authToken, refreshDashboardState]);
+  }, [authToken, refreshContactPlan, refreshDashboardState]);
+
+  useEffect(() => {
+    if (authToken && selectedSeniorId) refreshContactPlan(selectedSeniorId);
+  }, [authToken, refreshContactPlan, selectedSeniorId]);
 
   async function signIn(email: string, password: string) {
     const client = createTrustKakiBrowserClient();
@@ -213,6 +256,7 @@ export default function Home() {
     setLiveDashboardData(null);
     setLiveTraces([]);
     setLiveBriefing(null);
+    setContactPlan(null);
     selectedSeniorIdRef.current = null;
   }
 
@@ -267,6 +311,10 @@ export default function Home() {
               demoMode={surface.showDemoControls}
               onUnauthorized={handleUnauthorized}
               onSelectSenior={selectSenior}
+              contactPlan={contactPlan}
+              contactPlanLoading={contactPlanLoading}
+              contactPlanError={contactPlanError}
+              onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
             />
           ) : (
             <main className="flex h-full items-center justify-center bg-gray-50 p-6">

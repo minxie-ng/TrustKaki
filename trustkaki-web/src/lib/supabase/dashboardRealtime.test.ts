@@ -24,9 +24,8 @@ describe("dashboard Realtime subscription", () => {
       client: client as never,
     });
 
-    expect(channel.on).toHaveBeenCalledTimes(2);
-    handlers[0]();
-    handlers[1]();
+    expect(channel.on).toHaveBeenCalledTimes(5);
+    handlers.forEach((handler) => handler());
     vi.advanceTimersByTime(99);
     expect(onChange).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);

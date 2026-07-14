@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       assignedCaregiverId: body.assignedCaregiverId ?? null,
       snoozedUntil: body.snoozedUntil ?? null,
       escalationDestination: body.escalationDestination ?? null,
+      notificationCategory: body.notificationCategory ?? null,
     });
 
     return NextResponse.json({ status: "ok", ...persistence });

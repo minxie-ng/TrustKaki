@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   agentMessageRequestSchema,
+  contactConsentRequestSchema,
+  contactMethodCreateRequestSchema,
+  contactMethodUpdateRequestSchema,
+  recipientPreviewRequestSchema,
+  seniorContactCreateRequestSchema,
   manualBriefingRequestSchema,
   queueActionRequestSchema,
   specialistAgentRequestSchema,
@@ -162,9 +167,20 @@ describe("API request schemas", () => {
         expectedUpdatedAt,
         actionType: "escalate",
         escalationDestination: "aac_supervisor",
+        notificationCategory: "wellbeing_follow_up",
         note: "Supervisor review is needed after two unsuccessful calls.",
       }).success
     ).toBe(true);
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        commandId,
+        expectedUpdatedAt,
+        actionType: "escalate",
+        escalationDestination: "family_guardian",
+        note: "Family follow-up is needed after repeated missed calls.",
+      }).success
+    ).toBe(false);
   });
 
   it("requires command identity and the last-seen case version", () => {
@@ -230,5 +246,72 @@ describe("API request schemas", () => {
         }).success
       ).toBe(false);
     }
+  });
+
+  it("validates strict admin contact and method commands", () => {
+    expect(seniorContactCreateRequestSchema.safeParse({
+      commandId,
+      displayName: "Rachel Tan",
+      relationship: "Daughter",
+      contactKind: "family_guardian",
+      preferredLanguage: "en",
+      timezone: "Asia/Singapore",
+      escalationPriority: 1,
+    }).success).toBe(true);
+    expect(contactMethodCreateRequestSchema.safeParse({
+      commandId,
+      channel: "whatsapp",
+      destination: "+6581234567",
+      methodPriority: 1,
+      timezone: "Asia/Singapore",
+      quietHoursStart: "22:00",
+      quietHoursEnd: "07:00",
+      rawProviderResponse: {},
+    }).success).toBe(false);
+  });
+
+  it("requires consistent verification and quiet-hour fields", () => {
+    expect(contactMethodUpdateRequestSchema.safeParse({
+      commandId,
+      expectedUpdatedAt,
+      channel: "whatsapp",
+      destination: "+6581234567",
+      verificationStatus: "verified",
+      verificationMethod: "admin_confirmed",
+      verifiedAt: expectedUpdatedAt,
+      methodPriority: 1,
+      timezone: "Asia/Singapore",
+      quietHoursStart: "22:00",
+      active: true,
+    }).success).toBe(false);
+  });
+
+  it("validates auditable consent and urgent override", () => {
+    expect(contactConsentRequestSchema.safeParse({
+      commandId,
+      eventType: "granted",
+      categories: ["urgent_safety"],
+      allowUrgentQuietHours: true,
+      confirmationMethod: "verbal",
+      confirmedAt: expectedUpdatedAt,
+      note: "Confirmed directly with the family contact.",
+    }).success).toBe(true);
+    expect(contactConsentRequestSchema.safeParse({
+      commandId,
+      eventType: "granted",
+      categories: ["health_safety"],
+      allowUrgentQuietHours: true,
+      confirmationMethod: "verbal",
+      confirmedAt: expectedUpdatedAt,
+    }).success).toBe(false);
+  });
+
+  it("validates deterministic recipient previews", () => {
+    expect(recipientPreviewRequestSchema.safeParse({
+      category: "health_safety",
+      destination: "family_guardian",
+      evaluationTime: expectedUpdatedAt,
+      requestedChannel: "whatsapp",
+    }).success).toBe(true);
   });
 });

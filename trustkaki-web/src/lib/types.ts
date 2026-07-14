@@ -1,3 +1,11 @@
+import type {
+  ConsentEventType,
+  ContactChannel,
+  ContactKind,
+  ContactVerificationStatus,
+  NotificationCategory,
+} from "@/lib/contacts/contracts";
+
 // ─── TrustKaki Core Types ───
 
 export type RiskLevel = "green" | "yellow" | "red";
@@ -86,6 +94,48 @@ export interface DashboardData {
   activeSessions: CheckInSession[];
   recentAlerts: AlertItem[];
   followUpQueue: FollowUpQueueItem[];
+}
+
+export interface MaskedContactConsent {
+  eventType: ConsentEventType;
+  categories: NotificationCategory[];
+  allowUrgentQuietHours: boolean;
+  confirmationMethod: string;
+  confirmedAt: string;
+  expiresAt: string | null;
+}
+
+export interface MaskedContactMethod {
+  id: string;
+  channel: ContactChannel;
+  maskedDestination: string;
+  verificationStatus: ContactVerificationStatus;
+  verifiedAt: string | null;
+  methodPriority: number;
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
+  timezone: string;
+  active: boolean;
+  updatedAt: string;
+  consent: MaskedContactConsent | null;
+}
+
+export interface MaskedSeniorContact {
+  id: string;
+  displayName: string;
+  relationship: string;
+  contactKind: ContactKind;
+  preferredLanguage: string;
+  timezone: string;
+  escalationPriority: number;
+  active: boolean;
+  updatedAt: string;
+  methods: MaskedContactMethod[];
+}
+
+export interface MaskedContactPlan {
+  seniorId: string;
+  contacts: MaskedSeniorContact[];
 }
 
 export interface CaregiverOption {

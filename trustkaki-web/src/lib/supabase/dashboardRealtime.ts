@@ -34,6 +34,21 @@ export function subscribeToDashboardChanges(args: {
       { event: "*", schema: "public", table: "caregiver_actions" },
       scheduleRefresh
     )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "senior_contacts" },
+      scheduleRefresh
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "contact_methods" },
+      scheduleRefresh
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "contact_consent_events" },
+      scheduleRefresh
+    )
     .subscribe();
 
   return {

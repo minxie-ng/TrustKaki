@@ -75,6 +75,13 @@ describe("caregiver case repository", () => {
         queue_updated_at: "2026-07-14T02:01:00.000Z",
         command_id: "00000000-0000-4000-8000-000000000099",
         duplicate: false,
+        recipient_decision: {
+          result: "candidate_selected",
+          selected_contact_id: "00000000-0000-4000-8000-000000000010",
+          selected_method_id: "00000000-0000-4000-8000-000000000011",
+          explanation: "Selected the first consented AAC contact.",
+          delivered: false,
+        },
       },
       error: null,
     });
@@ -90,6 +97,7 @@ describe("caregiver case repository", () => {
       expectedUpdatedAt: "2026-07-14T02:00:00.000Z",
       actionType: "escalate",
       escalationDestination: "aac_supervisor",
+      notificationCategory: "wellbeing_follow_up",
       note: "Unable to reach the senior twice; supervisor review is needed today.",
     });
 
@@ -98,9 +106,14 @@ describe("caregiver case repository", () => {
       p_command_id: "00000000-0000-4000-8000-000000000099",
       p_expected_updated_at: "2026-07-14T02:00:00.000Z",
       p_escalation_destination: "aac_supervisor",
+      p_notification_category: "wellbeing_follow_up",
       p_note: "Unable to reach the senior twice; supervisor review is needed today.",
     });
     expect(result.resultingStatus).toBe("escalated");
+    expect(result.recipientDecision).toMatchObject({
+      result: "candidate_selected",
+      delivered: false,
+    });
   });
 
   it("rejects incomplete escalation before contacting the database", async () => {
@@ -118,7 +131,7 @@ describe("caregiver case repository", () => {
         expectedUpdatedAt: "2026-07-14T02:00:00.000Z",
         actionType: "escalate",
       })
-    ).rejects.toThrow("Escalation destination and reason are required");
+    ).rejects.toThrow("Escalation destination, category, and reason are required");
     expect(rpc).not.toHaveBeenCalled();
   });
 

@@ -1,6 +1,28 @@
 import { z } from "zod";
 
 const seniorIdSchema = z.string().uuid();
+const commandIdSchema = z.string().uuid();
+const expectedUpdatedAtSchema = z.string().datetime({ offset: true });
+const hhmmSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const timezoneSchema = z.string().trim().min(1).max(80).refine((value) => {
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: value }).format();
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+export const contactKindSchema = z.enum([
+  "family_guardian", "aac_staff", "healthcare_contact",
+]);
+export const contactChannelSchema = z.enum(["whatsapp", "sms", "voice", "email"]);
+export const notificationCategorySchema = z.enum([
+  "wellbeing_follow_up", "health_safety", "digital_safety", "urgent_safety",
+]);
+export const escalationDestinationSchema = z.enum([
+  "family_guardian", "aac_supervisor", "healthcare_follow_up", "emergency_guidance",
+]);
 
 export const agentMessageRequestSchema = z.object({
   seniorId: seniorIdSchema,
@@ -45,6 +67,7 @@ export const queueActionRequestSchema = z.object({
     "healthcare_follow_up",
     "emergency_guidance",
   ]).optional(),
+  notificationCategory: notificationCategorySchema.optional(),
 }).superRefine((value, ctx) => {
   const actionNeedsOutcome = value.actionType === "record_outcome" || value.actionType === "resolve";
   const actionNeedsNote =
@@ -58,6 +81,24 @@ export const queueActionRequestSchema = z.object({
       code: "custom",
       message: "Escalation destination is required.",
       path: ["escalationDestination"],
+    });
+  }
+  if (value.actionType === "escalate" && !value.notificationCategory) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Notification category is required.",
+      path: ["notificationCategory"],
+    });
+  }
+  if (
+    value.actionType === "escalate" &&
+    value.escalationDestination === "emergency_guidance" &&
+    value.notificationCategory !== "urgent_safety"
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Emergency guidance requires urgent safety.",
+      path: ["notificationCategory"],
     });
   }
 
@@ -77,6 +118,97 @@ export const queueActionRequestSchema = z.object({
     });
   }
 });
+
+export const seniorContactCreateRequestSchema = z.object({
+  commandId: commandIdSchema,
+  displayName: z.string().trim().min(1).max(120),
+  relationship: z.string().trim().min(1).max(80),
+  contactKind: contactKindSchema,
+  preferredLanguage: z.string().trim().min(2).max(20),
+  timezone: timezoneSchema,
+  escalationPriority: z.number().int().positive().max(1000),
+}).strict();
+
+export const seniorContactUpdateRequestSchema = seniorContactCreateRequestSchema.extend({
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  active: z.boolean(),
+}).strict();
+
+const methodBaseSchema = z.object({
+  commandId: commandIdSchema,
+  channel: contactChannelSchema,
+  destination: z.string().trim().min(3).max(320),
+  methodPriority: z.number().int().positive().max(1000),
+  timezone: timezoneSchema,
+  quietHoursStart: hhmmSchema.nullable().optional(),
+  quietHoursEnd: hhmmSchema.nullable().optional(),
+});
+
+function requireQuietHoursPair(
+  value: { quietHoursStart?: string | null; quietHoursEnd?: string | null },
+  ctx: z.RefinementCtx
+) {
+  if (Boolean(value.quietHoursStart) !== Boolean(value.quietHoursEnd)) {
+    ctx.addIssue({ code: "custom", message: "Quiet hours require start and end." });
+  }
+  if (value.quietHoursStart && value.quietHoursStart === value.quietHoursEnd) {
+    ctx.addIssue({ code: "custom", message: "Quiet hours must have a duration." });
+  }
+}
+
+export const contactMethodCreateRequestSchema = methodBaseSchema
+  .strict()
+  .superRefine(requireQuietHoursPair);
+
+export const contactMethodUpdateRequestSchema = methodBaseSchema.extend({
+  destination: z.string().trim().min(3).max(320).nullable().optional(),
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  verificationStatus: z.enum(["pending", "verified", "rejected"]),
+  verificationMethod: z.enum([
+    "admin_confirmed", "provider_verified", "imported_record",
+  ]).nullable(),
+  verifiedAt: z.string().datetime({ offset: true }).nullable(),
+  active: z.boolean(),
+}).strict().superRefine((value, ctx) => {
+  requireQuietHoursPair(value, ctx);
+  if (
+    value.verificationStatus === "verified" &&
+    (!value.verificationMethod || !value.verifiedAt)
+  ) {
+    ctx.addIssue({ code: "custom", message: "Verified methods require evidence." });
+  }
+});
+
+export const contactConsentRequestSchema = z.object({
+  commandId: commandIdSchema,
+  eventType: z.enum(["granted", "revoked"]),
+  categories: z.array(notificationCategorySchema).max(4),
+  allowUrgentQuietHours: z.boolean(),
+  confirmationMethod: z.enum(["written", "verbal", "digital", "imported_record"]),
+  confirmedAt: z.string().datetime({ offset: true }),
+  expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
+  note: z.string().trim().min(10).max(500).nullable().optional(),
+}).strict().superRefine((value, ctx) => {
+  if (value.eventType === "granted" && value.categories.length === 0) {
+    ctx.addIssue({ code: "custom", message: "Granted consent requires a category." });
+  }
+  if (value.eventType === "revoked" && value.categories.length > 0) {
+    ctx.addIssue({ code: "custom", message: "Revoked consent has no categories." });
+  }
+  if (
+    value.allowUrgentQuietHours &&
+    !value.categories.includes("urgent_safety")
+  ) {
+    ctx.addIssue({ code: "custom", message: "Urgent override requires urgent consent." });
+  }
+});
+
+export const recipientPreviewRequestSchema = z.object({
+  category: notificationCategorySchema,
+  destination: escalationDestinationSchema,
+  evaluationTime: z.string().datetime({ offset: true }),
+  requestedChannel: contactChannelSchema.nullable().optional(),
+}).strict();
 
 export async function parseJsonBody<T>(
   request: Request,

@@ -107,6 +107,7 @@ describe("/api/caregiver/queue-action", () => {
           expectedUpdatedAt,
           actionType: "escalate",
           escalationDestination: "family_guardian",
+          notificationCategory: "wellbeing_follow_up",
           note: "Family should review repeated missed calls and arrange a visit today.",
         }),
       })
@@ -117,6 +118,7 @@ describe("/api/caregiver/queue-action", () => {
       expect.objectContaining({
         actionType: "escalate",
         escalationDestination: "family_guardian",
+        notificationCategory: "wellbeing_follow_up",
         note: "Family should review repeated missed calls and arrange a visit today.",
       })
     );

@@ -1,12 +1,13 @@
 "use client";
 
 import type { BriefingOutput } from "@/lib/agents/contracts";
-import type { AgentTrace, DashboardData } from "@/lib/types";
+import type { AgentTrace, DashboardData, MaskedContactPlan } from "@/lib/types";
 import { followUpQueueForSenior } from "./dashboardViewModel";
 import { DemoControls } from "./dashboard/DemoControls";
 import { PriorityCase } from "./dashboard/PriorityCase";
 import { SelectedSeniorSummary } from "./dashboard/SelectedSeniorSummary";
 import { SeniorCoverage } from "./dashboard/SeniorCoverage";
+import { ContactPlanPanel } from "./dashboard/ContactPlanPanel";
 
 interface DashboardProps {
   data: DashboardData;
@@ -18,6 +19,10 @@ interface DashboardProps {
   demoMode?: boolean;
   onUnauthorized?: () => void;
   onSelectSenior?: (seniorId: string) => void;
+  contactPlan?: MaskedContactPlan | null;
+  contactPlanLoading?: boolean;
+  contactPlanError?: string | null;
+  onRefreshContactPlan?: () => void;
 }
 
 export default function Dashboard({
@@ -30,6 +35,10 @@ export default function Dashboard({
   demoMode = false,
   onUnauthorized,
   onSelectSenior,
+  contactPlan = null,
+  contactPlanLoading = false,
+  contactPlanError = null,
+  onRefreshContactPlan,
 }: DashboardProps) {
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
@@ -61,6 +70,16 @@ export default function Dashboard({
             onSelect={(seniorId) => onSelectSenior?.(seniorId)}
           />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
+          <ContactPlanPanel
+            plan={contactPlan}
+            loading={contactPlanLoading}
+            error={contactPlanError}
+            isAdmin={isDemoAdmin}
+            seniorId={selectedSeniorId}
+            authToken={authToken ?? ""}
+            onSaved={() => onRefreshContactPlan?.()}
+            onUnauthorized={unauthorized}
+          />
           <DemoControls
             authToken={authToken ?? ""}
             visible={Boolean(isDemoAdmin && demoMode && authToken)}
