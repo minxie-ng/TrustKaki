@@ -46,6 +46,7 @@ export interface SeniorProfile {
   address?: string | null;
   livingSituation: string;
   caregiver: string;
+  caregiverRelationship?: string | null;
   aacVolunteer: string;
   riskLevel: RiskLevel;
   lastCheckIn: string | null;
@@ -62,6 +63,7 @@ export interface SeniorListItem {
   lastCheckIn: string | null;
   followUpCount: number;
   primaryCaregiver: string | null;
+  primaryCaregiverRelationship?: string | null;
   aacVolunteer: string | null;
 }
 

@@ -1,5 +1,6 @@
 import type { DashboardData } from "@/lib/types";
 import { formatDate, riskConfig } from "./presentation";
+import { formatCaregiverLabel } from "../dashboardViewModel";
 
 interface SelectedSeniorSummaryProps {
   senior: DashboardData["senior"];
@@ -30,7 +31,11 @@ export function SelectedSeniorSummary({
         <div className="grid gap-3 text-sm text-gray-700 sm:grid-cols-2 md:min-w-96">
           <SummaryField
             label="Primary caregiver"
-            value={selectedSenior?.primaryCaregiver ?? senior.caregiver}
+            value={formatCaregiverLabel(
+              selectedSenior?.primaryCaregiver ?? senior.caregiver,
+              selectedSenior?.primaryCaregiverRelationship ??
+                senior.caregiverRelationship
+            )}
           />
           <SummaryField
             label="AAC volunteer"

@@ -1,5 +1,6 @@
 import type { DashboardData } from "@/lib/types";
 import { formatDate, riskConfig } from "./presentation";
+import { formatCaregiverLabel } from "../dashboardViewModel";
 
 interface SeniorCoverageProps {
   seniors: NonNullable<DashboardData["seniors"]>;
@@ -66,7 +67,10 @@ export function SeniorCoverage({
                   .join(" · ")}
               </div>
               <div className="mt-1 text-xs text-gray-500">
-                {senior.primaryCaregiver ?? "No primary caregiver"} ·{" "}
+                {formatCaregiverLabel(
+                  senior.primaryCaregiver,
+                  senior.primaryCaregiverRelationship
+                )} ·{" "}
                 {formatDate(senior.lastCheckIn)}
               </div>
             </button>

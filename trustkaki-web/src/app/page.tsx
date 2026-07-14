@@ -6,7 +6,6 @@ import NavBar from "@/components/NavBar";
 import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
 import SignInForm from "@/components/SignInForm";
-import { demoTraces, dashboardData } from "@/data/demo";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
 import {
@@ -40,22 +39,21 @@ export default function Home() {
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("green");
   const [demoMode, setDemoMode] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
-    useState<DashboardData>(dashboardData);
-  const [liveTraces, setLiveTraces] = useState<AgentTrace[]>(demoTraces);
+    useState<DashboardData | null>(null);
+  const [liveTraces, setLiveTraces] = useState<AgentTrace[]>([]);
   const [liveBriefing, setLiveBriefing] = useState<BriefingOutput | null>(null);
-  const [loadedSeniorId, setLoadedSeniorId] = useState<string | null>(
-    dashboardData.selectedSeniorId ?? null
-  );
+  const [loadedSeniorId, setLoadedSeniorId] = useState<string | null>(null);
   const [loadingSeniorId, setLoadingSeniorId] = useState<string | null>(null);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const selectedSeniorIdRef = useRef<string | null>(null);
   const dashboardRequestSeq = useRef(0);
   const authToken = session?.access_token ?? null;
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
   const surface = appShellSurface({ isDemoAdmin, demoMode });
-  const latestSession = liveDashboardData.activeSessions[0];
+  const latestSession = liveDashboardData?.activeSessions[0];
   const chatMessages = latestSession?.messages ?? [];
-  const selectedSeniorId = liveDashboardData.selectedSeniorId ?? null;
+  const selectedSeniorId = liveDashboardData?.selectedSeniorId ?? null;
   const chatState = chatSimulationState({
     selectedSeniorId,
     loadedSeniorId,
@@ -75,6 +73,7 @@ export default function Home() {
     const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
     const requestId = dashboardRequestSeq.current + 1;
     dashboardRequestSeq.current = requestId;
+    setDashboardError(null);
     const url = dashboardStateEndpoint(seniorId);
     void fetch(url, {
       cache: "no-store",
@@ -85,12 +84,12 @@ export default function Home() {
           handleUnauthorized();
           return null;
         }
-        if (!response.ok) return null;
+        if (!response.ok) throw new Error("dashboard_request_failed");
         return (await response.json()) as DashboardStateResponse;
       })
       .then((state) => {
         if (requestId !== dashboardRequestSeq.current) return;
-        if (!state?.persistence?.persisted) return;
+        if (!state) return;
         setLiveDashboardData(state.data);
         setLiveTraces(state.traces);
         setLiveBriefing(state.briefing ?? null);
@@ -104,6 +103,9 @@ export default function Home() {
       })
       .catch((error) => {
         console.error("Failed to hydrate dashboard state:", error);
+        if (requestId === dashboardRequestSeq.current) {
+          setDashboardError("TrustKaki could not load the caregiver dashboard. Please retry.");
+        }
       });
   }, [authToken, handleUnauthorized]);
 
@@ -112,7 +114,7 @@ export default function Home() {
       selectedSeniorIdRef.current = seniorId;
       setLoadingSeniorId(seniorId);
       setLiveDashboardData((current) =>
-        optimisticDashboardForSenior(current, seniorId)
+        current ? optimisticDashboardForSenior(current, seniorId) : current
       );
       refreshDashboardState(seniorId);
     },
@@ -199,6 +201,10 @@ export default function Home() {
     await client?.auth.signOut();
     setSession(null);
     setUser(null);
+    setLiveDashboardData(null);
+    setLiveTraces([]);
+    setLiveBriefing(null);
+    selectedSeniorIdRef.current = null;
   }
 
   if (authLoading) {
@@ -241,17 +247,39 @@ export default function Home() {
         )}
 
         <div className="flex flex-col flex-1">
-          <Dashboard
-            data={liveDashboardData}
-            traces={liveTraces}
-            briefing={liveBriefing}
-            onRefresh={refreshDashboardState}
-            authToken={authToken}
-            isDemoAdmin={isDemoAdmin}
-            demoMode={surface.showDemoControls}
-            onUnauthorized={handleUnauthorized}
-            onSelectSenior={selectSenior}
-          />
+          {liveDashboardData ? (
+            <Dashboard
+              data={liveDashboardData}
+              traces={liveTraces}
+              briefing={liveBriefing}
+              onRefresh={refreshDashboardState}
+              authToken={authToken}
+              isDemoAdmin={isDemoAdmin}
+              demoMode={surface.showDemoControls}
+              onUnauthorized={handleUnauthorized}
+              onSelectSenior={selectSenior}
+            />
+          ) : (
+            <main className="flex h-full items-center justify-center bg-gray-50 p-6">
+              <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+                <div className="text-base font-semibold text-gray-950">
+                  {dashboardError ? "Dashboard unavailable" : "Loading your seniors..."}
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  {dashboardError ?? "Retrieving your authorised caregiver queue."}
+                </p>
+                {dashboardError && (
+                  <button
+                    type="button"
+                    onClick={() => refreshDashboardState()}
+                    className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            </main>
+          )}
         </div>
       </div>
     </div>

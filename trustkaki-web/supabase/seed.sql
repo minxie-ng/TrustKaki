@@ -132,49 +132,69 @@ on conflict (id) do update set
 insert into public.senior_caregivers (
   senior_id,
   caregiver_id,
-  role
+  role,
+  relationship,
+  is_primary
 ) values
   (
     '00000000-0000-4000-8000-000000000001',
     '00000000-0000-4000-8000-000000000002',
-    'caregiver'
+    'caregiver',
+    'daughter',
+    true
   ),
   (
     '00000000-0000-4000-8000-000000000001',
     '00000000-0000-4000-8000-000000000003',
-    'aac_volunteer'
+    'aac_volunteer',
+    'AAC volunteer',
+    false
   ),
   (
     '00000000-0000-4000-8000-000000000011',
     '00000000-0000-4000-8000-000000000002',
-    'caregiver'
+    'caregiver',
+    'family friend',
+    false
   ),
   (
     '00000000-0000-4000-8000-000000000011',
     '00000000-0000-4000-8000-000000000012',
-    'caregiver'
+    'caregiver',
+    'son',
+    true
   ),
   (
     '00000000-0000-4000-8000-000000000011',
     '00000000-0000-4000-8000-000000000003',
-    'aac_volunteer'
+    'aac_volunteer',
+    'AAC volunteer',
+    false
   ),
   (
     '00000000-0000-4000-8000-000000000021',
     '00000000-0000-4000-8000-000000000002',
-    'caregiver'
+    'caregiver',
+    'family friend',
+    false
   ),
   (
     '00000000-0000-4000-8000-000000000021',
     '00000000-0000-4000-8000-000000000022',
-    'caregiver'
+    'caregiver',
+    'daughter',
+    true
   ),
   (
     '00000000-0000-4000-8000-000000000021',
     '00000000-0000-4000-8000-000000000003',
-    'aac_volunteer'
+    'aac_volunteer',
+    'AAC volunteer',
+    false
   )
-on conflict (senior_id, caregiver_id, role) do nothing;
+on conflict (senior_id, caregiver_id, role) do update set
+  relationship = excluded.relationship,
+  is_primary = excluded.is_primary;
 
 insert into public.routine_baselines (
   id,

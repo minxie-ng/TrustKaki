@@ -319,36 +319,62 @@ async function listCaregiverNamesBySenior(
   client: TrustKakiClient,
   seniorIds: string[]
 ): Promise<
-  Map<string, { caregiver: string | null; aacVolunteer: string | null }>
+  Map<string, {
+    caregiver: string | null;
+    caregiverRelationship: string | null;
+    caregiverIsPrimary: boolean;
+    aacVolunteer: string | null;
+  }>
 > {
   if (seniorIds.length === 0) return new Map();
 
   const { data, error } = await client
     .from("senior_caregivers")
-    .select("senior_id, role, caregivers(display_name)")
-    .in("senior_id", seniorIds);
+    .select("senior_id, role, relationship, is_primary, caregivers(display_name)")
+    .in("senior_id", seniorIds)
+    .order("is_primary", { ascending: false });
   throwIfError(error, "select senior caregiver names");
 
   const result = new Map<
     string,
-    { caregiver: string | null; aacVolunteer: string | null }
+    {
+      caregiver: string | null;
+      caregiverRelationship: string | null;
+      caregiverIsPrimary: boolean;
+      aacVolunteer: string | null;
+    }
   >();
   for (const seniorId of seniorIds) {
-    result.set(seniorId, { caregiver: null, aacVolunteer: null });
+    result.set(seniorId, {
+      caregiver: null,
+      caregiverRelationship: null,
+      caregiverIsPrimary: false,
+      aacVolunteer: null,
+    });
   }
 
   const rows = (data ?? []) as Array<{
     senior_id: string;
     role: "caregiver" | "aac_volunteer";
+    relationship?: string | null;
+    is_primary: boolean;
     caregivers?: { display_name?: string | null } | null;
   }>;
   for (const row of rows) {
     const current = result.get(row.senior_id) ?? {
       caregiver: null,
+      caregiverRelationship: null,
+      caregiverIsPrimary: false,
       aacVolunteer: null,
     };
-    if (row.role === "caregiver") {
+    if (
+      row.role === "caregiver" &&
+      (!current.caregiver || (row.is_primary && !current.caregiverIsPrimary))
+    ) {
       current.caregiver = row.caregivers?.display_name ?? current.caregiver;
+      current.caregiverRelationship =
+        row.relationship ?? current.caregiverRelationship;
+      current.caregiverIsPrimary = row.is_primary;
     }
     if (row.role === "aac_volunteer") {
       current.aacVolunteer =
@@ -482,6 +508,8 @@ export async function readDashboardState(options: {
 
   const selectedNames = caregiverNames.get(selectedSeniorId);
   const caregiver = selectedNames?.caregiver ?? uncleTan.caregiver;
+  const caregiverRelationship =
+    selectedNames?.caregiverRelationship ?? uncleTan.caregiverRelationship ?? null;
   const aacVolunteer = selectedNames?.aacVolunteer ?? uncleTan.aacVolunteer;
 
   const mapped = dashboardSnapshotToData({
@@ -492,6 +520,7 @@ export async function readDashboardState(options: {
       address: addressFromSeniorRow(senior),
       livingSituation: senior.living_situation ?? uncleTan.livingSituation,
       caregiver,
+      caregiverRelationship,
       aacVolunteer,
       riskLevel: senior.risk_level,
       lastCheckIn: senior.last_check_in_at,
@@ -544,6 +573,8 @@ export async function readDashboardState(options: {
           lastCheckIn: seniorRow.last_check_in_at,
           followUpCount: activeQueueCounts.get(seniorRow.id) ?? 0,
           primaryCaregiver: names?.caregiver ?? null,
+          primaryCaregiverRelationship:
+            names?.caregiverRelationship ?? null,
           aacVolunteer: names?.aacVolunteer ?? null,
         };
       }),

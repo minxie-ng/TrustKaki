@@ -11,6 +11,7 @@ import {
   dashboardSyncIntervalMs,
   demoEndpoint,
   followUpQueueForSenior,
+  formatCaregiverLabel,
   mainQueueCardFields,
   optimisticDashboardForSenior,
   recentSeniorMessages,
@@ -117,6 +118,7 @@ const dashboardData: DashboardData = {
       lastCheckIn: "2026-07-10T08:00:00.000Z",
       followUpCount: 1,
       primaryCaregiver: "Rachel",
+      primaryCaregiverRelationship: "daughter",
       aacVolunteer: "Mei Ling",
     },
     {
@@ -130,6 +132,7 @@ const dashboardData: DashboardData = {
       lastCheckIn: null,
       followUpCount: 0,
       primaryCaregiver: "Daniel Lim",
+      primaryCaregiverRelationship: "son",
       aacVolunteer: "Mei Ling",
     },
   ],
@@ -190,9 +193,20 @@ describe("dashboard view model", () => {
       name: "Mdm Lim Siew Lan",
       gender: "Female",
       caregiver: "Daniel Lim",
+      caregiverRelationship: "son",
       riskLevel: "green",
       lastCheckIn: null,
     });
+  });
+
+  it("standardises caregiver names with their senior-specific relationship", () => {
+    expect(formatCaregiverLabel("Rachel Tan", "Daughter")).toBe(
+      "Rachel Tan (daughter)"
+    );
+    expect(formatCaregiverLabel("Rachel Tan (daughter)", "daughter")).toBe(
+      "Rachel Tan (daughter)"
+    );
+    expect(formatCaregiverLabel(null, null)).toBe("No primary caregiver");
   });
 
   it("blocks chat until loaded messages belong to the selected senior", () => {

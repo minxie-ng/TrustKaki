@@ -55,6 +55,17 @@ export function canSaveCaseUpdate(note: string): boolean {
   return note.trim().length >= 10;
 }
 
+export function formatCaregiverLabel(
+  name: string | null | undefined,
+  relationship: string | null | undefined
+): string {
+  if (!name) return "No primary caregiver";
+  const normalizedRelationship = relationship?.trim().toLowerCase();
+  if (!normalizedRelationship) return name;
+  if (name.toLowerCase().includes(`(${normalizedRelationship})`)) return name;
+  return `${name} (${normalizedRelationship})`;
+}
+
 export function chatSimulationState(args: {
   selectedSeniorId: string | null;
   loadedSeniorId: string | null;
@@ -89,6 +100,10 @@ export function optimisticDashboardForSenior(
       address: senior.address ?? null,
       livingSituation: senior.livingSituation ?? data.senior.livingSituation,
       caregiver: senior.primaryCaregiver ?? data.senior.caregiver,
+      caregiverRelationship:
+        senior.primaryCaregiverRelationship ??
+        data.senior.caregiverRelationship ??
+        null,
       aacVolunteer: senior.aacVolunteer ?? data.senior.aacVolunteer,
       riskLevel: senior.riskLevel,
       lastCheckIn: senior.lastCheckIn,

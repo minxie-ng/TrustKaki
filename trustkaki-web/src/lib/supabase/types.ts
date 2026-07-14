@@ -110,12 +110,16 @@ export interface Database {
           senior_id: string;
           caregiver_id: string;
           role: "caregiver" | "aac_volunteer";
+          relationship: string | null;
+          is_primary: boolean;
           created_at: string;
         };
         Insert: {
           senior_id: string;
           caregiver_id: string;
           role: "caregiver" | "aac_volunteer";
+          relationship?: string | null;
+          is_primary?: boolean;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["senior_caregivers"]["Insert"]>;

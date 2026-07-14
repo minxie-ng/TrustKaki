@@ -13,6 +13,7 @@ import type {
     gender: "Male",
     livingSituation: "Lives alone in 3-room HDB, Toa Payoh",
     caregiver: "Rachel (daughter)",
+    caregiverRelationship: "daughter",
     aacVolunteer: "Mei Ling",
     riskLevel: "green",
     lastCheckIn: "2026-01-13T08:00:00",

@@ -12,8 +12,16 @@ const outcomeOptions: Array<{ value: ContactOutcome; label: string }> = [
   { value: "needs_follow_up", label: "Needs follow-up" },
   { value: "referred_to_aac_staff", label: "Referred to AAC staff" },
   { value: "unable_to_reach", label: "Unable to reach" },
-  { value: "resolved", label: "Resolved" },
 ];
+
+export function outcomeForCaseAction(
+  action: CaseUpdateAction,
+  selectedOutcome: ContactOutcome
+): ContactOutcome | undefined {
+  if (action === "resolve") return "resolved";
+  if (action === "record_outcome") return selectedOutcome;
+  return undefined;
+}
 
 const actionLabels: Record<CaseUpdateAction, string> = {
   record_outcome: "Record follow-up",
@@ -67,8 +75,9 @@ export function CaseUpdateForm({
       actionType: action,
       note: cleanNote,
     };
-    if (action === "record_outcome" || action === "resolve") {
-      body.outcomeType = outcome;
+    const submittedOutcome = outcomeForCaseAction(action, outcome);
+    if (submittedOutcome) {
+      body.outcomeType = submittedOutcome;
     }
     if (action === "snooze") {
       const hours = Math.max(1, Number.parseInt(snoozeHours, 10) || 4);
@@ -88,6 +97,14 @@ export function CaseUpdateForm({
         throw new Error("unauthorized");
       }
       if (!response.ok) throw new Error("caregiver_action_failed");
+      const result = (await response.json()) as {
+        persistence?: { persisted?: boolean };
+        resultingStatus?: string | null;
+      };
+      if (!result.persistence?.persisted) throw new Error("caregiver_action_not_persisted");
+      if (action === "resolve" && result.resultingStatus !== "resolved") {
+        throw new Error("caregiver_action_not_resolved");
+      }
       setRequestState("success");
       setStatusMessage(
         action === "resolve"
@@ -143,7 +160,7 @@ export function CaseUpdateForm({
                 ))}
               </select>
             </label>
-            {(action === "record_outcome" || action === "resolve") && (
+            {action === "record_outcome" && (
               <label className="text-xs font-semibold text-gray-600">
                 What happened?
                 <select
@@ -157,6 +174,12 @@ export function CaseUpdateForm({
                   ))}
                 </select>
               </label>
+            )}
+            {action === "resolve" && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                This removes the case from the active queue. The current risk level
+                remains until TrustKaki reassesses new information.
+              </div>
             )}
             {action === "snooze" && (
               <label className="text-xs font-semibold text-gray-600">

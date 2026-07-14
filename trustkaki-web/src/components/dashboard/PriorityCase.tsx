@@ -30,6 +30,7 @@ export function PriorityCase({
   onUnauthorized,
 }: PriorityCaseProps) {
   if (items.length === 0) {
+    const risk = riskConfig[data.senior.riskLevel];
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
         <div className="font-semibold text-gray-900">
@@ -38,6 +39,17 @@ export function PriorityCase({
         <p className="mt-1 text-sm text-gray-600">
           No active priority case is open for this selected senior.
         </p>
+        {data.senior.riskLevel !== "green" && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-gray-50 p-3 text-sm text-gray-700">
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${risk.bg} ${risk.text}`}>
+              {risk.label} risk
+            </span>
+            <p>
+              Closing a follow-up does not rewrite the senior&apos;s assessed risk.
+              Risk changes only after a new TrustKaki reassessment.
+            </p>
+          </div>
+        )}
       </div>
     );
   }

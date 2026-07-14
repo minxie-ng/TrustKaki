@@ -109,6 +109,7 @@ export interface DashboardPersistenceSnapshot {
     address?: string | null;
     livingSituation: string;
     caregiver: string;
+    caregiverRelationship?: string | null;
     aacVolunteer: string;
     riskLevel: RiskLevel;
     lastCheckIn: string | null;
