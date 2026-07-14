@@ -29,6 +29,10 @@ export function contactPlanPresentation(plan: MaskedContactPlan, isAdmin: boolea
   };
 }
 
+export function contactPlanInstanceKey(seniorId: string | null) {
+  return `contact-plan:${seniorId ?? "none"}`;
+}
+
 interface ContactPlanPanelProps {
   plan: MaskedContactPlan | null;
   loading: boolean;

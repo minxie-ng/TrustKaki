@@ -7,7 +7,10 @@ import { DemoControls } from "./dashboard/DemoControls";
 import { PriorityCase } from "./dashboard/PriorityCase";
 import { SelectedSeniorSummary } from "./dashboard/SelectedSeniorSummary";
 import { SeniorCoverage } from "./dashboard/SeniorCoverage";
-import { ContactPlanPanel } from "./dashboard/ContactPlanPanel";
+import {
+  ContactPlanPanel,
+  contactPlanInstanceKey,
+} from "./dashboard/ContactPlanPanel";
 
 interface DashboardProps {
   data: DashboardData;
@@ -71,6 +74,7 @@ export default function Dashboard({
           />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
           <ContactPlanPanel
+            key={contactPlanInstanceKey(selectedSeniorId)}
             plan={contactPlan}
             loading={contactPlanLoading}
             error={contactPlanError}

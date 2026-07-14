@@ -275,10 +275,12 @@ recipient decisions, and contact-plan Realtime refresh hints. Migrations
 `20260714053148`, `20260714055223`, and `20260714060530` are applied and aligned
 with the linked TrustKaki project. Three live Gate 2 database runs passed;
 security and performance advisors found no error-level issues; `npm run
-validate` passed with 246 tests. The full interactive browser workflow was
-stopped at the product owner's request after authenticated dashboard and masked
-contact-plan API reads returned HTTP 200, so do not call Gate 2 independently
-audited yet.
+validate` passed with 246 tests. The authenticated browser workflow then proved
+masked contact display, consent recording, recipient preview, fast
+senior-specific plan switching, and raw-number absence. A discovered stale
+preview-state defect was fixed by remounting contact-plan state per senior and
+covered by a focused regression test. Gate 2 is ready for independent audit but
+has not yet been independently accepted.
 
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
@@ -297,11 +299,9 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Complete one short authenticated Gate 2 browser workflow: inspect masked plans,
-add or update a fictional contact, record consent, preview a normal and urgent
-quiet-hours decision, and confirm no raw destination appears in caregiver UI.
-Then request independent Gate 2 audit. Do not enable external escalation
-notifications or the live WhatsApp callback before that audit passes.
+Request independent Gate 2 audit using the dated verification evidence. Do not
+enable external escalation notifications or the live WhatsApp callback before
+that audit passes.
 
 ## Working rules
 - inspect before modifying

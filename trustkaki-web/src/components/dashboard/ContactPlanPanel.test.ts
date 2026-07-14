@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { MaskedContactPlan } from "@/lib/types";
-import { contactPlanPresentation } from "./ContactPlanPanel";
+import {
+  contactPlanInstanceKey,
+  contactPlanPresentation,
+} from "./ContactPlanPanel";
 
 const plan: MaskedContactPlan = {
   seniorId: "senior-1",
@@ -58,5 +61,11 @@ describe("contact plan presentation", () => {
   it("explains an empty contact plan", () => {
     expect(contactPlanPresentation({ seniorId: "senior-1", contacts: [] }, false)
       .primaryContact).toBe("No contact plan configured");
+  });
+
+  it("uses a different component instance for each selected senior", () => {
+    expect(contactPlanInstanceKey("senior-1")).not.toBe(
+      contactPlanInstanceKey("senior-2")
+    );
   });
 });

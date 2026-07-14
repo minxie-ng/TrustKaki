@@ -9,11 +9,10 @@
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript, Zod 4, Supabase Postgres/Auth/RLS/Realtime, Vitest, Tailwind CSS.
 
 **Status (14 July 2026):** Implementation, migrations, seed data, focused tests,
-three live Gate 2 database runs, database advisors, and `npm run validate` pass.
-The authenticated browser reached the dashboard and returned HTTP 200 from the
-dashboard and masked contact-plan APIs, but the remaining interactive contact
-management workflow was skipped at the product owner's request. Gate 2 is
-therefore implemented but not yet ready for independent audit.
+three live Gate 2 database runs, database advisors, `npm run validate`, and the
+authenticated browser workflow pass. Browser proof covered masked contact
+display, consent recording, recipient preview, senior switching, and raw-number
+absence. Gate 2 is ready for independent audit; it does not send notifications.
 
 **Migration note:** The CLI-created foundation migration is
 `20260714053148_gate_2_contacts_consent_escalation.sql`. Review found two

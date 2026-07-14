@@ -4,8 +4,8 @@ Date: 14 July 2026
 
 ## Status
 
-Implementation and live database verification pass. Complete browser workflow
-evidence is pending, so Gate 2 is not yet ready for independent audit.
+Implementation, live database verification, and authenticated browser proof
+pass. Gate 2 is ready for independent audit and does not send notifications.
 
 ## Implemented
 
@@ -47,13 +47,25 @@ Command: `npm run validate`
 ## Browser Evidence
 
 The temporary admin authenticated successfully. The dashboard API and masked
-contact-plan API both returned HTTP 200 for Mr Tan Ah Hock. The remaining form
-interaction and visual masking checks were intentionally skipped at the product
-owner's request to avoid further delay. The temporary browser account and local
-credential file were deleted, and the local server was stopped.
+contact-plan API returned HTTP 200. The browser then proved:
+
+- Mr Tan and Mdm Lim displayed separate senior-specific contact plans.
+- Destinations appeared only as `•••• 0001` and `•••• 0011`; raw numbers were
+  absent from rendered content.
+- `Verify and record consent` persisted through the real admin APIs and the
+  refreshed plan included all permitted categories.
+- `Preview family alert` selected the first verified, consented contact.
+- Senior switching was responsive and loaded the correct relationship, channel,
+  quiet hours, and consent state.
+- A stale preview message initially survived senior switching. The contact-plan
+  component is now keyed by senior ID, and browser re-verification confirmed the
+  preview/settings state resets on selection change.
+
+Urgent quiet-hours bypass is verified by the repeated live database suite rather
+than a separate UI button. The temporary browser user, consent/audit records,
+and credential file were removed, and seed ownership references were restored.
 
 ## Remaining Evidence
 
-Run one concise authenticated browser workflow covering contact management,
-consent, normal/urgent preview, senior switching, and absence of raw destination
-values. Gate 2 must not be described as independently audited until that passes.
+Independent Gate 2 audit. Gate 2 must not be described as accepted until that
+review passes.

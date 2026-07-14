@@ -856,7 +856,7 @@ Remaining before Gate 1 is accepted:
 
 - independent reviewer re-audit passed on 14 July 2026
 
-#### Gate 2 — Contacts, Consent, and Escalation (implemented; browser proof pending)
+#### Gate 2 — Contacts, Consent, and Escalation (ready for independent audit)
 
 - multiple verified contacts per senior
 - relationship, priority, language, quiet hours, consent, and permitted alerts
@@ -868,7 +868,8 @@ Remaining before Gate 1 is accepted:
 - consent-bound urgent quiet-hours override with explainable exclusion reasons
 - fictional seeded plans for all three demo seniors
 - three live database runs and security/performance advisors pass
-- full authenticated contact-management browser workflow remains pending
+- authenticated browser proof passed for masked plans, consent update, recipient
+  preview, senior switching, and raw-number absence
 
 Gate 1 records escalation intent only. It does not send a message or contact an
 external party. Actual notifications require the verified contacts, consent,
@@ -915,12 +916,10 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate work is the **short Gate 2 authenticated browser proof and
-independent audit**. The implementation and live database checks pass, but the
-interactive admin workflow was intentionally stopped before completion. After
-that evidence is accepted, proceed to Gate 3 production WhatsApp; do not enable
-live Meta callbacks, scheduler behavior, or memory expansion before Gate 2 is
-accepted.
+The immediate work is the **independent Gate 2 audit**. Implementation, live
+database checks, and authenticated browser proof pass. After the evidence is
+accepted, proceed to Gate 3 production WhatsApp; do not enable live Meta
+callbacks, scheduler behavior, or memory expansion before Gate 2 is accepted.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
