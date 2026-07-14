@@ -5,8 +5,8 @@ Date: 14 July 2026
 ## Status
 
 Implementation, live database verification, authenticated browser proof, and
-independent-audit remediation pass. Gate 2 is ready for independent re-audit
-and does not send notifications.
+both independent-audit remediation rounds pass. The independent reviewer
+accepted Gate 2 on 14 July 2026. Gate 2 does not send notifications.
 
 ## Implemented
 
@@ -69,8 +69,8 @@ and credential file were removed, and seed ownership references were restored.
 
 ## Remaining Evidence
 
-Independent Gate 2 re-audit. Gate 2 must not be described as accepted until
-that review passes.
+No Gate 2 evidence remains outstanding. Production WhatsApp delivery remains a
+separate Gate 3 concern.
 
 ## Independent Audit Remediation
 

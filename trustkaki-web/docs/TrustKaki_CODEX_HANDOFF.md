@@ -268,19 +268,21 @@ the bounded authenticated polling fallback independently. Focused tests, three
 consecutive live two-user runs, the escalated-case browser workflow, and the full
 validation gate pass. The reviewer accepted the corrected Gate 1 evidence.
 
-Gate 2 contacts, consent, and escalation is implemented. It adds admin-managed
+Gate 2 contacts, consent, and escalation is implemented and independently
+accepted. It adds admin-managed
 multi-contact plans, verified methods, immutable consent events, quiet hours,
 deterministic recipient selection, masked caregiver reads, atomic escalation
 recipient decisions, and contact-plan Realtime refresh hints. Migrations
-`20260714053148`, `20260714055223`, and `20260714060530` are applied and aligned
-with the linked TrustKaki project. Three live Gate 2 database runs passed;
-security and performance advisors found no error-level issues; `npm run
-validate` passed with 246 tests. The authenticated browser workflow then proved
+`20260714053148`, `20260714055223`, `20260714060530`, `20260714064523`,
+`20260714070638`, and `20260714071108` are applied and aligned with the linked
+TrustKaki project. The final live Gate 2 suite passed 10/10; security and
+performance advisors found no error-level issues; `npm run validate` passed
+with 257 tests. The authenticated browser workflow also proved
 masked contact display, consent recording, recipient preview, fast
 senior-specific plan switching, and raw-number absence. A discovered stale
 preview-state defect was fixed by remounting contact-plan state per senior and
-covered by a focused regression test. Gate 2 is ready for independent audit but
-has not yet been independently accepted.
+covered by a focused regression test. The reviewer accepted the final private
+HMAC command-binding remediation on 14 July 2026.
 
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
@@ -299,9 +301,11 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Request independent Gate 2 audit using the dated verification evidence. Do not
-enable external escalation notifications or the live WhatsApp callback before
-that audit passes.
+Audit the current Meta test-number, callback, deployed environment, processor
+secret, and senior-phone mapping state before changing WhatsApp configuration.
+Then complete Gate 3 with one controlled real inbound-to-reply test. Do not
+enable caregiver notification fan-out, scheduler behavior, or production phone
+registration until that path is verified.
 
 ## Working rules
 - inspect before modifying

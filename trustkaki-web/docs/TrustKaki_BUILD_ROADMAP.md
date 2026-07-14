@@ -856,7 +856,7 @@ Remaining before Gate 1 is accepted:
 
 - independent reviewer re-audit passed on 14 July 2026
 
-#### Gate 2 — Contacts, Consent, and Escalation (ready for independent re-audit)
+#### Gate 2 — Contacts, Consent, and Escalation (accepted 14 July 2026)
 
 - multiple verified contacts per senior
 - relationship, priority, language, quiet hours, consent, and permitted alerts
@@ -881,6 +881,7 @@ Remaining before Gate 1 is accepted:
   polling is proven independently
 - four remediation live runs, full validation, aligned migration history, and
   security/performance advisors pass
+- independent reviewer accepted the private HMAC command-binding remediation
 
 Gate 1 records escalation intent only. It does not send a message or contact an
 external party. Actual notifications require the verified contacts, consent,
@@ -927,10 +928,11 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate work is the **independent Gate 2 re-audit**. Audit remediation,
-live database checks, and authenticated browser proof pass. After the evidence
-is accepted, proceed to Gate 3 production WhatsApp; do not enable live Meta
-callbacks, scheduler behavior, or memory expansion before Gate 2 is accepted.
+The immediate work is **Gate 3 production WhatsApp readiness**. Gate 2 is
+independently accepted. First confirm the current Meta test-number, callback,
+token, deployed environment, and senior-phone mapping state; then complete one
+controlled inbound-to-reply path before enabling any caregiver notification,
+scheduler behavior, or production phone registration.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
