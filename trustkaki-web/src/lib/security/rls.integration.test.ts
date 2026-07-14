@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Json } from "@/lib/supabase/types";
 import {
   createSupabaseRlsFixture,
@@ -11,18 +12,67 @@ const describeDatabase =
     ? describe.sequential
     : describe.skip;
 
-async function bounded<T>(promise: PromiseLike<T>, label: string): Promise<T> {
+async function bounded<T>(
+  promise: PromiseLike<T>,
+  label: string,
+  timeoutMs = 10_000
+): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       Promise.resolve(promise),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`${label} timed out`)), 10_000);
+        timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
       }),
     ]);
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+async function subscribeWithDiagnostics(
+  channel: RealtimeChannel,
+  statuses: string[]
+): Promise<void> {
+  try {
+    await bounded(
+      new Promise<void>((resolve, reject) => {
+        channel.subscribe((status, error) => {
+          statuses.push(error ? `${status}:${error.message}` : status);
+          if (status === "SUBSCRIBED") resolve();
+          if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+            reject(new Error(`Realtime subscription entered ${status}`));
+          }
+        });
+      }),
+      "Realtime subscription"
+    );
+  } catch (error) {
+    throw new Error(
+      `Realtime subscription failure; statuses=${statuses.join(",") || "none"}`,
+      { cause: error }
+    );
+  }
+}
+
+async function pollQueueVersion(args: {
+  fixture: SupabaseRlsFixture;
+  previousUpdatedAt: string;
+  timeoutMs?: number;
+}): Promise<string> {
+  const deadline = Date.now() + (args.timeoutMs ?? 5_000);
+  do {
+    const { data, error } = await args.fixture.caregiverB.client
+      .from("caregiver_queue_items")
+      .select("updated_at")
+      .eq("id", args.fixture.sharedQueueId)
+      .single();
+    if (error) throw new Error("Polling fallback read failed");
+    if (data.updated_at !== args.previousUpdatedAt) return data.updated_at;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  } while (Date.now() < deadline);
+
+  throw new Error("Polling fallback did not observe the committed update");
 }
 
 describeDatabase("TrustKaki caregiver RLS integration", () => {
@@ -130,13 +180,40 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
     expect(readError).toBeNull();
   });
 
+  it("keeps valid acknowledged case actions unchanged", async () => {
+    const { data: queueBefore } = await fixture.serviceClient
+      .from("caregiver_queue_items")
+      .select("updated_at")
+      .eq("id", fixture.sharedQueueId)
+      .single();
+    const { data, error } = await fixture.caregiverA.client.rpc(
+      "record_caregiver_queue_action",
+      {
+        p_queue_item_id: fixture.sharedQueueId,
+        p_action_type: "mark_for_follow_up",
+        p_command_id: randomUUID(),
+        p_expected_updated_at: queueBefore?.updated_at ?? "",
+      }
+    );
+    const result = data as unknown as Record<string, Json>;
+
+    expect(error).toBeNull();
+    expect(result.previous_status).toBe("acknowledged");
+    expect(result.resulting_status).toBe("acknowledged");
+  });
+
   it("notifies another authorized caregiver when the shared case changes", async () => {
     const channel = fixture.caregiverB.client.channel(
       `gate1-shared-case-${randomUUID()}`
     );
     let notifyUpdate: (() => void) | undefined;
+    const statuses: string[] = [];
+    let eventReceivedAt: number | null = null;
     const receivedUpdate = new Promise<void>((resolve) => {
-      notifyUpdate = resolve;
+      notifyUpdate = () => {
+        eventReceivedAt = Date.now();
+        resolve();
+      };
     });
     channel.on(
       "postgres_changes",
@@ -150,14 +227,7 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
     );
 
     try {
-      await bounded(
-        new Promise<void>((resolve) => {
-          channel.subscribe((status) => {
-            if (status === "SUBSCRIBED") resolve();
-          });
-        }),
-        "Realtime subscription"
-      );
+      await subscribeWithDiagnostics(channel, statuses);
       const { data: queue } = await fixture.serviceClient
         .from("caregiver_queue_items")
         .select("updated_at")
@@ -176,11 +246,57 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
       );
 
       expect(result.error).toBeNull();
-      await bounded(receivedUpdate, "Realtime shared case update");
+      try {
+        await bounded(receivedUpdate, "Realtime shared case update", 4_000);
+      } catch (initialError) {
+        await pollQueueVersion({
+          fixture,
+          previousUpdatedAt: queue?.updated_at ?? "",
+        });
+        try {
+          await bounded(receivedUpdate, "Delayed Realtime shared case update", 6_000);
+        } catch (missedError) {
+          throw new Error(
+            `Realtime missed event after polling observed the update; statuses=${statuses.join(",")}; eventReceivedAt=none`,
+            { cause: missedError }
+          );
+        }
+        throw new Error(
+          `Realtime delayed event after polling observed the update; statuses=${statuses.join(",")}; eventReceivedAt=${eventReceivedAt}`,
+          { cause: initialError }
+        );
+      }
     } finally {
       await fixture.caregiverB.client.removeChannel(channel);
     }
   }, 20_000);
+
+  it("observes a shared update through the bounded polling fallback", async () => {
+    const { data: queue } = await fixture.serviceClient
+      .from("caregiver_queue_items")
+      .select("updated_at")
+      .eq("id", fixture.sharedQueueId)
+      .single();
+    const result = await fixture.caregiverA.client.rpc(
+      "record_caregiver_queue_action",
+      {
+        p_queue_item_id: fixture.sharedQueueId,
+        p_action_type: "record_outcome",
+        p_command_id: randomUUID(),
+        p_expected_updated_at: queue?.updated_at ?? "",
+        p_outcome_type: "needs_follow_up",
+        p_note: "Polling fallback verification update for the shared caregiver.",
+      }
+    );
+
+    expect(result.error).toBeNull();
+    await expect(
+      pollQueueVersion({
+        fixture,
+        previousUpdatedAt: queue?.updated_at ?? "",
+      })
+    ).resolves.not.toBe(queue?.updated_at);
+  });
 
   it("records one visible escalation while keeping the shared case active", async () => {
     const { data: queueBefore } = await fixture.serviceClient
@@ -232,6 +348,64 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
         escalation_destination: "aac_supervisor",
       }),
     ]);
+  });
+
+  it("rejects acknowledgment and preserves escalation when assigning", async () => {
+    const { data: escalatedQueue } = await fixture.serviceClient
+      .from("caregiver_queue_items")
+      .select("status, updated_at")
+      .eq("id", fixture.sharedQueueId)
+      .single();
+    const { count: actionsBefore } = await fixture.serviceClient
+      .from("caregiver_actions")
+      .select("id", { count: "exact", head: true })
+      .eq("queue_item_id", fixture.sharedQueueId);
+
+    const acknowledge = await fixture.caregiverA.client.rpc(
+      "record_caregiver_queue_action",
+      {
+        p_queue_item_id: fixture.sharedQueueId,
+        p_action_type: "mark_for_follow_up",
+        p_command_id: randomUUID(),
+        p_expected_updated_at: escalatedQueue?.updated_at ?? "",
+      }
+    );
+    const { data: queueAfterAcknowledge } = await fixture.serviceClient
+      .from("caregiver_queue_items")
+      .select("status, updated_at")
+      .eq("id", fixture.sharedQueueId)
+      .single();
+    const { count: actionsAfterAcknowledge } = await fixture.serviceClient
+      .from("caregiver_actions")
+      .select("id", { count: "exact", head: true })
+      .eq("queue_item_id", fixture.sharedQueueId);
+
+    expect(acknowledge.error).not.toBeNull();
+    expect(queueAfterAcknowledge).toEqual(escalatedQueue);
+    expect(actionsAfterAcknowledge).toBe(actionsBefore);
+
+    const { data: assignmentData, error: assignmentError } =
+      await fixture.caregiverA.client.rpc("record_caregiver_queue_action", {
+        p_queue_item_id: fixture.sharedQueueId,
+        p_action_type: "assign",
+        p_command_id: randomUUID(),
+        p_expected_updated_at: queueAfterAcknowledge?.updated_at ?? "",
+        p_assigned_caregiver_id: fixture.caregiverB.caregiverId,
+      });
+    const assignment = assignmentData as unknown as Record<string, Json>;
+    const { data: queueAfterAssignment } = await fixture.serviceClient
+      .from("caregiver_queue_items")
+      .select("status, assigned_caregiver_id")
+      .eq("id", fixture.sharedQueueId)
+      .single();
+
+    expect(assignmentError).toBeNull();
+    expect(assignment.previous_status).toBe("escalated");
+    expect(assignment.resulting_status).toBe("escalated");
+    expect(queueAfterAssignment).toEqual({
+      status: "escalated",
+      assigned_caregiver_id: fixture.caregiverB.caregiverId,
+    });
   });
 
   it("rolls back an invalid command and resolves the queue with all linked patterns", async () => {

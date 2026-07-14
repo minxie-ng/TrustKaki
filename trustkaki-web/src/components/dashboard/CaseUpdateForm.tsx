@@ -10,7 +10,7 @@ import type {
 } from "@/lib/types";
 import { canSaveCaseUpdate, canSubmit, type RequestState } from "../dashboardViewModel";
 
-type CaseUpdateAction =
+export type CaseUpdateAction =
   | "acknowledge"
   | "assign"
   | "record_outcome"
@@ -67,6 +67,30 @@ const actionLabels: Record<CaseUpdateAction, string> = {
   resolve: "Close as resolved",
 };
 
+const allCaseActions = Object.keys(actionLabels) as CaseUpdateAction[];
+
+export function availableCaseActions(
+  status: FollowUpQueueItem["status"]
+): CaseUpdateAction[] {
+  if (status === "escalated") {
+    return ["assign", "record_outcome", "escalate", "resolve"];
+  }
+  if (status === "followed_up") {
+    return ["assign", "record_outcome", "snooze", "escalate", "resolve"];
+  }
+  if (status === "resolved") return [];
+  return [...allCaseActions];
+}
+
+export function initialCaseAction(
+  status: FollowUpQueueItem["status"]
+): CaseUpdateAction {
+  if (status === "escalated" || status === "followed_up") {
+    return "record_outcome";
+  }
+  return availableCaseActions(status)[0] ?? "record_outcome";
+}
+
 const escalationOptions: Array<{
   value: EscalationDestination;
   label: string;
@@ -95,7 +119,9 @@ export function CaseUpdateForm({
   onUnauthorized,
 }: CaseUpdateFormProps) {
   const [open, setOpen] = useState(false);
-  const [action, setAction] = useState<CaseUpdateAction>("acknowledge");
+  const [action, setAction] = useState<CaseUpdateAction>(() =>
+    initialCaseAction(item.status)
+  );
   const [outcome, setOutcome] = useState<ContactOutcome>("needs_follow_up");
   const [note, setNote] = useState("");
   const [snoozeHours, setSnoozeHours] = useState("4");
@@ -109,6 +135,7 @@ export function CaseUpdateForm({
   const commandIdRef = useRef<string | null>(null);
 
   const pending = requestState === "pending";
+  const availableActions = availableCaseActions(item.status);
 
   function changeCommandInput(update: () => void) {
     commandIdRef.current = null;
@@ -116,7 +143,7 @@ export function CaseUpdateForm({
   }
 
   function reset() {
-    setAction("acknowledge");
+    setAction(initialCaseAction(item.status));
     setOutcome("needs_follow_up");
     setNote("");
     setSnoozeHours("4");
@@ -250,8 +277,8 @@ export function CaseUpdateForm({
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                 disabled={pending}
               >
-                {Object.entries(actionLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {availableActions.map((value) => (
+                  <option key={value} value={value}>{actionLabels[value]}</option>
                 ))}
               </select>
             </label>

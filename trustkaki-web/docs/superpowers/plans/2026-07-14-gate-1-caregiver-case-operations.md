@@ -26,6 +26,10 @@
    emergency guidance, and no automatic external notification.
 - [x] Run the two-caregiver browser workflow, linked migration check, advisors, and `npm run validate`.
 - [x] Record internal verification evidence for independent Gate 1 audit.
+- [x] Prevent acknowledge, assign, or outcome commands from downgrading an escalated case.
+- [x] Hide invalid escalated-case actions and default the form to a valid follow-up action.
+- [x] Diagnose Realtime subscription, delayed-event, and missed-event outcomes separately.
+- [x] Verify the bounded authenticated polling fallback independently.
 
 ## Exit Criteria
 
@@ -52,3 +56,7 @@
   in one controlled browser engine; this is not evidence from two browser engines.
 - Full evidence is recorded in
   `docs/superpowers/verification/2026-07-14-gate-1-caregiver-case-operations.md`.
+- The first independent audit found an escalated-state downgrade and insufficient
+  Realtime diagnostics. Migration `20260714044604` closes the transition defect;
+  repeated live tests and an escalated-case browser workflow now pass. Gate 1
+  remains pending independent re-audit.

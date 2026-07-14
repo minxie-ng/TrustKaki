@@ -242,8 +242,8 @@ Gate 0 closed these blockers:
 - split the oversized dashboard and repository by existing responsibilities
 - completed focused reviewer re-audit and addressed requested changes
 
-Gate 1 caregiver case operations have completed internal implementation and
-verification and are ready for independent audit. The current foundation
+Gate 1 caregiver case operations have completed an audit correction and are
+ready for independent re-audit. The current foundation
 uses authenticated transactional commands, preserves action history, separates
 case closure from policy-authoritative risk, and stores caregiver relationship
 and primary-contact status on each senior-caregiver link. Explicit escalation
@@ -257,6 +257,16 @@ resolution, unchanged policy risk, and unrelated-caregiver isolation. The
 automation used separate cookie domains in one controlled browser engine, not
 two separate browser engines. Temporary users and records were removed after
 verification.
+
+The first Gate 1 audit found that acknowledge and assignment could downgrade an
+already escalated queue item because the transactional RPC selected the next
+status from the action alone. Migration `20260714044604` now rejects invalid
+escalated actions and preserves escalation through assignment and non-resolving
+outcomes. The UI exposes only valid actions. Realtime integration evidence now
+captures channel status, distinguishes delayed from missed events, and verifies
+the bounded authenticated polling fallback independently. Focused tests, three
+consecutive live two-user runs, the escalated-case browser workflow, and the full
+validation gate pass. This is internal evidence, not reviewer acceptance.
 
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
@@ -275,7 +285,7 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Request an independent Gate 1 audit using the dated verification evidence. After
+Request an independent Gate 1 re-audit using the dated verification evidence. After
 reviewer acceptance, begin Gate 2 verified contacts, consent, quiet hours, and
 deterministic recipient selection. Do not enable external escalation
 notifications or the live WhatsApp callback before those controls exist.

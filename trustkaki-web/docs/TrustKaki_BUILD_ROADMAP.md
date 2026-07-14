@@ -820,7 +820,7 @@ unless there is a deliberate rename/refactor. The current equivalents are:
 - add `npm run validate` and update implementation evidence
 - focused reviewer re-audit completed; requested changes addressed
 
-#### Gate 1 — Caregiver Case Operations (implementation verified; independent audit pending)
+#### Gate 1 — Caregiver Case Operations (audit correction verified; independent re-audit pending)
 
 - auditable acknowledge, assign, snooze, contact outcome, escalation, and resolve
 - required snooze and resolution reasons
@@ -846,10 +846,15 @@ Implemented so far:
 - caregiver UI exposes acknowledge and assignment without adding separate action buttons
 - visible action history distinguishes the authenticated actor from the assignment target
 - two isolated authenticated browser sessions proved shared updates, one-success/one-409 concurrency, resolution, unchanged risk, and unrelated-caregiver isolation
+- transactional transition guards prevent acknowledge or snooze from downgrading
+  an escalated case; assignment preserves escalated status
+- invalid escalated-case actions are absent from the caregiver form
+- Realtime verification now distinguishes subscription failure, delayed delivery,
+  and missed delivery, with the bounded authenticated polling fallback tested separately
 
 Remaining before Gate 1 is accepted:
 
-- independent reviewer audit of the recorded Gate 1 evidence
+- independent reviewer re-audit of the corrected Gate 1 evidence
 
 #### Gate 2 — Contacts, Consent, and Escalation
 
@@ -903,7 +908,7 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate checkpoint is an **independent Gate 1 audit**. Gate 1 implementation
+The immediate checkpoint is an **independent Gate 1 re-audit**. The audit correction
 and internal verification are complete. Begin Gate 2 contact consent and recipient
 selection only after the reviewer accepts the evidence; do not enable live Meta
 callbacks, scheduler behavior, or memory expansion first.

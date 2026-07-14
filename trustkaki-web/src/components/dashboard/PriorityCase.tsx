@@ -137,6 +137,7 @@ function PriorityCaseCard({
           {detailsOpen ? "Hide details" : "View details"}
         </button>
         <CaseUpdateForm
+          key={`${item.id}:${item.status}`}
           item={item}
           caregiverOptions={data.assignableCaregivers ?? []}
           authToken={authToken}

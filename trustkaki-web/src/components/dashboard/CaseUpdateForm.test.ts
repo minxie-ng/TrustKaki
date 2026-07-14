@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   actionTypeForCaseAction,
+  availableCaseActions,
   canSaveCaseAction,
+  initialCaseAction,
   outcomeForCaseAction,
 } from "./CaseUpdateForm";
 
@@ -41,5 +43,31 @@ describe("case update semantics", () => {
     expect(canSaveCaseAction("snooze", "", null)).toBe(false);
     expect(canSaveCaseAction("escalate", "", null)).toBe(false);
     expect(canSaveCaseAction("resolve", "", null)).toBe(false);
+  });
+
+  it("removes invalid downgrade actions from an escalated case", () => {
+    expect(availableCaseActions("escalated")).toEqual([
+      "assign",
+      "record_outcome",
+      "escalate",
+      "resolve",
+    ]);
+    expect(initialCaseAction("escalated")).toBe("record_outcome");
+  });
+
+  it("keeps existing pending and acknowledged actions available", () => {
+    const expected = [
+      "acknowledge",
+      "assign",
+      "record_outcome",
+      "snooze",
+      "escalate",
+      "resolve",
+    ];
+
+    expect(availableCaseActions("pending")).toEqual(expected);
+    expect(availableCaseActions("acknowledged")).toEqual(expected);
+    expect(initialCaseAction("pending")).toBe("acknowledge");
+    expect(initialCaseAction("acknowledged")).toBe("acknowledge");
   });
 });
