@@ -185,6 +185,21 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
     expect(caregiverRead.data).toEqual([]);
   });
 
+  it("does not expose private command bindings or fingerprints through the Data API", async () => {
+    const privateRead = await admin.client
+      .schema("trustkaki_private")
+      .from("contact_command_bindings")
+      .select("command_id")
+      .limit(1);
+    const publicFingerprint = await admin.client
+      .from("contact_plan_audit_events")
+      .select("payload_fingerprint")
+      .limit(1);
+
+    expect(privateRead.error).not.toBeNull();
+    expect(publicFingerprint.error).not.toBeNull();
+  });
+
   it("creates one auditable contact and replays its command once", async () => {
     const commandId = randomUUID();
     const payload = {

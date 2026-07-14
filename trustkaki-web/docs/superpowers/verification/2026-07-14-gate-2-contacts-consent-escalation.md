@@ -23,7 +23,7 @@ and does not send notifications.
 ## Database Evidence
 
 - Applied migrations: `20260714053148`, `20260714055223`, `20260714060530`,
-  and `20260714064523`.
+  `20260714064523`, `20260714070638`, and `20260714071108`.
 - Local and remote migration history aligned.
 - Seed execution produced four demo contacts, four methods, and four consent
   events. All destinations are fictional.
@@ -41,7 +41,7 @@ and does not send notifications.
 
 Command: `npm run validate`
 
-- Tests: 253 passed, 19 skipped live-by-default tests.
+- Tests: 257 passed, 20 skipped live-by-default tests.
 - Typecheck: passed.
 - Lint: passed.
 - Production build: passed.
@@ -74,12 +74,12 @@ that review passes.
 
 ## Independent Audit Remediation
 
-On 14 July 2026, the Gate 2 audit identified command-replay binding,
+On 14 July 2026, the first Gate 2 audit identified command-replay binding,
 recipient-explanation, Realtime-test, and destination-validation gaps. The
-additive migration `20260714064523_gate_2_audit_remediation.sql` now binds each
-contact/method command ID to the authenticated actor and a fingerprint of its
-normalized payload. Phone destinations require E.164 format after safe
-normalization; email destinations are trimmed, lowercased, and validated.
+additive migration `20260714064523_gate_2_audit_remediation.sql` bound each
+contact/method command ID to the authenticated actor and normalized payload.
+Phone destinations require E.164 format after safe normalization; email
+destinations are trimmed, lowercased, and validated.
 
 The repository now preserves deterministic `skipped_reasons`, and the admin
 preview names the configured masked contact method with plain-language exclusion
@@ -97,5 +97,36 @@ Live verification after migration:
   the Realtime event result;
 - security advisor: no error-level issues;
 - performance advisor: no error-level issues.
-- `npm run validate`: 253 tests passed, 19 live-by-default tests skipped,
+- `npm run validate`: 257 tests passed, 20 live-by-default tests skipped,
   typecheck passed, lint passed, and the production build passed.
+
+## Private Command-Binding Remediation
+
+The follow-up audit correctly rejected the public unsalted MD5 fingerprint as a
+phone-number enumeration risk. Migration
+`20260714070638_gate_2_private_command_bindings.sql` supersedes that design:
+
+- the public `payload_fingerprint` column and MD5 helper are removed;
+- normalized payload bindings are stored only in `trustkaki_private`;
+- payload equality uses HMAC-SHA-256 with a random 32-byte database-held key;
+- public, anonymous, authenticated, and service-role access to the key and
+  binding tables is revoked;
+- legacy public fingerprints are dropped rather than copied into private data;
+- legacy command IDs without a private binding are rejected on replay.
+
+Migration `20260714071108_gate_2_private_binding_cleanup.sql` removes existing
+test orphans and adds a deferred cascading foreign key to immutable public audit
+records. This preserves same-transaction binding reservation while ensuring
+retention and fixture cleanup remove the corresponding private metadata.
+Its first application attempt found the expected pre-constraint test orphans and
+rolled back; after adding the explicit orphan cleanup, the migration applied
+successfully and local/remote history aligned.
+
+Live verification passed 10/10: command replay behavior remains intact, changed
+payloads and actors are rejected, Realtime and polling proofs pass, the private
+schema cannot be read through the Data API, and the removed public fingerprint
+column cannot be selected.
+
+Final security and performance advisor checks reported no error-level findings.
+Final `npm run validate` passed 257 tests, with 20 live-only tests skipped by
+default; typecheck, lint, and the production build passed.

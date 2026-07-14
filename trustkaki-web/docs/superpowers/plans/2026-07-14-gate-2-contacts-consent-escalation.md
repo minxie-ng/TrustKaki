@@ -12,9 +12,10 @@
 and method idempotency keys are actor/payload-bound, destinations are validated
 per channel, recipient exclusions survive the API boundary, and Realtime tests
 now require an authenticated row event with a separate polling-fallback proof.
-Three live remediation runs and database advisors pass. Final repository
-validation is recorded in the verification evidence; Gate 2 does not send
-notifications.
+The follow-up privacy audit is also remediated: command bindings now use a
+database-held HMAC-SHA-256 key in the private schema, with no destination-derived
+fingerprint in public audit data. Final repository validation is recorded in the
+verification evidence; Gate 2 does not send notifications.
 
 **Migration note:** The CLI-created foundation migration is
 `20260714053148_gate_2_contacts_consent_escalation.sql`. Review found two
@@ -23,7 +24,10 @@ security/integrity corrections before final verification, recorded normally as
 publication is recorded in
 `20260714060530_gate_2_contact_realtime_publication.sql`. Local and remote
 migration history are aligned. Independent-audit fixes are additive in
-`20260714064523_gate_2_audit_remediation.sql`.
+`20260714064523_gate_2_audit_remediation.sql`. Its rejected public fingerprint
+design is superseded by `20260714070638_gate_2_private_command_bindings.sql` and
+the deferred cleanup constraint in
+`20260714071108_gate_2_private_binding_cleanup.sql`.
 
 ---
 

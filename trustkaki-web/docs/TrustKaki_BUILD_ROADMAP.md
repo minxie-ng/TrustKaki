@@ -872,6 +872,8 @@ Remaining before Gate 1 is accepted:
   preview, senior switching, and raw-number absence
 - contact and method command IDs are bound to the authenticated actor and
   normalized payload; changed-payload replay is rejected
+- command payload bindings use HMAC-SHA-256 with a random database-held key in
+  `trustkaki_private`; no destination-derived fingerprint is publicly readable
 - phone and email destinations are normalized and validated by channel at both
   API and database boundaries
 - admin preview preserves and explains deterministic recipient exclusions
