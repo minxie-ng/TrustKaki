@@ -835,13 +835,15 @@ Implemented so far:
 - immutable caregiver action history
 - resolved cases leave the active queue without rewriting policy risk
 - senior-specific caregiver relationships and one explicit primary contact
+- client-generated command IDs prevent duplicate caregiver actions on retry
+- optimistic concurrency rejects stale shared-case updates with HTTP 409
+- Supabase Realtime refreshes authorized caregivers, with polling fallback
+- live two-user database tests prove idempotency, conflict rollback, and shared updates
 
 Remaining before Gate 1 closes:
 
-- optimistic concurrency/version checks for simultaneous case updates
-- stronger duplicate command protection
-- Supabase Realtime subscriptions for shared caregiver queue changes
-- focused live multi-caregiver workflow verification
+- add an explicit escalation action and its operational destination
+- complete a two-browser caregiver workflow smoke test
 
 #### Gate 2 — Contacts, Consent, and Escalation
 

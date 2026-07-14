@@ -247,9 +247,10 @@ Gate 1 caregiver case operations are now in progress. The current foundation
 uses authenticated transactional commands, preserves action history, separates
 case closure from policy-authoritative risk, and stores caregiver relationship
 and primary-contact status on each senior-caregiver link. Remaining Gate 1 work
-is conflict-safe concurrent updates, stronger duplicate command protection,
-Supabase Realtime shared-caregiver synchronization, and focused live workflow
-verification.
+is an explicit escalation action and a two-browser caregiver workflow smoke
+test. Conflict-safe commands, retry idempotency, and Supabase Realtime shared-
+caregiver refresh are implemented and live verified against two authenticated
+temporary caregivers.
 
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim

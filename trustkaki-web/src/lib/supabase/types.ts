@@ -623,6 +623,9 @@ export interface Database {
           note: string | null;
           previous_status: QueueStatus | null;
           resulting_status: QueueStatus | null;
+          command_id: string;
+          assigned_caregiver_id: string | null;
+          snoozed_until: string | null;
           created_at: string;
         };
         Insert: {
@@ -635,6 +638,9 @@ export interface Database {
           note?: string | null;
           previous_status?: QueueStatus | null;
           resulting_status?: QueueStatus | null;
+          command_id: string;
+          assigned_caregiver_id?: string | null;
+          snoozed_until?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["caregiver_actions"]["Insert"]>;
@@ -650,6 +656,8 @@ export interface Database {
         Args: {
           p_queue_item_id: string;
           p_action_type: CaregiverActionType;
+          p_command_id: string;
+          p_expected_updated_at: string;
           p_outcome_type?: ContactOutcome | null;
           p_note?: string | null;
           p_assigned_caregiver_id?: string | null;

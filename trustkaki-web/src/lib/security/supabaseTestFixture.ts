@@ -39,10 +39,12 @@ function createAuthenticatedClient(
   anonKey: string,
   accessToken: string
 ): TrustKakiClient {
-  return createClient(url, anonKey, {
+  const client = createClient(url, anonKey, {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  void client.realtime.setAuth(accessToken);
+  return client;
 }
 
 export async function createSupabaseRlsFixture(): Promise<SupabaseRlsFixture> {

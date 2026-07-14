@@ -22,6 +22,9 @@ describe("caregiver case repository", () => {
         assigned_caregiver_id: "caregiver-2",
         previous_status: "pending",
         resulting_status: "acknowledged",
+        queue_updated_at: "2026-07-14T02:01:00.000Z",
+        command_id: "00000000-0000-4000-8000-000000000099",
+        duplicate: false,
       },
       error: null,
     });
@@ -33,6 +36,8 @@ describe("caregiver case repository", () => {
     const result = await recordCaregiverQueueAction({
       accessToken: "verified-token",
       queueItemId: "queue-1",
+      commandId: "00000000-0000-4000-8000-000000000099",
+      expectedUpdatedAt: "2026-07-14T02:00:00.000Z",
       actionType: "assign",
       assignedCaregiverId: "caregiver-2",
     });
@@ -41,6 +46,8 @@ describe("caregiver case repository", () => {
     expect(rpc).toHaveBeenCalledWith("record_caregiver_queue_action", {
       p_queue_item_id: "queue-1",
       p_action_type: "assign",
+      p_command_id: "00000000-0000-4000-8000-000000000099",
+      p_expected_updated_at: "2026-07-14T02:00:00.000Z",
       p_outcome_type: null,
       p_note: null,
       p_assigned_caregiver_id: "caregiver-2",
@@ -51,6 +58,7 @@ describe("caregiver case repository", () => {
       assignedCaregiverId: "caregiver-2",
       previousStatus: "pending",
       resultingStatus: "acknowledged",
+      duplicate: false,
       persistence: { persisted: true },
     });
   });
@@ -59,7 +67,7 @@ describe("caregiver case repository", () => {
     createTrustKakiUserClientMock.mockReturnValue({
       rpc: vi.fn().mockResolvedValue({
         data: null,
-        error: { message: "Forbidden" },
+        error: { message: "Forbidden", code: "42501" },
       }),
     });
     const { recordCaregiverQueueAction } = await import(
@@ -70,10 +78,33 @@ describe("caregiver case repository", () => {
       recordCaregiverQueueAction({
         accessToken: "verified-token",
         queueItemId: "queue-1",
+        commandId: "00000000-0000-4000-8000-000000000099",
+        expectedUpdatedAt: "2026-07-14T02:00:00.000Z",
         actionType: "resolve",
         outcomeType: "resolved",
         note: "Caregiver confirmed the case is resolved.",
       })
     ).rejects.toThrow("record caregiver queue action failed");
+  });
+
+  it("classifies database serialization conflicts", async () => {
+    createTrustKakiUserClientMock.mockReturnValue({
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: "Case changed", code: "PT409" },
+      }),
+    });
+    const { CaregiverCaseConflictError, recordCaregiverQueueAction } =
+      await import("./caregiverCaseRepository");
+
+    await expect(
+      recordCaregiverQueueAction({
+        accessToken: "verified-token",
+        queueItemId: "queue-1",
+        commandId: "00000000-0000-4000-8000-000000000099",
+        expectedUpdatedAt: "2026-07-14T02:00:00.000Z",
+        actionType: "assign",
+      })
+    ).rejects.toBeInstanceOf(CaregiverCaseConflictError);
   });
 });

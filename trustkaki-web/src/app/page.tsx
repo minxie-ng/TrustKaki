@@ -8,6 +8,7 @@ import Dashboard from "@/components/Dashboard";
 import SignInForm from "@/components/SignInForm";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
+import { subscribeToDashboardChanges } from "@/lib/supabase/dashboardRealtime";
 import {
   appShellSurface,
   chatSimulationState,
@@ -173,6 +174,14 @@ export default function Home() {
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshIfVisible);
     };
+  }, [authToken, refreshDashboardState]);
+
+  useEffect(() => {
+    if (!authToken) return;
+    const subscription = subscribeToDashboardChanges({
+      onChange: () => refreshDashboardState(),
+    });
+    return () => subscription?.unsubscribe();
   }, [authToken, refreshDashboardState]);
 
   async function signIn(email: string, password: string) {

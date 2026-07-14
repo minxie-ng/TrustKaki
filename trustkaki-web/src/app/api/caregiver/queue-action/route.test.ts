@@ -12,9 +12,13 @@ const auth = {
   accessibleSeniorIds: ["senior-1"],
 };
 const accessToken = "verified-access-token";
+const commandId = "00000000-0000-4000-8000-000000000099";
+const expectedUpdatedAt = "2026-07-14T02:00:00.000Z";
+class MockCaregiverCaseConflictError extends Error {}
 
 vi.mock("@/lib/persistence/caregiverCaseRepository", () => ({
   recordCaregiverQueueAction: recordCaregiverQueueActionMock,
+  CaregiverCaseConflictError: MockCaregiverCaseConflictError,
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -48,6 +52,8 @@ describe("/api/caregiver/queue-action", () => {
         method: "POST",
         body: JSON.stringify({
           queueItemId: "queue_1",
+          commandId,
+          expectedUpdatedAt,
           actionType: "resolve",
         }),
       })
@@ -65,6 +71,8 @@ describe("/api/caregiver/queue-action", () => {
         method: "POST",
         body: JSON.stringify({
           queueItemId: "queue_1",
+          commandId,
+          expectedUpdatedAt,
           actionType: "record_outcome",
           outcomeType: "needs_follow_up",
           note: "Daughter will call today.",
@@ -79,10 +87,36 @@ describe("/api/caregiver/queue-action", () => {
       expect.objectContaining({
         accessToken,
         queueItemId: "queue_1",
+        commandId,
+        expectedUpdatedAt,
         actionType: "record_outcome",
         outcomeType: "needs_follow_up",
       })
     );
+  });
+
+  it("returns a safe conflict when another caregiver updated the case", async () => {
+    recordCaregiverQueueActionMock.mockRejectedValue(
+      new MockCaregiverCaseConflictError()
+    );
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/caregiver/queue-action", {
+        method: "POST",
+        body: JSON.stringify({
+          queueItemId: "queue_1",
+          commandId,
+          expectedUpdatedAt,
+          actionType: "assign",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "case_conflict",
+    });
   });
 
   it("rejects invalid caregiver actions", async () => {

@@ -24,7 +24,17 @@ const resultSchema = z.object({
     "snoozed",
     "resolved",
   ]),
+  queue_updated_at: z.string(),
+  command_id: z.string(),
+  duplicate: z.boolean(),
 });
+
+export class CaregiverCaseConflictError extends Error {
+  constructor() {
+    super("Caregiver case changed");
+    this.name = "CaregiverCaseConflictError";
+  }
+}
 
 function localDemoMeta(): PersistenceMeta {
   return {
@@ -42,12 +52,17 @@ export interface CaregiverQueueActionResult {
   assignedCaregiverId: string | null;
   previousStatus: QueueStatus | null;
   resultingStatus: QueueStatus | null;
+  queueUpdatedAt: string | null;
+  commandId: string | null;
+  duplicate: boolean;
   persistence: PersistenceMeta;
 }
 
 export async function recordCaregiverQueueAction(args: {
   accessToken: string;
   queueItemId: string;
+  commandId: string;
+  expectedUpdatedAt: string;
   actionType: CaregiverActionType;
   outcomeType?: ContactOutcome | null;
   note?: string | null;
@@ -63,6 +78,9 @@ export async function recordCaregiverQueueAction(args: {
       assignedCaregiverId: null,
       previousStatus: null,
       resultingStatus: null,
+      queueUpdatedAt: null,
+      commandId: null,
+      duplicate: false,
       persistence: localDemoMeta(),
     };
   }
@@ -70,6 +88,8 @@ export async function recordCaregiverQueueAction(args: {
   type RpcArgs = {
       p_queue_item_id: string;
       p_action_type: CaregiverActionType;
+      p_command_id: string;
+      p_expected_updated_at: string;
       p_outcome_type: ContactOutcome | null;
       p_note: string | null;
       p_assigned_caregiver_id: string | null;
@@ -81,17 +101,22 @@ export async function recordCaregiverQueueAction(args: {
     rpc: (
       name: "record_caregiver_queue_action",
       payload: RpcArgs
-    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    ) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>;
   };
   const { data, error } = await rpcClient.rpc("record_caregiver_queue_action", {
     p_queue_item_id: args.queueItemId,
     p_action_type: args.actionType,
+    p_command_id: args.commandId,
+    p_expected_updated_at: args.expectedUpdatedAt,
     p_outcome_type: args.outcomeType ?? null,
     p_note: args.note ?? null,
     p_assigned_caregiver_id: args.assignedCaregiverId ?? null,
     p_snoozed_until: args.snoozedUntil ?? null,
   });
-  if (error) throw new Error("record caregiver queue action failed");
+  if (error) {
+    if (error.code === "PT409") throw new CaregiverCaseConflictError();
+    throw new Error("record caregiver queue action failed");
+  }
 
   const parsed = resultSchema.safeParse(data);
   if (!parsed.success) throw new Error("record caregiver queue action failed");
@@ -103,6 +128,9 @@ export async function recordCaregiverQueueAction(args: {
     assignedCaregiverId: parsed.data.assigned_caregiver_id,
     previousStatus: parsed.data.previous_status,
     resultingStatus: parsed.data.resulting_status,
+    queueUpdatedAt: parsed.data.queue_updated_at,
+    commandId: parsed.data.command_id,
+    duplicate: parsed.data.duplicate,
     persistence: { mode: "supabase", configured: true, persisted: true },
   };
 }

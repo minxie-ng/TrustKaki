@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { authHeader } from "@/lib/auth/client";
 import type { ContactOutcome, FollowUpQueueItem } from "@/lib/types";
 import { canSaveCaseUpdate, canSubmit, type RequestState } from "../dashboardViewModel";
@@ -51,14 +51,21 @@ export function CaseUpdateForm({
   const [snoozeHours, setSnoozeHours] = useState("4");
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const commandIdRef = useRef<string | null>(null);
 
   const pending = requestState === "pending";
+
+  function changeCommandInput(update: () => void) {
+    commandIdRef.current = null;
+    update();
+  }
 
   function reset() {
     setAction("record_outcome");
     setOutcome("needs_follow_up");
     setNote("");
     setSnoozeHours("4");
+    commandIdRef.current = null;
   }
 
   async function submit() {
@@ -72,9 +79,12 @@ export function CaseUpdateForm({
 
     const body: Record<string, unknown> = {
       queueItemId: item.id,
+      commandId: commandIdRef.current ?? crypto.randomUUID(),
+      expectedUpdatedAt: item.lastUpdatedAt,
       actionType: action,
       note: cleanNote,
     };
+    commandIdRef.current = body.commandId as string;
     const submittedOutcome = outcomeForCaseAction(action, outcome);
     if (submittedOutcome) {
       body.outcomeType = submittedOutcome;
@@ -95,6 +105,15 @@ export function CaseUpdateForm({
       if (response.status === 401) {
         onUnauthorized();
         throw new Error("unauthorized");
+      }
+      if (response.status === 409) {
+        setRequestState("error");
+        setStatusMessage(
+          "Another caregiver updated this case. The latest status is being loaded."
+        );
+        commandIdRef.current = null;
+        onSaved();
+        return;
       }
       if (!response.ok) throw new Error("caregiver_action_failed");
       const result = (await response.json()) as {
@@ -151,7 +170,11 @@ export function CaseUpdateForm({
               What do you want to do?
               <select
                 value={action}
-                onChange={(event) => setAction(event.target.value as CaseUpdateAction)}
+                onChange={(event) =>
+                  changeCommandInput(() =>
+                    setAction(event.target.value as CaseUpdateAction)
+                  )
+                }
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                 disabled={pending}
               >
@@ -165,7 +188,11 @@ export function CaseUpdateForm({
                 What happened?
                 <select
                   value={outcome}
-                  onChange={(event) => setOutcome(event.target.value as ContactOutcome)}
+                  onChange={(event) =>
+                    changeCommandInput(() =>
+                      setOutcome(event.target.value as ContactOutcome)
+                    )
+                  }
                   className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                   disabled={pending}
                 >
@@ -186,7 +213,9 @@ export function CaseUpdateForm({
                 Snooze for
                 <select
                   value={snoozeHours}
-                  onChange={(event) => setSnoozeHours(event.target.value)}
+                  onChange={(event) =>
+                    changeCommandInput(() => setSnoozeHours(event.target.value))
+                  }
                   className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                   disabled={pending}
                 >
@@ -205,7 +234,9 @@ export function CaseUpdateForm({
                 : "What happened and what is next?"}
             <textarea
               value={note}
-              onChange={(event) => setNote(event.target.value)}
+              onChange={(event) =>
+                changeCommandInput(() => setNote(event.target.value))
+              }
               rows={3}
               placeholder={
                 action === "snooze"

@@ -5,7 +5,10 @@ import {
   authJsonError,
   requireAuthenticatedCaregiver,
 } from "@/lib/auth/session";
-import { recordCaregiverQueueAction } from "@/lib/persistence/caregiverCaseRepository";
+import {
+  CaregiverCaseConflictError,
+  recordCaregiverQueueAction,
+} from "@/lib/persistence/caregiverCaseRepository";
 
 export const runtime = "nodejs";
 
@@ -23,6 +26,8 @@ export async function POST(request: Request) {
     const persistence = await recordCaregiverQueueAction({
       accessToken: authResult.accessToken,
       queueItemId: body.queueItemId,
+      commandId: body.commandId,
+      expectedUpdatedAt: body.expectedUpdatedAt,
       actionType: body.actionType,
       outcomeType: body.outcomeType ?? null,
       note: body.note ?? null,
@@ -32,6 +37,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ status: "ok", ...persistence });
   } catch (error) {
+    if (error instanceof CaregiverCaseConflictError) {
+      return NextResponse.json(
+        {
+          error: "This case was updated by another caregiver. Refresh and review the latest status.",
+          code: "case_conflict",
+        },
+        { status: 409 }
+      );
+    }
     return jsonError("Failed to record caregiver action", { error, status: 500 });
   }
 }

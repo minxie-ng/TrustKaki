@@ -17,6 +17,8 @@ export const manualBriefingRequestSchema = z.object({
 
 export const queueActionRequestSchema = z.object({
   queueItemId: z.string().trim().min(1).max(120),
+  commandId: z.string().uuid(),
+  expectedUpdatedAt: z.string().datetime({ offset: true }),
   actionType: z.enum([
     "mark_for_follow_up",
     "assign",
