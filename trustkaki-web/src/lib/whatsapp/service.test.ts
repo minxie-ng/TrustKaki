@@ -446,4 +446,23 @@ describe("WhatsApp async service", () => {
     expect(listRetryableWhatsAppEventsMock).toHaveBeenCalledWith(1);
     expect(result.processed).toBe(1);
   });
+
+  it("counts an unmapped sender as safely processed instead of failed", async () => {
+    const { retryPendingWhatsAppEvents } = await import("./service");
+    listRetryableWhatsAppEventsMock.mockResolvedValue([eventRow({ id: "event_1" })]);
+    claimWhatsAppEventMock.mockResolvedValue(eventRow({ id: "event_1" }));
+    loadSeniorContextByVerifiedPhoneMock.mockResolvedValue(null);
+
+    const result = await retryPendingWhatsAppEvents({
+      limit: 1,
+      options: { sendText: vi.fn() },
+    });
+
+    expect(result).toEqual({
+      processed: 1,
+      failed: 0,
+      skipped: 0,
+      statuses: ["senior_not_found"],
+    });
+  });
 });

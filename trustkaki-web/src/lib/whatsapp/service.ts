@@ -431,7 +431,13 @@ export async function retryPendingWhatsAppEvents(args: {
   for (const event of events) {
     const result = await processWhatsAppEventById(event.id, args.options);
     statuses.push(result.status);
-    if (result.status === "processed" || result.status === "ignored") processed += 1;
+    if (
+      result.status === "processed" ||
+      result.status === "ignored" ||
+      result.status === "senior_not_found"
+    ) {
+      processed += 1;
+    }
     else if (result.status === "claimed_elsewhere") skipped += 1;
     else failed += 1;
   }
