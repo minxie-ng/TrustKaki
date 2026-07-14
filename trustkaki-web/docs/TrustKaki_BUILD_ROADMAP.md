@@ -720,9 +720,9 @@ Exit criteria:
 
 TrustKaki is deployed as a product candidate, but deployment does not imply
 production readiness. An independent audit identified authorization, RLS,
-transaction, timeout, test-evidence, and maintainability blockers. Feature
-development is paused until the mandatory audit-remediation gate passes and the
-reviewer accepts the result.
+transaction, timeout, test-evidence, and maintainability blockers. Gate 0
+remediation and its focused re-audit are complete. Product development now
+continues through the remaining gates in order.
 
 The detailed approved gate design is:
 
@@ -736,8 +736,8 @@ Implemented and deployed:
 2. Supabase persistence for messages, check-ins, signals, risk events, agent runs, alerts, briefs, Pattern Watch, queue items, and caregiver actions.
 3. Supabase Auth sign-in with caregiver identity linked through `caregivers.auth_user_id`.
 4. Demo-admin role gating through trusted `app_metadata.role = demo_admin`.
-5. Authentication guards and initial caregiver-scoped API routes; Gate 0 must
-   complete authoritative senior binding and database isolation proof.
+5. Authentication guards, authoritative senior binding, caregiver-scoped API
+   routes, and two-user database isolation proof.
 6. Deterministic policy layer for final risk and alerts.
 7. Real multi-agent orchestration with typed schemas and persisted traces.
 8. Pattern Watch and consolidated caregiver follow-up queue.
@@ -807,7 +807,7 @@ unless there is a deliberate rename/refactor. The current equivalents are:
 
 ### Current production gate sequence
 
-#### Gate 0 — Audit Remediation (mandatory now)
+#### Gate 0 — Audit Remediation (complete)
 
 - bind every senior operation to an authorized `seniorId`
 - load authoritative senior context server-side
@@ -818,14 +818,30 @@ unless there is a deliberate rename/refactor. The current equivalents are:
 - fix real `AbortSignal.timeout()` behavior and tests
 - split oversized dashboard and persistence modules by existing responsibilities
 - add `npm run validate` and update implementation evidence
-- obtain reviewer re-audit approval before deployment promotion
+- focused reviewer re-audit completed; requested changes addressed
 
-#### Gate 1 — Caregiver Case Operations
+#### Gate 1 — Caregiver Case Operations (in progress)
 
 - auditable acknowledge, assign, snooze, contact outcome, escalation, and resolve
 - required snooze and resolution reasons
 - duplicate protection, conflict handling, immutable action history
 - reliable shared-caregiver updates
+
+Implemented so far:
+
+- authenticated actor and separate assignment target
+- transactional acknowledge, assign, snooze, outcome, and resolve commands
+- required notes for snooze and resolve
+- immutable caregiver action history
+- resolved cases leave the active queue without rewriting policy risk
+- senior-specific caregiver relationships and one explicit primary contact
+
+Remaining before Gate 1 closes:
+
+- optimistic concurrency/version checks for simultaneous case updates
+- stronger duplicate command protection
+- Supabase Realtime subscriptions for shared caregiver queue changes
+- focused live multi-caregiver workflow verification
 
 #### Gate 2 — Contacts, Consent, and Escalation
 
@@ -875,9 +891,10 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The only immediate implementation target is **Gate 0 — Audit Remediation**.
-Do not configure the live Meta callback, add scheduler behavior, expand memory,
-or add new product features until its tests pass and the reviewer re-audits it.
+The immediate implementation target is **Gate 1 — Caregiver Case Operations**.
+Complete conflict-safe shared case handling and Realtime synchronization before
+moving to contact consent, recipient selection, live Meta callback setup,
+scheduler behavior, or memory expansion.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 

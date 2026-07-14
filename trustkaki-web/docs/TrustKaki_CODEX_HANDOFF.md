@@ -226,12 +226,12 @@ persisted queue update appears after the next poll or when the tab is refocused.
 It is not yet Supabase Realtime; add subscriptions later before broad pilots if
 sub-second collaborative updates are required.
 
-The production roadmap is now gate-based following an independent security and
-reliability audit. Feature development is paused at Gate 0. The approved design
-is `docs/superpowers/specs/2026-07-13-production-release-gates-design.md`.
+The production roadmap is gate-based following an independent security and
+reliability audit. Gate 0 remediation passed its focused re-audit and all
+requested changes were addressed. The approved design remains
+`docs/superpowers/specs/2026-07-13-production-release-gates-design.md`.
 
-Gate 0 must close these blockers before further WhatsApp, scheduler, memory, or
-product expansion:
+Gate 0 closed these blockers:
 
 - bind every agent and manual-briefing request to an authorized `seniorId`
 - load senior context server-side and remove implicit demo-senior persistence
@@ -241,7 +241,15 @@ product expansion:
 - fix real `AbortSignal.timeout()` `TimeoutError` behavior
 - add regression tests, `npm run validate`, and accurate plan evidence
 - split the oversized dashboard and repository by existing responsibilities
-- obtain reviewer re-audit approval before deployment promotion
+- completed focused reviewer re-audit and addressed requested changes
+
+Gate 1 caregiver case operations are now in progress. The current foundation
+uses authenticated transactional commands, preserves action history, separates
+case closure from policy-authoritative risk, and stores caregiver relationship
+and primary-contact status on each senior-caregiver link. Remaining Gate 1 work
+is conflict-safe concurrent updates, stronger duplicate command protection,
+Supabase Realtime shared-caregiver synchronization, and focused live workflow
+verification.
 
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
@@ -260,10 +268,10 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Write and execute the scoped implementation plan for Gate 0 audit remediation.
-Do not begin contact preferences, live WhatsApp callback configuration,
-scheduler work, memory expansion, or further feature/UI development until Gate
-0 verification passes and the reviewer accepts the result.
+Complete Gate 1 caregiver case operations, starting with optimistic concurrency
+and Realtime shared-caregiver synchronization. Do not begin contact preferences,
+live WhatsApp callback configuration, scheduler work, or memory expansion until
+Gate 1 verification passes.
 
 ## Working rules
 - inspect before modifying
