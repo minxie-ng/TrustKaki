@@ -61,7 +61,7 @@ function toInsert(event: WhatsAppParsedWebhookEvent): WhatsAppEventInsert {
     sender_phone_e164: event.senderPhoneE164,
     related_whatsapp_message_id: event.relatedWhatsAppMessageId,
     payload: event.payload as Json,
-    status: "ignored",
+    status: "received",
     outbound_status: "not_started",
   };
 }

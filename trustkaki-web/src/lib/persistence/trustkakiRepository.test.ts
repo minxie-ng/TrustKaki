@@ -25,7 +25,7 @@ interface Operation {
   filters: Array<[string, unknown]>;
 }
 
-function createServiceClient() {
+function createServiceClient(messageMetadata: Record<string, unknown> = {}) {
   const operations: Operation[] = [];
 
   function responseFor(operation: Operation) {
@@ -40,6 +40,16 @@ function createServiceClient() {
     }
     if (operation.table === "agent_runs" && operation.kind === "upsert") {
       return { data: [], error: null };
+    }
+    if (
+      operation.table === "messages" &&
+      operation.kind === "select" &&
+      operation.columns === "id, external_metadata"
+    ) {
+      return {
+        data: { id: "message-outbound", external_metadata: messageMetadata },
+        error: null,
+      };
     }
     if (
       operation.kind === "select" &&
@@ -271,5 +281,72 @@ describe("TrustKaki persistence senior identity", () => {
       expect.objectContaining({ senior_id: SENIOR_B })
     );
     expect(JSON.stringify(service.operations)).not.toContain(DEMO_SENIOR_ID);
+  });
+
+  it("records inbound WhatsApp provenance on the persisted conversation message", async () => {
+    const service = createServiceClient();
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { recordInboundMessageMetadata } = await import("./trustkakiRepository");
+
+    await recordInboundMessageMetadata({
+      clientMessageId: "wamid.inbound",
+      externalMessageId: "wamid.inbound",
+      externalMetadata: { direction: "inbound", source: "webhook" },
+    });
+
+    const update = service.operations.find(
+      (operation) => operation.table === "messages" && operation.kind === "update"
+    );
+    expect(update?.payload).toEqual({
+      external_platform: "whatsapp",
+      external_message_id: "wamid.inbound",
+      external_metadata: { direction: "inbound", source: "webhook" },
+    });
+    expect(update?.filters).toContainEqual(["client_message_id", "wamid.inbound"]);
+  });
+
+  it("preserves outbound metadata while recording the newest delivery status", async () => {
+    const service = createServiceClient({ selected_agent_id: "triage" });
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { recordWhatsAppDeliveryStatus } = await import("./trustkakiRepository");
+
+    await recordWhatsAppDeliveryStatus({
+      externalMessageId: "wamid.outbound",
+      status: "delivered",
+      statusAt: "2026-07-14T09:05:54.000Z",
+    });
+
+    expect(payloadsFor(service.operations, "messages")).toContainEqual({
+      external_metadata: {
+        selected_agent_id: "triage",
+        whatsapp_delivery: {
+          status: "delivered",
+          updated_at: "2026-07-14T09:05:54.000Z",
+        },
+      },
+    });
+  });
+
+  it("does not let an older status overwrite newer delivery metadata", async () => {
+    const service = createServiceClient({
+      whatsapp_delivery: {
+        status: "read",
+        updated_at: "2026-07-14T09:06:00.000Z",
+      },
+    });
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { recordWhatsAppDeliveryStatus } = await import("./trustkakiRepository");
+
+    await recordWhatsAppDeliveryStatus({
+      externalMessageId: "wamid.outbound",
+      status: "sent",
+      statusAt: "2026-07-14T09:05:53.000Z",
+    });
+
+    expect(
+      service.operations.some(
+        (operation) => operation.table === "messages" && operation.kind === "update"
+      )
+    ).toBe(false);
   });
 });

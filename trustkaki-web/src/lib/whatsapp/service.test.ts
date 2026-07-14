@@ -8,7 +8,9 @@ vi.mock("server-only", () => ({}));
 const orchestrateMock = vi.fn();
 const loadSeniorContextByVerifiedPhoneMock = vi.fn();
 const persistOrchestrationResultMock = vi.fn();
+const recordInboundMessageMetadataMock = vi.fn();
 const recordOutboundMessageMetadataMock = vi.fn();
+const recordWhatsAppDeliveryStatusMock = vi.fn();
 const acceptWhatsAppEventMock = vi.fn();
 const claimWhatsAppEventMock = vi.fn();
 const listRetryableWhatsAppEventsMock = vi.fn();
@@ -24,7 +26,9 @@ vi.mock("@/lib/agents/orchestrator", () => ({
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistOrchestrationResult: persistOrchestrationResultMock,
+  recordInboundMessageMetadata: recordInboundMessageMetadataMock,
   recordOutboundMessageMetadata: recordOutboundMessageMetadataMock,
+  recordWhatsAppDeliveryStatus: recordWhatsAppDeliveryStatusMock,
 }));
 
 vi.mock("@/lib/persistence/seniorContextRepository", () => ({
@@ -169,6 +173,16 @@ describe("WhatsApp async service", () => {
       configured: true,
       persisted: true,
     });
+    recordInboundMessageMetadataMock.mockResolvedValue({
+      mode: "supabase",
+      configured: true,
+      persisted: true,
+    });
+    recordWhatsAppDeliveryStatusMock.mockResolvedValue({
+      mode: "supabase",
+      configured: true,
+      persisted: true,
+    });
     storeWhatsAppOrchestrationResultMock.mockResolvedValue(undefined);
     markWhatsAppOrchestrationCompletedMock.mockResolvedValue(undefined);
     updateWhatsAppOutboundStateMock.mockResolvedValue(undefined);
@@ -218,6 +232,15 @@ describe("WhatsApp async service", () => {
         }),
       })
     );
+    expect(recordInboundMessageMetadataMock).toHaveBeenCalledWith({
+      clientMessageId: "wamid.inbound",
+      externalMessageId: "wamid.inbound",
+      externalMetadata: {
+        direction: "inbound",
+        phone_number_id: "phone_123",
+        source: "webhook",
+      },
+    });
     expect(sendText).toHaveBeenCalledTimes(1);
     expect(recordOutboundMessageMetadataMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -363,14 +386,22 @@ describe("WhatsApp async service", () => {
     expect(recordOutboundMessageMetadataMock).toHaveBeenCalledTimes(1);
   });
 
-  it("does not invoke orchestration for status events", async () => {
+  it("processes delivery status without invoking orchestration", async () => {
     const { acceptWhatsAppWebhookEvent, processWhatsAppEventById } = await import(
       "./service"
     );
     const statusRow = eventRow({
       event_type: "status_delivered",
       whatsapp_message_id: "status:wamid.outbound:delivered:2026-07-11T00:00:00.000Z",
-      status: "ignored",
+      related_whatsapp_message_id: "wamid.outbound",
+      payload: {
+        id: "wamid.outbound",
+        recipient_id: "6581234567",
+        status: "delivered",
+        timestamp: "1783766400",
+      },
+      status: "received",
+      received_at: "2026-07-11T00:00:00.000Z",
     });
     acceptWhatsAppEventMock.mockResolvedValue({ row: statusRow, duplicate: false });
     claimWhatsAppEventMock.mockResolvedValue(statusRow);
@@ -386,8 +417,14 @@ describe("WhatsApp async service", () => {
     );
     const processed = await processWhatsAppEventById(statusRow.id);
 
-    expect(accepted.events[0].processable).toBe(false);
-    expect(processed.status).toBe("ignored");
+    expect(accepted.events[0].processable).toBe(true);
+    expect(processed.status).toBe("processed");
+    expect(recordWhatsAppDeliveryStatusMock).toHaveBeenCalledWith({
+      externalMessageId: "wamid.outbound",
+      status: "delivered",
+      statusAt: "2026-07-11T10:40:00.000Z",
+    });
+    expect(markWhatsAppEventProcessedMock).toHaveBeenCalledWith("event_1");
     expect(orchestrateMock).not.toHaveBeenCalled();
   });
 

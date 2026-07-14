@@ -24,6 +24,12 @@ import {
   throwIfError,
 } from "./persistenceSupport";
 
+function asMetadataObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
+}
+
 export async function getOrCreateActiveCheckIn(
   client: TrustKakiClient,
   seniorId: string,
@@ -311,6 +317,73 @@ export async function recordOutboundMessageMetadata(args: {
     })
     .eq("client_message_id", args.clientMessageId);
   throwIfError(error, "update outbound WhatsApp metadata");
+
+  return supabaseMeta();
+}
+
+export async function recordInboundMessageMetadata(args: {
+  clientMessageId: string;
+  externalMessageId: string;
+  externalMetadata?: Record<string, unknown>;
+}): Promise<PersistenceMeta> {
+  const client = getClient();
+  if (!client) return localDemoMeta();
+
+  const { error } = await client
+    .from("messages")
+    .update({
+      external_platform: "whatsapp",
+      external_message_id: args.externalMessageId,
+      external_metadata: args.externalMetadata ?? {},
+    })
+    .eq("client_message_id", args.clientMessageId);
+  throwIfError(error, "update inbound WhatsApp metadata");
+
+  return supabaseMeta();
+}
+
+export async function recordWhatsAppDeliveryStatus(args: {
+  externalMessageId: string;
+  status: "sent" | "delivered" | "read" | "failed";
+  statusAt: string;
+}): Promise<PersistenceMeta> {
+  const client = getClient();
+  if (!client) return localDemoMeta();
+
+  const { data: message, error: selectError } = await client
+    .from("messages")
+    .select("id, external_metadata")
+    .eq("external_platform", "whatsapp")
+    .eq("external_message_id", args.externalMessageId)
+    .limit(1)
+    .maybeSingle();
+  throwIfError(selectError, "select outbound WhatsApp message");
+  if (!message) {
+    throw new Error("Outbound WhatsApp message metadata is not available yet");
+  }
+
+  const metadata = asMetadataObject(message.external_metadata);
+  const current = asMetadataObject(metadata.whatsapp_delivery);
+  const currentAt =
+    typeof current.updated_at === "string" ? Date.parse(current.updated_at) : Number.NaN;
+  const incomingAt = Date.parse(args.statusAt);
+  if (Number.isFinite(currentAt) && Number.isFinite(incomingAt) && currentAt > incomingAt) {
+    return supabaseMeta();
+  }
+
+  const { error: updateError } = await client
+    .from("messages")
+    .update({
+      external_metadata: {
+        ...metadata,
+        whatsapp_delivery: {
+          status: args.status,
+          updated_at: args.statusAt,
+        },
+      },
+    })
+    .eq("id", message.id);
+  throwIfError(updateError, "update outbound WhatsApp delivery status");
 
   return supabaseMeta();
 }

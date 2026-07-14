@@ -180,13 +180,21 @@ briefs, Pattern Watch records, caregiver queue items, and caregiver actions are
 persisted through the repository layer. `.env.local` secrets must never be
 printed or committed.
 
-Phase 3A WhatsApp Cloud API integration is implemented for local/manual testing:
-webhook verification, inbound parsing, senior lookup by configured phone,
-deduplication, orchestration handoff, outbound reply sending, and dev simulation.
+Phase 3A WhatsApp Cloud API integration is implemented and one controlled real
+Meta test-number path is live verified: published callback, signed inbound
+parsing, verified senior lookup, deduplication, real orchestration, Supabase
+persistence, one selected outbound reply, and Meta sent/delivered events. The
+verification evidence is in
+`docs/superpowers/verification/2026-07-14-gate-3-live-whatsapp.md`.
 
 Phase 3B asynchronous WhatsApp inbox processing is implemented with a
 Supabase-backed webhook event inbox. Meta webhook handling can acknowledge
-quickly, and processing can be retried safely.
+quickly, and processing can be retried safely. Inbound conversation records now
+retain WhatsApp provenance, while sent/delivered/read/failed events use the same
+durable processor to update linked outbound metadata without invoking agents.
+The remaining production work includes a durable Meta credential, scheduled
+retry cadence, latency telemetry, admin phone onboarding, and a registered
+production number.
 
 Phase 4 Pattern Watch and caregiver queue are implemented. Pattern Watch reads
 stored detected signals over time and writes `patterns` plus operational

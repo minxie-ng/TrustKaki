@@ -5,7 +5,9 @@ import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contract
 import type { AgentId, Message } from "@/lib/types";
 import {
   persistOrchestrationResult,
+  recordInboundMessageMetadata,
   recordOutboundMessageMetadata,
+  recordWhatsAppDeliveryStatus,
 } from "@/lib/persistence/trustkakiRepository";
 import { loadSeniorContextByVerifiedPhone } from "@/lib/persistence/seniorContextRepository";
 import { buildOutboundClientMessageId } from "@/lib/persistence/orchestration";
@@ -88,6 +90,37 @@ function getInboundMessageFromEvent(
     timestamp: event.received_at,
     text,
     phoneNumberId: event.phone_number_id,
+  };
+}
+
+function getDeliveryStatusFromEvent(event: PersistedWhatsAppEvent): {
+  externalMessageId: string;
+  status: "sent" | "delivered" | "read" | "failed";
+  statusAt: string;
+} | null {
+  if (!event.event_type.startsWith("status_") || !event.related_whatsapp_message_id) {
+    return null;
+  }
+
+  const status = event.event_type.slice("status_".length);
+  if (!(["sent", "delivered", "read", "failed"] as const).includes(
+    status as "sent" | "delivered" | "read" | "failed"
+  )) {
+    return null;
+  }
+
+  const payload = event.payload as { timestamp?: unknown };
+  const seconds =
+    typeof payload.timestamp === "string" ? Number(payload.timestamp) : Number.NaN;
+  const statusAt =
+    Number.isFinite(seconds) && seconds > 0
+      ? new Date(seconds * 1000).toISOString()
+      : event.received_at;
+
+  return {
+    externalMessageId: event.related_whatsapp_message_id,
+    status: status as "sent" | "delivered" | "read" | "failed",
+    statusAt,
   };
 }
 
@@ -194,6 +227,15 @@ async function persistOrchestrationIfNeeded(args: {
     context: args.context,
     result: args.result,
   });
+  await recordInboundMessageMetadata({
+    clientMessageId: args.inbound.id,
+    externalMessageId: args.inbound.id,
+    externalMetadata: {
+      direction: "inbound",
+      phone_number_id: args.inbound.phoneNumberId,
+      source: "webhook",
+    },
+  });
   await markWhatsAppOrchestrationCompleted(args.event.id);
 }
 
@@ -267,7 +309,7 @@ export async function acceptWhatsAppWebhookEvent(
         whatsappMessageId: result.row.whatsapp_message_id,
         eventType: result.row.event_type,
         duplicate: result.duplicate,
-        processable: result.row.event_type === "inbound_text" && !result.duplicate,
+        processable: !result.duplicate,
       };
     })
   );
@@ -286,8 +328,29 @@ export async function processWhatsAppEventById(
   if (!event) return { status: "claimed_elsewhere" };
 
   if (event.event_type !== "inbound_text") {
-    await markWhatsAppEventProcessed(event.id);
-    return { status: "ignored", inboundMessageId: event.whatsapp_message_id };
+    const delivery = getDeliveryStatusFromEvent(event);
+    if (!delivery) {
+      await markWhatsAppEventProcessed(event.id);
+      return { status: "ignored", inboundMessageId: event.whatsapp_message_id };
+    }
+
+    try {
+      await recordWhatsAppDeliveryStatus(delivery);
+      await markWhatsAppEventProcessed(event.id);
+      return {
+        status: "processed",
+        inboundMessageId: event.related_whatsapp_message_id ?? undefined,
+      };
+    } catch (error) {
+      await markWhatsAppEventFailed({ eventId: event.id, error }).catch((markError) =>
+        logWhatsAppError("failed to mark WhatsApp status event failed", markError)
+      );
+      logWhatsAppError("WhatsApp delivery status processing failed", error);
+      return {
+        status: "error",
+        inboundMessageId: event.related_whatsapp_message_id ?? undefined,
+      };
+    }
   }
 
   try {

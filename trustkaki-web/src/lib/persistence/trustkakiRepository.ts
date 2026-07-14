@@ -4,7 +4,9 @@ export {
   hasPersistedMessageClientId,
   persistManualBriefingResult,
   persistOrchestrationResult,
+  recordInboundMessageMetadata,
   recordOutboundMessageMetadata,
+  recordWhatsAppDeliveryStatus,
 } from "./orchestrationRepository";
 export {
   persistQuickDemoTimelineResult,

@@ -889,10 +889,14 @@ quiet-hours, and recipient-selection rules in this gate.
 
 #### Gate 3 — Production WhatsApp
 
-- configure live callback only after Gates 0-2
-- multiple-senior phone resolution
-- real senior replies and policy-approved human notifications
-- delivery/read/failure statuses, templates, retries, and deduplication
+- [x] configure and verify the published Meta callback after Gates 0-2
+- [x] prove one real senior inbound-to-policy-to-reply path on Meta's test number
+- [x] preserve inbound WhatsApp provenance and process delivery/read/failure statuses
+- [ ] replace the temporary token with a durable, narrowly scoped System User credential
+- [ ] add administrator-driven multiple-senior phone onboarding and validation
+- [ ] add a scheduled retry cadence, stage-level latency telemetry, and failure alerts
+- [ ] complete templates, consent, quiet hours, and policy-approved human notifications
+- [ ] register and verify the production TrustKaki number and business profile
 
 #### Gate 4 — Proactive Check-ins
 
@@ -928,11 +932,12 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate work is **Gate 3 production WhatsApp readiness**. Gate 2 is
-independently accepted. First confirm the current Meta test-number, callback,
-token, deployed environment, and senior-phone mapping state; then complete one
-controlled inbound-to-reply path before enabling any caregiver notification,
-scheduler behavior, or production phone registration.
+The immediate work remains **Gate 3 production WhatsApp readiness**. The
+controlled inbound-to-reply path is live verified on Meta's test number. The next
+bounded step is durable credential setup and operational hardening: scheduled
+pending-event recovery, stage-level latency measurement, and administrator-driven
+senior phone onboarding. Caregiver notification fan-out, proactive scheduling,
+and production-number registration remain gated behind those controls.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
