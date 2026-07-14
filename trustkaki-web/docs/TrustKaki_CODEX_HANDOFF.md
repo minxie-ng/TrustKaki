@@ -192,9 +192,12 @@ Supabase-backed webhook event inbox. Meta webhook handling can acknowledge
 quickly, and processing can be retried safely. Inbound conversation records now
 retain WhatsApp provenance, while sent/delivered/read/failed events use the same
 durable processor to update linked outbound metadata without invoking agents.
-The remaining production work includes a durable Meta credential, scheduled
-retry cadence, latency telemetry, admin phone onboarding, and a registered
-production number.
+The temporary Meta token has been replaced locally and in Vercel Production by
+a non-expiring System User credential scoped to WhatsApp messaging and
+management. The deployment is healthy; one post-rotation live reply remains
+required before closing credential verification. Other production work includes
+a scheduled retry cadence, latency telemetry, admin phone onboarding, and a
+registered production number.
 
 Phase 4 Pattern Watch and caregiver queue are implemented. Pattern Watch reads
 stored detected signals over time and writes `patterns` plus operational
@@ -305,15 +308,16 @@ different household contexts, caregiver relationships, and risk levels.
 2. Quick Demo uses one typed Triage timeline extraction call for speed, then
    deterministic Pattern Watch and queue consolidation. Full Agent Replay remains
    available for technical validation.
-3. Do not deploy or configure Meta callback URL until explicitly requested.
+3. The published Meta callback targets `https://trustkaki.vercel.app`; do not
+   change it without a controlled verification plan.
 
 ## Immediate next task
 
-Audit the current Meta test-number, callback, deployed environment, processor
-secret, and senior-phone mapping state before changing WhatsApp configuration.
-Then complete Gate 3 with one controlled real inbound-to-reply test. Do not
-enable caregiver notification fan-out, scheduler behavior, or production phone
-registration until that path is verified.
+Send one controlled inbound message through Meta's test number and confirm a
+reply after the System User credential rotation. Then implement scheduled
+retry processing and stage-level latency telemetry. Do not enable caregiver
+notification fan-out, proactive scheduling, or production phone registration
+until those controls are verified.
 
 ## Working rules
 - inspect before modifying

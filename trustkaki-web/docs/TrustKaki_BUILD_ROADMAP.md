@@ -892,7 +892,8 @@ quiet-hours, and recipient-selection rules in this gate.
 - [x] configure and verify the published Meta callback after Gates 0-2
 - [x] prove one real senior inbound-to-policy-to-reply path on Meta's test number
 - [x] preserve inbound WhatsApp provenance and process delivery/read/failure statuses
-- [ ] replace the temporary token with a durable, narrowly scoped System User credential
+- [ ] verify one live reply after replacing the temporary token with a non-expiring,
+  narrowly scoped System User credential (configured in local and Vercel Production)
 - [ ] add administrator-driven multiple-senior phone onboarding and validation
 - [ ] add a scheduled retry cadence, stage-level latency telemetry, and failure alerts
 - [ ] complete templates, consent, quiet hours, and policy-approved human notifications
@@ -933,11 +934,13 @@ retention, safe extraction proposals, and memory-aware check-ins.
 ## 16A. Best Next Step
 
 The immediate work remains **Gate 3 production WhatsApp readiness**. The
-controlled inbound-to-reply path is live verified on Meta's test number. The next
-bounded step is durable credential setup and operational hardening: scheduled
-pending-event recovery, stage-level latency measurement, and administrator-driven
-senior phone onboarding. Caregiver notification fan-out, proactive scheduling,
-and production-number registration remain gated behind those controls.
+controlled inbound-to-reply path is live verified on Meta's test number. A
+non-expiring System User credential is configured; one post-rotation live reply
+must verify it before the credential task closes. The next bounded work is then
+scheduled pending-event recovery, stage-level latency measurement, and
+administrator-driven senior phone onboarding. Caregiver notification fan-out,
+proactive scheduling, and production-number registration remain gated behind
+those controls.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 

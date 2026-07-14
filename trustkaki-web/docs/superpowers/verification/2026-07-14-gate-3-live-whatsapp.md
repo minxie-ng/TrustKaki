@@ -78,7 +78,8 @@ The successful check-in created or updated:
 
 ## Remaining Gate 3 work
 
-- Replace the temporary Meta test token with a narrowly scoped durable System User credential.
+- Confirm one post-rotation live reply using the non-expiring System User
+  credential now configured in local and Vercel Production.
 - Register and verify a production TrustKaki WhatsApp number and business profile.
 - Add a scheduled production cadence for retryable webhook events.
 - Reduce response latency and instrument stage-level timings.
@@ -89,5 +90,6 @@ The successful check-in created or updated:
 ## Status
 
 The controlled real inbound-to-reply path is **LIVE VERIFIED**. Gate 3 is not yet
-complete for organisational production because the test number and temporary
-credential remain in use and the remaining items above are open.
+complete for organisational production because the test number remains in use,
+the new credential still needs a post-rotation live reply, and the remaining
+items above are open.
