@@ -107,7 +107,13 @@ export type FollowUpStatus =
   | "acknowledged"
   | "followed_up"
   | "snoozed"
+  | "escalated"
   | "resolved";
+export type EscalationDestination =
+  | "family_guardian"
+  | "aac_supervisor"
+  | "healthcare_follow_up"
+  | "emergency_guidance";
 export type ContactOutcome =
   | "reached_and_okay"
   | "needs_follow_up"
@@ -126,8 +132,9 @@ export interface PatternEvidenceItem {
 
 export interface CaregiverActionItem {
   id: string;
-  actionType: "mark_for_follow_up" | "assign" | "record_outcome" | "snooze" | "resolve";
+  actionType: "mark_for_follow_up" | "assign" | "record_outcome" | "snooze" | "escalate" | "resolve";
   outcomeType?: ContactOutcome | null;
+  escalationDestination?: EscalationDestination | null;
   note?: string | null;
   caregiver?: string | null;
   createdAt: string;

@@ -136,6 +136,37 @@ describe("API request schemas", () => {
     ).toBe(true);
   });
 
+  it("requires a destination and audit reason for escalation", () => {
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        commandId,
+        expectedUpdatedAt,
+        actionType: "escalate",
+        note: "Supervisor review is needed after two unsuccessful calls.",
+      }).success
+    ).toBe(false);
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        commandId,
+        expectedUpdatedAt,
+        actionType: "escalate",
+        escalationDestination: "aac_supervisor",
+      }).success
+    ).toBe(false);
+    expect(
+      queueActionRequestSchema.safeParse({
+        queueItemId: "queue-1",
+        commandId,
+        expectedUpdatedAt,
+        actionType: "escalate",
+        escalationDestination: "aac_supervisor",
+        note: "Supervisor review is needed after two unsuccessful calls.",
+      }).success
+    ).toBe(true);
+  });
+
   it("requires command identity and the last-seen case version", () => {
     expect(
       queueActionRequestSchema.safeParse({

@@ -24,6 +24,7 @@ export const queueActionRequestSchema = z.object({
     "assign",
     "record_outcome",
     "snooze",
+    "escalate",
     "resolve",
   ]),
   outcomeType: z
@@ -38,12 +39,27 @@ export const queueActionRequestSchema = z.object({
   note: z.string().max(500).optional(),
   assignedCaregiverId: z.string().trim().min(1).max(120).optional(),
   snoozedUntil: z.string().trim().min(1).max(80).optional(),
+  escalationDestination: z.enum([
+    "family_guardian",
+    "aac_supervisor",
+    "healthcare_follow_up",
+    "emergency_guidance",
+  ]).optional(),
 }).superRefine((value, ctx) => {
   const actionNeedsOutcome = value.actionType === "record_outcome" || value.actionType === "resolve";
   const actionNeedsNote =
     value.actionType === "record_outcome" ||
     value.actionType === "snooze" ||
+    value.actionType === "escalate" ||
     value.actionType === "resolve";
+
+  if (value.actionType === "escalate" && !value.escalationDestination) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Escalation destination is required.",
+      path: ["escalationDestination"],
+    });
+  }
 
   if (actionNeedsOutcome && !value.outcomeType) {
     ctx.addIssue({

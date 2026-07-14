@@ -38,13 +38,20 @@ export type QueueStatus =
   | "acknowledged"
   | "followed_up"
   | "snoozed"
+  | "escalated"
   | "resolved";
 export type CaregiverActionType =
   | "mark_for_follow_up"
   | "assign"
   | "record_outcome"
   | "snooze"
+  | "escalate"
   | "resolve";
+export type EscalationDestination =
+  | "family_guardian"
+  | "aac_supervisor"
+  | "healthcare_follow_up"
+  | "emergency_guidance";
 export type ContactOutcome =
   | "reached_and_okay"
   | "needs_follow_up"
@@ -626,6 +633,7 @@ export interface Database {
           command_id: string;
           assigned_caregiver_id: string | null;
           snoozed_until: string | null;
+          escalation_destination: EscalationDestination | null;
           created_at: string;
         };
         Insert: {
@@ -641,6 +649,7 @@ export interface Database {
           command_id: string;
           assigned_caregiver_id?: string | null;
           snoozed_until?: string | null;
+          escalation_destination?: EscalationDestination | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["caregiver_actions"]["Insert"]>;
@@ -662,6 +671,16 @@ export interface Database {
           p_note?: string | null;
           p_assigned_caregiver_id?: string | null;
           p_snoozed_until?: string | null;
+        };
+        Returns: Json;
+      };
+      escalate_caregiver_queue_case: {
+        Args: {
+          p_queue_item_id: string;
+          p_command_id: string;
+          p_expected_updated_at: string;
+          p_escalation_destination: EscalationDestination;
+          p_note: string;
         };
         Returns: Json;
       };

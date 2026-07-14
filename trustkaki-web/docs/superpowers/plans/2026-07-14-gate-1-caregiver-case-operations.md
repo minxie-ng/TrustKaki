@@ -22,6 +22,8 @@
 5. Subscribe to authorized queue/action Postgres changes and debounce dashboard refresh.
 6. Prove duplicate, conflict, rollback, and shared refresh behavior with unit and live database tests.
 7. Apply the migration, run `npm run validate`, update roadmap evidence, commit, push, and deploy.
+8. Add an explicit escalation command with destination, reason, active-case status,
+   emergency guidance, and no automatic external notification.
 
 ## Exit Criteria
 
@@ -37,3 +39,7 @@
   idempotent replay, atomic resolution, stale-write conflict, and Realtime refresh.
 - `PT409` is used for a prompt business conflict response; retryable PostgreSQL
   serialization code `40001` is intentionally not used.
+- The escalation migration was applied to the linked `trustkaki` project.
+- Live database verification proves one idempotent escalation action, shared
+  caregiver visibility, active `escalated` queue status, and later atomic resolve.
+- Escalation records intent only; external recipient notification remains Gate 2.

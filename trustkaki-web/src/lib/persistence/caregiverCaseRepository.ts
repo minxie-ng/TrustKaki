@@ -1,7 +1,12 @@
 import "server-only";
 
 import { z } from "zod";
-import type { CaregiverActionType, ContactOutcome, QueueStatus } from "@/lib/supabase/types";
+import type {
+  CaregiverActionType,
+  ContactOutcome,
+  EscalationDestination,
+  QueueStatus,
+} from "@/lib/supabase/types";
 import { createTrustKakiUserClient } from "@/lib/supabase/server";
 import type { PersistenceMeta } from "./orchestration";
 
@@ -15,6 +20,7 @@ const resultSchema = z.object({
     "acknowledged",
     "followed_up",
     "snoozed",
+    "escalated",
     "resolved",
   ]),
   resulting_status: z.enum([
@@ -22,6 +28,7 @@ const resultSchema = z.object({
     "acknowledged",
     "followed_up",
     "snoozed",
+    "escalated",
     "resolved",
   ]),
   queue_updated_at: z.string(),
@@ -68,6 +75,7 @@ export async function recordCaregiverQueueAction(args: {
   note?: string | null;
   assignedCaregiverId?: string | null;
   snoozedUntil?: string | null;
+  escalationDestination?: EscalationDestination | null;
 }): Promise<CaregiverQueueActionResult> {
   const client = createTrustKakiUserClient(args.accessToken);
   if (!client) {
@@ -85,34 +93,57 @@ export async function recordCaregiverQueueAction(args: {
     };
   }
 
-  type RpcArgs = {
-      p_queue_item_id: string;
-      p_action_type: CaregiverActionType;
-      p_command_id: string;
-      p_expected_updated_at: string;
-      p_outcome_type: ContactOutcome | null;
-      p_note: string | null;
-      p_assigned_caregiver_id: string | null;
-      p_snoozed_until: string | null;
+  if (
+    args.actionType === "escalate" &&
+    (!args.escalationDestination || (args.note?.trim().length ?? 0) < 10)
+  ) {
+    throw new Error("Escalation destination and reason are required");
+  }
+
+  type StandardRpcArgs = {
+    p_queue_item_id: string;
+    p_action_type: CaregiverActionType;
+    p_command_id: string;
+    p_expected_updated_at: string;
+    p_outcome_type: ContactOutcome | null;
+    p_note: string | null;
+    p_assigned_caregiver_id: string | null;
+    p_snoozed_until: string | null;
+  };
+  type EscalationRpcArgs = {
+    p_queue_item_id: string;
+    p_command_id: string;
+    p_expected_updated_at: string;
+    p_escalation_destination: EscalationDestination;
+    p_note: string;
   };
   // supabase-js 2.110 mis-infers defaulted RPC arguments as `never` for this
   // hand-maintained database type; the response is still validated below.
   const rpcClient = client as unknown as {
     rpc: (
-      name: "record_caregiver_queue_action",
-      payload: RpcArgs
+      name: "record_caregiver_queue_action" | "escalate_caregiver_queue_case",
+      payload: StandardRpcArgs | EscalationRpcArgs
     ) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>;
   };
-  const { data, error } = await rpcClient.rpc("record_caregiver_queue_action", {
-    p_queue_item_id: args.queueItemId,
-    p_action_type: args.actionType,
-    p_command_id: args.commandId,
-    p_expected_updated_at: args.expectedUpdatedAt,
-    p_outcome_type: args.outcomeType ?? null,
-    p_note: args.note ?? null,
-    p_assigned_caregiver_id: args.assignedCaregiverId ?? null,
-    p_snoozed_until: args.snoozedUntil ?? null,
-  });
+  const response = args.actionType === "escalate"
+    ? await rpcClient.rpc("escalate_caregiver_queue_case", {
+        p_queue_item_id: args.queueItemId,
+        p_command_id: args.commandId,
+        p_expected_updated_at: args.expectedUpdatedAt,
+        p_escalation_destination: args.escalationDestination as EscalationDestination,
+        p_note: args.note as string,
+      })
+    : await rpcClient.rpc("record_caregiver_queue_action", {
+        p_queue_item_id: args.queueItemId,
+        p_action_type: args.actionType,
+        p_command_id: args.commandId,
+        p_expected_updated_at: args.expectedUpdatedAt,
+        p_outcome_type: args.outcomeType ?? null,
+        p_note: args.note ?? null,
+        p_assigned_caregiver_id: args.assignedCaregiverId ?? null,
+        p_snoozed_until: args.snoozedUntil ?? null,
+      });
+  const { data, error } = response;
   if (error) {
     if (error.code === "PT409") throw new CaregiverCaseConflictError();
     throw new Error("record caregiver queue action failed");

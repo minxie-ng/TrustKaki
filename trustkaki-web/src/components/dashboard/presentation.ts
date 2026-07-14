@@ -29,8 +29,16 @@ export const statusLabel: Record<FollowUpStatus, string> = {
   acknowledged: "Acknowledged",
   followed_up: "Followed up",
   snoozed: "Snoozed",
+  escalated: "Escalated",
   resolved: "Resolved",
 };
+
+export const escalationDestinationLabel = {
+  family_guardian: "Family or guardian",
+  aac_supervisor: "AAC supervisor",
+  healthcare_follow_up: "Healthcare follow-up",
+  emergency_guidance: "Emergency guidance",
+} as const;
 
 export function formatDate(timestamp: string | null): string {
   if (!timestamp) return "No response yet";

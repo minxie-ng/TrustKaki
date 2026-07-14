@@ -191,6 +191,58 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
     }
   }, 20_000);
 
+  it("records one visible escalation while keeping the shared case active", async () => {
+    const { data: queueBefore } = await fixture.serviceClient
+      .from("caregiver_queue_items")
+      .select("updated_at")
+      .eq("id", fixture.sharedQueueId)
+      .single();
+    const commandId = randomUUID();
+    const payload = {
+      p_queue_item_id: fixture.sharedQueueId,
+      p_command_id: commandId,
+      p_expected_updated_at: queueBefore?.updated_at ?? "",
+      p_escalation_destination: "aac_supervisor",
+      p_note: "Two unsuccessful calls require an AAC supervisor review today.",
+    } as const;
+
+    const first = await fixture.caregiverA.client.rpc(
+      "escalate_caregiver_queue_case",
+      payload
+    );
+    const duplicate = await fixture.caregiverA.client.rpc(
+      "escalate_caregiver_queue_case",
+      payload
+    );
+    const firstResult = first.data as unknown as Record<string, Json>;
+    const duplicateResult = duplicate.data as unknown as Record<string, Json>;
+    const { data: queueSeenByB, error: queueReadError } =
+      await fixture.caregiverB.client
+        .from("caregiver_queue_items")
+        .select("status")
+        .eq("id", fixture.sharedQueueId)
+        .single();
+    const { data: actionsSeenByB, error: actionReadError } =
+      await fixture.caregiverB.client
+        .from("caregiver_actions")
+        .select("action_type, escalation_destination, note")
+        .eq("command_id", commandId);
+
+    expect(first.error).toBeNull();
+    expect(duplicate.error).toBeNull();
+    expect(firstResult.resulting_status).toBe("escalated");
+    expect(duplicateResult.duplicate).toBe(true);
+    expect(queueReadError).toBeNull();
+    expect(queueSeenByB?.status).toBe("escalated");
+    expect(actionReadError).toBeNull();
+    expect(actionsSeenByB).toEqual([
+      expect.objectContaining({
+        action_type: "escalate",
+        escalation_destination: "aac_supervisor",
+      }),
+    ]);
+  });
+
   it("rolls back an invalid command and resolves the queue with all linked patterns", async () => {
     const { data: queueBefore } = await fixture.serviceClient
       .from("caregiver_queue_items")
@@ -271,7 +323,7 @@ describeDatabase("TrustKaki caregiver RLS integration", () => {
     expect(resolveActions).toEqual([
       expect.objectContaining({
         caregiver_id: fixture.caregiverA.caregiverId,
-        previous_status: "acknowledged",
+        previous_status: "escalated",
         resulting_status: "resolved",
       }),
     ]);

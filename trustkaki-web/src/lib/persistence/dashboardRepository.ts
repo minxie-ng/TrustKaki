@@ -136,7 +136,7 @@ async function readCaregiverActions(
 ): Promise<CaregiverActionItem[]> {
   const { data, error } = await client
     .from("caregiver_actions")
-    .select("id, action_type, outcome_type, note, created_at, caregivers(display_name)")
+    .select("id, action_type, outcome_type, escalation_destination, note, created_at, caregivers(display_name)")
     .eq("queue_item_id", queueItemId)
     .order("created_at", { ascending: false });
   throwIfError(error, "select caregiver actions");
@@ -145,6 +145,7 @@ async function readCaregiverActions(
     id: string;
     action_type: CaregiverActionItem["actionType"];
     outcome_type: CaregiverActionItem["outcomeType"];
+    escalation_destination: CaregiverActionItem["escalationDestination"];
     note: string | null;
     created_at: string;
     caregivers?: { display_name?: string | null } | Array<{ display_name?: string | null }> | null;
@@ -155,6 +156,7 @@ async function readCaregiverActions(
       id: string;
       action_type: CaregiverActionItem["actionType"];
       outcome_type: CaregiverActionItem["outcomeType"];
+      escalation_destination: CaregiverActionItem["escalationDestination"];
       note: string | null;
       created_at: string;
       caregivers?: { display_name?: string | null } | Array<{ display_name?: string | null }> | null;
@@ -162,6 +164,7 @@ async function readCaregiverActions(
       id: row.id,
       actionType: row.action_type,
       outcomeType: row.outcome_type,
+      escalationDestination: row.escalation_destination,
       note: row.note,
       caregiver: Array.isArray(row.caregivers)
         ? row.caregivers[0]?.display_name ?? null
@@ -199,7 +202,7 @@ async function buildFollowUpQueue(
     .from("caregiver_queue_items")
     .select("*, patterns(*), caregivers(display_name)")
     .eq("senior_id", senior.id)
-    .in("status", ["pending", "acknowledged", "followed_up", "snoozed"])
+    .in("status", ["pending", "acknowledged", "followed_up", "snoozed", "escalated"])
     .order("last_evidence_at", { ascending: false })
     .limit(20);
   throwIfError(error, "select caregiver queue");

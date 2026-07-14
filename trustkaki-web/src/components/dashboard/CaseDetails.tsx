@@ -1,7 +1,11 @@
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { AgentTrace, DashboardData, FollowUpQueueItem } from "@/lib/types";
 import { recentSeniorMessages, systemProof } from "../dashboardViewModel";
-import { formatDate, labelPattern } from "./presentation";
+import {
+  escalationDestinationLabel,
+  formatDate,
+  labelPattern,
+} from "./presentation";
 
 interface CaseDetailsProps {
   item: FollowUpQueueItem;
@@ -72,7 +76,10 @@ export function CaseDetails({ item, data, traces, briefing }: CaseDetailsProps) 
                 ? "No caregiver action recorded yet."
                 : pattern.previousActions.map((action) => (
                     <div key={action.id}>
-                      {formatDate(action.createdAt)} · {action.actionType}
+                      {formatDate(action.createdAt)} · {labelPattern(action.actionType)}
+                      {action.escalationDestination
+                        ? ` to ${escalationDestinationLabel[action.escalationDestination]}`
+                        : ""}
                       {action.note ? ` · ${action.note}` : ""}
                     </div>
                   ))}

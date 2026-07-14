@@ -246,11 +246,13 @@ Gate 0 closed these blockers:
 Gate 1 caregiver case operations are now in progress. The current foundation
 uses authenticated transactional commands, preserves action history, separates
 case closure from policy-authoritative risk, and stores caregiver relationship
-and primary-contact status on each senior-caregiver link. Remaining Gate 1 work
-is an explicit escalation action and a two-browser caregiver workflow smoke
-test. Conflict-safe commands, retry idempotency, and Supabase Realtime shared-
-caregiver refresh are implemented and live verified against two authenticated
-temporary caregivers.
+and primary-contact status on each senior-caregiver link. Explicit escalation
+now records one of four operational destinations and a required reason, keeps
+the case active, and does not change policy risk or claim to contact anyone.
+Conflict-safe commands, retry idempotency, escalation visibility, and Supabase
+Realtime shared-caregiver refresh are live verified against two authenticated
+temporary caregivers. The remaining Gate 1 task is a two-browser caregiver
+workflow smoke test.
 
 Demo seed profiles should be respectful and realistic rather than generic
 "Uncle/Aunty" placeholders. Current seed direction uses Mr Tan Ah Hock, Mdm Lim
@@ -269,10 +271,10 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Complete Gate 1 caregiver case operations, starting with optimistic concurrency
-and Realtime shared-caregiver synchronization. Do not begin contact preferences,
-live WhatsApp callback configuration, scheduler work, or memory expansion until
-Gate 1 verification passes.
+Complete the final Gate 1 two-browser caregiver workflow smoke test. After that,
+begin Gate 2 verified contacts, consent, quiet hours, and deterministic recipient
+selection. Do not enable external escalation notifications or the live WhatsApp
+callback before those controls exist.
 
 ## Working rules
 - inspect before modifying

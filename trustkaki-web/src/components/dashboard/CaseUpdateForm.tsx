@@ -2,10 +2,14 @@
 
 import { useRef, useState } from "react";
 import { authHeader } from "@/lib/auth/client";
-import type { ContactOutcome, FollowUpQueueItem } from "@/lib/types";
+import type {
+  ContactOutcome,
+  EscalationDestination,
+  FollowUpQueueItem,
+} from "@/lib/types";
 import { canSaveCaseUpdate, canSubmit, type RequestState } from "../dashboardViewModel";
 
-type CaseUpdateAction = "record_outcome" | "snooze" | "resolve";
+type CaseUpdateAction = "record_outcome" | "snooze" | "escalate" | "resolve";
 
 const outcomeOptions: Array<{ value: ContactOutcome; label: string }> = [
   { value: "reached_and_okay", label: "Reached and okay" },
@@ -26,8 +30,19 @@ export function outcomeForCaseAction(
 const actionLabels: Record<CaseUpdateAction, string> = {
   record_outcome: "Record follow-up",
   snooze: "Snooze for later",
+  escalate: "Escalate case",
   resolve: "Close as resolved",
 };
+
+const escalationOptions: Array<{
+  value: EscalationDestination;
+  label: string;
+}> = [
+  { value: "family_guardian", label: "Family or guardian" },
+  { value: "aac_supervisor", label: "AAC supervisor" },
+  { value: "healthcare_follow_up", label: "Healthcare follow-up" },
+  { value: "emergency_guidance", label: "Emergency guidance" },
+];
 
 interface CaseUpdateFormProps {
   item: FollowUpQueueItem;
@@ -49,6 +64,8 @@ export function CaseUpdateForm({
   const [outcome, setOutcome] = useState<ContactOutcome>("needs_follow_up");
   const [note, setNote] = useState("");
   const [snoozeHours, setSnoozeHours] = useState("4");
+  const [escalationDestination, setEscalationDestination] =
+    useState<EscalationDestination>("family_guardian");
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const commandIdRef = useRef<string | null>(null);
@@ -65,6 +82,7 @@ export function CaseUpdateForm({
     setOutcome("needs_follow_up");
     setNote("");
     setSnoozeHours("4");
+    setEscalationDestination("family_guardian");
     commandIdRef.current = null;
   }
 
@@ -92,6 +110,9 @@ export function CaseUpdateForm({
     if (action === "snooze") {
       const hours = Math.max(1, Number.parseInt(snoozeHours, 10) || 4);
       body.snoozedUntil = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+    }
+    if (action === "escalate") {
+      body.escalationDestination = escalationDestination;
     }
 
     setRequestState("pending");
@@ -124,11 +145,16 @@ export function CaseUpdateForm({
       if (action === "resolve" && result.resultingStatus !== "resolved") {
         throw new Error("caregiver_action_not_resolved");
       }
+      if (action === "escalate" && result.resultingStatus !== "escalated") {
+        throw new Error("caregiver_action_not_escalated");
+      }
       setRequestState("success");
       setStatusMessage(
         action === "resolve"
           ? "Case resolved. Active queue updated."
-          : "Caregiver action recorded."
+          : action === "escalate"
+            ? "Escalation recorded. The case remains active."
+            : "Caregiver action recorded."
       );
       onSaved();
       setOpen(false);
@@ -225,10 +251,50 @@ export function CaseUpdateForm({
                 </select>
               </label>
             )}
+            {action === "escalate" && (
+              <label className="text-xs font-semibold text-gray-600">
+                Escalate to
+                <select
+                  value={escalationDestination}
+                  onChange={(event) =>
+                    changeCommandInput(() =>
+                      setEscalationDestination(
+                        event.target.value as EscalationDestination
+                      )
+                    )
+                  }
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  disabled={pending}
+                >
+                  {escalationOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
+          {action === "escalate" && escalationDestination === "emergency_guidance" && (
+            <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+              <div className="font-semibold">Immediate danger requires a direct call.</div>
+              <p className="mt-1">
+                Saving this record does not contact emergency services. Call 995
+                now for a medical or fire emergency in Singapore.
+              </p>
+              <a
+                href="tel:995"
+                className="mt-2 inline-flex rounded-lg bg-red-700 px-3 py-2 font-semibold text-white"
+              >
+                Call 995
+              </a>
+            </div>
+          )}
           <label className="mt-3 block text-xs font-semibold text-gray-600">
             {action === "snooze"
               ? "Why is it reasonable to delay?"
+              : action === "escalate"
+                ? "Why is escalation needed?"
               : action === "resolve"
                 ? "Why can this be closed?"
                 : "What happened and what is next?"}
@@ -241,6 +307,8 @@ export function CaseUpdateForm({
               placeholder={
                 action === "snooze"
                   ? "Example: Handling a red-risk case first. Mei Ling will call after lunch."
+                  : action === "escalate"
+                    ? "Example: Unable to reach him twice. AAC supervisor should review today."
                   : "Example: Rachel spoke to him. He ate lunch and agrees to a check-in tomorrow."
               }
               className="mt-1 w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"

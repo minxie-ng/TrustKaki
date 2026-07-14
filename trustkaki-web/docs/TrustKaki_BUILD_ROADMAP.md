@@ -839,10 +839,13 @@ Implemented so far:
 - optimistic concurrency rejects stale shared-case updates with HTTP 409
 - Supabase Realtime refreshes authorized caregivers, with polling fallback
 - live two-user database tests prove idempotency, conflict rollback, and shared updates
+- explicit escalation records a destination and meaningful reason without changing policy risk
+- escalation keeps the case active and visible to every authorized caregiver
+- emergency guidance clearly states that saving the record does not contact 995
+- live two-user database tests prove escalation idempotency and shared action visibility
 
 Remaining before Gate 1 closes:
 
-- add an explicit escalation action and its operational destination
 - complete a two-browser caregiver workflow smoke test
 
 #### Gate 2 — Contacts, Consent, and Escalation
@@ -851,6 +854,10 @@ Remaining before Gate 1 closes:
 - relationship, priority, language, quiet hours, consent, and permitted alerts
 - deterministic recipient selection and escalation order
 - separate action actor, case assignee, and notification recipient
+
+Gate 1 records escalation intent only. It does not send a message or contact an
+external party. Actual notifications require the verified contacts, consent,
+quiet-hours, and recipient-selection rules in this gate.
 
 #### Gate 3 — Production WhatsApp
 

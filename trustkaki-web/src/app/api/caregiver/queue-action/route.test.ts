@@ -95,6 +95,33 @@ describe("/api/caregiver/queue-action", () => {
     );
   });
 
+  it("passes an explicit escalation destination and audit reason", async () => {
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/caregiver/queue-action", {
+        method: "POST",
+        body: JSON.stringify({
+          queueItemId: "queue_1",
+          commandId,
+          expectedUpdatedAt,
+          actionType: "escalate",
+          escalationDestination: "family_guardian",
+          note: "Family should review repeated missed calls and arrange a visit today.",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(recordCaregiverQueueActionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionType: "escalate",
+        escalationDestination: "family_guardian",
+        note: "Family should review repeated missed calls and arrange a visit today.",
+      })
+    );
+  });
+
   it("returns a safe conflict when another caregiver updated the case", async () => {
     recordCaregiverQueueActionMock.mockRejectedValue(
       new MockCaregiverCaseConflictError()

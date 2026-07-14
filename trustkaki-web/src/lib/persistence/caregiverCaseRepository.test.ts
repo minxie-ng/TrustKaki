@@ -63,6 +63,65 @@ describe("caregiver case repository", () => {
     });
   });
 
+  it("uses the dedicated atomic escalation RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        queue_item_id: "queue-1",
+        senior_id: "senior-1",
+        actor_caregiver_id: "caregiver-1",
+        assigned_caregiver_id: "caregiver-2",
+        previous_status: "acknowledged",
+        resulting_status: "escalated",
+        queue_updated_at: "2026-07-14T02:01:00.000Z",
+        command_id: "00000000-0000-4000-8000-000000000099",
+        duplicate: false,
+      },
+      error: null,
+    });
+    createTrustKakiUserClientMock.mockReturnValue({ rpc });
+    const { recordCaregiverQueueAction } = await import(
+      "./caregiverCaseRepository"
+    );
+
+    const result = await recordCaregiverQueueAction({
+      accessToken: "verified-token",
+      queueItemId: "queue-1",
+      commandId: "00000000-0000-4000-8000-000000000099",
+      expectedUpdatedAt: "2026-07-14T02:00:00.000Z",
+      actionType: "escalate",
+      escalationDestination: "aac_supervisor",
+      note: "Unable to reach the senior twice; supervisor review is needed today.",
+    });
+
+    expect(rpc).toHaveBeenCalledWith("escalate_caregiver_queue_case", {
+      p_queue_item_id: "queue-1",
+      p_command_id: "00000000-0000-4000-8000-000000000099",
+      p_expected_updated_at: "2026-07-14T02:00:00.000Z",
+      p_escalation_destination: "aac_supervisor",
+      p_note: "Unable to reach the senior twice; supervisor review is needed today.",
+    });
+    expect(result.resultingStatus).toBe("escalated");
+  });
+
+  it("rejects incomplete escalation before contacting the database", async () => {
+    const rpc = vi.fn();
+    createTrustKakiUserClientMock.mockReturnValue({ rpc });
+    const { recordCaregiverQueueAction } = await import(
+      "./caregiverCaseRepository"
+    );
+
+    await expect(
+      recordCaregiverQueueAction({
+        accessToken: "verified-token",
+        queueItemId: "queue-1",
+        commandId: "00000000-0000-4000-8000-000000000099",
+        expectedUpdatedAt: "2026-07-14T02:00:00.000Z",
+        actionType: "escalate",
+      })
+    ).rejects.toThrow("Escalation destination and reason are required");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("does not return success metadata when the RPC fails", async () => {
     createTrustKakiUserClientMock.mockReturnValue({
       rpc: vi.fn().mockResolvedValue({

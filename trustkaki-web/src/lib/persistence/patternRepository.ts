@@ -191,7 +191,7 @@ async function upsertConsolidatedQueue(
     .select("id")
     .eq("senior_id", seniorId)
     .eq("episode_key", episode.episodeKey)
-    .in("status", ["pending", "acknowledged", "followed_up", "snoozed"])
+    .in("status", ["pending", "acknowledged", "followed_up", "snoozed", "escalated"])
     .limit(1)
     .maybeSingle();
   throwIfError(queueSelectError, "select active consolidated queue item");
@@ -225,7 +225,7 @@ async function upsertConsolidatedQueue(
     .from("caregiver_queue_items")
     .select("id")
     .eq("senior_id", seniorId)
-    .in("status", ["pending", "acknowledged", "followed_up", "snoozed"]);
+    .in("status", ["pending", "acknowledged", "followed_up", "snoozed", "escalated"]);
   throwIfError(activeRowsError, "select duplicate queue items");
 
   const keepId = savedQueue?.id;
