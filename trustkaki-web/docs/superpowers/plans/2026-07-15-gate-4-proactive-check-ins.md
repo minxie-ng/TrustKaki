@@ -373,37 +373,53 @@ git commit -m "feat: add proactive check-in controls"
 - Modify: `docs/TrustKaki_BUILD_ROADMAP.md`
 - Modify: `docs/TrustKaki_CODEX_HANDOFF.md`
 
-- [ ] **Step 1: Confirm migration history remains aligned**
+- [x] **Step 1: Confirm migration history remains aligned**
 
 Run: `supabase migration list`
 Expected: local and remote history aligned.
 
-- [ ] **Step 2: Run repeated live concurrency and security tests**
+- [x] **Step 2: Run repeated live concurrency and security tests**
 
 Run the Gate 4 live suite at least three times. Expected: one claim, one send
 effect, one case effect, and unrelated caregiver isolation on every run.
 
-- [ ] **Step 3: Verify real Telegram workflows**
+- [x] **Step 3: Verify real Telegram workflows**
 
 Use one real scheduled send and timely reply. Use an admin-only accelerated
 schedule to verify retry/final-timeout/case creation through the same processor.
 Refresh the authenticated dashboard and confirm persistence.
 
-- [ ] **Step 4: Run full validation and database advisors**
+- [x] **Step 4: Run full validation and database advisors**
 
 Run: `npm run validate`
 Run Supabase security and performance advisors because database code changed.
 Expected: tests, typecheck, lint, build pass; no new critical advisor finding.
 
-- [ ] **Step 5: Update evidence and roadmap truthfully**
+- [x] **Step 5: Update evidence and roadmap truthfully**
 
 Record exact commands, counts, timings, Telegram message IDs in redacted form,
 queue result, migration history, advisor results, and limitations. Mark Gate 4
 complete only if the real scheduled send and both response paths pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/superpowers/verification/2026-07-15-gate-4-proactive-check-ins.md docs/TrustKaki_BUILD_ROADMAP.md docs/TrustKaki_CODEX_HANDOFF.md
 git commit -m "docs: verify proactive check-in gate"
 ```
+
+Evidence (2026-07-15): local and remote migration history is aligned through
+`20260715100951`. The live Supabase suite passed 4/4 in three consecutive runs.
+A real scheduled Telegram check-in was accepted by the provider, and a real
+senior reply was persisted by the production webhook. Because Vercel still runs
+the pre-Gate-4 deployment, that production webhook could not invoke the new
+response-closing command; replaying the same persisted event once through the
+current local processor closed the workflow, cancelled its pending deadline,
+and created no queue case. The accelerated no-response path sent one initial
+message and one retry, then created exactly one Yellow operational case without
+changing policy risk. An authenticated dashboard read returned the case from
+Supabase. Temporary verification fixtures were removed. Full validation passed
+with 367 tests; database advisors reported no error-level findings. Gate 4 is
+ready for independent implementation audit, but is not production-live until
+the reviewed commits are promoted to Vercel and the timely-reply path is rerun
+there.

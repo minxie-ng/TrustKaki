@@ -214,6 +214,20 @@ The authenticated caregiver dashboard retained the senior's Yellow state,
 latest response, active follow-up item, and priority case after refresh. See
 `docs/superpowers/verification/2026-07-15-gate-3t-live-telegram.md`.
 
+Gate 4 proactive check-ins are implemented through Task 8 and ready for focused
+independent audit. Supabase stores admin-managed schedules, workflows, events,
+and atomically claimed jobs. The bounded processor sends one initial Telegram
+check-in, waits two hours, sends one gentle retry, waits one hour, and then
+creates one Yellow operational case without changing policy risk. Timely replies
+cancel pending work; late replies annotate but do not resolve the case. Three
+consecutive live Supabase runs passed 4/4, full validation passed with 367 tests,
+and temporary verification fixtures were removed. A real timely reply reached
+the current production webhook, but Vercel still runs the pre-Gate-4 build; the
+same persisted event closed correctly through the current local processor. See
+`docs/superpowers/verification/2026-07-15-gate-4-proactive-check-ins.md` and do
+not claim production Gate 4 operation until audit, promotion, and a production
+timely-response rerun are complete.
+
 Phase 4 Pattern Watch and caregiver queue are implemented. Pattern Watch reads
 stored detected signals over time and writes `patterns` plus operational
 `caregiver_queue_items`.
@@ -329,14 +343,17 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Write and execute the test-first Gate 4 implementation plan from
-`docs/superpowers/specs/2026-07-15-gate-4-proactive-check-ins-design.md`.
-The approved cadence is an initial check-in, a two-hour response window, one
-gentle retry, a one-hour response window, then one Yellow caregiver case. A
-timely reply cancels pending work; a late reply annotates but does not resolve
-the case. Keep caregiver/family fan-out, memory operationalisation, organisation
-tenancy, and broad UI redesign out of this slice. Preserve both the verified
-Telegram demo path and existing WhatsApp implementation.
+Run one focused independent Gate 4 audit using
+`docs/superpowers/plans/2026-07-15-gate-4-proactive-check-ins.md` and
+`docs/superpowers/verification/2026-07-15-gate-4-proactive-check-ins.md`.
+The implementation, repeated live Supabase suite, real Telegram send,
+accelerated no-response workflow, and authenticated dashboard read pass. A real
+timely reply reached the production webhook, but Vercel is still on the older
+deployment; current code closed that same persisted event only when processed
+locally. Do not claim production Gate 4 operation until the audit passes, the
+reviewed commits are promoted, and one production timely-response workflow is
+rerun. Keep Gate 5 memory work, family fan-out, tenancy, and UI redesign out of
+the audit checkpoint.
 
 ## Working rules
 - inspect before modifying

@@ -964,19 +964,27 @@ continuity channel and does not replace the implemented WhatsApp path.
 #### Gate 4 — Proactive Check-ins
 
 - [x] approve the bounded architecture and operating policy
-- [ ] add senior-specific admin-managed schedules, quiet hours, and pause/resume
-- [ ] add Vercel Cron with atomically claimed, idempotent Supabase jobs
-- [ ] send the initial Telegram check-in and wait two hours
-- [ ] send exactly one gentle retry and wait one additional hour
-- [ ] cancel pending work when the senior responds before escalation
-- [ ] create one Yellow caregiver case after the final missed-response deadline
-- [ ] annotate, but do not auto-resolve, a case when the senior replies late
-- [ ] verify real scheduled sending, deduplication, persistence, and queue output
+- [x] add senior-specific admin-managed schedules, quiet hours, and pause/resume
+- [x] add Vercel Cron with atomically claimed, idempotent Supabase jobs
+- [x] send the initial Telegram check-in and wait two hours
+- [x] send exactly one gentle retry and wait one additional hour
+- [x] cancel pending work when the senior responds before escalation
+- [x] create one Yellow caregiver case after the final missed-response deadline
+- [x] annotate, but do not auto-resolve, a case when the senior replies late
+- [x] verify real scheduled sending, deduplication, persistence, and queue output
 
 Approved design:
 `docs/superpowers/specs/2026-07-15-gate-4-proactive-check-ins-design.md`.
 Non-response alone never creates an emergency claim or rewrites policy risk.
 Telegram is the first live transport; the existing WhatsApp path remains intact.
+
+Gate 4 implementation verification is recorded in
+`docs/superpowers/verification/2026-07-15-gate-4-proactive-check-ins.md`.
+The current code passed repeated live Supabase tests, a real Telegram send, the
+timely-response cancellation path, the initial-plus-retry no-response path, and
+an authenticated persisted dashboard read. The production Vercel deployment is
+still on the earlier build, so Gate 4 must pass independent audit and then be
+promoted before production Cron and webhook behavior are claimed live.
 
 #### Gate 5 — Memory Operationalisation
 
@@ -1006,12 +1014,11 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-Gate 3T Telegram Demo Continuity is verified. Gate 4's bounded design is now
-approved: an initial check-in waits two hours, one gentle retry waits one more
-hour, then one Yellow caregiver case is created if there is still no response.
-The next step is a test-first implementation plan. Preserve the verified
-Telegram demo path and WhatsApp code.
-Do not combine proactive scheduling with caregiver notification fan-out,
+Gate 4 is implemented and locally/live-database verified. The next step is one
+focused independent Gate 4 audit. If it passes, promote the reviewed commits to
+Vercel and rerun one real scheduled timely reply against production before
+starting Gate 5. Preserve the Telegram demo path and WhatsApp code. Do not mix
+the audit or deployment checkpoint with caregiver notification fan-out,
 organisation tenancy, memory operationalisation, or broad UI redesign.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
