@@ -35,6 +35,19 @@ export type WhatsAppWebhookEventStatus =
   | "failed"
   | "ignored";
 export type WhatsAppOutboundStatus = "not_started" | "pending" | "sent" | "failed";
+export type SeniorMessagingPlatform = "whatsapp" | "telegram";
+export type TelegramWebhookEventType = "inbound_text" | "unsupported";
+export type TelegramWebhookEventStatus =
+  | "received"
+  | "processing"
+  | "processed"
+  | "failed"
+  | "ignored";
+export type TelegramOutboundStatus =
+  | "not_started"
+  | "pending"
+  | "accepted"
+  | "failed";
 export type PatternType =
   | "mobility_and_frailty"
   | "social_withdrawal"
@@ -137,6 +150,35 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["senior_caregivers"]["Insert"]>;
+      };
+      senior_messaging_identities: {
+        Row: {
+          id: string;
+          senior_id: string;
+          platform: SeniorMessagingPlatform;
+          external_user_id: string;
+          external_chat_id: string | null;
+          verified_at: string | null;
+          is_active: boolean;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          platform: SeniorMessagingPlatform;
+          external_user_id: string;
+          external_chat_id?: string | null;
+          verified_at?: string | null;
+          is_active?: boolean;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["senior_messaging_identities"]["Insert"]
+        >;
       };
       routine_baselines: {
         Row: {
@@ -548,6 +590,65 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["whatsapp_webhook_events"]["Insert"]>;
       };
+      telegram_webhook_events: {
+        Row: {
+          id: string;
+          update_id: string;
+          event_type: TelegramWebhookEventType;
+          telegram_message_id: string | null;
+          sender_user_id: string | null;
+          chat_id: string | null;
+          text_body: string | null;
+          payload: Json;
+          status: TelegramWebhookEventStatus;
+          attempt_count: number;
+          last_error: string | null;
+          processing_started_at: string | null;
+          orchestration_result: Json | null;
+          orchestration_context: Json | null;
+          orchestration_completed_at: string | null;
+          selected_reply_text: string | null;
+          selected_reply_agent_id: AgentId | null;
+          selected_reply_client_message_id: string | null;
+          outbound_status: TelegramOutboundStatus;
+          outbound_message_id: string | null;
+          occurred_at: string | null;
+          received_at: string;
+          processed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          update_id: string;
+          event_type?: TelegramWebhookEventType;
+          telegram_message_id?: string | null;
+          sender_user_id?: string | null;
+          chat_id?: string | null;
+          text_body?: string | null;
+          payload?: Json;
+          status?: TelegramWebhookEventStatus;
+          attempt_count?: number;
+          last_error?: string | null;
+          processing_started_at?: string | null;
+          orchestration_result?: Json | null;
+          orchestration_context?: Json | null;
+          orchestration_completed_at?: string | null;
+          selected_reply_text?: string | null;
+          selected_reply_agent_id?: AgentId | null;
+          selected_reply_client_message_id?: string | null;
+          outbound_status?: TelegramOutboundStatus;
+          outbound_message_id?: string | null;
+          occurred_at?: string | null;
+          received_at?: string;
+          processed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["telegram_webhook_events"]["Insert"]
+        >;
+      };
       patterns: {
         Row: {
           id: string;
@@ -838,6 +939,10 @@ export interface Database {
       claim_whatsapp_webhook_event: {
         Args: { p_event_id: string };
         Returns: Database["public"]["Tables"]["whatsapp_webhook_events"]["Row"][];
+      };
+      claim_telegram_webhook_event: {
+        Args: { p_event_id: string };
+        Returns: Database["public"]["Tables"]["telegram_webhook_events"]["Row"][];
       };
       record_caregiver_queue_action: {
         Args: {
