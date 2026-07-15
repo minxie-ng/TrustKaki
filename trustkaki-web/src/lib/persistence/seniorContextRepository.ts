@@ -9,7 +9,8 @@ import {
 } from "@/lib/auth/session";
 import { normalizePhoneNumber } from "@/lib/phone";
 import { createTrustKakiServiceClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/types";
+import type { Database, SeniorMessagingPlatform } from "@/lib/supabase/types";
+import { findSeniorIdByMessagingIdentity } from "./seniorMessagingIdentityRepository";
 
 type ServiceClient = SupabaseClient<Database>;
 type SeniorRow = Database["public"]["Tables"]["seniors"]["Row"];
@@ -144,6 +145,31 @@ export async function loadSeniorContextByVerifiedPhone(args: {
   const senior = data as SeniorRow;
   return {
     seniorId: senior.id,
+    context: await loadContext(
+      client,
+      senior,
+      boundedMessageLimit(args.messageLimit)
+    ),
+  };
+}
+
+export async function loadSeniorContextByMessagingIdentity(args: {
+  platform: SeniorMessagingPlatform;
+  externalUserId: string;
+  externalChatId?: string | null;
+  messageLimit?: number;
+}): Promise<{ seniorId: string; context: AgentRunContext } | null> {
+  const seniorId = await findSeniorIdByMessagingIdentity({
+    platform: args.platform,
+    externalUserId: args.externalUserId,
+    externalChatId: args.externalChatId,
+  });
+  if (!seniorId) return null;
+
+  const client = requireClient();
+  const senior = await loadSeniorById(client, seniorId);
+  return {
+    seniorId,
     context: await loadContext(
       client,
       senior,

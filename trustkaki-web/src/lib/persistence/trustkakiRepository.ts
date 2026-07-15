@@ -19,6 +19,7 @@ export {
 } from "./dashboardRepository";
 export {
   loadAuthorizedAgentContext,
+  loadSeniorContextByMessagingIdentity,
   loadSeniorContextByVerifiedPhone,
 } from "./seniorContextRepository";
 export { recordCaregiverQueueAction } from "./caregiverCaseRepository";

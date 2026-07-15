@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 const canAccessSeniorMock = vi.fn();
 const createTrustKakiServiceClientMock = vi.fn();
+const findSeniorIdByMessagingIdentityMock = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({
   canAccessSenior: canAccessSeniorMock,
@@ -11,6 +12,10 @@ vi.mock("@/lib/auth/session", () => ({
 
 vi.mock("@/lib/supabase/server", () => ({
   createTrustKakiServiceClient: createTrustKakiServiceClientMock,
+}));
+
+vi.mock("@/lib/persistence/seniorMessagingIdentityRepository", () => ({
+  findSeniorIdByMessagingIdentity: findSeniorIdByMessagingIdentityMock,
 }));
 
 const seniorId = "00000000-0000-4000-8000-000000000001";
@@ -125,6 +130,7 @@ describe("senior context repository", () => {
     vi.resetModules();
     canAccessSeniorMock.mockReset();
     createTrustKakiServiceClientMock.mockReset();
+    findSeniorIdByMessagingIdentityMock.mockReset();
   });
 
   it("rejects inaccessible seniors before creating a service client", async () => {
@@ -220,6 +226,52 @@ describe("senior context repository", () => {
     const { loadSeniorContextByVerifiedPhone } = await import("./seniorContextRepository");
 
     await expect(loadSeniorContextByVerifiedPhone({ phone: "---" })).resolves.toBeNull();
+    expect(createTrustKakiServiceClientMock).not.toHaveBeenCalled();
+  });
+
+  it("loads the same agent context for a verified Telegram identity", async () => {
+    const service = createServiceClient();
+    findSeniorIdByMessagingIdentityMock.mockResolvedValue(seniorId);
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { loadSeniorContextByMessagingIdentity } = await import(
+      "./seniorContextRepository"
+    );
+
+    const result = await loadSeniorContextByMessagingIdentity({
+      platform: "telegram",
+      externalUserId: "8123456789",
+      externalChatId: "8123456789",
+    });
+
+    expect(findSeniorIdByMessagingIdentityMock).toHaveBeenCalledWith({
+      platform: "telegram",
+      externalUserId: "8123456789",
+      externalChatId: "8123456789",
+    });
+    expect(result).toMatchObject({
+      seniorId,
+      context: {
+        senior: { name: "Mr Tan Ah Hock" },
+        currentRiskLevel: "yellow",
+      },
+    });
+    expect(service.queries.find((query) => query.table === "seniors")?.filters)
+      .toContainEqual(["id", seniorId]);
+  });
+
+  it("returns null for an unknown Telegram identity without demo fallback", async () => {
+    findSeniorIdByMessagingIdentityMock.mockResolvedValue(null);
+    const { loadSeniorContextByMessagingIdentity } = await import(
+      "./seniorContextRepository"
+    );
+
+    await expect(
+      loadSeniorContextByMessagingIdentity({
+        platform: "telegram",
+        externalUserId: "unknown-user",
+        externalChatId: "unknown-chat",
+      })
+    ).resolves.toBeNull();
     expect(createTrustKakiServiceClientMock).not.toHaveBeenCalled();
   });
 });

@@ -233,6 +233,7 @@ describe("WhatsApp async service", () => {
       })
     );
     expect(recordInboundMessageMetadataMock).toHaveBeenCalledWith({
+      externalPlatform: "whatsapp",
       clientMessageId: "wamid.inbound",
       externalMessageId: "wamid.inbound",
       externalMetadata: {

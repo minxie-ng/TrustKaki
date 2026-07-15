@@ -289,6 +289,7 @@ describe("TrustKaki persistence senior identity", () => {
     const { recordInboundMessageMetadata } = await import("./trustkakiRepository");
 
     await recordInboundMessageMetadata({
+      externalPlatform: "whatsapp",
       clientMessageId: "wamid.inbound",
       externalMessageId: "wamid.inbound",
       externalMetadata: { direction: "inbound", source: "webhook" },
@@ -303,6 +304,39 @@ describe("TrustKaki persistence senior identity", () => {
       external_metadata: { direction: "inbound", source: "webhook" },
     });
     expect(update?.filters).toContainEqual(["client_message_id", "wamid.inbound"]);
+  });
+
+  it("records Telegram provenance without labelling it as WhatsApp", async () => {
+    const service = createServiceClient();
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const {
+      recordInboundMessageMetadata,
+      recordOutboundMessageMetadata,
+    } = await import("./trustkakiRepository");
+
+    await recordInboundMessageMetadata({
+      externalPlatform: "telegram",
+      clientMessageId: "telegram:910000001",
+      externalMessageId: "73",
+      externalMetadata: { direction: "inbound", source: "webhook" },
+    });
+    await recordOutboundMessageMetadata({
+      externalPlatform: "telegram",
+      clientMessageId: "out_trace_orchestrator_0",
+      externalMessageId: "74",
+      externalMetadata: { delivery_state: "provider_accepted" },
+    });
+
+    const updates = service.operations.filter(
+      (operation) => operation.table === "messages" && operation.kind === "update"
+    );
+    expect(updates.map((operation) => operation.payload)).toEqual([
+      expect.objectContaining({ external_platform: "telegram" }),
+      expect.objectContaining({
+        external_platform: "telegram",
+        external_metadata: { delivery_state: "provider_accepted" },
+      }),
+    ]);
   });
 
   it("preserves outbound metadata while recording the newest delivery status", async () => {

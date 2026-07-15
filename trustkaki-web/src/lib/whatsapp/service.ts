@@ -3,6 +3,7 @@ import "server-only";
 import { orchestrate } from "@/lib/agents/orchestrator";
 import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
 import type { AgentId, Message } from "@/lib/types";
+import { selectSeniorReply } from "@/lib/messaging/selectSeniorReply";
 import {
   persistOrchestrationResult,
   recordInboundMessageMetadata,
@@ -46,27 +47,6 @@ class UnmappedWhatsAppSenderError extends Error {
     super("No senior mapped to sender phone");
     this.name = "UnmappedWhatsAppSenderError";
   }
-}
-
-function chooseSeniorReply(
-  result: OrchestrateResponse
-): { text: string; agentId?: AgentId; index: number } | null {
-  const digitalSafetyIndex = result.messages.findIndex(
-    (message) => message.agentId === "digital_safety"
-  );
-  if (digitalSafetyIndex >= 0) {
-    return { ...result.messages[digitalSafetyIndex], index: digitalSafetyIndex };
-  }
-
-  const triageIndex = result.messages.findIndex(
-    (message) => message.agentId === "triage"
-  );
-  if (triageIndex >= 0) {
-    return { ...result.messages[triageIndex], index: triageIndex };
-  }
-
-  const first = result.messages[0];
-  return first ? { ...first, index: 0 } : null;
 }
 
 function conciseText(text: string): string {
@@ -194,7 +174,7 @@ async function getOrCreateOrchestration(args: {
   };
 
   const result = await orchestrate(args.inbound.text, context);
-  const reply = chooseSeniorReply(result);
+  const reply = selectSeniorReply(result);
   const replyClientMessageId = reply
     ? buildOutboundClientMessageId(result, reply.index)
     : null;
@@ -235,6 +215,7 @@ async function persistOrchestrationIfNeeded(args: {
     result: args.result,
   });
   await recordInboundMessageMetadata({
+    externalPlatform: "whatsapp",
     clientMessageId: args.inbound.id,
     externalMessageId: args.inbound.id,
     externalMetadata: {
@@ -283,6 +264,7 @@ async function sendOrResumeOutbound(args: {
   }
 
   await recordOutboundMessageMetadata({
+    externalPlatform: "whatsapp",
     clientMessageId: args.replyClientMessageId,
     externalMessageId: outboundMessageId,
     externalMetadata: {

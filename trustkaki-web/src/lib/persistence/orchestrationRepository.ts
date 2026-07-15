@@ -301,6 +301,7 @@ export async function hasPersistedMessageClientId(
 }
 
 export async function recordOutboundMessageMetadata(args: {
+  externalPlatform: "whatsapp" | "telegram";
   clientMessageId: string;
   externalMessageId: string;
   externalMetadata?: Record<string, unknown>;
@@ -311,17 +312,18 @@ export async function recordOutboundMessageMetadata(args: {
   const { error } = await client
     .from("messages")
     .update({
-      external_platform: "whatsapp",
+      external_platform: args.externalPlatform,
       external_message_id: args.externalMessageId,
       external_metadata: args.externalMetadata ?? {},
     })
     .eq("client_message_id", args.clientMessageId);
-  throwIfError(error, "update outbound WhatsApp metadata");
+  throwIfError(error, "update outbound message metadata");
 
   return supabaseMeta();
 }
 
 export async function recordInboundMessageMetadata(args: {
+  externalPlatform: "whatsapp" | "telegram";
   clientMessageId: string;
   externalMessageId: string;
   externalMetadata?: Record<string, unknown>;
@@ -332,12 +334,12 @@ export async function recordInboundMessageMetadata(args: {
   const { error } = await client
     .from("messages")
     .update({
-      external_platform: "whatsapp",
+      external_platform: args.externalPlatform,
       external_message_id: args.externalMessageId,
       external_metadata: args.externalMetadata ?? {},
     })
     .eq("client_message_id", args.clientMessageId);
-  throwIfError(error, "update inbound WhatsApp metadata");
+  throwIfError(error, "update inbound message metadata");
 
   return supabaseMeta();
 }
