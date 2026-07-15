@@ -100,9 +100,16 @@ Required for live WhatsApp:
 - `TRUSTKAKI_DEMO_SENIOR_PHONE`
 - `WHATSAPP_INTERNAL_PROCESSOR_SECRET`
 
+Required for live Telegram demo continuity:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_WEBHOOK_SECRET`
+- `TELEGRAM_INTERNAL_PROCESSOR_SECRET`
+
 Development-only:
 
 - `ENABLE_WHATSAPP_DEV_SIMULATOR`
+- `ENABLE_TELEGRAM_DEV_SIMULATOR`
 
 Optional:
 
@@ -113,6 +120,7 @@ Notes:
 - All secrets are server-side unless prefixed with `NEXT_PUBLIC_`.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` is browser-safe public Supabase configuration; it is not the service-role key.
 - Meta temporary access tokens are development-only. A production WhatsApp setup should use an appropriate durable Meta credential.
+- Telegram secrets are server-side. `TELEGRAM_WEBHOOK_SECRET` must contain only `A-Z`, `a-z`, `0-9`, `_`, and `-`, as required by Telegram's `setWebhook` secret-token parameter.
 - WorkBuddy can later replace or extend the LLM provider through `src/lib/agents/provider.ts` without rewriting Pattern Watch, Supabase persistence, or the caregiver queue.
 
 ## Supabase
@@ -222,6 +230,31 @@ Authorization: Bearer <WHATSAPP_INTERNAL_PROCESSOR_SECRET>
 
 This endpoint processes a bounded number of received or failed events and returns non-sensitive counts. It is a recovery path; it does not replace immediate `after()` processing.
 
+## Telegram Demo Continuity
+
+Telegram is a temporary live-demo transport while the Meta WhatsApp account issue is being resolved. WhatsApp remains TrustKaki's preferred production channel. Both adapters use the same orchestrator, specialist agents, deterministic policy authority, Supabase care records, and caregiver dashboard.
+
+Current Telegram flow:
+
+```text
+Telegram webhook
+  -> /api/telegram/webhook
+  -> X-Telegram-Bot-Api-Secret-Token verification
+  -> service-role-only Supabase Telegram inbox
+  -> after() fast-path processor
+  -> existing orchestration and policy persistence
+  -> one concise Telegram reply
+```
+
+Recovery flow:
+
+```text
+POST /api/internal/telegram/process-pending
+Authorization: Bearer <TELEGRAM_INTERNAL_PROCESSOR_SECRET>
+```
+
+The webhook returns success only after durable inbox acceptance. Duplicate `update_id` values are acknowledged without rerunning orchestration. The development simulator is disabled in production, requires an authenticated `demo_admin`, and injects a fake outbound client so it cannot contact Telegram.
+
 ## EdgeOne Future Note
 
 Tencent EdgeOne remains a future deployment option, especially for Tencent alignment. Before switching, verify that the chosen EdgeOne Next.js hosting path supports the Node.js runtime behavior TrustKaki needs: Supabase service-role access, `node:crypto`, route handlers, outbound HTTP calls, function duration limits, and `after()`/`waitUntil` semantics.
@@ -243,6 +276,7 @@ Do not bypass deterministic policy, Pattern Watch, or Supabase persistence when 
 - Do not expose service-role Supabase keys to the browser.
 - Do not expose raw provider responses or stack traces from API routes in production.
 - Keep the WhatsApp dev simulator disabled in production.
+- Keep the Telegram dev simulator disabled in production.
 - Keep demo reset scoped to TrustKaki demo data.
 - The MVP rate limiter is in-process and single-instance only. Replace it with Redis or a platform rate-limit service before multi-instance production scaling.
 - API routes derive caregiver identity from the verified Supabase Auth user, not from browser-submitted caregiver IDs.
@@ -252,5 +286,6 @@ Do not bypass deterministic policy, Pattern Watch, or Supabase persistence when 
 - Public self-service registration, password reset, and organization administration are intentionally out of scope.
 - Full Agent Replay is slow and is not the primary production judge path.
 - WhatsApp recovery is protected but still needs an external scheduler or manual trigger for production-grade retry cadence.
+- Telegram continuity has not completed live bot verification yet; bot creation, verified senior identity binding, webhook registration, and one real reply remain outstanding.
 - WorkBuddy provider integration is not implemented yet.
 - EdgeOne deployment has not been verified yet.

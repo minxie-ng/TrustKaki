@@ -292,23 +292,23 @@ git commit -m "feat: route telegram through trustkaki orchestration"
 - Modify: `.env.example`
 - Modify: `README.md`
 
-- [ ] **Step 1: Write failing webhook-route tests**
+- [x] **Step 1: Write failing webhook-route tests**
 
 Prove invalid/missing secret headers return 403, valid supported updates are durably accepted before processing is scheduled, duplicates return safe 200 without scheduling, unsupported updates return safe 200, durable acceptance failure returns a retryable non-2xx response, and responses contain no secrets or user/chat identifiers.
 
-- [ ] **Step 2: Write failing retry-route tests**
+- [x] **Step 2: Write failing retry-route tests**
 
 Use a dedicated `TELEGRAM_INTERNAL_PROCESSOR_SECRET`. Prove missing configuration returns 404, bad authorization returns 401, limits are bounded, and results expose only counts/status categories.
 
-- [ ] **Step 3: Write failing development-simulation tests**
+- [x] **Step 3: Write failing development-simulation tests**
 
 Reuse the exact parser, acceptance, orchestration, persistence, and send path. Require non-production mode plus explicit development authorization. Inject a fake outbound client by default so local simulation never contacts Telegram accidentally. Prove duplicate submissions are idempotent.
 
-- [ ] **Step 4: Implement the routes**
+- [x] **Step 4: Implement the routes**
 
 Use `after()` only after the inbox insert succeeds. Keep route responses small and non-identifying. Do not add a Telegram GET verification route because Telegram uses `setWebhook` rather than Meta's challenge flow.
 
-- [ ] **Step 5: Document configuration without values**
+- [x] **Step 5: Document configuration without values**
 
 Add only names and explanations:
 
@@ -320,7 +320,7 @@ TELEGRAM_INTERNAL_PROCESSOR_SECRET
 
 Document that `TELEGRAM_WEBHOOK_SECRET` must use only Telegram-supported characters and that secrets stay server-side. Do not modify `.env.local` without explicit approval.
 
-- [ ] **Step 6: Verify checkpoint 4 locally**
+- [x] **Step 6: Verify checkpoint 4 locally**
 
 Run:
 
@@ -332,7 +332,7 @@ git diff --check
 
 Run one local simulation twice with the same `update_id`. Verify the first run persists and invokes orchestration once; the second is a duplicate; one outbound request body is generated; no secrets or raw identifiers appear in output.
 
-- [ ] **Step 7: Commit checkpoint 4**
+- [x] **Step 7: Commit checkpoint 4**
 
 ```bash
 git add src/app/api/telegram src/app/api/internal/telegram .env.example README.md
