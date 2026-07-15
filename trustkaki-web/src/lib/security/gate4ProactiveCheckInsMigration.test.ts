@@ -54,4 +54,17 @@ describe("Gate 4 proactive check-in migration", () => {
     expect(sql).not.toMatch(/update\s+public\.seniors\s+set\s+risk_level/i);
     expect(sql).not.toMatch(/insert\s+into\s+public\.risk_events/i);
   });
+
+  it("keeps the next-run helper free of shadowed loop variables", () => {
+    const directory = join(process.cwd(), "supabase/migrations");
+    const file = readdirSync(directory).find((name) =>
+      name.endsWith("_gate_4_next_run_lint_remediation.sql")
+    );
+    if (!file) throw new Error("Gate 4 next-run remediation migration is missing");
+    const sql = readFileSync(join(directory, file), "utf8").toLowerCase();
+
+    expect(sql).toContain("create or replace function trustkaki_private.next_proactive_check_in_run");
+    expect(sql).toContain("for v_day_offset in 0..8 loop");
+    expect(sql).not.toContain("v_offset integer");
+  });
 });

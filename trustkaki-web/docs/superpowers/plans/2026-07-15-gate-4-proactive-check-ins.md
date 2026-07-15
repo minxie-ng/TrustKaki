@@ -13,6 +13,7 @@
 ## File Map
 
 - Create `supabase/migrations/20260715084838_gate_4_proactive_check_ins.sql`: schedules, workflow state, job hardening, transactional commands, RLS.
+- Create `supabase/migrations/20260715093952_gate_4_next_run_lint_remediation.sql`: remove the next-run helper's shadowed loop variable after linked database lint.
 - Create `src/lib/checkins/contracts.ts`: typed schedule, job, workflow, and processor contracts.
 - Create `src/lib/checkins/policy.ts`: pure timing, quiet-hour, cancellation, and stage decisions.
 - Create `src/lib/checkins/service.ts`: bounded job execution and Telegram sends.
@@ -131,13 +132,13 @@ git commit -m "feat: define proactive check-in policy"
 - Create: `src/lib/persistence/proactiveCheckInRepository.test.ts`
 - Create: `src/lib/security/gate4ProactiveCheckIns.integration.test.ts`
 
-- [ ] **Step 1: Write failing repository tests**
+- [x] **Step 1: Write failing repository tests**
 
 Mock Supabase and prove that repository methods call only the migration RPCs,
 parse results with Zod, and never return transport identity secrets to client
 code.
 
-- [ ] **Step 2: Implement repository methods**
+- [x] **Step 2: Implement repository methods**
 
 Provide only domain-specific methods:
 
@@ -150,21 +151,26 @@ retryJob(command)
 recordSeniorResponse(seniorId, messageId, respondedAt)
 ```
 
-- [ ] **Step 3: Add live two-worker integration coverage**
+- [x] **Step 3: Add live two-worker integration coverage**
 
 Create temporary admin/caregiver/senior rows. Insert one due job, claim from two
 service clients concurrently, and assert exactly one claim. Complete twice and
 assert one effect. Confirm an unrelated caregiver cannot read or mutate the
 schedule.
 
-- [ ] **Step 4: Run focused tests, apply the complete migration, then run the live suite**
+- [x] **Step 4: Run focused tests, apply the complete migration, then run the live suite**
 
 Run: `npm test -- src/lib/persistence/proactiveCheckInRepository.test.ts`
 Run: `supabase db push`
 Run: `TRUSTKAKI_RUN_LIVE_SUPABASE=1 npm test -- src/lib/security/gate4ProactiveCheckIns.integration.test.ts`
 Expected: PASS with one claimed job and no duplicate effect.
 
-- [ ] **Step 5: Commit**
+Evidence (2026-07-15): repository and migration tests passed 10/10; the live
+two-worker/RLS suite passed 2/2; migrations `20260715084838` and
+`20260715093952` are aligned locally and remotely. Linked database lint reports
+no Gate 4 warnings; one pre-existing `reset_trustkaki_demo` cast warning remains.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/persistence/proactiveCheckInRepository.ts src/lib/persistence/proactiveCheckInRepository.test.ts src/lib/security/gate4ProactiveCheckIns.integration.test.ts
