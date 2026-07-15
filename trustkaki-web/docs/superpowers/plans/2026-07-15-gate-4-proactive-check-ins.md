@@ -88,7 +88,7 @@ git commit -m "feat: add proactive check-in persistence"
 - Create: `src/lib/checkins/policy.ts`
 - Create: `src/lib/checkins/policy.test.ts`
 
-- [ ] **Step 1: Write failing policy tests**
+- [x] **Step 1: Write failing policy tests**
 
 Cover initial send, no retry before 120 minutes, exactly one retry after 120
 minutes, final escalation after 60 additional minutes, timely cancellation,
@@ -101,23 +101,23 @@ expect(nextAction(finalDeadline, at59Minutes)).toEqual({ type: "wait" });
 expect(nextAction(finalDeadline, at60Minutes)).toEqual({ type: "create_case" });
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `npm test -- src/lib/checkins/policy.test.ts`
 Expected: FAIL because the policy module does not exist.
 
-- [ ] **Step 3: Implement the smallest pure state functions**
+- [x] **Step 3: Implement the smallest pure state functions**
 
 Export `nextProactiveAction`, `isWithinQuietHours`, and
 `responseDisposition`. Do not call Supabase, Telegram, or the system clock from
 this file; pass `now` explicitly.
 
-- [ ] **Step 4: Run policy tests and typecheck**
+- [x] **Step 4: Run policy tests and typecheck**
 
 Run: `npm test -- src/lib/checkins/policy.test.ts && npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/checkins
