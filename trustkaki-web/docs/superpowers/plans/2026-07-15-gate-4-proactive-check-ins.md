@@ -322,31 +322,44 @@ git commit -m "feat: escalate missed proactive responses"
 - Modify: `src/app/page.tsx`
 - Modify: `src/lib/api/schemas.ts`
 - Modify: `src/lib/api/schemas.test.ts`
+- Modify: `src/lib/checkins/contracts.ts`
+- Modify: `src/lib/persistence/proactiveCheckInRepository.ts`
+- Modify: `src/lib/persistence/proactiveCheckInRepository.test.ts`
 
-- [ ] **Step 1: Write failing authorization and presentation tests**
+- [x] **Step 1: Write failing authorization and presentation tests**
 
 Prove admin-only update/pause/resume/manual-run, authorized senior binding,
 meaningful pause reason, duplicate command prevention, and a concise panel that
 shows status, next run, last send, and last failure without provider data.
 
-- [ ] **Step 2: Implement strict request schemas and route**
+- [x] **Step 2: Implement strict request schemas and route**
 
 Use server-loaded senior authorization and authenticated actor identity. Manual
 run inserts the same `initial_send` job used by cron; it does not call Telegram
 directly.
 
-- [ ] **Step 3: Add the minimal dashboard panel**
+- [x] **Step 3: Add the minimal dashboard panel**
 
 Keep controls hidden for non-admin caregivers. Use one settings disclosure and
 disable controls while saving. Do not add charts, raw job lists, or technical
 logs.
 
-- [ ] **Step 4: Run focused UI/API tests**
+- [x] **Step 4: Run focused UI/API tests**
 
 Run: `npm test -- 'src/app/api/admin/seniors/[seniorId]/check-in-schedule/route.test.ts' src/components/dashboard/ProactiveCheckInPanel.test.ts src/lib/api/schemas.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+Evidence (2026-07-15): the initial focused run failed in the four intended
+missing surfaces. After implementation, the expanded focused command including
+the repository overview tests passed 29/29. `npm run typecheck`, focused lint,
+and `npm run build` pass. The route requires `demo_admin`, binds every command
+to an authorized senior, and creates server time. Manual run uses the existing
+transactional schedule RPC and therefore enqueues the normal `initial_send`
+job. The caregiver UI is a single collapsed admin-only panel and does not expose
+provider identifiers, destinations, raw jobs, or tokens. No migration was
+required for Task 7.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add 'src/app/api/admin/seniors/[seniorId]/check-in-schedule' src/components/dashboard/ProactiveCheckInPanel.tsx src/components/dashboard/ProactiveCheckInPanel.test.ts src/components/Dashboard.tsx src/app/page.tsx src/lib/api/schemas.ts src/lib/api/schemas.test.ts

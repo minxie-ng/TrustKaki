@@ -18,6 +18,7 @@ import {
   shouldPollDashboard,
 } from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
+import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
 import type { AgentTrace, DashboardData, MaskedContactPlan, RiskLevel } from "@/lib/types";
 
 interface DashboardStateResponse {
@@ -49,9 +50,14 @@ export default function Home() {
   const [contactPlan, setContactPlan] = useState<MaskedContactPlan | null>(null);
   const [contactPlanLoading, setContactPlanLoading] = useState(false);
   const [contactPlanError, setContactPlanError] = useState<string | null>(null);
+  const [checkInSchedule, setCheckInSchedule] =
+    useState<ProactiveCheckInScheduleOverview | null>(null);
+  const [checkInScheduleLoading, setCheckInScheduleLoading] = useState(false);
+  const [checkInScheduleError, setCheckInScheduleError] = useState<string | null>(null);
   const selectedSeniorIdRef = useRef<string | null>(null);
   const dashboardRequestSeq = useRef(0);
   const contactPlanRequestSeq = useRef(0);
+  const checkInScheduleRequestSeq = useRef(0);
   const authToken = session?.access_token ?? null;
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
@@ -144,18 +150,52 @@ export default function Home() {
     });
   }, [authToken, handleUnauthorized]);
 
+  const refreshCheckInSchedule = useCallback((nextSeniorId?: string | null) => {
+    if (!authToken || !isDemoAdmin) return;
+    const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
+    if (!seniorId) return;
+    const requestId = checkInScheduleRequestSeq.current + 1;
+    checkInScheduleRequestSeq.current = requestId;
+    setCheckInScheduleLoading(true);
+    setCheckInScheduleError(null);
+    void fetch(`/api/admin/seniors/${encodeURIComponent(seniorId)}/check-in-schedule`, {
+      cache: "no-store",
+      headers: authHeader(authToken),
+    }).then(async (response) => {
+      if (response.status === 401) {
+        handleUnauthorized();
+        return null;
+      }
+      if (!response.ok) throw new Error("check_in_schedule_request_failed");
+      return (await response.json()) as { schedule: ProactiveCheckInScheduleOverview };
+    }).then((result) => {
+      if (requestId !== checkInScheduleRequestSeq.current || !result) return;
+      setCheckInSchedule(result.schedule);
+    }).catch(() => {
+      if (requestId === checkInScheduleRequestSeq.current) {
+        setCheckInScheduleError("Check-in schedule is temporarily unavailable.");
+      }
+    }).finally(() => {
+      if (requestId === checkInScheduleRequestSeq.current) {
+        setCheckInScheduleLoading(false);
+      }
+    });
+  }, [authToken, handleUnauthorized, isDemoAdmin]);
+
   const selectSenior = useCallback(
     (seniorId: string) => {
       selectedSeniorIdRef.current = seniorId;
       setLoadingSeniorId(seniorId);
       setContactPlan(null);
       setContactPlanLoading(true);
+      setCheckInSchedule(null);
+      setCheckInScheduleLoading(isDemoAdmin);
       setLiveDashboardData((current) =>
         current ? optimisticDashboardForSenior(current, seniorId) : current
       );
       refreshDashboardState(seniorId);
     },
-    [refreshDashboardState]
+    [isDemoAdmin, refreshDashboardState]
   );
 
   useEffect(() => {
@@ -218,14 +258,21 @@ export default function Home() {
       onChange: () => {
         refreshDashboardState();
         refreshContactPlan();
+        refreshCheckInSchedule();
       },
     });
     return () => subscription?.unsubscribe();
-  }, [authToken, refreshContactPlan, refreshDashboardState]);
+  }, [authToken, refreshCheckInSchedule, refreshContactPlan, refreshDashboardState]);
 
   useEffect(() => {
     if (authToken && selectedSeniorId) refreshContactPlan(selectedSeniorId);
   }, [authToken, refreshContactPlan, selectedSeniorId]);
+
+  useEffect(() => {
+    if (authToken && isDemoAdmin && selectedSeniorId) {
+      refreshCheckInSchedule(selectedSeniorId);
+    }
+  }, [authToken, isDemoAdmin, refreshCheckInSchedule, selectedSeniorId]);
 
   async function signIn(email: string, password: string) {
     const client = createTrustKakiBrowserClient();
@@ -257,6 +304,7 @@ export default function Home() {
     setLiveTraces([]);
     setLiveBriefing(null);
     setContactPlan(null);
+    setCheckInSchedule(null);
     selectedSeniorIdRef.current = null;
   }
 
@@ -315,6 +363,10 @@ export default function Home() {
               contactPlanLoading={contactPlanLoading}
               contactPlanError={contactPlanError}
               onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
+              checkInSchedule={checkInSchedule}
+              checkInScheduleLoading={checkInScheduleLoading}
+              checkInScheduleError={checkInScheduleError}
+              onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
             />
           ) : (
             <main className="flex h-full items-center justify-center bg-gray-50 p-6">

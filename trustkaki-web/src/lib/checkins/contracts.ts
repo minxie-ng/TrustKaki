@@ -88,3 +88,29 @@ export type ResponseDisposition =
         | "before_response_window"
         | "terminal_workflow";
     };
+
+export interface ProactiveCheckInScheduleView {
+  id: string;
+  seniorId: string;
+  platform: "telegram" | "whatsapp";
+  localSendTime: string;
+  timezone: string;
+  activeWeekdays: number[];
+  initialResponseMinutes: number;
+  retryResponseMinutes: number;
+  initialMessageTemplate: string;
+  retryMessageTemplate: string;
+  enabled: boolean;
+  pausedAt: string | null;
+  pauseReason: string | null;
+  nextRunAt: string;
+  lastRunAt: string | null;
+  updatedAt: string;
+}
+
+export interface ProactiveCheckInScheduleOverview {
+  schedule: ProactiveCheckInScheduleView | null;
+  state: "not_configured" | "scheduled" | "paused" | ProactiveCheckInWorkflowStatus;
+  lastSendAt: string | null;
+  lastFailure: { category: string; occurredAt: string } | null;
+}

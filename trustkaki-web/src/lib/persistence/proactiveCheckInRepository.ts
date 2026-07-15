@@ -2,7 +2,12 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { proactiveCheckInStageSchema } from "@/lib/checkins/contracts";
+import {
+  proactiveCheckInStageSchema,
+  proactiveCheckInWorkflowStatusSchema,
+  type ProactiveCheckInScheduleOverview,
+  type ProactiveCheckInScheduleView,
+} from "@/lib/checkins/contracts";
 import {
   createTrustKakiServiceClient,
   createTrustKakiUserClient,
@@ -85,24 +90,7 @@ type RpcClient = {
   ) => Promise<{ data: unknown; error: { code?: string } | null }>;
 };
 
-export interface ProactiveCheckInSchedule {
-  id: string;
-  seniorId: string;
-  platform: "telegram" | "whatsapp";
-  localSendTime: string;
-  timezone: string;
-  activeWeekdays: number[];
-  initialResponseMinutes: number;
-  retryResponseMinutes: number;
-  initialMessageTemplate: string;
-  retryMessageTemplate: string;
-  enabled: boolean;
-  pausedAt: string | null;
-  pauseReason: string | null;
-  nextRunAt: string;
-  lastRunAt: string | null;
-  updatedAt: string;
-}
+export type ProactiveCheckInSchedule = ProactiveCheckInScheduleView;
 
 export type ScheduleCommand = z.infer<typeof scheduleCommandSchema>;
 export type ClaimedProactiveJob = z.infer<typeof claimedJobSchema>;
@@ -149,6 +137,17 @@ function mapSchedule(value: unknown): ProactiveCheckInSchedule {
   };
 }
 
+const workflowOverviewSchema = z.object({
+  status: proactiveCheckInWorkflowStatusSchema,
+  initial_sent_at: timestampSchema.nullable(),
+  retry_sent_at: timestampSchema.nullable(),
+});
+
+const failedJobOverviewSchema = z.object({
+  last_error_category: z.string().min(1),
+  updated_at: timestampSchema,
+});
+
 function requireServiceClient(): RpcClient {
   const client = createTrustKakiServiceClient();
   if (!client) throw new Error("Proactive check-in persistence unavailable");
@@ -184,6 +183,60 @@ export async function readScheduleForSenior(args: {
     .maybeSingle();
   if (error) throw new Error("Proactive check-in schedule read failed");
   return data ? mapSchedule(data) : null;
+}
+
+export async function readScheduleOverviewForSenior(args: {
+  accessToken: string;
+  seniorId: string;
+}): Promise<ProactiveCheckInScheduleOverview> {
+  const seniorId = uuidSchema.parse(args.seniorId);
+  const client = createTrustKakiUserClient(args.accessToken);
+  if (!client) throw new Error("Proactive check-in persistence unavailable");
+
+  const { data: rawSchedule, error: scheduleError } = await client
+    .from("proactive_check_in_schedules")
+    .select(
+      "id, senior_id, platform, local_send_time, timezone, active_weekdays, initial_response_minutes, retry_response_minutes, initial_message_template, retry_message_template, enabled, paused_at, pause_reason, next_run_at, last_run_at, updated_at"
+    )
+    .eq("senior_id", seniorId)
+    .maybeSingle();
+  if (scheduleError) throw new Error("Proactive check-in schedule read failed");
+  if (!rawSchedule) {
+    return { schedule: null, state: "not_configured", lastSendAt: null, lastFailure: null };
+  }
+
+  const schedule = mapSchedule(rawSchedule);
+  const [{ data: rawWorkflow, error: workflowError }, { data: rawFailure, error: failureError }] =
+    await Promise.all([
+      client
+        .from("proactive_check_in_workflows")
+        .select("status, initial_sent_at, retry_sent_at")
+        .eq("schedule_id", schedule.id)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      client
+        .from("scheduled_jobs")
+        .select("last_error_category, updated_at")
+        .eq("schedule_id", schedule.id)
+        .eq("status", "failed")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+  if (workflowError || failureError) {
+    throw new Error("Proactive check-in overview read failed");
+  }
+  const workflow = rawWorkflow ? workflowOverviewSchema.parse(rawWorkflow) : null;
+  const failure = rawFailure ? failedJobOverviewSchema.parse(rawFailure) : null;
+  return {
+    schedule,
+    state: schedule.pausedAt ? "paused" : workflow?.status ?? "scheduled",
+    lastSendAt: workflow?.retry_sent_at ?? workflow?.initial_sent_at ?? schedule.lastRunAt,
+    lastFailure: failure
+      ? { category: failure.last_error_category, occurredAt: failure.updated_at }
+      : null,
+  };
 }
 
 export async function saveScheduleCommand(

@@ -65,6 +65,66 @@ describe("proactive check-in repository", () => {
     expect(user.builder.eq).toHaveBeenCalledWith("senior_id", scheduleRow.senior_id);
   });
 
+  it("returns a concise schedule overview without provider data", async () => {
+    const scheduleBuilder = {
+      select: vi.fn(() => scheduleBuilder),
+      eq: vi.fn(() => scheduleBuilder),
+      maybeSingle: vi.fn().mockResolvedValue({ data: scheduleRow, error: null }),
+    };
+    const workflowBuilder = {
+      select: vi.fn(() => workflowBuilder),
+      eq: vi.fn(() => workflowBuilder),
+      order: vi.fn(() => workflowBuilder),
+      limit: vi.fn(() => workflowBuilder),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: {
+          status: "awaiting_retry_response",
+          initial_sent_at: "2026-07-15T01:00:00.000Z",
+          retry_sent_at: "2026-07-15T03:00:00.000Z",
+        },
+        error: null,
+      }),
+    };
+    const jobBuilder = {
+      select: vi.fn(() => jobBuilder),
+      eq: vi.fn(() => jobBuilder),
+      order: vi.fn(() => jobBuilder),
+      limit: vi.fn(() => jobBuilder),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: {
+          last_error_category: "provider_unavailable",
+          updated_at: "2026-07-15T03:05:00.000Z",
+        },
+        error: null,
+      }),
+    };
+    createTrustKakiUserClientMock.mockReturnValue({
+      from: vi.fn((table: string) => {
+        if (table === "proactive_check_in_schedules") return scheduleBuilder;
+        if (table === "proactive_check_in_workflows") return workflowBuilder;
+        return jobBuilder;
+      }),
+    });
+    const { readScheduleOverviewForSenior } = await import(
+      "./proactiveCheckInRepository"
+    );
+
+    const result = await readScheduleOverviewForSenior({
+      accessToken: "user-token",
+      seniorId: scheduleRow.senior_id,
+    });
+
+    expect(result).toMatchObject({
+      state: "awaiting_retry_response",
+      lastSendAt: "2026-07-15T03:00:00.000Z",
+      lastFailure: {
+        category: "provider_unavailable",
+        occurredAt: "2026-07-15T03:05:00.000Z",
+      },
+    });
+    expect(JSON.stringify(result)).not.toMatch(/chat.?id|token|destination/i);
+  });
+
   it("sends schedule changes only through the transactional admin RPC", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: {

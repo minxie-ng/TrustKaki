@@ -246,6 +246,31 @@ export const recipientPreviewRequestSchema = z.object({
   requestedChannel: contactChannelSchema.nullable().optional(),
 }).strict();
 
+export const proactiveCheckInScheduleRequestSchema = z.object({
+  commandId: commandIdSchema,
+  action: z.enum(["configure", "pause", "resume", "manual_run"]),
+  platform: z.enum(["telegram", "whatsapp"]),
+  localSendTime: hhmmSchema,
+  timezone: timezoneSchema,
+  activeWeekdays: z.array(z.number().int().min(1).max(7)).min(1).max(7)
+    .refine((value) => new Set(value).size === value.length, {
+      message: "Active weekdays must be unique.",
+    }),
+  initialResponseMinutes: z.number().int().min(1).max(1440),
+  retryResponseMinutes: z.number().int().min(1).max(1440),
+  initialMessageTemplate: z.string().trim().min(1).max(1000),
+  retryMessageTemplate: z.string().trim().min(1).max(1000),
+  reason: z.string().trim().max(500).nullable().optional(),
+}).strict().superRefine((value, ctx) => {
+  if (value.action === "pause" && (value.reason?.length ?? 0) < 10) {
+    ctx.addIssue({
+      code: "custom",
+      message: "A short reason is required when pausing check-ins.",
+      path: ["reason"],
+    });
+  }
+});
+
 export async function parseJsonBody<T>(
   request: Request,
   schema: z.ZodType<T>

@@ -8,6 +8,7 @@ import {
   seniorContactCreateRequestSchema,
   manualBriefingRequestSchema,
   queueActionRequestSchema,
+  proactiveCheckInScheduleRequestSchema,
   specialistAgentRequestSchema,
 } from "./schemas";
 
@@ -35,6 +36,37 @@ const validContext = {
 };
 
 describe("API request schemas", () => {
+  it("validates proactive schedule commands and meaningful pause reasons", () => {
+    const base = {
+      commandId,
+      action: "configure",
+      platform: "telegram",
+      localSendTime: "09:00",
+      timezone: "Asia/Singapore",
+      activeWeekdays: [1, 2, 3, 4, 5, 6, 7],
+      initialResponseMinutes: 120,
+      retryResponseMinutes: 60,
+      initialMessageTemplate: "Good morning. How are you today?",
+      retryMessageTemplate: "Just checking again. Reply when convenient.",
+      reason: null,
+    };
+
+    expect(proactiveCheckInScheduleRequestSchema.safeParse(base).success).toBe(true);
+    expect(proactiveCheckInScheduleRequestSchema.safeParse({
+      ...base,
+      action: "pause",
+      reason: "Busy",
+    }).success).toBe(false);
+    expect(proactiveCheckInScheduleRequestSchema.safeParse({
+      ...base,
+      action: "pause",
+      reason: "Temporarily paused while the senior is overseas.",
+    }).success).toBe(true);
+    expect(proactiveCheckInScheduleRequestSchema.safeParse({
+      ...base,
+      now: "2026-07-15T00:00:00.000Z",
+    }).success).toBe(false);
+  });
   it("accepts a senior-scoped orchestration message request", () => {
     expect(
       agentMessageRequestSchema.safeParse({

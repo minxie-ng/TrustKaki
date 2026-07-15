@@ -1,6 +1,7 @@
 "use client";
 
 import type { BriefingOutput } from "@/lib/agents/contracts";
+import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
 import type { AgentTrace, DashboardData, MaskedContactPlan } from "@/lib/types";
 import { followUpQueueForSenior } from "./dashboardViewModel";
 import { DemoControls } from "./dashboard/DemoControls";
@@ -11,6 +12,7 @@ import {
   ContactPlanPanel,
   contactPlanInstanceKey,
 } from "./dashboard/ContactPlanPanel";
+import { ProactiveCheckInPanel } from "./dashboard/ProactiveCheckInPanel";
 
 interface DashboardProps {
   data: DashboardData;
@@ -26,6 +28,10 @@ interface DashboardProps {
   contactPlanLoading?: boolean;
   contactPlanError?: string | null;
   onRefreshContactPlan?: () => void;
+  checkInSchedule?: ProactiveCheckInScheduleOverview | null;
+  checkInScheduleLoading?: boolean;
+  checkInScheduleError?: string | null;
+  onRefreshCheckInSchedule?: () => void;
 }
 
 export default function Dashboard({
@@ -42,6 +48,10 @@ export default function Dashboard({
   contactPlanLoading = false,
   contactPlanError = null,
   onRefreshContactPlan,
+  checkInSchedule = null,
+  checkInScheduleLoading = false,
+  checkInScheduleError = null,
+  onRefreshCheckInSchedule,
 }: DashboardProps) {
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
@@ -73,6 +83,17 @@ export default function Dashboard({
             onSelect={(seniorId) => onSelectSenior?.(seniorId)}
           />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
+          <ProactiveCheckInPanel
+            key={`proactive-check-in:${selectedSeniorId ?? "none"}`}
+            overview={checkInSchedule}
+            loading={checkInScheduleLoading}
+            error={checkInScheduleError}
+            isAdmin={isDemoAdmin}
+            seniorId={selectedSeniorId}
+            authToken={authToken ?? ""}
+            onSaved={() => onRefreshCheckInSchedule?.()}
+            onUnauthorized={unauthorized}
+          />
           <ContactPlanPanel
             key={contactPlanInstanceKey(selectedSeniorId)}
             plan={contactPlan}
