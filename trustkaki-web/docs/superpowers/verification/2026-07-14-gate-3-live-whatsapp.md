@@ -93,3 +93,16 @@ The controlled real inbound-to-reply path is **LIVE VERIFIED**. Gate 3 is not ye
 complete for organisational production because the test number remains in use,
 the new credential still needs a post-rotation live reply, and the remaining
 items above are open.
+
+## 15 July Meta account blocker
+
+Post-rotation inbound messages still reached the webhook, completed real agent
+orchestration, persisted, and were accepted by Meta's outbound API. Meta then
+returned asynchronous delivery error `131031` (`Business Account locked`). Meta
+diagnostics reported stale hard/soft Business Manager locks even though the WABA
+was shown as Approved and the test number as Connected/High quality. The linked
+personal Facebook account subsequently entered security recovery.
+
+This does not invalidate the earlier live WhatsApp evidence. Telegram is the
+temporary live demonstration transport while Meta recovery proceeds; WhatsApp
+remains the intended production channel.

@@ -195,9 +195,15 @@ durable processor to update linked outbound metadata without invoking agents.
 The temporary Meta token has been replaced locally and in Vercel Production by
 a non-expiring System User credential scoped to WhatsApp messaging and
 management. The deployment is healthy; one post-rotation live reply remains
-required before closing credential verification. Other production work includes
-a scheduled retry cadence, latency telemetry, admin phone onboarding, and a
-registered production number.
+required before closing credential verification. Meta currently reports stale
+hard/soft Business Manager locks through delivery error `131031`, and the linked
+personal Facebook account requires security recovery. This is an external
+transport blocker rather than a failure of TrustKaki orchestration.
+
+Telegram is now the temporary live demonstration transport. It must be added as
+a narrow adapter that reuses the existing orchestrator, deterministic policy,
+persistence, Pattern Watch, and dashboard. WhatsApp remains the preferred
+production channel and its implementation must stay intact.
 
 Phase 4 Pattern Watch and caregiver queue are implemented. Pattern Watch reads
 stored detected signals over time and writes `patterns` plus operational
@@ -309,15 +315,15 @@ different household contexts, caregiver relationships, and risk levels.
    deterministic Pattern Watch and queue consolidation. Full Agent Replay remains
    available for technical validation.
 3. The published Meta callback targets `https://trustkaki.vercel.app`; do not
-   change it without a controlled verification plan.
+   change it, regenerate credentials, or recreate Meta assets while account
+   recovery is pending.
 
 ## Immediate next task
 
-Send one controlled inbound message through Meta's test number and confirm a
-reply after the System User credential rotation. Then implement scheduled
-retry processing and stage-level latency telemetry. Do not enable caregiver
-notification fan-out, proactive scheduling, or production phone registration
-until those controls are verified.
+Audit the current WhatsApp-specific transport boundaries and write the smallest
+typed contract plan for a Telegram live-demo adapter. Stop after that audit and
+plan before implementing webhook intake. Telegram must reuse the existing care
+workflow and must not become a separate chatbot or duplicate persistence path.
 
 ## Working rules
 - inspect before modifying

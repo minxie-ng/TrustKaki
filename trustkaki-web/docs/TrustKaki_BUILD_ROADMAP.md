@@ -420,7 +420,19 @@ src/
         briefing.ts
 ```
 
-## 11. WhatsApp Integration
+## 11. Messaging Transport Strategy
+
+WhatsApp remains TrustKaki's preferred production channel because it is the
+most familiar messaging surface for the intended Singapore senior and caregiver
+audience. The care workflow itself must remain transport-independent: channel
+adapters deliver messages into the same orchestration, deterministic policy,
+persistence, Pattern Watch, and caregiver queue.
+
+Telegram is the current live demonstration transport. It is a continuity
+fallback while Meta resolves an external Business Manager/WABA security lock.
+Telegram must not replace, remove, or fork the existing WhatsApp care logic.
+
+### 11.1 WhatsApp Integration
 
 Target integration:
 
@@ -458,6 +470,34 @@ deployed/live setup must keep WhatsApp credentials server-side and use an
 appropriate durable Meta credential.
 
 The WhatsApp-style web UI remains useful as a testing interface, demo fallback, and developer console, but it must not be the only messaging channel in the final product.
+
+### 11.2 Telegram Live Demo Adapter
+
+Implement Telegram in bounded stages rather than as one broad channel rewrite:
+
+1. **Transport boundary audit**
+   - identify the smallest reusable inbound envelope and outbound sender boundary
+   - retain WhatsApp-specific parsing, signature verification, statuses, and inbox
+   - define Telegram webhook, identity mapping, deduplication, and reply contracts
+2. **Secure webhook intake**
+   - verify Telegram's webhook secret header
+   - parse text updates and safely ignore unsupported updates
+   - deduplicate by Telegram update/message identity
+   - return promptly without exposing internal failures or secrets
+3. **Real care workflow connection**
+   - map a configured Telegram user/chat to an authorised senior
+   - run the existing orchestrator and deterministic policy unchanged
+   - persist messages, agent runs, signals, risk, alerts, briefings, and provenance
+   - send one selected senior-facing reply through Telegram
+4. **Live verification and judge readiness**
+   - prove one real inbound-to-policy-to-reply Telegram path
+   - prove duplicate delivery does not rerun agents or duplicate persistence
+   - show the same resulting state in the caregiver dashboard
+   - retain evidence that WhatsApp previously passed a real live path
+
+Telegram limitations must remain explicit: it is a demo continuity channel, it
+does not provide the same Singapore senior adoption fit as WhatsApp, and its
+delivery semantics must not be presented as WhatsApp delivery/read receipts.
 
 ## 12. Scheduler
 
@@ -899,6 +939,22 @@ quiet-hours, and recipient-selection rules in this gate.
 - [ ] complete templates, consent, quiet hours, and policy-approved human notifications
 - [ ] register and verify the production TrustKaki number and business profile
 
+Current external blocker: Meta shows the test WABA as Approved and its phone as
+Connected/High quality, but status webhooks still return error `131031` because
+Meta's backend reports hard/soft Business Manager locks. The linked personal
+Facebook account is also in security recovery. Do not recreate Meta assets or
+remove the verified WhatsApp implementation while support/recovery is pending.
+
+#### Gate 3T — Telegram Demo Continuity
+
+- [ ] audit and document the minimal transport boundary
+- [ ] implement authenticated Telegram webhook intake and typed parsing
+- [ ] add durable deduplication and senior identity mapping
+- [ ] reuse the existing orchestrator, deterministic policy, and persistence
+- [ ] send one selected Telegram reply without exposing internal agent messages
+- [ ] complete unit, typecheck, lint, build, and one real live Telegram test
+- [ ] verify the resulting senior state appears in the existing dashboard
+
 #### Gate 4 — Proactive Check-ins
 
 - senior-specific schedules and quiet hours
@@ -933,14 +989,14 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate work remains **Gate 3 production WhatsApp readiness**. The
-controlled inbound-to-reply path is live verified on Meta's test number. A
-non-expiring System User credential is configured; one post-rotation live reply
-must verify it before the credential task closes. The next bounded work is then
-scheduled pending-event recovery, stage-level latency measurement, and
-administrator-driven senior phone onboarding. Caregiver notification fan-out,
-proactive scheduling, and production-number registration remain gated behind
-those controls.
+The immediate work is **Gate 3T Telegram Demo Continuity**, while Meta account
+recovery proceeds independently. Start only with the transport boundary audit
+and typed Telegram contracts; do not implement the full adapter in the same
+change. Each later stage must preserve the already verified WhatsApp path and
+reuse the same authoritative orchestration and persistence. After one live
+Telegram path is verified, resume scheduled retry processing, latency telemetry,
+and administrator-driven senior messaging identity onboarding. Caregiver
+notification fan-out and proactive scheduling remain separately gated.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
