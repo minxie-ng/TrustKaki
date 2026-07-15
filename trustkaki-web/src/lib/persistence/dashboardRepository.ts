@@ -84,6 +84,13 @@ function riskPriority(risk: DashboardData["senior"]["riskLevel"]): number {
   return 2;
 }
 
+export function resolveQueueRiskLevel(
+  policyRisk: DashboardData["senior"]["riskLevel"],
+  operationalRisk: DashboardData["senior"]["riskLevel"] | null
+): DashboardData["senior"]["riskLevel"] {
+  return operationalRisk ?? policyRisk;
+}
+
 function patternPriority(patternType: PatternType | null): number {
   if (patternType === "combined_wellbeing_decline") return 0;
   if (patternType === "social_withdrawal") return 1;
@@ -232,6 +239,7 @@ async function buildFollowUpQueue(
     episode_key?: string | null;
     last_evidence_at: string;
     updated_at: string;
+    operational_risk?: DashboardData["senior"]["riskLevel"] | null;
     caregivers?: { display_name?: string | null } | null;
     patterns?: {
       id: string;
@@ -252,6 +260,10 @@ async function buildFollowUpQueue(
 
   const items = await Promise.all(
     rows.map(async (row) => {
+      const queueRisk = resolveQueueRiskLevel(
+        senior.risk_level,
+        row.operational_risk ?? null
+      );
       const relatedPatternIds = Array.from(
         new Set([
           ...(row.related_pattern_ids ?? []),
@@ -299,7 +311,7 @@ async function buildFollowUpQueue(
         : null;
 
       const priority =
-        riskPriority(senior.risk_level) * 100 +
+        riskPriority(queueRisk) * 100 +
         patternPriority(primaryPattern?.pattern_type ?? null) * 10 +
         (row.status === "pending" ? 0 : 5);
 
@@ -307,8 +319,8 @@ async function buildFollowUpQueue(
         id: row.id,
         seniorId: senior.id,
         seniorName: senior.display_name,
-        riskLevel: senior.risk_level,
-        headline: `${senior.risk_level[0].toUpperCase()}${senior.risk_level.slice(1)} · Follow-up suggested`,
+        riskLevel: queueRisk,
+        headline: `${queueRisk[0].toUpperCase()}${queueRisk.slice(1)} · Follow-up suggested`,
         reason: row.reason,
         changeFromUsual: row.change_from_usual,
         lastResponseAt: senior.last_check_in_at,

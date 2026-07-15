@@ -5,6 +5,7 @@ import { orchestrate } from "@/lib/agents/orchestrator";
 import { selectSeniorReply } from "@/lib/messaging/selectSeniorReply";
 import { buildOutboundClientMessageId } from "@/lib/persistence/orchestration";
 import { loadSeniorContextByMessagingIdentity } from "@/lib/persistence/seniorContextRepository";
+import { recordSeniorResponse } from "@/lib/persistence/proactiveCheckInRepository";
 import {
   acceptTelegramEvent,
   claimTelegramEvent,
@@ -206,6 +207,11 @@ async function persistOrchestrationIfNeeded(args: {
       source: "webhook",
       update_id: args.inbound.updateId,
     },
+  });
+  await recordSeniorResponse({
+    seniorId: args.seniorId,
+    clientMessageId: args.inbound.clientMessageId,
+    respondedAt: args.inbound.timestamp,
   });
   await markTelegramOrchestrationCompleted(args.event.id);
 }

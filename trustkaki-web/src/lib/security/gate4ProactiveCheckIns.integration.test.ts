@@ -235,5 +235,183 @@ describeDatabase("Gate 4 proactive check-in integration", () => {
     expect(stale.error?.code).toBe("PT409");
     expect(nextJobs.error).toBeNull();
     expect(nextJobs.data).toHaveLength(1);
+
+    await serviceA
+      .from("proactive_check_in_workflows")
+      .update({ status: "responded", responded_at: now })
+      .eq("id", workflowId);
+    await serviceA
+      .from("scheduled_jobs")
+      .update({ status: "cancelled", cancelled_at: now })
+      .eq("workflow_id", workflowId)
+      .eq("status", "pending");
+  });
+
+  it("cancels pending work when the persisted senior response is timely", async () => {
+    const responseWorkflowId = randomUUID();
+    const responseJobId = randomUUID();
+    const checkInId = randomUUID();
+    const clientMessageId = `gate4-response-${randomUUID()}`;
+    const startedAt = new Date(Date.now() - 60_000).toISOString();
+    const respondedAt = new Date().toISOString();
+    const inserts = await Promise.all([
+      serviceA.from("proactive_check_in_workflows").insert({
+        id: responseWorkflowId,
+        schedule_id: scheduleId,
+        senior_id: sharedSeniorId,
+        status: "awaiting_initial_response",
+        started_at: startedAt,
+        initial_sent_at: startedAt,
+      }),
+      serviceA.from("check_ins").insert({
+        id: checkInId,
+        senior_id: sharedSeniorId,
+        status: "active",
+        risk_before: "green",
+        risk_after: "green",
+      }),
+    ]);
+    expect(inserts.every(({ error }) => error === null)).toBe(true);
+    const job = await serviceA.from("scheduled_jobs").insert({
+      id: responseJobId,
+      senior_id: sharedSeniorId,
+      job_type: "morning_check_in",
+      status: "pending",
+      scheduled_for: respondedAt,
+      next_eligible_at: respondedAt,
+      schedule_id: scheduleId,
+      workflow_id: responseWorkflowId,
+      stage: "initial_deadline",
+      idempotency_key: `gate4:${responseWorkflowId}:initial_deadline`,
+      payload: {},
+    });
+    expect(job.error).toBeNull();
+    const message = await serviceA.from("messages").insert({
+      check_in_id: checkInId,
+      senior_id: sharedSeniorId,
+      sender: "senior",
+      text: "I am okay, thank you.",
+      client_message_id: clientMessageId,
+      created_at: respondedAt,
+    });
+    expect(message.error).toBeNull();
+
+    const response = await serviceA.rpc("record_proactive_check_in_response", {
+      p_senior_id: sharedSeniorId,
+      p_client_message_id: clientMessageId,
+      p_responded_at: respondedAt,
+    });
+    const [workflow, pendingJob, queue] = await Promise.all([
+      serviceA.from("proactive_check_in_workflows").select("status").eq("id", responseWorkflowId).single(),
+      serviceA.from("scheduled_jobs").select("status").eq("id", responseJobId).single(),
+      serviceA.from("caregiver_queue_items").select("id").eq("source_id", responseWorkflowId),
+    ]);
+
+    expect(response.error).toBeNull();
+    expect(response.data).toMatchObject({ result: "pending_work_cancelled" });
+    expect(workflow.data?.status).toBe("responded");
+    expect(pendingJob.data?.status).toBe("cancelled");
+    expect(queue.data).toEqual([]);
+  });
+
+  it("creates one Yellow case and records a repeated late response once", async () => {
+    const timeoutWorkflowId = randomUUID();
+    const timeoutJobId = randomUUID();
+    const checkInId = randomUUID();
+    const clientMessageId = `gate4-late-${randomUUID()}`;
+    const initialSentAt = new Date(Date.now() - 10_800_000).toISOString();
+    const retrySentAt = new Date(Date.now() - 3_600_000).toISOString();
+    const now = new Date().toISOString();
+    const workflow = await serviceA.from("proactive_check_in_workflows").insert({
+      id: timeoutWorkflowId,
+      schedule_id: scheduleId,
+      senior_id: sharedSeniorId,
+      status: "awaiting_retry_response",
+      started_at: initialSentAt,
+      initial_sent_at: initialSentAt,
+      retry_sent_at: retrySentAt,
+    });
+    expect(workflow.error).toBeNull();
+    const job = await serviceA.from("scheduled_jobs").insert({
+      id: timeoutJobId,
+      senior_id: sharedSeniorId,
+      job_type: "follow_up",
+      status: "running",
+      scheduled_for: now,
+      next_eligible_at: now,
+      schedule_id: scheduleId,
+      workflow_id: timeoutWorkflowId,
+      stage: "final_deadline",
+      idempotency_key: `gate4:${timeoutWorkflowId}:final_deadline`,
+      claimed_by: "gate4-timeout-worker",
+      claim_expires_at: new Date(Date.now() + 300_000).toISOString(),
+      payload: {},
+    });
+    expect(job.error).toBeNull();
+
+    const finalized = await serviceA.rpc("finalize_proactive_check_in_timeout", {
+      p_job_id: timeoutJobId,
+      p_worker_id: "gate4-timeout-worker",
+      p_now: now,
+    });
+    expect(finalized.error).toBeNull();
+    expect(finalized.data).toMatchObject({
+      result: "caregiver_case_created",
+      operational_risk: "yellow",
+    });
+
+    const checkIn = await serviceA.from("check_ins").insert({
+      id: checkInId,
+      senior_id: sharedSeniorId,
+      status: "active",
+      risk_before: "green",
+      risk_after: "green",
+    });
+    expect(checkIn.error).toBeNull();
+    const message = await serviceA.from("messages").insert({
+      check_in_id: checkInId,
+      senior_id: sharedSeniorId,
+      sender: "senior",
+      text: "Sorry, I saw this late. I am okay.",
+      client_message_id: clientMessageId,
+      created_at: now,
+    });
+    expect(message.error).toBeNull();
+
+    const first = await serviceA.rpc("record_proactive_check_in_response", {
+      p_senior_id: sharedSeniorId,
+      p_client_message_id: clientMessageId,
+      p_responded_at: now,
+    });
+    const duplicate = await serviceA.rpc("record_proactive_check_in_response", {
+      p_senior_id: sharedSeniorId,
+      p_client_message_id: clientMessageId,
+      p_responded_at: now,
+    });
+    const [queue, events, senior] = await Promise.all([
+      serviceA.from("caregiver_queue_items")
+        .select("status, operational_risk, pattern_id, episode_key, change_from_usual, late_response_at")
+        .eq("source_id", timeoutWorkflowId)
+        .single(),
+      serviceA.from("proactive_check_in_events")
+        .select("id")
+        .eq("workflow_id", timeoutWorkflowId)
+        .eq("event_type", "senior_replied_after_escalation"),
+      serviceA.from("seniors").select("risk_level").eq("id", sharedSeniorId).single(),
+    ]);
+
+    expect(first.data).toMatchObject({ result: "late_response_recorded" });
+    expect(duplicate.data).toMatchObject({ result: "duplicate_response" });
+    expect(queue.data).toMatchObject({
+      status: "pending",
+      operational_risk: "yellow",
+      pattern_id: null,
+      episode_key: `proactive_non_response:${timeoutWorkflowId}`,
+    });
+    expect(queue.data?.change_from_usual).toContain("Initial check-in sent at");
+    expect(queue.data?.change_from_usual).toContain("gentle retry sent at");
+    expect(queue.data?.late_response_at).not.toBeNull();
+    expect(events.data).toHaveLength(1);
+    expect(senior.data?.risk_level).toBe("green");
   });
 });

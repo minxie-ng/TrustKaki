@@ -55,6 +55,21 @@ describe("Gate 4 proactive check-in migration", () => {
     expect(sql).not.toMatch(/insert\s+into\s+public\.risk_events/i);
   });
 
+  it("keeps repeated late responses idempotent and records both send attempts", () => {
+    const directory = join(process.cwd(), "supabase/migrations");
+    const file = readdirSync(directory).find((name) =>
+      name.endsWith("_gate_4_response_case_remediation.sql")
+    );
+    if (!file) throw new Error("Gate 4 response remediation migration is missing");
+    const sql = readFileSync(join(directory, file), "utf8").toLowerCase();
+
+    expect(sql).toContain("response_message_id = v_message_id");
+    expect(sql).toContain("'duplicate_response'");
+    expect(sql).toContain("v_workflow.initial_sent_at");
+    expect(sql).toContain("v_workflow.retry_sent_at");
+    expect(sql).not.toContain("insert into public.risk_events");
+  });
+
   it("keeps the next-run helper free of shadowed loop variables", () => {
     const directory = join(process.cwd(), "supabase/migrations");
     const file = readdirSync(directory).find((name) =>

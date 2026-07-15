@@ -9,6 +9,7 @@ const loadSeniorContextByMessagingIdentityMock = vi.fn();
 const persistOrchestrationResultMock = vi.fn();
 const recordInboundMessageMetadataMock = vi.fn();
 const recordOutboundMessageMetadataMock = vi.fn();
+const recordSeniorResponseMock = vi.fn();
 const acceptTelegramEventMock = vi.fn();
 const claimTelegramEventMock = vi.fn();
 const listRetryableTelegramEventsMock = vi.fn();
@@ -27,6 +28,9 @@ vi.mock("@/lib/persistence/trustkakiRepository", () => ({
 }));
 vi.mock("@/lib/persistence/seniorContextRepository", () => ({
   loadSeniorContextByMessagingIdentity: loadSeniorContextByMessagingIdentityMock,
+}));
+vi.mock("@/lib/persistence/proactiveCheckInRepository", () => ({
+  recordSeniorResponse: recordSeniorResponseMock,
 }));
 vi.mock("@/lib/persistence/telegramEventRepository", () => ({
   acceptTelegramEvent: acceptTelegramEventMock,
@@ -134,6 +138,7 @@ describe("Telegram orchestration service", () => {
     persistOrchestrationResultMock.mockResolvedValue({ persisted: true });
     recordInboundMessageMetadataMock.mockResolvedValue({ persisted: true });
     recordOutboundMessageMetadataMock.mockResolvedValue({ persisted: true });
+    recordSeniorResponseMock.mockResolvedValue({ result: "no_open_workflow" });
     storeTelegramOrchestrationResultMock.mockResolvedValue(undefined);
     markTelegramOrchestrationCompletedMock.mockResolvedValue(undefined);
     updateTelegramOutboundStateMock.mockResolvedValue(undefined);
@@ -217,6 +222,17 @@ describe("Telegram orchestration service", () => {
         update_id: "910000001",
       },
     });
+    expect(recordSeniorResponseMock).toHaveBeenCalledWith({
+      seniorId,
+      clientMessageId: "telegram:910000001",
+      respondedAt: "2026-07-15T00:00:00.000Z",
+    });
+    expect(recordInboundMessageMetadataMock.mock.invocationCallOrder[0]).toBeLessThan(
+      recordSeniorResponseMock.mock.invocationCallOrder[0]
+    );
+    expect(recordSeniorResponseMock.mock.invocationCallOrder[0]).toBeLessThan(
+      markTelegramOrchestrationCompletedMock.mock.invocationCallOrder[0]
+    );
     expect(sendText).toHaveBeenCalledWith({
       chatId: "8123456789",
       text: "Please eat something light and let Rachel know.",
@@ -241,6 +257,21 @@ describe("Telegram orchestration service", () => {
     expect(JSON.stringify(recordOutboundMessageMetadataMock.mock.calls)).not.toContain(
       "read"
     );
+  });
+
+  it("does not record a proactive response when inbound persistence fails", async () => {
+    const { processTelegramEventById } = await import("./service");
+    claimTelegramEventMock.mockResolvedValue(eventRow());
+    recordInboundMessageMetadataMock.mockRejectedValueOnce(
+      new Error("message metadata unavailable")
+    );
+
+    const result = await processTelegramEventById("event-telegram-1", {
+      outboundClient: { sendText: vi.fn() },
+    });
+
+    expect(result.status).toBe("error");
+    expect(recordSeniorResponseMock).not.toHaveBeenCalled();
   });
 
   it("does not process an unknown Telegram identity", async () => {

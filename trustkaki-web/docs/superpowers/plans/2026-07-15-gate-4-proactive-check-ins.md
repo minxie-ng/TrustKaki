@@ -272,30 +272,39 @@ git commit -m "feat: schedule proactive check-in processor"
 - Modify: `src/lib/persistence/proactiveCheckInRepository.test.ts`
 - Modify: `src/lib/supabase/types.ts`
 
-- [ ] **Step 1: Write failing response tests**
+- [x] **Step 1: Write failing response tests**
 
 After inbound message persistence, assert that a timely response cancels pending
 jobs and creates no case. Assert that a response after escalation records
 `senior_replied_after_escalation` and leaves the case active.
 
-- [ ] **Step 2: Implement response recording**
+- [x] **Step 2: Implement response recording**
 
 Call `recordSeniorResponse` only after inbound message persistence succeeds.
 The transactional database command chooses timely versus late behavior and
 links the response message to the workflow.
 
-- [ ] **Step 3: Implement final-timeout case creation**
+- [x] **Step 3: Implement final-timeout case creation**
 
 Use a fixed episode key `proactive_non_response:<workflow_id>`, Yellow display
 semantics, two attempt timestamps, and one suggested human action. Keep
 `pattern_id` null and do not insert a policy risk event or emergency alert.
 
-- [ ] **Step 4: Run service, repository, and dashboard tests**
+- [x] **Step 4: Run service, repository, and dashboard tests**
 
 Run: `npm test -- src/lib/telegram/service.test.ts src/lib/persistence/proactiveCheckInRepository.test.ts src/lib/persistence/dashboardRepository.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+Evidence (2026-07-15): 22/22 focused service, repository, dashboard, and
+migration tests passed. The live Supabase suite passed 4/4 after first proving
+the prior late-response duplicate defect. A timely reply cancels pending work;
+a final timeout creates one Yellow operational case with both attempt times;
+a late reply keeps the case active and records one auditable event. The senior's
+policy risk remains unchanged. Migration `20260715100951` is aligned locally
+and remotely. Database lint reports only the pre-existing
+`reset_trustkaki_demo` cast warning.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/telegram/service.ts src/lib/telegram/service.test.ts src/lib/persistence/proactiveCheckInRepository.ts src/lib/persistence/proactiveCheckInRepository.test.ts src/lib/supabase/types.ts
