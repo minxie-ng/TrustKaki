@@ -223,18 +223,18 @@ git commit -m "feat: process proactive telegram check-ins"
 - Create: `vercel.json`
 - Modify: `.env.example`
 
-- [ ] **Step 1: Write failing route authorization tests**
+- [x] **Step 1: Write failing route authorization tests**
 
 Prove missing/wrong `Authorization: Bearer <CRON_SECRET>` returns 401 without
 processing, valid secret processes a bounded batch, and responses contain only
 counts/statuses.
 
-- [ ] **Step 2: Implement the protected GET/POST route**
+- [x] **Step 2: Implement the protected GET/POST route**
 
 Use constant-time secret comparison, `runtime = "nodejs"`, a bounded limit, and
 safe error categories. Never return raw job payloads, destinations, or errors.
 
-- [ ] **Step 3: Add five-minute cron configuration and env documentation**
+- [x] **Step 3: Add five-minute cron configuration and env documentation**
 
 ```json
 {
@@ -247,12 +247,16 @@ safe error categories. Never return raw job payloads, destinations, or errors.
 
 Document `CRON_SECRET`; do not modify `.env.local`.
 
-- [ ] **Step 4: Run route tests and build**
+- [x] **Step 4: Run route tests and build**
 
 Run: `npm test -- src/app/api/internal/check-ins/process-due/route.test.ts && npm run build`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+Evidence (2026-07-15): 13/13 focused route and processor tests passed with
+typecheck, focused lint, and a production build. The route processes at most 10
+jobs and returns aggregate counts only.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/api/internal/check-ins/process-due .env.example vercel.json
