@@ -66,7 +66,7 @@ Implementation is intentionally split. Stop and report after each checkpoint unl
 - Create: `src/lib/persistence/telegramEventRepository.ts`
 - Create: `src/lib/persistence/telegramEventRepository.test.ts`
 
-- [ ] **Step 1: Check current Supabase guidance and migration state**
+- [x] **Step 1: Check current Supabase guidance and migration state**
 
 Run:
 
@@ -77,7 +77,7 @@ npx supabase migration list
 
 Read the current Supabase changelog before writing database code. Do not edit an already-applied migration.
 
-- [ ] **Step 2: Write failing migration-contract tests**
+- [x] **Step 2: Write failing migration-contract tests**
 
 Test that the new migration defines:
 
@@ -93,7 +93,7 @@ Run and confirm RED:
 npx vitest run src/lib/security/telegramMigration.test.ts
 ```
 
-- [ ] **Step 3: Create the migration through the normal workflow**
+- [x] **Step 3: Create the migration through the normal workflow**
 
 Run:
 
@@ -103,11 +103,11 @@ npx supabase migration new telegram_demo_continuity
 
 Edit only the CLI-created file. Use text for Telegram IDs to avoid JavaScript integer precision assumptions. Do not copy WhatsApp delivery-status columns that Telegram cannot populate.
 
-- [ ] **Step 4: Add typed database definitions**
+- [x] **Step 4: Add typed database definitions**
 
 Update `src/lib/supabase/types.ts` for both tables and `claim_telegram_webhook_event`. Keep the generated database shape explicit and consistent with existing project types.
 
-- [ ] **Step 5: Write failing repository tests**
+- [x] **Step 5: Write failing repository tests**
 
 Prove:
 
@@ -125,11 +125,11 @@ Run and confirm RED:
 npx vitest run src/lib/persistence/seniorMessagingIdentityRepository.test.ts src/lib/persistence/telegramEventRepository.test.ts
 ```
 
-- [ ] **Step 6: Implement the two narrow repositories**
+- [x] **Step 6: Implement the two narrow repositories**
 
 `seniorMessagingIdentityRepository.ts` owns identity lookup only. `telegramEventRepository.ts` mirrors the proven claim/resume behavior of the WhatsApp event repository without sharing provider-specific row types.
 
-- [ ] **Step 7: Verify checkpoint 1**
+- [x] **Step 7: Verify checkpoint 1**
 
 Run:
 
@@ -141,7 +141,7 @@ git diff --check
 
 Apply the migration to the linked `trustkaki` project only after dry-run review, then confirm local/remote migration history. Run Supabase security and performance advisors because database code changed.
 
-- [ ] **Step 8: Commit checkpoint 1**
+- [x] **Step 8: Commit checkpoint 1**
 
 ```bash
 git add supabase/migrations src/lib/supabase/types.ts src/lib/security/telegramMigration.test.ts src/lib/persistence/seniorMessagingIdentityRepository.ts src/lib/persistence/seniorMessagingIdentityRepository.test.ts src/lib/persistence/telegramEventRepository.ts src/lib/persistence/telegramEventRepository.test.ts
@@ -161,15 +161,15 @@ git commit -m "feat: add telegram identity and durable inbox"
 - Create: `src/lib/telegram/client.test.ts`
 - Create: `src/lib/telegram/logging.ts`
 
-- [ ] **Step 1: Write failing parser tests**
+- [x] **Step 1: Write failing parser tests**
 
 Cover a realistic private-chat text update and prove extraction of `update_id`, `message_id`, sender user ID, chat ID, timestamp, and text. Prove edited messages, bot senders, non-text messages, groups, channels, and malformed payloads are ignored safely.
 
-- [ ] **Step 2: Write failing webhook-auth tests**
+- [x] **Step 2: Write failing webhook-auth tests**
 
 Prove matching secrets succeed, missing configuration fails closed, wrong/missing headers fail, and comparison does not expose either value.
 
-- [ ] **Step 3: Write failing outbound-client tests**
+- [x] **Step 3: Write failing outbound-client tests**
 
 Prove the request uses server-side `POST https://api.telegram.org/bot{token}/sendMessage`, sends only `{ chat_id, text }`, validates Telegram's response with Zod, extracts the provider message ID, handles timeout/error responses safely, and never includes the token in thrown/logged text.
 
@@ -179,11 +179,11 @@ Run and confirm RED:
 npx vitest run src/lib/telegram/parser.test.ts src/lib/telegram/webhookAuth.test.ts src/lib/telegram/client.test.ts
 ```
 
-- [ ] **Step 4: Implement the pure transport modules**
+- [x] **Step 4: Implement the pure transport modules**
 
 Use Zod at the untrusted webhook and provider-response boundaries. Use native `fetch` and an explicit timeout. Keep the token in server-only code. Log only sanitized event IDs/status categories, never raw user/chat IDs or payloads.
 
-- [ ] **Step 5: Verify checkpoint 2**
+- [x] **Step 5: Verify checkpoint 2**
 
 Run:
 
@@ -194,7 +194,7 @@ npm run lint
 git diff --check
 ```
 
-- [ ] **Step 6: Commit checkpoint 2**
+- [x] **Step 6: Commit checkpoint 2**
 
 ```bash
 git add src/lib/telegram
@@ -213,19 +213,19 @@ git commit -m "feat: add typed telegram transport"
 - Create: `src/lib/telegram/service.ts`
 - Create: `src/lib/telegram/service.test.ts`
 
-- [ ] **Step 1: Write failing provider-metadata tests**
+- [x] **Step 1: Write failing provider-metadata tests**
 
 Extend the metadata helpers to require `externalPlatform: 'whatsapp' | 'telegram'`. Prove existing WhatsApp calls remain WhatsApp and Telegram calls persist Telegram. Do not change delivery-status handling.
 
-- [ ] **Step 2: Write failing Telegram senior-context tests**
+- [x] **Step 2: Write failing Telegram senior-context tests**
 
 Prove server-side identity lookup loads the same typed `AgentRunContext` used by WhatsApp and authenticated APIs, and unknown Telegram identities return `null` without demo fallback.
 
-- [ ] **Step 3: Extract and test only the existing reply-selection rule**
+- [x] **Step 3: Extract and test only the existing reply-selection rule**
 
 Move the small `digital_safety`, then `triage`, then first-message priority rule from `src/lib/whatsapp/service.ts` into `src/lib/messaging/selectSeniorReply.ts`. Keep behavior byte-for-byte compatible for WhatsApp and add focused tests. Do not extract a generic workflow framework.
 
-- [ ] **Step 4: Write failing Telegram service tests**
+- [x] **Step 4: Write failing Telegram service tests**
 
 Prove:
 
@@ -245,7 +245,7 @@ Run and confirm RED:
 npx vitest run src/lib/persistence/orchestrationRepository.test.ts src/lib/persistence/seniorContextRepository.test.ts src/lib/messaging/selectSeniorReply.test.ts src/lib/telegram/service.test.ts
 ```
 
-- [ ] **Step 5: Implement the Telegram service**
+- [x] **Step 5: Implement the Telegram service**
 
 Follow the proven WhatsApp sequence:
 
@@ -262,7 +262,7 @@ claim event
 
 Keep policy risk authoritative. Do not persist raw Triage risk as final risk. Do not send internal agent messages.
 
-- [ ] **Step 6: Verify checkpoint 3**
+- [x] **Step 6: Verify checkpoint 3**
 
 Run:
 
@@ -273,7 +273,7 @@ npm run lint
 git diff --check
 ```
 
-- [ ] **Step 7: Commit checkpoint 3**
+- [x] **Step 7: Commit checkpoint 3**
 
 ```bash
 git add src/lib/persistence/orchestrationRepository.ts src/lib/persistence/orchestrationRepository.test.ts src/lib/persistence/seniorContextRepository.ts src/lib/persistence/seniorContextRepository.test.ts src/lib/messaging src/lib/telegram/service.ts src/lib/telegram/service.test.ts src/lib/whatsapp/service.ts src/lib/whatsapp/service.test.ts
@@ -343,15 +343,15 @@ git commit -m "feat: add reliable telegram webhook"
 
 **Prerequisite:** The user creates a bot with BotFather and provides secrets only through `.env.local`/Vercel environment-variable interfaces, never in chat or logs.
 
-- [ ] **Step 1: Bind one real demo senior identity**
+- [x] **Step 1: Bind one real demo senior identity**
 
 After the senior sends `/start`, obtain the Telegram user/chat IDs through a controlled diagnostic that redacts values in output. Insert the verified identity for the intended senior into `senior_messaging_identities`. Do not seed a personal identifier into source control.
 
-- [ ] **Step 2: Configure Vercel Production secrets**
+- [x] **Step 2: Configure Vercel Production secrets**
 
 Upload the three Telegram variables to the existing TrustKaki Vercel project without printing values. Redeploy only after local validation and explicit deployment approval.
 
-- [ ] **Step 3: Register the production webhook**
+- [x] **Step 3: Register the production webhook**
 
 Call Telegram `setWebhook` server-side with:
 
@@ -362,7 +362,7 @@ Call Telegram `setWebhook` server-side with:
 
 Verify with `getWebhookInfo`; report only URL, pending count, and sanitized error state.
 
-- [ ] **Step 4: Prove the real end-to-end flow**
+- [x] **Step 4: Prove the real end-to-end flow**
 
 Send `Not hungry today. Knee pain.` from the mapped senior account. Verify:
 
@@ -376,11 +376,11 @@ Send `Not hungry today. Knee pain.` from the mapped senior account. Verify:
 - dashboard reflects the persisted state after refresh;
 - resending the same fixture/update does not duplicate processing.
 
-- [ ] **Step 5: Record truthful evidence**
+- [x] **Step 5: Record truthful evidence**
 
 Create `docs/superpowers/verification/2026-07-15-gate-3t-live-telegram.md` with redacted commands, test counts, persistence evidence, reply receipt, limitations, and the continuing Meta account restriction. Update roadmap/handoff only after live evidence passes.
 
-- [ ] **Step 6: Final validation and commit**
+- [x] **Step 6: Final validation and commit**
 
 ```bash
 npm run validate

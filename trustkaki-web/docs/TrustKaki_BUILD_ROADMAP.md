@@ -947,13 +947,19 @@ remove the verified WhatsApp implementation while support/recovery is pending.
 
 #### Gate 3T — Telegram Demo Continuity
 
-- [ ] audit and document the minimal transport boundary
-- [ ] implement authenticated Telegram webhook intake and typed parsing
-- [ ] add durable deduplication and senior identity mapping
-- [ ] reuse the existing orchestrator, deterministic policy, and persistence
-- [ ] send one selected Telegram reply without exposing internal agent messages
-- [ ] complete unit, typecheck, lint, build, and one real live Telegram test
-- [ ] verify the resulting senior state appears in the existing dashboard
+- [x] audit and document the minimal transport boundary
+- [x] implement authenticated Telegram webhook intake and typed parsing
+- [x] add durable deduplication and senior identity mapping
+- [x] reuse the existing orchestrator, deterministic policy, and persistence
+- [x] send one selected Telegram reply without exposing internal agent messages
+- [x] complete unit, typecheck, lint, build, and one real live Telegram test
+- [x] verify the resulting senior state appears in the existing dashboard
+
+Live evidence is recorded in
+`docs/superpowers/verification/2026-07-15-gate-3t-live-telegram.md`. Telegram
+provider acceptance, persistence, exact-update deduplication, policy authority,
+and authenticated dashboard refresh were verified. Telegram remains a temporary
+continuity channel and does not replace the implemented WhatsApp path.
 
 #### Gate 4 — Proactive Check-ins
 
@@ -989,14 +995,12 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-The immediate work is **Gate 3T Telegram Demo Continuity**, while Meta account
-recovery proceeds independently. Start only with the transport boundary audit
-and typed Telegram contracts; do not implement the full adapter in the same
-change. Each later stage must preserve the already verified WhatsApp path and
-reuse the same authoritative orchestration and persistence. After one live
-Telegram path is verified, resume scheduled retry processing, latency telemetry,
-and administrator-driven senior messaging identity onboarding. Caregiver
-notification fan-out and proactive scheduling remain separately gated.
+Gate 3T Telegram Demo Continuity is verified. The next bounded product step is
+**Gate 4 Proactive Check-ins**: define senior-specific schedules, quiet hours,
+idempotent sends, missed-response handling, and pause/manual controls before
+implementation. Preserve the verified Telegram demo path and WhatsApp code.
+Do not combine proactive scheduling with caregiver notification fan-out,
+organisation tenancy, memory operationalisation, or broad UI redesign.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 

@@ -205,6 +205,15 @@ a narrow adapter that reuses the existing orchestrator, deterministic policy,
 persistence, Pattern Watch, and dashboard. WhatsApp remains the preferred
 production channel and its implementation must stay intact.
 
+Gate 3T is now live and verified. A mapped senior sent a real Telegram text and
+received one real TrustKaki reply through the production webhook. The exact
+event produced six persisted agent/policy runs, two validated signals, one
+policy-approved alert, one policy briefing, no unnecessary risk transition, and
+no fallback. Replaying the exact update created no duplicate work or records.
+The authenticated caregiver dashboard retained the senior's Yellow state,
+latest response, active follow-up item, and priority case after refresh. See
+`docs/superpowers/verification/2026-07-15-gate-3t-live-telegram.md`.
+
 Phase 4 Pattern Watch and caregiver queue are implemented. Pattern Watch reads
 stored detected signals over time and writes `patterns` plus operational
 `caregiver_queue_items`.
@@ -320,10 +329,12 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Audit the current WhatsApp-specific transport boundaries and write the smallest
-typed contract plan for a Telegram live-demo adapter. Stop after that audit and
-plan before implementing webhook intake. Telegram must reuse the existing care
-workflow and must not become a separate chatbot or duplicate persistence path.
+Plan Gate 4 Proactive Check-ins as a bounded operational slice before writing
+code. Cover senior-specific schedules and quiet hours, idempotent sends,
+missed-response handling, retries, pause, and explicit manual override. Keep
+caregiver/family fan-out, memory operationalisation, organisation tenancy, and
+broad UI redesign out of the first slice. Preserve both the verified Telegram
+demo path and existing WhatsApp implementation.
 
 ## Working rules
 - inspect before modifying
