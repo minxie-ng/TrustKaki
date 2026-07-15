@@ -8,7 +8,9 @@ vi.mock("@/lib/supabase/server", () => ({
   createTrustKakiServiceClient: createTrustKakiServiceClientMock,
 }));
 
-function identityClient(data: { senior_id: string } | null) {
+function identityClient(
+  data: { senior_id?: string; external_chat_id?: string | null } | null
+) {
   const filters: Array<[string, unknown]> = [];
   const notFilters: Array<[string, string, unknown]> = [];
   const builder = {
@@ -87,5 +89,26 @@ describe("seniorMessagingIdentityRepository", () => {
       })
     ).resolves.toBeNull();
     expect(createTrustKakiServiceClientMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the verified active Telegram chat for an outbound senior message", async () => {
+    const service = identityClient({ external_chat_id: "chat-456" });
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { findTelegramChatIdForSenior } = await import(
+      "./seniorMessagingIdentityRepository"
+    );
+
+    await expect(findTelegramChatIdForSenior("senior-1")).resolves.toBe(
+      "chat-456"
+    );
+    expect(service.filters).toEqual([
+      ["senior_id", "senior-1"],
+      ["platform", "telegram"],
+      ["is_active", true],
+    ]);
+    expect(service.notFilters).toEqual([
+      ["verified_at", "is", null],
+      ["external_chat_id", "is", null],
+    ]);
   });
 });

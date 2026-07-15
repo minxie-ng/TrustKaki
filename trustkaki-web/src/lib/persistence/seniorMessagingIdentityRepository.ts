@@ -39,3 +39,23 @@ export async function findSeniorIdByMessagingIdentity(args: {
   if (error) throw new Error("Messaging identity lookup failed");
   return (data as { senior_id: string } | null)?.senior_id ?? null;
 }
+
+export async function findTelegramChatIdForSenior(
+  seniorId: string
+): Promise<string | null> {
+  const normalizedSeniorId = seniorId.trim();
+  if (!normalizedSeniorId) return null;
+
+  const { data, error } = await getClient()
+    .from("senior_messaging_identities")
+    .select("external_chat_id")
+    .eq("senior_id", normalizedSeniorId)
+    .eq("platform", "telegram")
+    .eq("is_active", true)
+    .not("verified_at", "is", null)
+    .not("external_chat_id", "is", null)
+    .maybeSingle();
+
+  if (error) throw new Error("Outbound messaging identity lookup failed");
+  return (data as { external_chat_id: string | null } | null)?.external_chat_id ?? null;
+}

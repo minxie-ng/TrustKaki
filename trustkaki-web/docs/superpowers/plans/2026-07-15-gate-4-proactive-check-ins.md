@@ -185,25 +185,30 @@ git commit -m "feat: add durable proactive job commands"
 - Modify: `src/lib/persistence/seniorMessagingIdentityRepository.ts`
 - Modify: `src/lib/persistence/seniorMessagingIdentityRepository.test.ts`
 
-- [ ] **Step 1: Write failing service tests**
+- [x] **Step 1: Write failing service tests**
 
 Prove one initial send, one retry, no second retry, quiet-hour deferral,
 transport failure classification, and idempotent resume after provider
 acceptance. Mock time, repository, identity lookup, and Telegram client.
 
-- [ ] **Step 2: Implement bounded processing**
+- [x] **Step 2: Implement bounded processing**
 
 `processDueProactiveJobs({ limit, workerId, now, outboundClient })` claims at
 most `limit` jobs and processes each independently. Persist provider acceptance
 before scheduling a deadline. Do not run LLM orchestration for a routine
 outbound check-in.
 
-- [ ] **Step 3: Run focused tests**
+- [x] **Step 3: Run focused tests**
 
 Run: `npm test -- src/lib/checkins/service.test.ts src/lib/persistence/seniorMessagingIdentityRepository.test.ts`
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+Evidence (2026-07-15): 16/16 focused processor, identity, and repository tests
+passed with typecheck and focused lint. Provider acceptance is persisted before
+opening a response deadline, and recovery skips a duplicate Telegram send.
+Gate 4 uses a fixed 22:00-07:00 quiet window in the schedule timezone.
+
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/lib/checkins/service.ts src/lib/checkins/service.test.ts src/lib/persistence/seniorMessagingIdentityRepository.ts src/lib/persistence/seniorMessagingIdentityRepository.test.ts

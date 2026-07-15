@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { proactiveCheckInStageSchema } from "@/lib/checkins/contracts";
 import {
@@ -106,6 +107,19 @@ export interface ProactiveCheckInSchedule {
 export type ScheduleCommand = z.infer<typeof scheduleCommandSchema>;
 export type ClaimedProactiveJob = z.infer<typeof claimedJobSchema>;
 
+export interface ProactiveProcessingSchedule {
+  id: string;
+  platform: "telegram" | "whatsapp";
+  timezone: string;
+  initialResponseMinutes: number;
+  retryResponseMinutes: number;
+  initialMessageTemplate: string;
+  retryMessageTemplate: string;
+  paused: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+}
+
 export class ProactiveCheckInConflictError extends Error {
   constructor() {
     super("Proactive check-in state changed");
@@ -139,6 +153,12 @@ function requireServiceClient(): RpcClient {
   const client = createTrustKakiServiceClient();
   if (!client) throw new Error("Proactive check-in persistence unavailable");
   return client as unknown as RpcClient;
+}
+
+function requireDataClient(): SupabaseClient {
+  const client = createTrustKakiServiceClient();
+  if (!client) throw new Error("Proactive check-in persistence unavailable");
+  return client;
 }
 
 async function serviceRpc(name: string, payload: Record<string, unknown>) {
@@ -225,6 +245,120 @@ export async function claimDueJobs(args: {
     p_now: now,
   });
   return z.array(claimedJobSchema).parse(data);
+}
+
+export async function readProcessingSchedule(
+  scheduleId: string
+): Promise<ProactiveProcessingSchedule> {
+  const { data, error } = await requireDataClient()
+    .from("proactive_check_in_schedules")
+    .select(
+      "id, platform, timezone, initial_response_minutes, retry_response_minutes, initial_message_template, retry_message_template, paused_at"
+    )
+    .eq("id", uuidSchema.parse(scheduleId))
+    .single();
+  if (error) throw new Error("Proactive check-in processing schedule read failed");
+  const row = z
+    .object({
+      id: uuidSchema,
+      platform: z.enum(["telegram", "whatsapp"]),
+      timezone: z.string().min(1),
+      initial_response_minutes: z.number().int().positive(),
+      retry_response_minutes: z.number().int().positive(),
+      initial_message_template: z.string().min(1),
+      retry_message_template: z.string().min(1),
+      paused_at: timestampSchema.nullable(),
+    })
+    .parse(data);
+  return {
+    id: row.id,
+    platform: row.platform,
+    timezone: row.timezone,
+    initialResponseMinutes: row.initial_response_minutes,
+    retryResponseMinutes: row.retry_response_minutes,
+    initialMessageTemplate: row.initial_message_template,
+    retryMessageTemplate: row.retry_message_template,
+    paused: row.paused_at !== null,
+    quietHoursStart: "22:00",
+    quietHoursEnd: "07:00",
+  };
+}
+
+export async function findAcceptedOutbound(
+  clientMessageId: string
+): Promise<{ externalMessageId: string } | null> {
+  const { data, error } = await requireDataClient()
+    .from("messages")
+    .select("external_message_id")
+    .eq(
+      "client_message_id",
+      z.string().trim().min(1).max(200).parse(clientMessageId)
+    )
+    .eq("external_platform", "telegram")
+    .not("external_message_id", "is", null)
+    .maybeSingle();
+  if (error) throw new Error("Proactive outbound acceptance lookup failed");
+  const externalMessageId = (data as { external_message_id: string | null } | null)
+    ?.external_message_id;
+  return externalMessageId ? { externalMessageId } : null;
+}
+
+export async function recordProviderAcceptance(args: {
+  seniorId: string;
+  clientMessageId: string;
+  text: string;
+  externalMessageId: string;
+  acceptedAt: string;
+}): Promise<void> {
+  const seniorId = uuidSchema.parse(args.seniorId);
+  const client = requireDataClient();
+  const { data: existingCheckIn, error: checkInError } = await client
+    .from("check_ins")
+    .select("id")
+    .eq("senior_id", seniorId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (checkInError) throw new Error("Proactive outbound check-in lookup failed");
+  let checkIn = existingCheckIn;
+
+  if (!checkIn) {
+    const { data: senior, error: seniorError } = await client
+      .from("seniors")
+      .select("risk_level")
+      .eq("id", seniorId)
+      .single();
+    if (seniorError) throw new Error("Proactive outbound senior lookup failed");
+    const created = await client
+      .from("check_ins")
+      .insert({
+        senior_id: seniorId,
+        status: "active",
+        risk_before: senior.risk_level,
+        risk_after: senior.risk_level,
+      })
+      .select("id")
+      .single();
+    if (created.error) throw new Error("Proactive outbound check-in creation failed");
+    checkIn = created.data;
+  }
+
+  const { error } = await client.from("messages").upsert(
+    {
+      check_in_id: checkIn.id,
+      senior_id: seniorId,
+      sender: "trustkaki",
+      text: z.string().trim().min(1).max(1000).parse(args.text),
+      client_message_id: z.string().trim().min(1).max(200).parse(args.clientMessageId),
+      external_platform: "telegram",
+      external_message_id: z.string().trim().min(1).max(200).parse(args.externalMessageId),
+      external_metadata: { delivery_state: "provider_accepted", source: "proactive_check_in" },
+      created_at: timestampSchema.parse(args.acceptedAt),
+    },
+    { onConflict: "client_message_id" }
+  );
+  if (error) throw new Error("Proactive outbound acceptance persistence failed");
 }
 
 export async function completeJob(args: {
