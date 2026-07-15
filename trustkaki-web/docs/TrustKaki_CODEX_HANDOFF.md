@@ -329,12 +329,14 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Plan Gate 4 Proactive Check-ins as a bounded operational slice before writing
-code. Cover senior-specific schedules and quiet hours, idempotent sends,
-missed-response handling, retries, pause, and explicit manual override. Keep
-caregiver/family fan-out, memory operationalisation, organisation tenancy, and
-broad UI redesign out of the first slice. Preserve both the verified Telegram
-demo path and existing WhatsApp implementation.
+Write and execute the test-first Gate 4 implementation plan from
+`docs/superpowers/specs/2026-07-15-gate-4-proactive-check-ins-design.md`.
+The approved cadence is an initial check-in, a two-hour response window, one
+gentle retry, a one-hour response window, then one Yellow caregiver case. A
+timely reply cancels pending work; a late reply annotates but does not resolve
+the case. Keep caregiver/family fan-out, memory operationalisation, organisation
+tenancy, and broad UI redesign out of this slice. Preserve both the verified
+Telegram demo path and existing WhatsApp implementation.
 
 ## Working rules
 - inspect before modifying
