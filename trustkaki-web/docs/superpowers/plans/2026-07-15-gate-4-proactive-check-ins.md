@@ -12,7 +12,7 @@
 
 ## File Map
 
-- Create `supabase/migrations/20260715170000_gate_4_proactive_check_ins.sql`: schedules, workflow state, job hardening, transactional commands, RLS.
+- Create `supabase/migrations/20260715084838_gate_4_proactive_check_ins.sql`: schedules, workflow state, job hardening, transactional commands, RLS.
 - Create `src/lib/checkins/contracts.ts`: typed schedule, job, workflow, and processor contracts.
 - Create `src/lib/checkins/policy.ts`: pure timing, quiet-hour, cancellation, and stage decisions.
 - Create `src/lib/checkins/service.ts`: bounded job execution and Telegram sends.
@@ -27,11 +27,11 @@
 ### Task 1: Database foundation and security
 
 **Files:**
-- Create: `supabase/migrations/20260715170000_gate_4_proactive_check_ins.sql`
+- Create: `supabase/migrations/20260715084838_gate_4_proactive_check_ins.sql`
 - Create: `src/lib/security/gate4ProactiveCheckInsMigration.test.ts`
 - Modify: `src/lib/supabase/types.ts`
 
-- [ ] **Step 1: Write the failing migration contract test**
+- [x] **Step 1: Write the failing migration contract test**
 
 Assert that the migration contains `proactive_check_in_schedules`,
 `proactive_check_in_workflows`, an idempotency key on `scheduled_jobs`, private
@@ -45,12 +45,12 @@ expect(sql).toContain("claim_due_proactive_check_in_jobs");
 expect(sql).not.toMatch(/grant (insert|update|delete).* to anon/i);
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `npm test -- src/lib/security/gate4ProactiveCheckInsMigration.test.ts`
 Expected: FAIL because the migration does not exist.
 
-- [ ] **Step 3: Add the migration and generated TypeScript table shapes**
+- [x] **Step 3: Add the migration and generated TypeScript table shapes**
 
 Use these bounded values:
 
@@ -69,15 +69,15 @@ commands for completing, retrying, responding, final escalation, and late reply.
 All commands must set a locked `search_path`, authorize the senior, and preserve
 existing policy risk.
 
-- [ ] **Step 4: Run focused migration and type checks**
+- [x] **Step 4: Run focused migration and type checks**
 
 Run: `npm test -- src/lib/security/gate4ProactiveCheckInsMigration.test.ts && npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
-git add supabase/migrations/20260715170000_gate_4_proactive_check_ins.sql src/lib/security/gate4ProactiveCheckInsMigration.test.ts src/lib/supabase/types.ts
+git add supabase/migrations/20260715084838_gate_4_proactive_check_ins.sql src/lib/security/gate4ProactiveCheckInsMigration.test.ts src/lib/supabase/types.ts
 git commit -m "feat: add proactive check-in persistence"
 ```
 

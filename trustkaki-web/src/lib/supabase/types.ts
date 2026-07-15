@@ -78,6 +78,20 @@ export type ContactOutcome =
   | "referred_to_aac_staff"
   | "unable_to_reach"
   | "resolved";
+export type ProactiveCheckInStatus =
+  | "pending_initial_send"
+  | "awaiting_initial_response"
+  | "pending_retry_send"
+  | "awaiting_retry_response"
+  | "responded"
+  | "escalated"
+  | "cancelled"
+  | "failed";
+export type ProactiveCheckInStage =
+  | "initial_send"
+  | "initial_deadline"
+  | "retry_send"
+  | "final_deadline";
 
 export interface Database {
   public: {
@@ -524,7 +538,19 @@ export interface Database {
           status: "pending" | "running" | "completed" | "failed" | "cancelled";
           scheduled_for: string;
           payload: Json;
+          schedule_id: string | null;
+          workflow_id: string | null;
+          stage: ProactiveCheckInStage | null;
+          idempotency_key: string | null;
+          claimed_by: string | null;
+          claim_expires_at: string | null;
+          attempt_count: number;
+          next_eligible_at: string | null;
+          last_error_category: string | null;
+          completed_at: string | null;
+          cancelled_at: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -533,9 +559,138 @@ export interface Database {
           status?: "pending" | "running" | "completed" | "failed" | "cancelled";
           scheduled_for: string;
           payload?: Json;
+          schedule_id?: string | null;
+          workflow_id?: string | null;
+          stage?: ProactiveCheckInStage | null;
+          idempotency_key?: string | null;
+          claimed_by?: string | null;
+          claim_expires_at?: string | null;
+          attempt_count?: number;
+          next_eligible_at?: string | null;
+          last_error_category?: string | null;
+          completed_at?: string | null;
+          cancelled_at?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["scheduled_jobs"]["Insert"]>;
+      };
+      proactive_check_in_schedules: {
+        Row: {
+          id: string;
+          senior_id: string;
+          platform: SeniorMessagingPlatform;
+          local_send_time: string;
+          timezone: string;
+          active_weekdays: number[];
+          initial_response_minutes: number;
+          retry_response_minutes: number;
+          initial_message_template: string;
+          retry_message_template: string;
+          enabled: boolean;
+          paused_at: string | null;
+          pause_reason: string | null;
+          paused_by_caregiver_id: string | null;
+          next_run_at: string;
+          last_run_at: string | null;
+          created_by_caregiver_id: string;
+          updated_by_caregiver_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          platform?: SeniorMessagingPlatform;
+          local_send_time?: string;
+          timezone?: string;
+          active_weekdays?: number[];
+          initial_response_minutes?: number;
+          retry_response_minutes?: number;
+          initial_message_template: string;
+          retry_message_template: string;
+          enabled?: boolean;
+          paused_at?: string | null;
+          pause_reason?: string | null;
+          paused_by_caregiver_id?: string | null;
+          next_run_at: string;
+          last_run_at?: string | null;
+          created_by_caregiver_id: string;
+          updated_by_caregiver_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["proactive_check_in_schedules"]["Insert"]
+        >;
+      };
+      proactive_check_in_workflows: {
+        Row: {
+          id: string;
+          schedule_id: string;
+          senior_id: string;
+          status: ProactiveCheckInStatus;
+          started_at: string;
+          initial_sent_at: string | null;
+          initial_client_message_id: string | null;
+          retry_sent_at: string | null;
+          retry_client_message_id: string | null;
+          response_message_id: string | null;
+          responded_at: string | null;
+          escalated_at: string | null;
+          late_response_at: string | null;
+          queue_item_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          schedule_id: string;
+          senior_id: string;
+          status: ProactiveCheckInStatus;
+          started_at: string;
+          initial_sent_at?: string | null;
+          initial_client_message_id?: string | null;
+          retry_sent_at?: string | null;
+          retry_client_message_id?: string | null;
+          response_message_id?: string | null;
+          responded_at?: string | null;
+          escalated_at?: string | null;
+          late_response_at?: string | null;
+          queue_item_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["proactive_check_in_workflows"]["Insert"]
+        >;
+      };
+      proactive_check_in_events: {
+        Row: {
+          id: string;
+          senior_id: string;
+          schedule_id: string | null;
+          workflow_id: string | null;
+          event_type: string;
+          actor_caregiver_id: string | null;
+          command_id: string | null;
+          command_payload: Json | null;
+          summary: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          schedule_id?: string | null;
+          workflow_id?: string | null;
+          event_type: string;
+          actor_caregiver_id?: string | null;
+          command_id?: string | null;
+          command_payload?: Json | null;
+          summary?: Json;
+          created_at?: string;
+        };
+        Update: never;
       };
       whatsapp_webhook_events: {
         Row: {
@@ -704,6 +859,10 @@ export interface Database {
           assigned_caregiver_id: string | null;
           snoozed_until: string | null;
           last_evidence_at: string;
+          operational_risk: RiskLevel | null;
+          source_type: "pattern_watch" | "proactive_check_in" | null;
+          source_id: string | null;
+          late_response_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -722,6 +881,10 @@ export interface Database {
           assigned_caregiver_id?: string | null;
           snoozed_until?: string | null;
           last_evidence_at?: string;
+          operational_risk?: RiskLevel | null;
+          source_type?: "pattern_watch" | "proactive_check_in" | null;
+          source_id?: string | null;
+          late_response_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -974,6 +1137,56 @@ export interface Database {
       update_contact_method: { Args: Record<string, Json>; Returns: Json };
       record_contact_consent: { Args: Record<string, Json>; Returns: Json };
       preview_notification_recipient: { Args: Record<string, Json>; Returns: Json };
+      manage_proactive_check_in_schedule: {
+        Args: {
+          p_senior_id: string;
+          p_command_id: string;
+          p_action: "configure" | "pause" | "resume" | "manual_run";
+          p_platform: SeniorMessagingPlatform;
+          p_local_send_time: string;
+          p_timezone: string;
+          p_active_weekdays: number[];
+          p_initial_response_minutes: number;
+          p_retry_response_minutes: number;
+          p_initial_message_template: string;
+          p_retry_message_template: string;
+          p_reason: string | null;
+          p_now: string;
+        };
+        Returns: Json;
+      };
+      enqueue_due_proactive_check_ins: {
+        Args: { p_limit: number; p_now: string };
+        Returns: number;
+      };
+      claim_due_proactive_check_in_jobs: {
+        Args: {
+          p_limit: number;
+          p_worker_id: string;
+          p_now: string;
+        };
+        Returns: Database["public"]["Tables"]["scheduled_jobs"]["Row"][];
+      };
+      advance_proactive_check_in_job: {
+        Args: Record<string, Json>;
+        Returns: Json;
+      };
+      retry_proactive_check_in_job: {
+        Args: Record<string, Json>;
+        Returns: undefined;
+      };
+      record_proactive_check_in_response: {
+        Args: {
+          p_senior_id: string;
+          p_client_message_id: string;
+          p_responded_at: string;
+        };
+        Returns: Json;
+      };
+      finalize_proactive_check_in_timeout: {
+        Args: { p_job_id: string; p_worker_id: string; p_now: string };
+        Returns: Json;
+      };
       reset_trustkaki_demo: {
         Args: Record<string, never>;
         Returns: Json;
