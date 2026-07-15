@@ -34,6 +34,16 @@ export function contactPlanInstanceKey(seniorId: string | null) {
   return `contact-plan:${seniorId ?? "none"}`;
 }
 
+export function nextContactPriority(
+  plan: MaskedContactPlan | null | undefined,
+  contactKind: MaskedContactPlan["contacts"][number]["contactKind"]
+) {
+  const priorities = (plan?.contacts ?? [])
+    .filter((contact) => contact.active && contact.contactKind === contactKind)
+    .map((contact) => contact.escalationPriority);
+  return Math.max(0, ...priorities) + 1;
+}
+
 const recipientReasonLabels = {
   inactive_contact: "the contact is inactive",
   inactive_method: "the contact method is inactive",
@@ -101,8 +111,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
-  const [kind, setKind] = useState("family_guardian");
-  const [priority, setPriority] = useState("1");
+  const [kind, setKind] = useState<MaskedContactPlan["contacts"][number]["contactKind"]>("family_guardian");
   const commandRef = useRef<string | null>(null);
 
   async function createContact() {
@@ -124,7 +133,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
           contactKind: kind,
           preferredLanguage: "en",
           timezone: "Asia/Singapore",
-          escalationPriority: Number(priority),
+          escalationPriority: nextContactPriority(props.plan, kind),
         },
       });
       commandRef.current = null;
@@ -227,15 +236,14 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
       {props.isAdmin && showAdmin && (
         <div className="mt-5 border-t border-gray-200 pt-4">
           <h4 className="font-semibold text-gray-900">Add contact</h4>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <input value={name} onChange={(event) => { commandRef.current = null; setName(event.target.value); }} placeholder="Contact name" className="rounded-lg border px-3 py-2" />
             <input value={relationship} onChange={(event) => { commandRef.current = null; setRelationship(event.target.value); }} placeholder="Relationship" className="rounded-lg border px-3 py-2" />
-            <select value={kind} onChange={(event) => { commandRef.current = null; setKind(event.target.value); }} className="rounded-lg border px-3 py-2">
+            <select value={kind} onChange={(event) => { commandRef.current = null; setKind(event.target.value as MaskedContactPlan["contacts"][number]["contactKind"]); }} className="rounded-lg border px-3 py-2">
               <option value="family_guardian">Family or guardian</option>
               <option value="aac_staff">AAC staff</option>
               <option value="healthcare_contact">Healthcare contact</option>
             </select>
-            <input type="number" min="1" value={priority} onChange={(event) => { commandRef.current = null; setPriority(event.target.value); }} aria-label="Escalation priority" className="rounded-lg border px-3 py-2" />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <button type="button" onClick={createContact} disabled={busy || !name.trim() || !relationship.trim()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">

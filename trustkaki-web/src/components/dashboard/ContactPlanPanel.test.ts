@@ -3,6 +3,7 @@ import type { MaskedContactPlan } from "@/lib/types";
 import {
   contactPlanInstanceKey,
   contactPlanPresentation,
+  nextContactPriority,
   recipientPreviewPresentation,
 } from "./ContactPlanPanel";
 
@@ -85,5 +86,17 @@ describe("contact plan presentation", () => {
     expect(contactPlanInstanceKey("senior-1")).not.toBe(
       contactPlanInstanceKey("senior-2")
     );
+  });
+
+  it("appends a new contact within its own escalation group", () => {
+    expect(nextContactPriority(plan, "family_guardian")).toBe(2);
+    expect(nextContactPriority(plan, "aac_staff")).toBe(1);
+    expect(nextContactPriority({
+      ...plan,
+      contacts: [
+        ...plan.contacts,
+        { ...plan.contacts[0], id: "contact-2", escalationPriority: 3 },
+      ],
+    }, "family_guardian")).toBe(4);
   });
 });
