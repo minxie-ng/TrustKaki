@@ -4,7 +4,9 @@ import type {
   AgentRunContext,
   AgentRunResult,
   BriefingOutput,
+  ContextMemoryOutput,
   OrchestratorOutput,
+  SpecialistAgentId,
   TriageOutput,
 } from "./contracts";
 import type { AgentId } from "@/lib/types";
@@ -70,7 +72,7 @@ function result<T>(
 }
 
 const orchestratorData = (
-  agentsToRun: string[]
+  agentsToRun: SpecialistAgentId[]
 ): OrchestratorOutput => ({
   agentsToRun,
   priority: Object.fromEntries(agentsToRun.map((agent) => [agent, "high"])),
@@ -98,6 +100,13 @@ const briefingData = (
   overallRisk: "green",
   keyConcerns: [],
   recommendedActions: [],
+  ...overrides,
+});
+
+const memoryData = (
+  overrides: Partial<ContextMemoryOutput> = {}
+): ContextMemoryOutput => ({
+  candidates: [],
   ...overrides,
 });
 
@@ -206,4 +215,124 @@ describe("orchestrate", () => {
     expect(response.briefing?.overallRisk).toBe("yellow");
     expect(response.alerts).toHaveLength(1);
   });
+
+  it("invokes context memory through the shared runner for a durable communication preference", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const candidate = {
+      targetStore: "memory" as const,
+      contextKey: "preferred_language",
+      contextType: "communication_preference" as const,
+      content: "Prefers voice calls in Mandarin",
+      sourceMessageId: "message-voice-language",
+      evidenceExcerpt: "I prefer voice calls in Mandarin.",
+      confidence: 0.96,
+      applicationTags: ["voice_preferred" as const],
+      retentionClass: "preference" as const,
+    };
+
+    runAgentMock
+      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(
+        result("context_memory", memoryData({ candidates: [candidate] }))
+      );
+
+    const ctx = context();
+    ctx.messages.push({
+      id: "message-voice-language",
+      sender: "senior",
+      text: "I prefer voice calls in Mandarin.",
+      timestamp: "2026-07-16T00:00:00.000Z",
+    });
+    const response = await orchestrate(
+      "I prefer voice calls in Mandarin.",
+      ctx
+    );
+
+    const contextCall = runAgentMock.mock.calls.find(
+      (call) => call[0].agentId === "context_memory"
+    )?.[0];
+    expect(contextCall).toMatchObject({
+      agentName: "Context Memory Agent",
+      inputSummary: "Review one senior message for durable context proposals",
+    });
+    expect(contextCall.fallback()).toEqual({ candidates: [] });
+    expect(response.traces.map((trace) => trace.agentId)).toContain(
+      "context_memory"
+    );
+    expect(
+      response.traces.find((trace) => trace.agentId === "context_memory")
+        ?.outputSummary
+    ).toBe("1 context proposal(s) for deterministic review");
+    expect(response.memoryCandidates).toEqual([candidate]);
+    expect(response.messages).toEqual([
+      { text: "Good to hear.", agentId: "triage" },
+    ]);
+  });
+
+  it("invokes context memory when the validated execution plan requests it", async () => {
+    const { orchestrate } = await import("./orchestrator");
+
+    runAgentMock
+      .mockResolvedValueOnce(
+        result(
+          "orchestrator",
+          orchestratorData(["triage", "context_memory"])
+        )
+      )
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(result("context_memory", memoryData()));
+
+    await orchestrate("Please note this for later.", context());
+
+    expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toContain(
+      "context_memory"
+    );
+  });
+
+  it.each([
+    "Okay thank you.",
+    "Hello!",
+    "Knee pain today.",
+    "Not hungry today. Knee pain.",
+  ])("skips context memory for non-durable message: %s", async (message) => {
+    const { orchestrate } = await import("./orchestrator");
+
+    runAgentMock
+      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+      .mockResolvedValueOnce(result("triage", triageData()));
+
+    const response = await orchestrate(message, context());
+
+    expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).not.toContain(
+      "context_memory"
+    );
+    expect(response.memoryCandidates).toEqual([]);
+  });
+});
+
+describe("mayContainDurableContext", () => {
+  it.each([
+    "I prefer voice calls in Mandarin.",
+    "I am vegetarian.",
+    "I always eat porridge for breakfast.",
+    "I prefer one-to-one AAC visits.",
+    "Please use large text because I cannot read small words.",
+    "Call my daughter Rachel first for appointments.",
+    "My daughter Rachel handles my appointments.",
+    "My knee pain has been ongoing for years.",
+  ])("recognizes a durable cue: %s", async (message) => {
+    const { mayContainDurableContext } = await import("./orchestrator");
+
+    expect(mayContainDurableContext(message)).toBe(true);
+  });
+
+  it.each(["Okay thank you.", "Good morning", "Knee pain today."])(
+    "rejects a transient cue: %s",
+    async (message) => {
+      const { mayContainDurableContext } = await import("./orchestrator");
+
+      expect(mayContainDurableContext(message)).toBe(false);
+    }
+  );
 });

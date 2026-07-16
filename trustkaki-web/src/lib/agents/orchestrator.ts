@@ -5,7 +5,7 @@ import type { AgentId, AgentTrace } from "@/lib/types";
 import type {
   AgentRunContext,
   AgentRunResult,
-  OrchestrateResponse,
+  OrchestrationResult,
   OrchestratorOutput,
   TriageOutput,
   TriageTimelineOutput,
@@ -13,6 +13,8 @@ import type {
   AACNudgeOutput,
   DigitalSafetyOutput,
   BriefingOutput,
+  ContextMemoryInput,
+  ContextMemoryOutput,
 } from "./contracts";
 import {
   orchestratorOutputSchema,
@@ -21,6 +23,7 @@ import {
   aacNudgeOutputSchema,
   digitalSafetyOutputSchema,
   briefingOutputSchema,
+  contextMemoryOutputSchema,
 } from "./schemas";
 import { runAgent, toAgentTrace } from "./runner";
 import { applyPolicy } from "./policy";
@@ -38,7 +41,57 @@ import {
   digitalSafetyUserPrompt,
   BRIEFING_PROMPT,
   briefingUserPrompt,
+  CONTEXT_MEMORY_PROMPT,
+  contextMemoryUserPrompt,
 } from "./prompts";
+import { contextMemoryFallback } from "./fallbacks";
+
+const acknowledgementPattern = /^(?:hi|hello|hey|good (?:morning|afternoon|evening)|ok|okay|thanks|thank you|ok thanks|okay thank you)$/;
+const durableContextPatterns = [
+  /\b(?:i\s+)?(?:prefer|would rather|like)\b.{0,50}\b(?:voice calls?|phone calls?|calls?|texts?|messages?|mandarin|english|language)\b/i,
+  /\b(?:i\s+)?(?:prefer|do not eat|don't eat|cannot eat|can't eat|am allergic to)\b.{0,60}\b(?:food|meal|breakfast|lunch|dinner|porridge|rice|meat|vegetables?)\b/i,
+  /\b(?:i am|i'm)\s+(?:vegetarian|vegan|pescatarian)\b/i,
+  /\b(?:always|usually|every (?:day|morning|afternoon|evening|night|week))\b.{0,80}\b(?:eat|have|wake|sleep|walk|call|visit|exercise|take)\b/i,
+  /\b(?:prefer|like|comfortable)\b.{0,50}\b(?:aac|active ageing|one[- ]to[- ]one|group activit(?:y|ies))\b/i,
+  /\b(?:large(?:r)? text|small (?:text|words)|hearing aid|hard of hearing|wheelchair|screen reader|captions?|cannot (?:hear|see|read)|can't (?:hear|see|read))\b/i,
+  /\b(?:call|contact|tell|notify|message)\s+(?:my\s+)?(?:daughter|son|wife|husband|sister|brother|caregiver|niece|nephew)\b/i,
+  /\b(?:daughter|son|wife|husband|sister|brother|caregiver|niece|nephew)\b.{0,40}\b(?:first|call|contact|notify|message)\b/i,
+  /\bmy\s+(?:daughter|son|wife|husband|sister|brother|caregiver|niece|nephew)\b.{0,50}\b(?:handles?|manages?|arranges?)\b.{0,30}\b(?:appointments?|calls?|visits?|care)\b/i,
+  /\b(?:pain|mobility|hearing|vision|breathing|appetite|sleep)\b.{0,50}\b(?:chronic|ongoing|long[- ]term|persistent|for (?:many )?(?:years|months))\b/i,
+  /\b(?:chronic|ongoing|long[- ]term|persistent|for (?:many )?(?:years|months))\b.{0,50}\b(?:pain|mobility|hearing|vision|breathing|appetite|sleep)\b/i,
+] as const;
+
+export function mayContainDurableContext(message: string): boolean {
+  const normalized = message
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s'-]/g, "")
+    .replace(/\s+/g, " ");
+  if (!normalized || acknowledgementPattern.test(normalized)) return false;
+  return durableContextPatterns.some((pattern) => pattern.test(message));
+}
+
+function contextMemoryInput(
+  message: string,
+  ctx: AgentRunContext
+): ContextMemoryInput {
+  const recentMessages = ctx.messages
+    .filter((item) => item.sender === "senior")
+    .slice(-8)
+    .map(({ id, sender, text }) => ({ id, sender, text }));
+  const current =
+    [...recentMessages].reverse().find((item) => item.text === message) ?? {
+      id: "current_message",
+      sender: "senior" as const,
+      text: message,
+    };
+
+  return {
+    message: current,
+    recentMessages: recentMessages.filter((item) => item.id !== current.id),
+    activeContext: [],
+  };
+}
 
 // ─── Fallback Functions ───
 // Safe defaults used when LLM is unavailable or fails.
@@ -231,11 +284,12 @@ function enforceBriefingRisk(
 export async function orchestrate(
   message: string,
   ctx: AgentRunContext
-): Promise<OrchestrateResponse> {
+): Promise<OrchestrationResult> {
   const traces: AgentTrace[] = [];
   const responseMessages: Array<{ text: string; agentId?: AgentId }> = [];
   let signals: TriageSignal[] = [];
   let briefing: BriefingOutput | null = null;
+  let memoryCandidates: ContextMemoryOutput["candidates"] = [];
 
   // ── Step 1: Run Orchestrator (routing decision) ──
   const orchResult: AgentRunResult<OrchestratorOutput> = await runAgent({
@@ -325,9 +379,30 @@ export async function orchestrate(
         })
       : Promise.resolve(null);
 
+  const runContextMemory: Promise<AgentRunResult<ContextMemoryOutput> | null> =
+    agentsToRun.has("context_memory") || mayContainDurableContext(message)
+      ? runAgent({
+          agentId: "context_memory",
+          agentName: "Context Memory Agent",
+          systemPrompt: CONTEXT_MEMORY_PROMPT,
+          userPrompt: contextMemoryUserPrompt(contextMemoryInput(message, ctx)),
+          schema: contextMemoryOutputSchema,
+          fallback: contextMemoryFallback,
+          temperature: 0.2,
+          inputSummary: "Review one senior message for durable context proposals",
+          stateChanges: ["context:proposals_requested"],
+        }).then((result) => {
+          result.outputSummary = `${result.data.candidates.length} context proposal(s) for deterministic review`;
+          traces.push(toAgentTrace(result));
+          memoryCandidates = result.data.candidates;
+          return result;
+        })
+      : Promise.resolve(null);
+
   const [aacNudgeResult, digitalSafetyResult] = await Promise.all([
     runAACNudge,
     runDigitalSafety,
+    runContextMemory,
   ]);
 
   // ── Step 4: Apply deterministic policy layer ──
@@ -386,6 +461,7 @@ export async function orchestrate(
     signals,
     policy: policyResult,
     briefing,
+    memoryCandidates,
   };
 }
 

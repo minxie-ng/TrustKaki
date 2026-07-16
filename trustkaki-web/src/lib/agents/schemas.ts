@@ -1,6 +1,12 @@
 // ─── Zod Schemas for Agent Output Validation ───
 
 import { z } from "zod";
+import {
+  memoryApplicationTags,
+  memoryContextTypes,
+  memoryRetentionClasses,
+  memoryTargetStores,
+} from "@/lib/memory/contracts";
 
 export const riskLevelSchema = z.enum(["green", "yellow", "red"]);
 export const agentIdSchema = z.enum([
@@ -12,7 +18,15 @@ export const agentIdSchema = z.enum([
   "aac_nudge",
   "digital_safety",
   "briefing",
+  "context_memory",
   "pattern_watch",
+]);
+
+export const specialistAgentIdSchema = z.enum([
+  "triage",
+  "aac_nudge",
+  "digital_safety",
+  "context_memory",
 ]);
 
 export const triageSignalSchema = z.object({
@@ -58,11 +72,43 @@ export const orchestratorInputSchema = z.object({
   }),
 });
 
-export const orchestratorOutputSchema = z.object({
-  agentsToRun: z.array(z.string()),
-  priority: z.record(z.string(), z.enum(["high", "medium", "low"])),
-  reasoning: z.string().min(1),
-});
+export const orchestratorOutputSchema = z
+  .object({
+    agentsToRun: z.array(specialistAgentIdSchema),
+    priority: z.partialRecord(
+      specialistAgentIdSchema,
+      z.enum(["high", "medium", "low"])
+    ),
+    reasoning: z.string().min(1),
+  })
+  .strict();
+
+export const memoryCandidateSchema = z
+  .object({
+    targetStore: z.enum(memoryTargetStores),
+    contextKey: z.string().trim().min(1).max(80),
+    contextType: z.enum(memoryContextTypes),
+    content: z.string().trim().min(1).max(500),
+    sourceMessageId: z.string().trim().min(1).max(120),
+    evidenceExcerpt: z.string().min(1).max(500),
+    confidence: z.number().min(0).max(1),
+    applicationTags: z
+      .array(z.enum(memoryApplicationTags))
+      .min(1)
+      .max(3)
+      .refine((tags) => new Set(tags).size === tags.length, {
+        message: "Application tags must be unique",
+      }),
+    retentionClass: z.enum(memoryRetentionClasses),
+    intent: z.enum(["confirm", "replace"]).optional(),
+  })
+  .strict();
+
+export const contextMemoryOutputSchema = z
+  .object({
+    candidates: z.array(memoryCandidateSchema).max(8),
+  })
+  .strict();
 
 export const triageOutputSchema = z.object({
   signals: z.array(triageSignalSchema),

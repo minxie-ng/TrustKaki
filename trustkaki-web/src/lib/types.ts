@@ -19,6 +19,7 @@ export type AgentId =
   | "aac_nudge"
   | "digital_safety"
   | "briefing"
+  | "context_memory"
   | "pattern_watch";
 
 export interface AgentTrace {

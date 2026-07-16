@@ -2,7 +2,7 @@
 // Each prompt defines the agent's role, Singapore-specific context,
 // and the exact JSON schema the LLM must return.
 
-import type { AgentRunContext } from "./contracts";
+import type { AgentRunContext, ContextMemoryInput } from "./contracts";
 
 function seniorAgeForPrompt(age: number): string {
   return age > 0 ? String(age) : "unknown";
@@ -31,12 +31,14 @@ Available specialist agents:
 - "triage": Always run. Analyzes messages for health, daily living, digital safety, and social signals. Generates a response to the senior.
 - "aac_nudge": Run when social withdrawal or loneliness signals are detected. Crafts gentle social engagement nudges.
 - "digital_safety": Run when the message contains links, phone numbers, or suspicious content that may be a scam.
+- "context_memory": Run when the senior clearly states a lasting preference, routine, accessibility need, explicit family-routing fact, or lasting non-diagnostic health context.
 - "briefing": Run after all other agents to synthesize findings into a caregiver and AAC volunteer briefing.
 
 Rules:
 - "triage" should always be in agentsToRun.
 - Include "digital_safety" if the message contains URLs, "bit.ly", "click", "link", phone numbers, or suspicious requests.
 - Include "aac_nudge" if the message suggests social withdrawal, loneliness, or declining invitations.
+- Include "context_memory" only for likely durable context, not greetings, thanks, acknowledgements, one-off small talk, or ordinary transient health/safety messages.
 - Do NOT include "briefing" — the policy layer decides briefing automatically based on signals and risk.
 - Do NOT include "orchestrator" in agentsToRun.
 
@@ -55,6 +57,71 @@ export const orchestratorUserPrompt = (
 ${SENIOR_CONTEXT(ctx)}
 
 Decide which agents should handle this message. Return JSON.`;
+
+// ─── Context Memory ───
+export const CONTEXT_MEMORY_PROMPT = `You are the Context Memory Agent for TrustKaki.
+
+Return context proposals only. You do not persist, approve, or apply any candidate.
+
+Eligible proposals are limited to communication, food, routine, and AAC preferences; accessibility needs; explicit supported family-routing facts; routine baselines; and explicit lasting non-diagnostic health context.
+
+Every candidate must cite the current senior-authored message using its exact sourceMessageId and an exact senior-authored evidenceExcerpt copied verbatim from that message.
+
+Never propose or return:
+- diagnoses, diagnostic inference, medical conclusions, treatment instructions, or medication instructions;
+- credentials, passwords, OTPs, bank data, payment data, or identity-document data;
+- unsupported family routing or inferred relationships;
+- raw provider payloads, hidden reasoning, or chain-of-thought.
+
+Use only the closed target stores, context types, application tags, retention classes, and optional confirm/replace intent shown below. If there is no safe durable context, explicitly return the safe empty result { "candidates": [] }.
+
+Return ONLY valid JSON:
+{
+  "candidates": [
+    {
+      "targetStore": "memory|health_context|routine_baseline",
+      "contextKey": "stable_snake_case_key",
+      "contextType": "communication_preference|food_preference|routine_preference|aac_preference|family_routing|health_observation|accessibility_need|routine_baseline",
+      "content": "concise supported context",
+      "sourceMessageId": "exact current message id",
+      "evidenceExcerpt": "exact excerpt copied from the current senior-authored message",
+      "confidence": 0.0,
+      "applicationTags": ["concise_text|gentle_one_to_one|voice_preferred|practical_meal_prompt|accessibility_support|trusted_contact_route"],
+      "retentionClass": "health_accessibility|routine_baseline|preference|family_routing",
+      "intent": "confirm|replace"
+    }
+  ]
+}`;
+
+export const contextMemoryUserPrompt = (
+  input: ContextMemoryInput
+): string => `Current senior-authored message:
+- messageId=${input.message.id}
+- text=${JSON.stringify(input.message.text)}
+
+Recent senior-authored messages (context only; evidence must come from the current message):
+${
+  input.recentMessages
+    .slice(-8)
+    .map(
+      (message) =>
+        `- messageId=${message.id}; text=${JSON.stringify(message.text)}`
+    )
+    .join("\n") || "(none)"
+}
+
+Active context keys and summaries:
+${
+  input.activeContext
+    .slice(0, 12)
+    .map(
+      (item) =>
+        `- store=${item.targetStore}; key=${item.contextKey}; summary=${JSON.stringify(item.summary)}`
+    )
+    .join("\n") || "(none)"
+}
+
+Propose only safe durable context supported by exact current-message evidence. Return JSON.`;
 
 // ─── Triage ───
 export const TRIAGE_PROMPT = `You are the Triage Agent for TrustKaki, an AI care companion for elderly seniors in Singapore.

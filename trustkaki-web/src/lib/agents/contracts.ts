@@ -2,6 +2,11 @@
 // Typed input/output contracts for each agent in the multi-agent system.
 
 import type { AgentId, RiskLevel, Message, AgentTrace } from "@/lib/types";
+import type {
+  MemoryCandidate,
+  MemorySourceMessage,
+  MemoryTargetStore,
+} from "@/lib/memory/contracts";
 import type { PolicyResult } from "./policy";
 
 // ─── Shared Context ───
@@ -43,10 +48,33 @@ export interface OrchestratorInput {
   context: AgentRunContext;
 }
 
+export type SpecialistAgentId =
+  | "triage"
+  | "aac_nudge"
+  | "digital_safety"
+  | "context_memory";
+
 export interface OrchestratorOutput {
-  agentsToRun: string[];
-  priority: Record<string, "high" | "medium" | "low">;
+  agentsToRun: SpecialistAgentId[];
+  priority: Partial<Record<SpecialistAgentId, "high" | "medium" | "low">>;
   reasoning: string;
+}
+
+// ─── Context Memory Agent ───
+export interface ContextMemoryActiveContext {
+  targetStore: MemoryTargetStore;
+  contextKey: string;
+  summary: string;
+}
+
+export interface ContextMemoryInput {
+  message: MemorySourceMessage;
+  recentMessages: MemorySourceMessage[];
+  activeContext: ContextMemoryActiveContext[];
+}
+
+export interface ContextMemoryOutput {
+  candidates: MemoryCandidate[];
 }
 
 // ─── Triage Agent ───
@@ -155,10 +183,15 @@ export interface OrchestrateResponse {
   signals: TriageSignal[];
   policy: PolicyResult;
   briefing: BriefingOutput | null;
+  memoryCandidates?: MemoryCandidate[];
   persistence?: {
     mode: "supabase" | "local_demo";
     configured: boolean;
     persisted: boolean;
     reason?: string;
   };
+}
+
+export interface OrchestrationResult extends OrchestrateResponse {
+  memoryCandidates: MemoryCandidate[];
 }
