@@ -53,10 +53,12 @@ const contextMemoryTextExclusionPatterns = [
   /^(?:ok |okay )?(?:thanks|thank you)(?: so much| very much)?$/,
   /^(?:the weather is (?:nice|lovely|good|hot|rainy)(?: today)?|(?:nice|lovely|good|hot|rainy) weather(?: today)?(?: isn't it| is it not)?)$/,
 ] as const;
+const phoneNumberPattern = /\+?\d(?:[\s().-]*\d){7,}/g;
+const commonDatePattern = /^(?:\d{2}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/;
 const prohibitedMemoryDataPatterns = [
-  /\+?\d(?:[\s().-]*\d){7,}/g,
   /\b(?:otp|one[- ]time (?:password|pin|code)|pin)\s*(?:(?:is|:|=)\s*)?\d{4,12}\b/gi,
-  /\b(?:password|passcode|credentials?)\s*(?:(?:is|are|:|=)\s*)?[^\s,.;]{4,}/gi,
+  /\b(?:password|passcode|credentials?)\s*(?:is|are|:|=)\s*[^\s,.;]{4,}/gi,
+  /\b(?:cvv|cvc|security[- ]code)\s*(?:is|:|=)\s*\d{3,4}\b/gi,
   /\b(?:bank\s+)?account(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*\d(?:[\s-]*\d){5,}/gi,
   /\b(?:credit|debit|bank)\s+card(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*\d(?:[\s-]*\d){7,}/gi,
   /\b(?:nric|passport|identity(?: document| card)?|national id)(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*[a-z0-9-]{6,}/gi,
@@ -94,9 +96,12 @@ function normalizedMessage(message: string): string {
 }
 
 function redactProhibitedMemoryData(value: string): string {
+  const withoutPhoneNumbers = value.replace(phoneNumberPattern, (match) =>
+    commonDatePattern.test(match) ? match : REDACTED_PROHIBITED_DATA
+  );
   return prohibitedMemoryDataPatterns.reduce(
     (redacted, pattern) => redacted.replace(pattern, REDACTED_PROHIBITED_DATA),
-    value
+    withoutPhoneNumbers
   );
 }
 
@@ -422,13 +427,6 @@ export async function orchestrate(
           temperature: 0.7,
           inputSummary: `Generate low-pressure AAC nudge from social signals`,
           stateChanges: ["senior_reply:aac_nudge"],
-        }).then((result) => {
-          traces.push(toAgentTrace(result));
-          responseMessages.push({
-            text: result.data.nudgeMessage,
-            agentId: "aac_nudge",
-          });
-          return result;
         })
       : Promise.resolve(null);
 
@@ -445,47 +443,64 @@ export async function orchestrate(
           temperature: 0.3,
           inputSummary: `Assess suspicious digital-safety content without guaranteeing detection`,
           stateChanges: ["senior_reply:digital_safety_if_scam"],
-        }).then((result) => {
-          traces.push(toAgentTrace(result));
-          if (result.data.isScam) {
-            responseMessages.push({
-              text: result.data.warningMessage,
-              agentId: "digital_safety",
-            });
-          }
-          return result;
         })
       : Promise.resolve(null);
 
-  const runContextMemory: Promise<AgentRunResult<ContextMemoryOutput> | null> =
+  const contextMemoryExecution: {
+    input: ContextMemoryInput | null;
+    promise: Promise<AgentRunResult<ContextMemoryOutput> | null>;
+  } =
     !shouldExcludeContextMemory(message) &&
     (agentsToRun.has("context_memory") || mayContainDurableContext(message))
       ? (() => {
           const input = contextMemoryInput(message, ctx);
-          return runAgent({
-            agentId: "context_memory",
-            agentName: "Context Memory Agent",
-            systemPrompt: CONTEXT_MEMORY_PROMPT,
-            userPrompt: contextMemoryUserPrompt(input),
-            schema: contextMemoryOutputSchema,
-            fallback: contextMemoryFallback,
-            temperature: 0.2,
-            inputSummary:
-              "Review one senior message for durable context proposals",
-            stateChanges: ["context:proposals_requested"],
-          }).then((result) => {
-            traces.push(contextMemoryTrace(result, input));
-            contextMemoryCandidates = result.data.candidates;
-            return result;
-          });
+          return {
+            input,
+            promise: runAgent({
+              agentId: "context_memory",
+              agentName: "Context Memory Agent",
+              systemPrompt: CONTEXT_MEMORY_PROMPT,
+              userPrompt: contextMemoryUserPrompt(input),
+              schema: contextMemoryOutputSchema,
+              fallback: contextMemoryFallback,
+              temperature: 0.2,
+              inputSummary:
+                "Review one senior message for durable context proposals",
+              stateChanges: ["context:proposals_requested"],
+            }),
+          };
         })()
-      : Promise.resolve(null);
+      : { input: null, promise: Promise.resolve(null) };
 
-  const [aacNudgeResult, digitalSafetyResult] = await Promise.all([
-    runAACNudge,
-    runDigitalSafety,
-    runContextMemory,
-  ]);
+  const [aacNudgeResult, digitalSafetyResult, contextMemoryResult] =
+    await Promise.all([
+      runAACNudge,
+      runDigitalSafety,
+      contextMemoryExecution.promise,
+    ]);
+
+  if (aacNudgeResult) {
+    traces.push(toAgentTrace(aacNudgeResult));
+    responseMessages.push({
+      text: aacNudgeResult.data.nudgeMessage,
+      agentId: "aac_nudge",
+    });
+  }
+  if (digitalSafetyResult) {
+    traces.push(toAgentTrace(digitalSafetyResult));
+    if (digitalSafetyResult.data.isScam) {
+      responseMessages.push({
+        text: digitalSafetyResult.data.warningMessage,
+        agentId: "digital_safety",
+      });
+    }
+  }
+  if (contextMemoryResult && contextMemoryExecution.input) {
+    traces.push(
+      contextMemoryTrace(contextMemoryResult, contextMemoryExecution.input)
+    );
+    contextMemoryCandidates = contextMemoryResult.data.candidates;
+  }
 
   // ── Step 4: Apply deterministic policy layer ──
   // The policy computes the final risk level and briefing requirement

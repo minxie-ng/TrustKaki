@@ -325,8 +325,14 @@ describe("orchestrate", () => {
       {
         id: "history-secrets",
         sender: "senior",
-        text: "OTP 654321, PIN: 4321, password hunter2.",
+        text: "OTP 654321, PIN: 4321, password is hunter2.",
         timestamp: "2026-07-15T01:00:00.000Z",
+      },
+      {
+        id: "history-card-codes",
+        sender: "senior",
+        text: "CVV is 123, CVC: 456, security code = 7890.",
+        timestamp: "2026-07-15T01:30:00.000Z",
       },
       {
         id: "history-identity",
@@ -360,13 +366,16 @@ describe("orchestrate", () => {
     expect(specialistPrompt).toContain("[REDACTED_PROHIBITED_DATA]");
     expect(specialistPrompt).toContain("I like porridge.");
     expect(specialistPrompt).not.toMatch(
-      /\+65 9123 4567|654321|4321|hunter2|123-456-789|S1234567A/
+      /\+65 9123 4567|654321|4321|hunter2|CVV is 123|CVC: 456|security code = 7890|123-456-789|S1234567A/
     );
   });
 
   it.each([
     "My OTP is 654321.",
     "My phone number is +65 9123 4567.",
+    "My CVV is 123.",
+    "CVC: 456.",
+    "The security code = 7890.",
   ])(
     "excludes prohibited current data while preserving triage and digital safety: %s",
     async (message) => {
@@ -399,6 +408,57 @@ describe("orchestrate", () => {
       expect(response.contextMemoryCandidates).toEqual([]);
     }
   );
+
+  it.each(["16-07-2026", "2026-07-16", "16/07/2026"])(
+    "does not treat a common date as a phone number: %s",
+    async (date) => {
+      const { orchestrate } = await import("./orchestrator");
+      const message = `I prefer voice calls in Mandarin from ${date}.`;
+      const ctx = context();
+      ctx.messages.push({
+        id: `dated-preference-${date}`,
+        sender: "senior",
+        text: message,
+        timestamp: "2026-07-16T00:00:00.000Z",
+      });
+      runAgentMock
+        .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+        .mockResolvedValueOnce(result("triage", triageData()))
+        .mockResolvedValueOnce(result("context_memory", memoryData()));
+
+      await orchestrate(message, ctx);
+
+      expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
+        "orchestrator",
+        "triage",
+        "context_memory",
+      ]);
+    }
+  );
+
+  it("does not treat a benign password reminder preference as a credential", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const message = "I prefer password reminders by voice call.";
+    const ctx = context();
+    ctx.messages.push({
+      id: "password-reminder-preference",
+      sender: "senior",
+      text: message,
+      timestamp: "2026-07-16T00:00:00.000Z",
+    });
+    runAgentMock
+      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(result("context_memory", memoryData()));
+
+    await orchestrate(message, ctx);
+
+    expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
+      "orchestrator",
+      "triage",
+      "context_memory",
+    ]);
+  });
 
   it.each([
     "Okay thank you.",
@@ -508,6 +568,91 @@ describe("orchestrate", () => {
     expect(JSON.stringify(contextTrace)).not.toMatch(
       /hunter2|dementia|secret password|unsafe_provider_claim|evidenceExcerpt|sourceMessageId/
     );
+  });
+
+  it("orders concurrent specialist effects independently of completion timing", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const message = "I prefer voice calls in Mandarin.";
+    const ctx = context();
+    ctx.messages.push({
+      id: "ordered-specialists",
+      sender: "senior",
+      text: message,
+      timestamp: "2026-07-16T00:00:00.000Z",
+    });
+    const candidate = {
+      targetStore: "memory" as const,
+      contextKey: "preferred_language",
+      contextType: "communication_preference" as const,
+      content: "Prefers voice calls in Mandarin",
+      sourceMessageId: "ordered-specialists",
+      evidenceExcerpt: message,
+      confidence: 0.95,
+      applicationTags: ["voice_preferred" as const],
+      retentionClass: "preference" as const,
+    };
+    const delayed = <T,>(value: T, delayMs: number): Promise<T> =>
+      new Promise((resolve) => setTimeout(() => resolve(value), delayMs));
+
+    runAgentMock
+      .mockResolvedValueOnce(
+        result(
+          "orchestrator",
+          orchestratorData([
+            "triage",
+            "aac_nudge",
+            "digital_safety",
+            "context_memory",
+          ])
+        )
+      )
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockImplementationOnce(() =>
+        delayed(
+          result("aac_nudge", {
+            nudgeMessage: "AAC nudge",
+            approach: "gentle",
+            rationale: "support connection",
+            suggestedChannel: "whatsapp" as const,
+          }),
+          30
+        )
+      )
+      .mockImplementationOnce(() =>
+        delayed(
+          result("digital_safety", {
+            isScam: true,
+            scamType: "credential_request",
+            confidence: 0.95,
+            warningMessage: "Digital safety warning",
+            educationalNote: "Do not share codes.",
+          }),
+          5
+        )
+      )
+      .mockImplementationOnce(() =>
+        delayed(
+          result("context_memory", memoryData({ candidates: [candidate] })),
+          15
+        )
+      )
+      .mockResolvedValueOnce(result("briefing", briefingData()));
+
+    const response = await orchestrate(message, ctx);
+
+    expect(
+      response.traces
+        .map((trace) => trace.agentId)
+        .filter((agentId) =>
+          ["aac_nudge", "digital_safety", "context_memory"].includes(agentId)
+        )
+    ).toEqual(["aac_nudge", "digital_safety", "context_memory"]);
+    expect(response.messages).toEqual([
+      { text: "Good to hear.", agentId: "triage" },
+      { text: "AAC nudge", agentId: "aac_nudge" },
+      { text: "Digital safety warning", agentId: "digital_safety" },
+    ]);
+    expect(response.contextMemoryCandidates).toEqual([candidate]);
   });
 });
 
