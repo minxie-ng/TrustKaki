@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { AgentRunContext } from "./contracts";
+import type {
+  AgentRunContext,
+  OrchestrateResponse,
+  OrchestrationResult,
+} from "./contracts";
 import {
   CONTEXT_MEMORY_PROMPT,
   contextMemoryUserPrompt,
@@ -12,6 +16,20 @@ import {
 import { contextMemoryFallback } from "./fallbacks";
 
 describe("agent prompts", () => {
+  it("keeps context memory candidates off the public response contract", () => {
+    type PublicHasCandidates = "contextMemoryCandidates" extends keyof OrchestrateResponse
+      ? true
+      : false;
+    type InternalHasCandidates = "contextMemoryCandidates" extends keyof OrchestrationResult
+      ? true
+      : false;
+    const publicHasCandidates: PublicHasCandidates = false;
+    const internalHasCandidates: InternalHasCandidates = true;
+
+    expect(publicHasCandidates).toBe(false);
+    expect(internalHasCandidates).toBe(true);
+  });
+
   it("represents the bounded null-age sentinel as unknown", () => {
     const context: AgentRunContext = {
       senior: {

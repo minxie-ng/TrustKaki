@@ -5,6 +5,7 @@ import type { AgentId, AgentTrace } from "@/lib/types";
 import type {
   AgentRunContext,
   AgentRunResult,
+  OrchestrateResponse,
   OrchestrationResult,
   OrchestratorOutput,
   TriageOutput,
@@ -46,7 +47,16 @@ import {
 } from "./prompts";
 import { contextMemoryFallback } from "./fallbacks";
 
-const acknowledgementPattern = /^(?:hi|hello|hey|good (?:morning|afternoon|evening)|ok|okay|thanks|thank you|ok thanks|okay thank you)$/;
+const contextMemoryTextExclusionPattern = /^(?:hi|hello|hey|good (?:morning|afternoon|evening)|ok|okay|thanks|thank you|ok thanks|okay thank you|nice weather(?: today)?|how are you|have a nice day)$/;
+const prohibitedMemoryDataPatterns = [
+  /\+?\d(?:[\s().-]*\d){7,}/g,
+  /\b(?:otp|one[- ]time (?:password|pin|code)|pin)\s*(?:(?:is|:|=)\s*)?\d{4,12}\b/gi,
+  /\b(?:password|passcode|credentials?)\s*(?:(?:is|are|:|=)\s*)?[^\s,.;]{4,}/gi,
+  /\b(?:bank\s+)?account(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*\d(?:[\s-]*\d){5,}/gi,
+  /\b(?:credit|debit|bank)\s+card(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*\d(?:[\s-]*\d){7,}/gi,
+  /\b(?:nric|passport|identity(?: document| card)?|national id)(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*[a-z0-9-]{6,}/gi,
+] as const;
+const REDACTED_PROHIBITED_DATA = "[REDACTED_PROHIBITED_DATA]";
 const durableContextPatterns = [
   /\b(?:i\s+)?(?:prefer|would rather|like)\b.{0,50}\b(?:voice calls?|phone calls?|calls?|texts?|messages?|mandarin|english|language)\b/i,
   /\b(?:i\s+)?(?:prefer|do not eat|don't eat|cannot eat|can't eat|am allergic to)\b.{0,60}\b(?:food|meal|breakfast|lunch|dinner|porridge|rice|meat|vegetables?)\b/i,
@@ -62,13 +72,32 @@ const durableContextPatterns = [
 ] as const;
 
 export function mayContainDurableContext(message: string): boolean {
-  const normalized = message
+  if (shouldExcludeContextMemory(message)) return false;
+  return durableContextPatterns.some((pattern) => pattern.test(message));
+}
+
+function normalizedMessage(message: string): string {
+  return message
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9\s'-]/g, "")
     .replace(/\s+/g, " ");
-  if (!normalized || acknowledgementPattern.test(normalized)) return false;
-  return durableContextPatterns.some((pattern) => pattern.test(message));
+}
+
+function redactProhibitedMemoryData(value: string): string {
+  return prohibitedMemoryDataPatterns.reduce(
+    (redacted, pattern) => redacted.replace(pattern, REDACTED_PROHIBITED_DATA),
+    value
+  );
+}
+
+function shouldExcludeContextMemory(message: string): boolean {
+  const normalized = normalizedMessage(message);
+  return (
+    !normalized ||
+    contextMemoryTextExclusionPattern.test(normalized) ||
+    redactProhibitedMemoryData(message) !== message
+  );
 }
 
 function contextMemoryInput(
@@ -88,9 +117,46 @@ function contextMemoryInput(
 
   return {
     message: current,
-    recentMessages: recentMessages.filter((item) => item.id !== current.id),
+    recentMessages: recentMessages
+      .filter((item) => item.id !== current.id)
+      .map((item) => ({
+        ...item,
+        text: redactProhibitedMemoryData(item.text),
+      })),
     activeContext: [],
   };
+}
+
+function contextMemoryTrace(
+  result: AgentRunResult<ContextMemoryOutput>,
+  input: ContextMemoryInput
+): AgentTrace {
+  const categories = [
+    ...new Set(result.data.candidates.map((candidate) => candidate.contextType)),
+  ].sort();
+  const outputSummary = `${result.data.candidates.length} context proposal(s) for deterministic review; categories: ${categories.join(", ") || "none"}`;
+
+  return toAgentTrace({
+    ...result,
+    input: JSON.stringify(
+      {
+        messageId: input.message.id,
+        recentMessageCount: input.recentMessages.length,
+        activeContextCount: input.activeContext.length,
+      },
+      null,
+      2
+    ),
+    output: JSON.stringify(
+      {
+        candidateCount: result.data.candidates.length,
+        categories,
+      },
+      null,
+      2
+    ),
+    outputSummary,
+  });
 }
 
 // ─── Fallback Functions ───
@@ -289,7 +355,7 @@ export async function orchestrate(
   const responseMessages: Array<{ text: string; agentId?: AgentId }> = [];
   let signals: TriageSignal[] = [];
   let briefing: BriefingOutput | null = null;
-  let memoryCandidates: ContextMemoryOutput["candidates"] = [];
+  let contextMemoryCandidates: ContextMemoryOutput["candidates"] = [];
 
   // ── Step 1: Run Orchestrator (routing decision) ──
   const orchResult: AgentRunResult<OrchestratorOutput> = await runAgent({
@@ -380,23 +446,27 @@ export async function orchestrate(
       : Promise.resolve(null);
 
   const runContextMemory: Promise<AgentRunResult<ContextMemoryOutput> | null> =
-    agentsToRun.has("context_memory") || mayContainDurableContext(message)
-      ? runAgent({
-          agentId: "context_memory",
-          agentName: "Context Memory Agent",
-          systemPrompt: CONTEXT_MEMORY_PROMPT,
-          userPrompt: contextMemoryUserPrompt(contextMemoryInput(message, ctx)),
-          schema: contextMemoryOutputSchema,
-          fallback: contextMemoryFallback,
-          temperature: 0.2,
-          inputSummary: "Review one senior message for durable context proposals",
-          stateChanges: ["context:proposals_requested"],
-        }).then((result) => {
-          result.outputSummary = `${result.data.candidates.length} context proposal(s) for deterministic review`;
-          traces.push(toAgentTrace(result));
-          memoryCandidates = result.data.candidates;
-          return result;
-        })
+    !shouldExcludeContextMemory(message) &&
+    (agentsToRun.has("context_memory") || mayContainDurableContext(message))
+      ? (() => {
+          const input = contextMemoryInput(message, ctx);
+          return runAgent({
+            agentId: "context_memory",
+            agentName: "Context Memory Agent",
+            systemPrompt: CONTEXT_MEMORY_PROMPT,
+            userPrompt: contextMemoryUserPrompt(input),
+            schema: contextMemoryOutputSchema,
+            fallback: contextMemoryFallback,
+            temperature: 0.2,
+            inputSummary:
+              "Review one senior message for durable context proposals",
+            stateChanges: ["context:proposals_requested"],
+          }).then((result) => {
+            traces.push(contextMemoryTrace(result, input));
+            contextMemoryCandidates = result.data.candidates;
+            return result;
+          });
+        })()
       : Promise.resolve(null);
 
   const [aacNudgeResult, digitalSafetyResult] = await Promise.all([
@@ -452,7 +522,7 @@ export async function orchestrate(
   }
 
   // ── Build response ──
-  return {
+  const response: OrchestrateResponse = {
     messages: responseMessages,
     traces,
     alerts: policyResult.alerts,
@@ -461,8 +531,12 @@ export async function orchestrate(
     signals,
     policy: policyResult,
     briefing,
-    memoryCandidates,
   };
+  Object.defineProperty(response, "contextMemoryCandidates", {
+    value: contextMemoryCandidates,
+    enumerable: false,
+  });
+  return response as OrchestrationResult;
 }
 
 // ─── Standalone agent runners (for individual API routes) ───

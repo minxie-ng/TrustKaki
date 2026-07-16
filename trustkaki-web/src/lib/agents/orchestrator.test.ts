@@ -263,8 +263,10 @@ describe("orchestrate", () => {
     expect(
       response.traces.find((trace) => trace.agentId === "context_memory")
         ?.outputSummary
-    ).toBe("1 context proposal(s) for deterministic review");
-    expect(response.memoryCandidates).toEqual([candidate]);
+    ).toBe(
+      "1 context proposal(s) for deterministic review; categories: communication_preference"
+    );
+    expect(response.contextMemoryCandidates).toEqual([candidate]);
     expect(response.messages).toEqual([
       { text: "Good to hear.", agentId: "triage" },
     ]);
@@ -307,7 +309,171 @@ describe("orchestrate", () => {
     expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).not.toContain(
       "context_memory"
     );
-    expect(response.memoryCandidates).toEqual([]);
+    expect(response.contextMemoryCandidates).toEqual([]);
+  });
+
+  it("redacts prohibited data from recent history before context memory receives it", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const ctx = context();
+    ctx.messages.push(
+      {
+        id: "history-phone",
+        sender: "senior",
+        text: "My phone is +65 9123 4567.",
+        timestamp: "2026-07-15T00:00:00.000Z",
+      },
+      {
+        id: "history-secrets",
+        sender: "senior",
+        text: "OTP 654321, PIN: 4321, password hunter2.",
+        timestamp: "2026-07-15T01:00:00.000Z",
+      },
+      {
+        id: "history-identity",
+        sender: "senior",
+        text: "Bank account 123-456-789 and NRIC S1234567A.",
+        timestamp: "2026-07-15T02:00:00.000Z",
+      },
+      {
+        id: "history-safe",
+        sender: "senior",
+        text: "I like porridge.",
+        timestamp: "2026-07-15T03:00:00.000Z",
+      },
+      {
+        id: "current-preference",
+        sender: "senior",
+        text: "I prefer voice calls in Mandarin.",
+        timestamp: "2026-07-16T00:00:00.000Z",
+      }
+    );
+    runAgentMock
+      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(result("context_memory", memoryData()));
+
+    await orchestrate("I prefer voice calls in Mandarin.", ctx);
+
+    const specialistPrompt = runAgentMock.mock.calls.find(
+      (call) => call[0].agentId === "context_memory"
+    )?.[0].userPrompt as string;
+    expect(specialistPrompt).toContain("[REDACTED_PROHIBITED_DATA]");
+    expect(specialistPrompt).toContain("I like porridge.");
+    expect(specialistPrompt).not.toMatch(
+      /\+65 9123 4567|654321|4321|hunter2|123-456-789|S1234567A/
+    );
+  });
+
+  it.each([
+    "My OTP is 654321.",
+    "My phone number is +65 9123 4567.",
+  ])(
+    "excludes prohibited current data while preserving triage and digital safety: %s",
+    async (message) => {
+      const { orchestrate } = await import("./orchestrator");
+      runAgentMock
+        .mockResolvedValueOnce(
+          result(
+            "orchestrator",
+            orchestratorData(["triage", "digital_safety", "context_memory"])
+          )
+        )
+        .mockResolvedValueOnce(result("triage", triageData()))
+        .mockResolvedValueOnce(
+          result("digital_safety", {
+            isScam: false,
+            scamType: null,
+            confidence: 0.2,
+            warningMessage: "Do not share private data.",
+            educationalNote: "Keep private data private.",
+          })
+        );
+
+      const response = await orchestrate(message, context());
+
+      expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
+        "orchestrator",
+        "triage",
+        "digital_safety",
+      ]);
+      expect(response.contextMemoryCandidates).toEqual([]);
+    }
+  );
+
+  it.each(["Okay thank you.", "Hello!", "Nice weather today."])(
+    "overrides an incorrect context-memory plan for excluded text: %s",
+    async (message) => {
+      const { orchestrate } = await import("./orchestrator");
+      runAgentMock
+        .mockResolvedValueOnce(
+          result(
+            "orchestrator",
+            orchestratorData(["triage", "context_memory"])
+          )
+        )
+        .mockResolvedValueOnce(result("triage", triageData()));
+
+      const response = await orchestrate(message, context());
+
+      expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
+        "orchestrator",
+        "triage",
+      ]);
+      expect(response.contextMemoryCandidates).toEqual([]);
+    }
+  );
+
+  it("keeps unscreened candidates internal and removes their content from traces", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const candidate = {
+      targetStore: "health_context" as const,
+      contextKey: "unsafe_provider_claim",
+      contextType: "health_observation" as const,
+      content: "Likely dementia; password is hunter2",
+      sourceMessageId: "lasting-health",
+      evidenceExcerpt: "My secret password is hunter2.",
+      confidence: 0.99,
+      applicationTags: ["accessibility_support" as const],
+      retentionClass: "health_accessibility" as const,
+    };
+    const ctx = context();
+    ctx.messages.push({
+      id: "lasting-health",
+      sender: "senior",
+      text: "My knee pain has been ongoing for years.",
+      timestamp: "2026-07-16T00:00:00.000Z",
+    });
+    runAgentMock
+      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(
+        result("context_memory", memoryData({ candidates: [candidate] }))
+      );
+
+    const response = await orchestrate(
+      "My knee pain has been ongoing for years.",
+      ctx
+    );
+    const publicResponse = { ...response };
+    const contextTrace = response.traces.find(
+      (trace) => trace.agentId === "context_memory"
+    );
+
+    expect(response.contextMemoryCandidates).toEqual([candidate]);
+    expect(publicResponse).not.toHaveProperty("contextMemoryCandidates");
+    expect(JSON.parse(JSON.stringify(response))).not.toHaveProperty(
+      "contextMemoryCandidates"
+    );
+    expect(contextTrace?.outputSummary).toBe(
+      "1 context proposal(s) for deterministic review; categories: health_observation"
+    );
+    expect(JSON.parse(contextTrace?.output ?? "{}")).toEqual({
+      candidateCount: 1,
+      categories: ["health_observation"],
+    });
+    expect(JSON.stringify(contextTrace)).not.toMatch(
+      /hunter2|dementia|secret password|unsafe_provider_claim|evidenceExcerpt|sourceMessageId/
+    );
   });
 });
 

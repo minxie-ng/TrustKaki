@@ -183,7 +183,6 @@ export interface OrchestrateResponse {
   signals: TriageSignal[];
   policy: PolicyResult;
   briefing: BriefingOutput | null;
-  memoryCandidates?: MemoryCandidate[];
   persistence?: {
     mode: "supabase" | "local_demo";
     configured: boolean;
@@ -193,5 +192,5 @@ export interface OrchestrateResponse {
 }
 
 export interface OrchestrationResult extends OrchestrateResponse {
-  memoryCandidates: MemoryCandidate[];
+  contextMemoryCandidates: MemoryCandidate[];
 }
