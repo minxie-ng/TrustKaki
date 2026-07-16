@@ -92,17 +92,23 @@ const sensitiveDataPatterns = [
   /\b(?:passport|identity card|national id|nric)\s*(?:number|no\.?|is|:)/i,
   /\bnric\s+[stfgm]\d{7}[a-z]\b/i,
   /\bbank\s+account(?:\s+(?:number|no\.?|is|:))?\s+\d[\d -]{2,}\d\b/i,
+  /\bpassport\s+(?=[a-z0-9-]*\d)[a-z0-9][a-z0-9-]{5,}\b/i,
+  /\bpin\s*(?:is|:)\s*\d{4,12}\b/i,
 ];
 
 const diagnosticPatterns = [
   /\b(?:diagnosed|diagnosis)\s+(?:as|with|of)\b/i,
   /\b(?:likely|probably|possibly|may|might|must)\s+(?:have|has|be)\b/i,
   /\b(?:suspect|suggests?|indicates?|appears? to have)\b/i,
-  /\b(?:have|has)\s+(?:alzheimer(?:'s)?|dementia|diabetes|cancer|parkinson(?:'s)?|depression)\b/i,
+  /\b(?:have|has)\s+(?:dementia|diabetes|cancer|parkinson(?:'s)?|depression)\b/i,
+];
+
+const selfDiagnosticClaimPatterns = [
+  /(?:^|\n)\s*i\s+(?:think|believe)\s+i\s+(?:have|may have|might have)\s+[a-z][a-z'-]*(?:[ \t]+[a-z][a-z'-]*){0,5}[.!?]?(?=\n|$)/i,
 ];
 
 const treatmentInstructionPatterns = [
-  /\b(?:take|start|stop|increase|decrease)\s+(?:(?:one|two|three|\d+)\s+)?(?:aspirin|ibuprofen|paracetamol|medication|medicine|tablets?|pills?)\b/i,
+  /(?:^|\n)\s*(?:please\s+)?(?:take|start|stop|increase|decrease)\s+(?:(?:one|two|three|four|\d+(?:\.\d+)?)\s+)?[a-z][a-z-]*(?:\s+\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml))?\s+(?:daily|nightly|weekly|monthly|once|twice|(?:once|twice|three times)\s+(?:a|per)\s+(?:day|week))\b/i,
 ];
 
 function includes<T extends string>(values: readonly T[], value: unknown): value is T {
@@ -215,7 +221,10 @@ export function evaluateMemoryCandidate(
   if (hasPattern(proposedText, sensitiveDataPatterns)) {
     return { accepted: false, reason: "sensitive_data" };
   }
-  if (hasPattern(proposedText, diagnosticPatterns)) {
+  if (
+    hasPattern(proposedText, diagnosticPatterns) ||
+    hasPattern(proposedText, selfDiagnosticClaimPatterns)
+  ) {
     return { accepted: false, reason: "diagnostic_inference" };
   }
   if (hasPattern(proposedText, treatmentInstructionPatterns)) {

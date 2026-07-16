@@ -83,6 +83,8 @@ describe("memory eligibility policy", () => {
     "My bank password is secret123.",
     "NRIC S1234567D",
     "Bank account 123-456",
+    "Passport A1234567",
+    "My PIN is 1234",
   ])("rejects sensitive data: %s", (text) => {
     expect(
       evaluateMemoryCandidate(
@@ -134,6 +136,25 @@ describe("memory eligibility policy", () => {
     ).toEqual({ accepted: false, reason: "diagnostic_inference" });
   });
 
+  it("rejects self-diagnostic claims without enumerating the condition", () => {
+    const text = "I think I have hypertension";
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "health_context",
+          contextKey: "suspected_condition",
+          contextType: "health_observation",
+          content: text,
+          evidenceExcerpt: text,
+          applicationTags: ["gentle_one_to_one"],
+          retentionClass: "health_accessibility",
+        },
+        { ...sourceMessage, text }
+      )
+    ).toEqual({ accepted: false, reason: "diagnostic_inference" });
+  });
+
   it("rejects common treatment instructions", () => {
     const text = "Take two aspirin daily";
     expect(
@@ -151,6 +172,56 @@ describe("memory eligibility policy", () => {
         { ...sourceMessage, text }
       )
     ).toEqual({ accepted: false, reason: "treatment_instruction" });
+  });
+
+  it("rejects treatment instructions without enumerating the medication", () => {
+    const text = "Take metformin daily";
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "health_context",
+          contextKey: "medication_instruction",
+          contextType: "health_observation",
+          content: text,
+          evidenceExcerpt: text,
+          applicationTags: ["gentle_one_to_one"],
+          retentionClass: "health_accessibility",
+        },
+        { ...sourceMessage, text }
+      )
+    ).toEqual({ accepted: false, reason: "treatment_instruction" });
+  });
+
+  it("does not treat ordinary phrasing as a treatment instruction", () => {
+    const foodMessage: MemorySourceMessage = {
+      ...sourceMessage,
+      text: "I take porridge daily and prefer it warm.",
+    };
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          contextKey: "preferred_breakfast",
+          contextType: "food_preference",
+          content: "Prefers warm porridge.",
+          evidenceExcerpt: foodMessage.text,
+          applicationTags: ["practical_meal_prompt"],
+        },
+        foodMessage
+      )
+    ).toMatchObject({ accepted: true });
+
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          content: "Uses the phrase take care.",
+          evidenceExcerpt: "take care",
+        },
+        { ...sourceMessage, text: "Please keep messages short and take care." }
+      )
+    ).toMatchObject({ accepted: true });
   });
 
   it.each([
