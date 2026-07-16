@@ -78,6 +78,27 @@ export type ContactOutcome =
   | "referred_to_aac_staff"
   | "unable_to_reach"
   | "resolved";
+export type ContextStore = "memory" | "health_context" | "routine_baseline";
+export type ContextExtractionMethod =
+  | "caregiver_confirmed"
+  | "ai_extracted"
+  | "imported"
+  | "admin_corrected";
+export type ContextApplicationTag =
+  | "conversation_personalisation"
+  | "pattern_watch"
+  | "proactive_check_in"
+  | "communication_style"
+  | "accessibility_support"
+  | "caregiver_routing";
+export type ContextEventType =
+  | "proposal_accepted"
+  | "proposal_rejected"
+  | "confirmed"
+  | "corrected"
+  | "superseded"
+  | "archived"
+  | "expired";
 export type ProactiveCheckInStatus =
   | "pending_initial_send"
   | "awaiting_initial_response"
@@ -210,9 +231,20 @@ export interface Database {
           usual_pattern: string;
           schedule_json: Json;
           source: string;
+          source_message_id: string | null;
           confidence: number;
           status: "active" | "superseded" | "archived";
           safe_use_notes: string | null;
+          context_key: string;
+          extraction_method: ContextExtractionMethod;
+          last_confirmed_at: string;
+          expires_at: string | null;
+          superseded_by_id: string | null;
+          application_tags: ContextApplicationTag[];
+          created_by_caregiver_id: string | null;
+          created_by_system: string | null;
+          updated_by_caregiver_id: string | null;
+          updated_by_system: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -231,9 +263,20 @@ export interface Database {
           usual_pattern: string;
           schedule_json?: Json;
           source?: string;
+          source_message_id?: string | null;
           confidence?: number;
           status?: "active" | "superseded" | "archived";
           safe_use_notes?: string | null;
+          context_key: string;
+          extraction_method?: ContextExtractionMethod;
+          last_confirmed_at?: string;
+          expires_at?: string | null;
+          superseded_by_id?: string | null;
+          application_tags?: ContextApplicationTag[];
+          created_by_caregiver_id?: string | null;
+          created_by_system?: string | null;
+          updated_by_caregiver_id?: string | null;
+          updated_by_system?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -253,10 +296,22 @@ export interface Database {
             | "other";
           description: string;
           source: string;
+          source_message_id: string | null;
+          confidence: number;
           first_observed_at: string | null;
           last_observed_at: string | null;
-          status: "active" | "resolved" | "archived";
+          status: "active" | "resolved" | "superseded" | "archived";
           safe_use_notes: string;
+          context_key: string;
+          extraction_method: ContextExtractionMethod;
+          last_confirmed_at: string;
+          expires_at: string | null;
+          superseded_by_id: string | null;
+          application_tags: ContextApplicationTag[];
+          created_by_caregiver_id: string | null;
+          created_by_system: string | null;
+          updated_by_caregiver_id: string | null;
+          updated_by_system: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -273,10 +328,22 @@ export interface Database {
             | "other";
           description: string;
           source?: string;
+          source_message_id?: string | null;
+          confidence?: number;
           first_observed_at?: string | null;
           last_observed_at?: string | null;
-          status?: "active" | "resolved" | "archived";
+          status?: "active" | "resolved" | "superseded" | "archived";
           safe_use_notes?: string;
+          context_key: string;
+          extraction_method?: ContextExtractionMethod;
+          last_confirmed_at?: string;
+          expires_at?: string | null;
+          superseded_by_id?: string | null;
+          application_tags?: ContextApplicationTag[];
+          created_by_caregiver_id?: string | null;
+          created_by_system?: string | null;
+          updated_by_caregiver_id?: string | null;
+          updated_by_system?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -296,12 +363,22 @@ export interface Database {
           content: string;
           source: string;
           source_message_id: string | null;
+          confidence: number;
           importance: number;
-          status: "active" | "archived";
+          status: "active" | "superseded" | "archived";
           remembered_at: string;
           follow_up_after: string | null;
           expires_at: string | null;
           safe_use_notes: string | null;
+          context_key: string;
+          extraction_method: ContextExtractionMethod;
+          last_confirmed_at: string;
+          superseded_by_id: string | null;
+          application_tags: ContextApplicationTag[];
+          created_by_caregiver_id: string | null;
+          created_by_system: string | null;
+          updated_by_caregiver_id: string | null;
+          updated_by_system: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -318,16 +395,77 @@ export interface Database {
           content: string;
           source?: string;
           source_message_id?: string | null;
+          confidence?: number;
           importance?: number;
-          status?: "active" | "archived";
+          status?: "active" | "superseded" | "archived";
           remembered_at?: string;
           follow_up_after?: string | null;
           expires_at?: string | null;
           safe_use_notes?: string | null;
+          context_key: string;
+          extraction_method?: ContextExtractionMethod;
+          last_confirmed_at?: string;
+          superseded_by_id?: string | null;
+          application_tags?: ContextApplicationTag[];
+          created_by_caregiver_id?: string | null;
+          created_by_system?: string | null;
+          updated_by_caregiver_id?: string | null;
+          updated_by_system?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["senior_memories"]["Insert"]>;
+      };
+      senior_context_events: {
+        Row: {
+          id: string;
+          senior_id: string;
+          store: ContextStore;
+          context_id: string | null;
+          context_key: string;
+          event_type: ContextEventType;
+          rejection_reason:
+            | "low_confidence"
+            | "unsupported_evidence"
+            | "sensitive_data"
+            | "diagnostic_inference"
+            | "unsupported_category"
+            | "invalid_candidate"
+            | null;
+          reason: string | null;
+          source_message_id: string | null;
+          before_snapshot: Json | null;
+          after_snapshot: Json | null;
+          actor_caregiver_id: string | null;
+          actor_system: string | null;
+          command_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          senior_id: string;
+          store: ContextStore;
+          context_id?: string | null;
+          context_key: string;
+          event_type: ContextEventType;
+          rejection_reason?:
+            | "low_confidence"
+            | "unsupported_evidence"
+            | "sensitive_data"
+            | "diagnostic_inference"
+            | "unsupported_category"
+            | "invalid_candidate"
+            | null;
+          reason?: string | null;
+          source_message_id?: string | null;
+          before_snapshot?: Json | null;
+          after_snapshot?: Json | null;
+          actor_caregiver_id?: string | null;
+          actor_system?: string | null;
+          command_id: string;
+          created_at?: string;
+        };
+        Update: never;
       };
       check_ins: {
         Row: {
@@ -1103,6 +1241,38 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      apply_automatic_senior_context: {
+        Args: {
+          p_command_id: string;
+          p_senior_id: string;
+          p_source_message_id: string;
+          p_payload_json: Json;
+        };
+        Returns: Json;
+      };
+      correct_senior_context: {
+        Args: {
+          p_command_id: string;
+          p_senior_id: string;
+          p_store: ContextStore;
+          p_context_id: string;
+          p_expected_updated_at: string;
+          p_replacement_json: Json;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      archive_senior_context: {
+        Args: {
+          p_command_id: string;
+          p_senior_id: string;
+          p_store: ContextStore;
+          p_context_id: string;
+          p_expected_updated_at: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
       claim_whatsapp_webhook_event: {
         Args: { p_event_id: string };
         Returns: Database["public"]["Tables"]["whatsapp_webhook_events"]["Row"][];
