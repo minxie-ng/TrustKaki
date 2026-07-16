@@ -400,7 +400,17 @@ describe("orchestrate", () => {
     }
   );
 
-  it.each(["Okay thank you.", "Hello!", "Nice weather today."])(
+  it.each([
+    "Okay thank you.",
+    "Hello!",
+    "Nice weather today.",
+    "Hi there",
+    "Hello Rachel",
+    "Hey Mei Ling",
+    "The weather is nice today",
+    "Nice weather today, isn't it?",
+    "Thank you so much",
+  ])(
     "overrides an incorrect context-memory plan for excluded text: %s",
     async (message) => {
       const { orchestrate } = await import("./orchestrator");
@@ -422,6 +432,30 @@ describe("orchestrate", () => {
       expect(response.contextMemoryCandidates).toEqual([]);
     }
   );
+
+  it("still invokes context memory when a greeting prefixes durable context", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const message = "Hi, I prefer voice calls in Mandarin";
+    const ctx = context();
+    ctx.messages.push({
+      id: "greeting-preference",
+      sender: "senior",
+      text: message,
+      timestamp: "2026-07-16T00:00:00.000Z",
+    });
+    runAgentMock
+      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(result("context_memory", memoryData()));
+
+    await orchestrate(message, ctx);
+
+    expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
+      "orchestrator",
+      "triage",
+      "context_memory",
+    ]);
+  });
 
   it("keeps unscreened candidates internal and removes their content from traces", async () => {
     const { orchestrate } = await import("./orchestrator");

@@ -47,7 +47,12 @@ import {
 } from "./prompts";
 import { contextMemoryFallback } from "./fallbacks";
 
-const contextMemoryTextExclusionPattern = /^(?:hi|hello|hey|good (?:morning|afternoon|evening)|ok|okay|thanks|thank you|ok thanks|okay thank you|nice weather(?: today)?|how are you|have a nice day)$/;
+const contextMemoryTextExclusionPatterns = [
+  /^(?:hi|hello|hey)(?: there|(?: [a-z'-]+){1,2})?$/,
+  /^(?:good (?:morning|afternoon|evening)|ok|okay|how are you|have a nice day)$/,
+  /^(?:ok |okay )?(?:thanks|thank you)(?: so much| very much)?$/,
+  /^(?:the weather is (?:nice|lovely|good|hot|rainy)(?: today)?|(?:nice|lovely|good|hot|rainy) weather(?: today)?(?: isn't it| is it not)?)$/,
+] as const;
 const prohibitedMemoryDataPatterns = [
   /\+?\d(?:[\s().-]*\d){7,}/g,
   /\b(?:otp|one[- ]time (?:password|pin|code)|pin)\s*(?:(?:is|:|=)\s*)?\d{4,12}\b/gi,
@@ -73,6 +78,10 @@ const durableContextPatterns = [
 
 export function mayContainDurableContext(message: string): boolean {
   if (shouldExcludeContextMemory(message)) return false;
+  return hasDurableContextCue(message);
+}
+
+function hasDurableContextCue(message: string): boolean {
   return durableContextPatterns.some((pattern) => pattern.test(message));
 }
 
@@ -93,10 +102,13 @@ function redactProhibitedMemoryData(value: string): string {
 
 function shouldExcludeContextMemory(message: string): boolean {
   const normalized = normalizedMessage(message);
+  const isBoundedSmallTalk = contextMemoryTextExclusionPatterns.some((pattern) =>
+    pattern.test(normalized)
+  );
   return (
     !normalized ||
-    contextMemoryTextExclusionPattern.test(normalized) ||
-    redactProhibitedMemoryData(message) !== message
+    redactProhibitedMemoryData(message) !== message ||
+    (isBoundedSmallTalk && !hasDurableContextCue(message))
   );
 }
 
