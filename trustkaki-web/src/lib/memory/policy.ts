@@ -90,13 +90,19 @@ const sensitiveDataPatterns = [
   /\b(?:password|passcode|security code|cvv|cvc)\s*(?:is|:)/i,
   /\b(?:credit|debit|bank)\s+card\s+(?:number|details?)\b/i,
   /\b(?:passport|identity card|national id|nric)\s*(?:number|no\.?|is|:)/i,
+  /\bnric\s+[stfgm]\d{7}[a-z]\b/i,
+  /\bbank\s+account(?:\s+(?:number|no\.?|is|:))?\s+\d[\d -]{2,}\d\b/i,
 ];
 
 const diagnosticPatterns = [
   /\b(?:diagnosed|diagnosis)\s+(?:as|with|of)\b/i,
   /\b(?:likely|probably|possibly|may|might|must)\s+(?:have|has|be)\b/i,
   /\b(?:suspect|suggests?|indicates?|appears? to have)\b/i,
-  /\b(?:have|has)\s+(?:dementia|diabetes|cancer|parkinson(?:'s)?|depression)\b/i,
+  /\b(?:have|has)\s+(?:alzheimer(?:'s)?|dementia|diabetes|cancer|parkinson(?:'s)?|depression)\b/i,
+];
+
+const treatmentInstructionPatterns = [
+  /\b(?:take|start|stop|increase|decrease)\s+(?:(?:one|two|three|\d+)\s+)?(?:aspirin|ibuprofen|paracetamol|medication|medicine|tablets?|pills?)\b/i,
 ];
 
 function includes<T extends string>(values: readonly T[], value: unknown): value is T {
@@ -199,18 +205,21 @@ export function evaluateMemoryCandidate(
     candidate.sourceMessageId !== sourceMessage.id ||
     typeof sourceMessage.text !== "string" ||
     typeof candidate.evidenceExcerpt !== "string" ||
-    candidate.evidenceExcerpt.length === 0 ||
+    candidate.evidenceExcerpt.trim().length === 0 ||
     !sourceMessage.text.includes(candidate.evidenceExcerpt)
   ) {
     return { accepted: false, reason: "unsupported_evidence" };
   }
 
-  const proposedText = `${candidate.content}\n${candidate.evidenceExcerpt}`;
+  const proposedText = `${candidate.contextKey}\n${candidate.content}\n${candidate.evidenceExcerpt}`;
   if (hasPattern(proposedText, sensitiveDataPatterns)) {
     return { accepted: false, reason: "sensitive_data" };
   }
   if (hasPattern(proposedText, diagnosticPatterns)) {
     return { accepted: false, reason: "diagnostic_inference" };
+  }
+  if (hasPattern(proposedText, treatmentInstructionPatterns)) {
+    return { accepted: false, reason: "treatment_instruction" };
   }
   if (!hasValidBounds(candidate) || !isSupportedCandidate(candidate)) {
     return { accepted: false, reason: "invalid_candidate" };

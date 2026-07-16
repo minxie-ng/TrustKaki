@@ -54,6 +54,15 @@ describe("memory eligibility policy", () => {
     ).toEqual({ accepted: false, reason: "unsupported_evidence" });
   });
 
+  it("rejects whitespace-only evidence", () => {
+    expect(
+      evaluateMemoryCandidate(
+        { ...validPreference, evidenceExcerpt: " " },
+        sourceMessage
+      )
+    ).toEqual({ accepted: false, reason: "unsupported_evidence" });
+  });
+
   it("rejects evidence from the wrong or a non-senior message", () => {
     expect(
       evaluateMemoryCandidate(validPreference, {
@@ -72,6 +81,8 @@ describe("memory eligibility policy", () => {
   it.each([
     "My OTP is 123456.",
     "My bank password is secret123.",
+    "NRIC S1234567D",
+    "Bank account 123-456",
   ])("rejects sensitive data: %s", (text) => {
     expect(
       evaluateMemoryCandidate(
@@ -102,6 +113,56 @@ describe("memory eligibility policy", () => {
         { ...sourceMessage, text }
       )
     ).toEqual({ accepted: false, reason: "diagnostic_inference" });
+  });
+
+  it("rejects common self-diagnostic wording", () => {
+    const text = "I think I have Alzheimer's.";
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "health_context",
+          contextKey: "suspected_condition",
+          contextType: "health_observation",
+          content: text,
+          evidenceExcerpt: text,
+          applicationTags: ["gentle_one_to_one"],
+          retentionClass: "health_accessibility",
+        },
+        { ...sourceMessage, text }
+      )
+    ).toEqual({ accepted: false, reason: "diagnostic_inference" });
+  });
+
+  it("rejects common treatment instructions", () => {
+    const text = "Take two aspirin daily";
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "health_context",
+          contextKey: "aspirin_instruction",
+          contextType: "health_observation",
+          content: text,
+          evidenceExcerpt: text,
+          applicationTags: ["gentle_one_to_one"],
+          retentionClass: "health_accessibility",
+        },
+        { ...sourceMessage, text }
+      )
+    ).toEqual({ accepted: false, reason: "treatment_instruction" });
+  });
+
+  it.each([
+    ["NRIC S1234567D", "sensitive_data"],
+    ["I think I have Alzheimer's", "diagnostic_inference"],
+  ] as const)("scans the original context key: %s", (contextKey, reason) => {
+    expect(
+      evaluateMemoryCandidate(
+        { ...validPreference, contextKey },
+        sourceMessage
+      )
+    ).toEqual({ accepted: false, reason });
   });
 
   it("normalises stable context keys", () => {

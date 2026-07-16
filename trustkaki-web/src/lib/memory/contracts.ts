@@ -59,6 +59,7 @@ export type MemoryRejectionCategory =
   | "unsupported_evidence"
   | "sensitive_data"
   | "diagnostic_inference"
+  | "treatment_instruction"
   | "invalid_candidate";
 
 export type MemoryEligibilityResult =
