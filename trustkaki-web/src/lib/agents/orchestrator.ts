@@ -54,11 +54,11 @@ const contextMemoryTextExclusionPatterns = [
   /^(?:the weather is (?:nice|lovely|good|hot|rainy)(?: today)?|(?:nice|lovely|good|hot|rainy) weather(?: today)?(?: isn't it| is it not)?)$/,
 ] as const;
 const phoneNumberPattern = /\+?\d(?:[\s().-]*\d){7,}/g;
-const commonDatePattern = /^(?:\d{2}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/;
 const prohibitedMemoryDataPatterns = [
   /\b(?:otp|one[- ]time (?:password|pin|code)|pin)\s*(?:(?:is|:|=)\s*)?\d{4,12}\b/gi,
   /\b(?:password|passcode|credentials?)\s*(?:is|are|:|=)\s*[^\s,.;]{4,}/gi,
-  /\b(?:cvv|cvc|security[- ]code)\s*(?:is|:|=)\s*\d{3,4}\b/gi,
+  /\b(?:password|passcode|credentials?)\s+(?=[^\s,.;]*[^a-z\s,.;])[^\s,.;]{4,}/gi,
+  /\b(?:cvv|cvc|security[- ]code)\s*(?:(?:is|:|=)\s*)?\d{3,4}\b/gi,
   /\b(?:bank\s+)?account(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*\d(?:[\s-]*\d){5,}/gi,
   /\b(?:credit|debit|bank)\s+card(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*\d(?:[\s-]*\d){7,}/gi,
   /\b(?:nric|passport|identity(?: document| card)?|national id)(?:\s+(?:number|no\.?))?\s*(?:is|:|=)?\s*[a-z0-9-]{6,}/gi,
@@ -97,11 +97,29 @@ function normalizedMessage(message: string): string {
 
 function redactProhibitedMemoryData(value: string): string {
   const withoutPhoneNumbers = value.replace(phoneNumberPattern, (match) =>
-    commonDatePattern.test(match) ? match : REDACTED_PROHIBITED_DATA
+    isSupportedCalendarDate(match) ? match : REDACTED_PROHIBITED_DATA
   );
   return prohibitedMemoryDataPatterns.reduce(
     (redacted, pattern) => redacted.replace(pattern, REDACTED_PROHIBITED_DATA),
     withoutPhoneNumbers
+  );
+}
+
+function isSupportedCalendarDate(value: string): boolean {
+  const yearFirst = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dayFirst = value.match(/^(\d{2})([-/])(\d{2})\2(\d{4})$/);
+  if (!yearFirst && !dayFirst) return false;
+
+  const year = Number(yearFirst?.[1] ?? dayFirst?.[4]);
+  const month = Number(yearFirst?.[2] ?? dayFirst?.[3]);
+  const day = Number(yearFirst?.[3] ?? dayFirst?.[1]);
+  if (year < 1900 || year > 2100) return false;
+
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
   );
 }
 

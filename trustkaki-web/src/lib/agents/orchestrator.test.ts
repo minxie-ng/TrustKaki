@@ -319,19 +319,19 @@ describe("orchestrate", () => {
       {
         id: "history-phone",
         sender: "senior",
-        text: "My phone is +65 9123 4567.",
+        text: "My phone is +65 9123 4567; invalid reference 91-23-4567.",
         timestamp: "2026-07-15T00:00:00.000Z",
       },
       {
         id: "history-secrets",
         sender: "senior",
-        text: "OTP 654321, PIN: 4321, password is hunter2.",
+        text: "OTP 654321, PIN: 4321, password hunter2.",
         timestamp: "2026-07-15T01:00:00.000Z",
       },
       {
         id: "history-card-codes",
         sender: "senior",
-        text: "CVV is 123, CVC: 456, security code = 7890.",
+        text: "CVV 123, CVC 456, security code 7890.",
         timestamp: "2026-07-15T01:30:00.000Z",
       },
       {
@@ -366,16 +366,24 @@ describe("orchestrate", () => {
     expect(specialistPrompt).toContain("[REDACTED_PROHIBITED_DATA]");
     expect(specialistPrompt).toContain("I like porridge.");
     expect(specialistPrompt).not.toMatch(
-      /\+65 9123 4567|654321|4321|hunter2|CVV is 123|CVC: 456|security code = 7890|123-456-789|S1234567A/
+      /\+65 9123 4567|91-23-4567|654321|4321|hunter2|CVV 123|CVC 456|security code 7890|123-456-789|S1234567A/
     );
   });
 
   it.each([
     "My OTP is 654321.",
+    "My password hunter2.",
     "My phone number is +65 9123 4567.",
     "My CVV is 123.",
     "CVC: 456.",
     "The security code = 7890.",
+    "CVV 123.",
+    "CVC 456.",
+    "The security code 7890.",
+    "I prefer voice calls after 91-23-4567.",
+    "I prefer voice calls after 31-02-2026.",
+    "I prefer voice calls after 2026-02-30.",
+    "I prefer voice calls after 29-02-2025.",
   ])(
     "excludes prohibited current data while preserving triage and digital safety: %s",
     async (message) => {
