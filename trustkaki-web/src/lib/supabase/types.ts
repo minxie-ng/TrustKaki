@@ -85,12 +85,12 @@ export type ContextExtractionMethod =
   | "imported"
   | "admin_corrected";
 export type ContextApplicationTag =
-  | "conversation_personalisation"
-  | "pattern_watch"
-  | "proactive_check_in"
-  | "communication_style"
+  | "concise_text"
+  | "gentle_one_to_one"
+  | "voice_preferred"
+  | "practical_meal_prompt"
   | "accessibility_support"
-  | "caregiver_routing";
+  | "trusted_contact_route";
 export type ContextEventType =
   | "proposal_accepted"
   | "proposal_rejected"
@@ -422,14 +422,14 @@ export interface Database {
           senior_id: string;
           store: ContextStore;
           context_id: string | null;
-          context_key: string;
+          context_key: string | null;
           event_type: ContextEventType;
           rejection_reason:
             | "low_confidence"
             | "unsupported_evidence"
             | "sensitive_data"
             | "diagnostic_inference"
-            | "unsupported_category"
+            | "treatment_instruction"
             | "invalid_candidate"
             | null;
           reason: string | null;
@@ -446,14 +446,14 @@ export interface Database {
           senior_id: string;
           store: ContextStore;
           context_id?: string | null;
-          context_key: string;
+          context_key?: string | null;
           event_type: ContextEventType;
           rejection_reason?:
             | "low_confidence"
             | "unsupported_evidence"
             | "sensitive_data"
             | "diagnostic_inference"
-            | "unsupported_category"
+            | "treatment_instruction"
             | "invalid_candidate"
             | null;
           reason?: string | null;

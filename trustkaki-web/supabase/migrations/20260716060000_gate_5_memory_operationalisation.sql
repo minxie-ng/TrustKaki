@@ -121,8 +121,8 @@ alter table public.routine_baselines
   drop constraint if exists routine_baselines_application_tags_check,
   add constraint routine_baselines_application_tags_check check (
     application_tags <@ array[
-      'conversation_personalisation', 'pattern_watch', 'proactive_check_in',
-      'communication_style', 'accessibility_support', 'caregiver_routing'
+      'concise_text', 'gentle_one_to_one', 'voice_preferred',
+      'practical_meal_prompt', 'accessibility_support', 'trusted_contact_route'
     ]::text[]
   ),
   drop constraint if exists routine_baselines_context_key_check,
@@ -144,8 +144,8 @@ alter table public.senior_health_contexts
   drop constraint if exists senior_health_contexts_application_tags_check,
   add constraint senior_health_contexts_application_tags_check check (
     application_tags <@ array[
-      'conversation_personalisation', 'pattern_watch', 'proactive_check_in',
-      'communication_style', 'accessibility_support', 'caregiver_routing'
+      'concise_text', 'gentle_one_to_one', 'voice_preferred',
+      'practical_meal_prompt', 'accessibility_support', 'trusted_contact_route'
     ]::text[]
   ),
   drop constraint if exists senior_health_contexts_context_key_check,
@@ -165,8 +165,8 @@ alter table public.senior_memories
   drop constraint if exists senior_memories_application_tags_check,
   add constraint senior_memories_application_tags_check check (
     application_tags <@ array[
-      'conversation_personalisation', 'pattern_watch', 'proactive_check_in',
-      'communication_style', 'accessibility_support', 'caregiver_routing'
+      'concise_text', 'gentle_one_to_one', 'voice_preferred',
+      'practical_meal_prompt', 'accessibility_support', 'trusted_contact_route'
     ]::text[]
   ),
   drop constraint if exists senior_memories_context_key_check,
@@ -237,14 +237,14 @@ create table public.senior_context_events (
   senior_id uuid not null references public.seniors(id),
   store text not null check (store in ('memory', 'health_context', 'routine_baseline')),
   context_id uuid,
-  context_key text not null,
+  context_key text,
   event_type text not null check (event_type in (
     'proposal_accepted', 'proposal_rejected', 'confirmed', 'corrected',
     'superseded', 'archived', 'expired'
   )),
   rejection_reason text check (rejection_reason is null or rejection_reason in (
     'low_confidence', 'unsupported_evidence', 'sensitive_data',
-    'diagnostic_inference', 'unsupported_category', 'invalid_candidate'
+    'diagnostic_inference', 'treatment_instruction', 'invalid_candidate'
   )),
   reason text check (reason is null or char_length(reason) between 8 and 500),
   source_message_id uuid references public.messages(id) on delete set null,
@@ -252,9 +252,20 @@ create table public.senior_context_events (
   after_snapshot jsonb,
   actor_caregiver_id uuid references public.caregivers(id) on delete set null,
   actor_system text,
-  command_id uuid not null unique,
+  command_id uuid not null,
   created_at timestamptz not null default now(),
-  check (actor_caregiver_id is not null or actor_system is not null)
+  unique nulls not distinct (command_id, event_type, context_id),
+  check (actor_caregiver_id is not null or actor_system is not null),
+  check (
+    (
+      event_type = 'proposal_rejected' and context_id is null
+      and context_key is null and rejection_reason is not null
+      and before_snapshot is null and after_snapshot is null
+    ) or (
+      event_type <> 'proposal_rejected' and context_key is not null
+      and rejection_reason is null
+    )
+  )
 );
 
 create or replace function trustkaki_private.reject_senior_context_event_mutation()
@@ -432,14 +443,22 @@ declare
   v_store text := lower(trim(p_payload_json ->> 'store'));
   v_context_key text := lower(regexp_replace(trim(p_payload_json ->> 'context_key'), '[^a-z0-9_:-]+', '_', 'g'));
   v_decision text := lower(trim(coalesce(p_payload_json ->> 'decision', 'accepted')));
-  v_action text := lower(trim(coalesce(p_payload_json ->> 'action', 'create')));
-  v_confidence numeric := (p_payload_json ->> 'confidence')::numeric;
-  v_expires_at timestamptz := (p_payload_json ->> 'expires_at')::timestamptz;
+  v_intent text := lower(trim(coalesce(p_payload_json ->> 'intent', 'create')));
+  v_confidence numeric;
+  v_expires_at timestamptz;
+  v_expected_updated_at timestamptz;
+  v_candidate_content text := trim(coalesce(
+    p_payload_json ->> 'content',
+    p_payload_json ->> 'description',
+    p_payload_json ->> 'usual_pattern'
+  ));
   v_tags text[];
   v_excerpt text := trim(p_payload_json ->> 'evidence_excerpt');
   v_rejection_reason text := lower(trim(p_payload_json ->> 'rejection_reason'));
   v_message_text text;
   v_existing_id uuid;
+  v_existing_updated_at timestamptz;
+  v_existing_content text;
   v_new_id uuid;
   v_before jsonb;
   v_after jsonb;
@@ -450,18 +469,15 @@ begin
   if coalesce(auth.jwt() ->> 'role', '') <> 'service_role' then
     raise exception 'Forbidden' using errcode = '42501';
   end if;
-  if v_store is null
-     or v_store not in ('memory', 'health_context', 'routine_baseline')
-     or v_context_key is null
-     or char_length(v_context_key) not between 2 and 120 then
-    raise exception 'Invalid context target' using errcode = '22023';
+  if v_store is null or v_store not in ('memory', 'health_context', 'routine_baseline') then
+    raise exception 'Invalid context store' using errcode = '22023';
   end if;
 
   v_canonical := jsonb_strip_nulls(p_payload_json || jsonb_build_object(
     'store', v_store,
     'context_key', v_context_key,
     'decision', v_decision,
-    'action', v_action,
+    'intent', v_intent,
     'senior_id', p_senior_id,
     'source_message_id', p_source_message_id
   ));
@@ -482,24 +498,23 @@ begin
   select text into v_message_text
   from public.messages
   where id = p_source_message_id and senior_id = p_senior_id and sender = 'senior';
-  if not found or v_excerpt = '' or position(v_excerpt in v_message_text) = 0 then
-    raise exception 'Source evidence does not match the senior message' using errcode = '22023';
+  if not found then
+    raise exception 'Source message is not a senior-authored message for this senior' using errcode = '22023';
   end if;
 
   if v_decision = 'rejected' then
-    if v_rejection_reason not in (
+    if v_rejection_reason is null or v_rejection_reason not in (
       'low_confidence', 'unsupported_evidence', 'sensitive_data',
-      'diagnostic_inference', 'unsupported_category', 'invalid_candidate'
+      'diagnostic_inference', 'treatment_instruction', 'invalid_candidate'
     ) then
       raise exception 'Invalid rejection reason' using errcode = '22023';
     end if;
     insert into public.senior_context_events (
-      senior_id, store, context_key, event_type, rejection_reason,
-      source_message_id, after_snapshot, actor_system, command_id
+      senior_id, store, event_type, rejection_reason,
+      source_message_id, actor_system, command_id
     ) values (
-      p_senior_id, v_store, v_context_key, 'proposal_rejected', v_rejection_reason,
-      p_source_message_id, jsonb_build_object('evidence_excerpt', v_excerpt),
-      'context_memory_policy', p_command_id
+      p_senior_id, v_store, 'proposal_rejected', v_rejection_reason,
+      p_source_message_id, 'context_memory_policy', p_command_id
     );
     v_result := jsonb_build_object('accepted', false, 'event', 'proposal_rejected', 'duplicate', false);
     update trustkaki_private.context_command_bindings set result_json = v_result
@@ -507,39 +522,72 @@ begin
     return v_result;
   end if;
 
+  if v_excerpt is null or v_excerpt = '' or position(v_excerpt in v_message_text) = 0 then
+    raise exception 'Source evidence does not match the senior message' using errcode = '22023';
+  end if;
+  v_confidence := nullif(trim(p_payload_json ->> 'confidence'), '')::numeric;
+  v_expires_at := nullif(trim(p_payload_json ->> 'expires_at'), '')::timestamptz;
+  v_expected_updated_at := nullif(
+    trim(p_payload_json ->> 'expected_updated_at'), ''
+  )::timestamptz;
+  if v_context_key is null or char_length(v_context_key) not between 2 and 120 then
+    raise exception 'Invalid context key' using errcode = '22023';
+  end if;
+
   if v_decision <> 'accepted' or v_confidence is null
      or v_confidence < 0.85 or v_confidence > 1
      or v_expires_at is null or v_expires_at <= now()
-     or v_action not in ('create', 'confirm', 'replace') then
+     or v_candidate_content is null or v_candidate_content = ''
+     or v_intent not in ('create', 'confirm', 'replace') then
     raise exception 'Candidate is not eligible for automatic activation' using errcode = '22023';
   end if;
   select coalesce(array_agg(value), '{}'::text[]) into v_tags
   from jsonb_array_elements_text(coalesce(p_payload_json -> 'application_tags', '[]'::jsonb));
   if cardinality(v_tags) = 0 or not (v_tags <@ array[
-    'conversation_personalisation', 'pattern_watch', 'proactive_check_in',
-    'communication_style', 'accessibility_support', 'caregiver_routing'
+    'concise_text', 'gentle_one_to_one', 'voice_preferred',
+    'practical_meal_prompt', 'accessibility_support', 'trusted_contact_route'
   ]::text[]) then
     raise exception 'Invalid application tags' using errcode = '22023';
   end if;
 
+  perform 1
+  from public.seniors
+  where id = p_senior_id
+  for update;
+
   if v_store = 'memory' then
-    select id, to_jsonb(m) into v_existing_id, v_before
+    select id, updated_at, content, to_jsonb(m)
+    into v_existing_id, v_existing_updated_at, v_existing_content, v_before
     from public.senior_memories m
     where senior_id = p_senior_id and context_key = v_context_key and status = 'active'
     for update;
   elsif v_store = 'health_context' then
-    select id, to_jsonb(h) into v_existing_id, v_before
+    select id, updated_at, description, to_jsonb(h)
+    into v_existing_id, v_existing_updated_at, v_existing_content, v_before
     from public.senior_health_contexts h
     where senior_id = p_senior_id and context_key = v_context_key and status = 'active'
     for update;
   else
-    select id, to_jsonb(r) into v_existing_id, v_before
+    select id, updated_at, usual_pattern, to_jsonb(r)
+    into v_existing_id, v_existing_updated_at, v_existing_content, v_before
     from public.routine_baselines r
     where senior_id = p_senior_id and context_key = v_context_key and status = 'active'
     for update;
   end if;
 
-  if v_existing_id is not null and v_action = 'confirm' then
+  if v_existing_id is not null and v_intent = 'replace'
+     and (
+       v_expected_updated_at is null
+       or v_existing_updated_at is distinct from v_expected_updated_at
+     ) then
+    raise exception 'Context was updated before automatic replacement' using errcode = 'PT409';
+  end if;
+  if v_existing_id is not null and v_intent = 'confirm'
+     and v_existing_content is distinct from v_candidate_content then
+    raise exception 'Confirmation content does not match active context' using errcode = 'PT409';
+  end if;
+
+  if v_existing_id is not null and v_intent = 'confirm' then
     if v_store = 'memory' then
       update public.senior_memories set
         confidence = greatest(confidence, v_confidence), last_confirmed_at = now(),
@@ -561,7 +609,7 @@ begin
     end if;
     v_new_id := v_existing_id;
   else
-    if v_existing_id is not null and v_action <> 'replace' then
+    if v_existing_id is not null and v_intent <> 'replace' then
       raise exception 'Active context requires an explicit confirmation or replacement' using errcode = 'PT409';
     end if;
     if v_existing_id is not null then
@@ -584,7 +632,7 @@ begin
         extraction_method, confidence, last_confirmed_at, application_tags,
         created_by_system, updated_by_system
       ) values (
-        p_senior_id, p_payload_json ->> 'memory_type', trim(p_payload_json ->> 'content'),
+        p_senior_id, p_payload_json ->> 'memory_type', v_candidate_content,
         'senior_message', p_source_message_id,
         coalesce((p_payload_json ->> 'importance')::integer, 3), 'active', now(),
         v_expires_at, nullif(trim(p_payload_json ->> 'safe_use_notes'), ''),
@@ -598,7 +646,7 @@ begin
         last_confirmed_at, expires_at, application_tags,
         created_by_system, updated_by_system
       ) values (
-        p_senior_id, p_payload_json ->> 'context_type', trim(p_payload_json ->> 'description'),
+        p_senior_id, p_payload_json ->> 'context_type', v_candidate_content,
         'senior_message', p_source_message_id, 'active',
         coalesce(nullif(trim(p_payload_json ->> 'safe_use_notes'), ''),
           'Use only to guide follow-up questions; this is not a diagnosis.'),
@@ -613,7 +661,7 @@ begin
         created_by_system, updated_by_system
       ) values (
         p_senior_id, p_payload_json ->> 'baseline_type', trim(p_payload_json ->> 'label'),
-        trim(p_payload_json ->> 'usual_pattern'),
+        v_candidate_content,
         coalesce(p_payload_json -> 'schedule_json', '{}'::jsonb), 'senior_message',
         v_confidence, 'active', nullif(trim(p_payload_json ->> 'safe_use_notes'), ''),
         v_context_key, 'ai_extracted', p_source_message_id, now(), v_expires_at, v_tags,
@@ -632,17 +680,29 @@ begin
     end if;
   end if;
 
+  if v_existing_id is not null and v_intent = 'replace' then
+    insert into public.senior_context_events (
+      senior_id, store, context_id, context_key, event_type, source_message_id,
+      before_snapshot, after_snapshot, actor_system, command_id
+    ) values (
+      p_senior_id, v_store, v_existing_id, v_context_key, 'superseded',
+      p_source_message_id, v_before,
+      v_before || jsonb_build_object('status', 'superseded', 'superseded_by_id', v_new_id),
+      'context_memory_policy', p_command_id
+    );
+  end if;
+
   insert into public.senior_context_events (
     senior_id, store, context_id, context_key, event_type, source_message_id,
     before_snapshot, after_snapshot, actor_system, command_id
   ) values (
     p_senior_id, v_store, v_new_id, v_context_key,
-    case when v_action = 'confirm' then 'confirmed' else 'proposal_accepted' end,
+    case when v_intent = 'confirm' then 'confirmed' else 'proposal_accepted' end,
     p_source_message_id, v_before, v_after, 'context_memory_policy', p_command_id
   );
   v_result := jsonb_build_object(
     'accepted', true, 'store', v_store, 'context_id', v_new_id,
-    'event', case when v_action = 'confirm' then 'confirmed' else 'proposal_accepted' end,
+    'event', case when v_intent = 'confirm' then 'confirmed' else 'proposal_accepted' end,
     'duplicate', false
   );
   update trustkaki_private.context_command_bindings set result_json = v_result
@@ -700,6 +760,11 @@ begin
     return v_result || jsonb_build_object('duplicate', true);
   end if;
 
+  perform 1
+  from public.seniors
+  where id = p_senior_id
+  for update;
+
   if v_store = 'memory' then
     select context_key, updated_at, status, to_jsonb(m)
     into v_context_key, v_updated_at, v_status, v_before
@@ -731,8 +796,8 @@ begin
   select coalesce(array_agg(value), '{}'::text[]) into v_tags
   from jsonb_array_elements_text(coalesce(p_replacement_json -> 'application_tags', '[]'::jsonb));
   if not (v_tags <@ array[
-    'conversation_personalisation', 'pattern_watch', 'proactive_check_in',
-    'communication_style', 'accessibility_support', 'caregiver_routing'
+    'concise_text', 'gentle_one_to_one', 'voice_preferred',
+    'practical_meal_prompt', 'accessibility_support', 'trusted_contact_route'
   ]::text[]) then
     raise exception 'Invalid application tags' using errcode = '22023';
   end if;
@@ -790,6 +855,16 @@ begin
     ) returning id, to_jsonb(routine_baselines) into v_new_id, v_after;
     update public.routine_baselines set superseded_by_id = v_new_id where id = p_context_id;
   end if;
+
+  insert into public.senior_context_events (
+    senior_id, store, context_id, context_key, event_type, reason,
+    before_snapshot, after_snapshot, actor_caregiver_id, command_id
+  ) values (
+    p_senior_id, v_store, p_context_id, v_before ->> 'context_key',
+    'superseded', trim(p_reason), v_before,
+    v_before || jsonb_build_object('status', 'superseded', 'superseded_by_id', v_new_id),
+    v_actor, p_command_id
+  );
 
   insert into public.senior_context_events (
     senior_id, store, context_id, context_key, event_type, reason,
@@ -853,6 +928,11 @@ begin
     if v_result is null then raise exception 'Command result is unavailable' using errcode = '55000'; end if;
     return v_result || jsonb_build_object('duplicate', true);
   end if;
+
+  perform 1
+  from public.seniors
+  where id = p_senior_id
+  for update;
 
   if v_store = 'memory' then
     select context_key, updated_at, status, to_jsonb(m)

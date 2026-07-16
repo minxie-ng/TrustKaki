@@ -9,6 +9,25 @@ const sql = readFileSync(
   ),
   "utf8"
 ).toLowerCase();
+const types = readFileSync(join(process.cwd(), "src/lib/supabase/types.ts"), "utf8");
+
+const approvedApplicationTags = [
+  "concise_text",
+  "gentle_one_to_one",
+  "voice_preferred",
+  "practical_meal_prompt",
+  "accessibility_support",
+  "trusted_contact_route",
+] as const;
+
+const approvedRejectionCategories = [
+  "low_confidence",
+  "unsupported_evidence",
+  "sensitive_data",
+  "diagnostic_inference",
+  "treatment_instruction",
+  "invalid_candidate",
+] as const;
 
 function functionDefinition(name: string) {
   const match = sql.match(
@@ -90,9 +109,30 @@ describe("Gate 5 memory operationalisation migration", () => {
     expect(sql).toContain("expires_at is null or expires_at > now()");
   });
 
+  it("uses exactly the Task 1 application-tag vocabulary in SQL and database types", () => {
+    const contextTagTypes = types.match(
+      /export type ContextApplicationTag =[\s\S]*?;/
+    )?.[0];
+    expect(contextTagTypes).toBeDefined();
+    for (const tag of approvedApplicationTags) {
+      expect(sql).toContain(`'${tag}'`);
+      expect(contextTagTypes).toContain(`"${tag}"`);
+    }
+    for (const obsoleteTag of [
+      "conversation_personalisation",
+      "pattern_watch",
+      "proactive_check_in",
+      "communication_style",
+      "caregiver_routing",
+    ]) {
+      expect(sql).not.toContain(`'${obsoleteTag}'`);
+      expect(contextTagTypes).not.toContain(`"${obsoleteTag}"`);
+    }
+  });
+
   it("creates an append-only auditable event stream without browser writes", () => {
     expect(sql).toMatch(
-      /create table public\.senior_context_events[\s\S]*event_type text not null[\s\S]*before_snapshot jsonb[\s\S]*after_snapshot jsonb[\s\S]*command_id uuid not null unique/
+      /create table public\.senior_context_events[\s\S]*context_key text[\s\S]*event_type text not null[\s\S]*before_snapshot jsonb[\s\S]*after_snapshot jsonb[\s\S]*command_id uuid not null[\s\S]*unique nulls not distinct \(command_id, event_type, context_id\)/
     );
     for (const event of [
       "proposal_accepted",
@@ -158,6 +198,85 @@ describe("Gate 5 memory operationalisation migration", () => {
     );
   });
 
+  it("guards automatic replacements with the locked active row version in every store", () => {
+    const definition = functionDefinition("apply_automatic_senior_context");
+    expect(definition).toMatch(
+      /perform 1[\s\S]*?from public\.seniors[\s\S]*?where id = p_senior_id[\s\S]*?for update;/
+    );
+    expect(definition).toContain("p_payload_json ->> 'expected_updated_at'");
+    expect(definition).toContain("v_intent = 'replace'");
+    expect(definition).toContain("v_expected_updated_at is null");
+    expect(definition).toContain("v_existing_updated_at is distinct from v_expected_updated_at");
+    expect(definition).toContain("using errcode = 'pt409'");
+    expect(definition).toContain("v_existing_content is distinct from v_candidate_content");
+
+    for (const table of [
+      "senior_memories",
+      "senior_health_contexts",
+      "routine_baselines",
+    ]) {
+      expect(definition).toMatch(
+        new RegExp(
+          `from public\\.${table}[\\s\\S]{0,180}status = 'active'[\\s\\S]{0,80}for update`
+        )
+      );
+    }
+
+    const lockedRows = definition.lastIndexOf("for update;");
+    const replacementConflict = definition.indexOf(
+      "v_existing_updated_at is distinct from v_expected_updated_at"
+    );
+    const firstLifecycleMutation = definition.indexOf("set status = 'superseded'");
+    expect(replacementConflict).toBeGreaterThan(lockedRows);
+    expect(firstLifecycleMutation).toBeGreaterThan(replacementConflict);
+  });
+
+  it("serializes admin mutations on the same senior boundary as automatic replacement", () => {
+    for (const name of ["correct_senior_context", "archive_senior_context"]) {
+      expect(functionDefinition(name)).toMatch(
+        /perform 1[\s\S]*?from public\.seniors[\s\S]*?where id = p_senior_id[\s\S]*?for update;/
+      );
+    }
+  });
+
+  it("records valid rejection outcomes without requiring an exact evidence match", () => {
+    const definition = functionDefinition("apply_automatic_senior_context");
+    for (const category of approvedRejectionCategories) {
+      expect(sql).toContain(`'${category}'`);
+      expect(types).toContain(`"${category}"`);
+    }
+    expect(sql).not.toContain("'unsupported_category'");
+    expect(types).not.toContain('"unsupported_category"');
+
+    const messageLookup = definition.indexOf("from public.messages");
+    const rejectionBranch = definition.indexOf("if v_decision = 'rejected' then");
+    const exactExcerptCheck = definition.indexOf("position(v_excerpt in v_message_text) = 0");
+    const confidenceParse = definition.indexOf("v_confidence :=");
+    const replacementVersionParse = definition.indexOf("v_expected_updated_at :=");
+    expect(messageLookup).toBeGreaterThan(-1);
+    expect(rejectionBranch).toBeGreaterThan(messageLookup);
+    expect(exactExcerptCheck).toBeGreaterThan(rejectionBranch);
+    expect(confidenceParse).toBeGreaterThan(rejectionBranch);
+    expect(replacementVersionParse).toBeGreaterThan(rejectionBranch);
+    expect(definition).toContain("senior_id = p_senior_id and sender = 'senior'");
+  });
+
+  it("never exposes rejected candidate text or keys in caregiver-readable events", () => {
+    expect(sql).toContain("event_type = 'proposal_rejected' and context_id is null");
+    expect(sql).toContain("context_key is null");
+    expect(sql).toContain("before_snapshot is null and after_snapshot is null");
+
+    const definition = functionDefinition("apply_automatic_senior_context");
+    const rejectionInsert = definition.match(
+      /if v_decision = 'rejected' then[\s\S]*?insert into public\.senior_context_events \([\s\S]*?return v_result;[\s\S]*?end if;/
+    );
+    expect(rejectionInsert).not.toBeNull();
+    expect(rejectionInsert?.[0]).not.toContain("evidence_excerpt");
+    expect(rejectionInsert?.[0]).not.toContain("context_key,");
+    expect(rejectionInsert?.[0]).not.toContain("after_snapshot");
+    expect(rejectionInsert?.[0]).not.toContain("v_excerpt");
+  });
+
   it("requires trusted admin metadata and senior access for correction and archive", () => {
     const authorization = functionDefinition("require_context_admin");
     expect(authorization).toContain("auth.jwt() -> 'app_metadata'");
@@ -198,5 +317,24 @@ describe("Gate 5 memory operationalisation migration", () => {
     expect(definition).toContain("'corrected'");
     expect(definition).toContain("'superseded'");
     expect(definition).toContain("insert into public.senior_context_events");
+  });
+
+  it("emits explicit superseded and primary events for replacements and corrections", () => {
+    const automatic = functionDefinition("apply_automatic_senior_context");
+    const correction = functionDefinition("correct_senior_context");
+
+    expect(automatic).toMatch(
+      /insert into public\.senior_context_events[\s\S]*?'superseded'[\s\S]*?insert into public\.senior_context_events[\s\S]*?'proposal_accepted'/
+    );
+    expect(correction).toMatch(
+      /insert into public\.senior_context_events[\s\S]*?'superseded'[\s\S]*?insert into public\.senior_context_events[\s\S]*?'corrected'/
+    );
+    expect(automatic).toContain("if v_duplicate then");
+    expect(automatic.indexOf("if v_duplicate then")).toBeLessThan(
+      automatic.indexOf("insert into public.senior_context_events")
+    );
+    expect(correction.indexOf("if v_duplicate then")).toBeLessThan(
+      correction.indexOf("insert into public.senior_context_events")
+    );
   });
 });
