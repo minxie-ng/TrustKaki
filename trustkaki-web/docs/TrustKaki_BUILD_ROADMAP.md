@@ -986,8 +986,13 @@ reconciliation, and five-minute Supabase Cron recovery compatible with the
 current Vercel Hobby plan. The current code passed repeated live Supabase tests,
 a real Telegram send, the timely-response cancellation path, the
 initial-plus-retry no-response path, and an authenticated persisted dashboard
-read. The production Vercel deployment is still on the earlier build, and the
-Cron Vault values remain intentionally inactive until an approved promotion.
+read. The independently audited commit is now live at
+`https://trustkaki.vercel.app`. Supabase Vault is configured, the five-minute
+Cron reached the protected processor with HTTP 200, and one real production
+Telegram check-in received a timely senior reply. The workflow became
+`responded`, cancelled its deadline, sent no retry, and created no false
+caregiver case. The personal test schedule was paused after verification; the
+shared scheduler remains active.
 
 #### Gate 5 — Memory Operationalisation
 
@@ -1017,13 +1022,12 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-Gate 4 audit remediation is implemented and locally/live-database verified. The
-next step is one focused independent Gate 4 re-audit. If it passes, approve the
-production promotion, activate the Cron Vault values, and rerun one real
-scheduled timely reply against production before
-starting Gate 5. Preserve the Telegram demo path and WhatsApp code. Do not mix
-the audit or deployment checkpoint with caregiver notification fan-out,
-organisation tenancy, memory operationalisation, or broad UI redesign.
+Gate 4 passed independent audit and production verification. The next bounded
+step is Gate 5 Memory Operationalisation: add caregiver review, provenance,
+expiry, retention, and safe extraction proposals around the memory tables that
+already exist. Preserve the Telegram demo path and WhatsApp code. Do not mix
+Gate 5 with caregiver notification fan-out, organisation tenancy, or broad UI
+redesign.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 

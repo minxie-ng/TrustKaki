@@ -1,7 +1,7 @@
 # Gate 4 Proactive Check-ins Verification
 
 Date: 2026-07-16
-Status: Ready for independent Gate 4 re-audit; production promotion pending
+Status: Production-live and verified after independent Gate 4 re-audit
 
 ## Scope
 
@@ -65,8 +65,42 @@ credential was printed or retained in this document.
 - The Vercel project is on Hobby. Unsupported five-minute Vercel Cron entries
   were removed and replaced with one five-minute Supabase Cron job.
 - The Cron job reads `trustkaki_base_url` and `trustkaki_cron_secret` from
-  Supabase Vault. Both values remain intentionally absent until the reviewed
-  build is approved for production, so the job is currently inert.
+  Supabase Vault. Both production values are configured without exposing them
+  in source, logs, or this report.
+
+## Production Promotion And Scheduler Evidence
+
+- Audited commit: `2d336312d5f21100767608f69cabbf74a11058e6`.
+- The commit was pushed to `origin/main` and deployed from a clean Git archive,
+  excluding the unrelated local `package-lock.json` change.
+- Vercel production deployment: `dpl_7Hy27VoavWrrfz1F9humgHUaGq2p`.
+- Production alias: `https://trustkaki.vercel.app`.
+- Vercel passed dependency installation, Next.js compilation, TypeScript, and
+  generation of all 23 static pages.
+- `GET /api/health` returned HTTP 200 with the application, database, LLM,
+  messaging, and internal processor checks configured.
+- A protected processor request returned HTTP 200 with zero accidental claims.
+- The natural Supabase Cron run at `2026-07-16 04:10:00 UTC` succeeded. Its
+  asynchronous `pg_net` response returned HTTP 200 without timeout or failure.
+
+## Production Timely-Response Smoke
+
+1. The existing verified Telegram identity for Mr Tan Ah Hock was used.
+2. A 09:00 Asia/Singapore schedule was configured with the normal two-hour
+   initial window and one-hour retry window, then made due once.
+3. The production processor claimed one job, processed one job, and recorded
+   zero failures. Telegram accepted the initial check-in.
+4. The workflow entered `awaiting_initial_response` with one pending initial
+   deadline, no retry, and no caregiver case.
+5. The senior replied through the real Telegram bot within the response window.
+6. The production webhook persisted and processed the event, completed the
+   orchestration path, and Telegram accepted the selected reply.
+7. The workflow became `responded`; active jobs became zero; one response event
+   remained; retry sends and active proactive cases remained zero; policy risk
+   was not rewritten.
+8. The test schedule was paused with the auditable reason `Controlled production
+   smoke completed; awaiting owner schedule confirmation.` The shared production
+   Cron remains active.
 
 ## Migration And Live Integration Results
 
@@ -164,19 +198,18 @@ verification state file and development server were also removed/stopped.
 
 ## Remaining Limitations
 
-1. Gate 4 commits are not deployed to Vercel. Production Cron and timely reply
-   closure must be rerun after independent re-audit and approved promotion.
-2. Real verification accelerated deadline timestamps through the database to
-   avoid a three-hour wait; it used the same claims, processor, sends, and final
-   escalation commands as the normal cadence.
-3. Supabase Cron is installed but intentionally inert until its Vault URL and
-   credential are activated after promotion. Runtime evidence is still required.
-4. Advisor indexing debt should be reviewed under organisation/scale readiness,
+1. Real no-response verification accelerated deadline timestamps through the
+   database to avoid a three-hour wait; it used the same claims, processor,
+   sends, and final escalation commands as the normal cadence.
+2. The controlled production schedule is paused so the personal Telegram test
+   account is not contacted daily. An administrator must explicitly confirm and
+   resume the desired operating schedule before a pilot.
+3. Advisor indexing debt should be reviewed under organisation/scale readiness,
    based on query plans and production volume rather than adding every suggested
    index blindly.
 
 ## Decision
 
-Gate 4 is ready for independent re-audit. It is not yet approved as
-production-live. Promotion, Cron Vault activation, and one production
-timely-response rerun remain the next controlled checkpoint.
+Gate 4 passed independent re-audit and is production-live. The protected
+Supabase scheduler and real timely-response path are verified. Gate 5 may begin
+as a separate bounded change.
