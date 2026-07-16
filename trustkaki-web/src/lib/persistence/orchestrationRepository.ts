@@ -7,12 +7,18 @@ import type {
   OrchestrateResponse,
 } from "@/lib/agents/contracts";
 import {
+  buildAutomaticMemoryCommands,
   buildManualBriefingPersistencePayload,
   buildOrchestrationPersistencePayload,
   type ManualBriefingPersistencePayload,
   type OrchestrationPersistencePayload,
   type PersistenceMeta,
+  type MemoryPersistenceSummary,
 } from "./orchestration";
+import {
+  applyAutomaticSeniorContext,
+  AutomaticContextRpcError,
+} from "./memoryRepository";
 import { runPatternWatchForSenior } from "./patternRepository";
 import {
   getClient,
@@ -95,6 +101,110 @@ async function upsertMessages(
     const { error } = await client.from("messages").insert(withoutClientId);
     throwIfError(error, "insert messages without client IDs");
   }
+}
+
+async function upsertInboundMessage(
+  client: TrustKakiClient,
+  checkInId: string,
+  message: OrchestrationPersistencePayload["inboundMessage"],
+  seniorId: string
+): Promise<{ id: string; createdAt: string; inserted: boolean }> {
+  const row: TableInsert<"messages"> = {
+    check_in_id: checkInId,
+    senior_id: seniorId,
+    sender: message.sender,
+    text: message.text,
+    agent_id: message.agentId ?? null,
+    client_message_id: message.clientMessageId ?? null,
+  };
+  const { data: inserted, error: upsertError } = await client
+    .from("messages")
+    .upsert([row], {
+      onConflict: "client_message_id",
+      ignoreDuplicates: true,
+    })
+    .select("id, created_at")
+    .maybeSingle();
+  throwIfError(upsertError, "upsert inbound message");
+
+  if (inserted) {
+    return { id: inserted.id, createdAt: inserted.created_at, inserted: true };
+  }
+
+  const { data: existing, error: selectError } = await client
+    .from("messages")
+    .select("id, created_at")
+    .eq("client_message_id", message.clientMessageId ?? "")
+    .eq("senior_id", seniorId)
+    .eq("sender", "senior")
+    .maybeSingle();
+  throwIfError(selectError, "select replayed inbound message");
+  if (!existing) {
+    throw new Error("replayed inbound message is not available for this senior");
+  }
+  return { id: existing.id, createdAt: existing.created_at, inserted: false };
+}
+
+function emptyMemorySummary(): MemoryPersistenceSummary {
+  return {
+    attempted: 0,
+    accepted: 0,
+    rejected: 0,
+    duplicates: 0,
+    failed: 0,
+    failures: [],
+  };
+}
+
+function classifyMemoryRpcFailure(error: unknown): "conflict" | "rpc_error" {
+  return error instanceof AutomaticContextRpcError && error.code === "PT409"
+    ? "conflict"
+    : "rpc_error";
+}
+
+async function persistAutomaticMemory(args: {
+  client: TrustKakiClient;
+  seniorId: string;
+  clientMessageId: string;
+  persistedInboundId: string;
+  persistedInboundCreatedAt: string;
+  context: AgentRunContext;
+  result: OrchestrateResponse;
+}): Promise<MemoryPersistenceSummary> {
+  const summary = emptyMemorySummary();
+  const extractionTrace = args.result.traces.find(
+    (trace) => trace.agentId === "context_memory" && trace.errorMessage
+  );
+  if (extractionTrace) {
+    summary.failed += 1;
+    summary.failures.push({ stage: "extraction", category: "provider_error" });
+  }
+
+  let commands;
+  try {
+    commands = buildAutomaticMemoryCommands(args);
+  } catch {
+    summary.failed += 1;
+    summary.failures.push({ stage: "policy", category: "policy_error" });
+    return summary;
+  }
+
+  summary.attempted = commands.length;
+  for (const command of commands) {
+    try {
+      const result = await applyAutomaticSeniorContext(args.client, command);
+      if (result.duplicate) summary.duplicates += 1;
+      if (result.accepted) summary.accepted += 1;
+      else summary.rejected += 1;
+    } catch (error) {
+      summary.failed += 1;
+      summary.failures.push({
+        stage: "rpc",
+        category: classifyMemoryRpcFailure(error),
+      });
+    }
+  }
+  return summary;
 }
 
 export async function upsertAgentRuns(
@@ -265,7 +375,25 @@ export async function persistOrchestrationResult(args: {
   const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
   const payload = buildOrchestrationPersistencePayload(args);
 
-  await upsertMessages(client, checkIn.id, [payload.inboundMessage], args.seniorId);
+  const inbound = await upsertInboundMessage(
+    client,
+    checkIn.id,
+    payload.inboundMessage,
+    args.seniorId
+  );
+  const memory = await persistAutomaticMemory({
+    client,
+    seniorId: args.seniorId,
+    clientMessageId: args.clientMessageId,
+    persistedInboundId: inbound.id,
+    persistedInboundCreatedAt: inbound.createdAt,
+    context: args.context,
+    result: args.result,
+  });
+  if (!inbound.inserted) {
+    return { ...supabaseMeta(), replayed: true, memory };
+  }
+
   await upsertMessages(client, checkIn.id, payload.outboundMessages, args.seniorId);
   const agentRuns = await upsertAgentRuns(client, checkIn.id, payload.agentRuns);
   await persistSignals(
@@ -280,7 +408,7 @@ export async function persistOrchestrationResult(args: {
   await persistBrief(client, args.seniorId, checkIn.id, payload.brief, agentRuns);
   await runPatternWatchForSenior(client, args.seniorId);
 
-  return supabaseMeta();
+  return { ...supabaseMeta(), memory };
 }
 
 export async function hasPersistedMessageClientId(

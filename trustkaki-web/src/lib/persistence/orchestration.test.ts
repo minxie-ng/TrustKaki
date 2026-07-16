@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type {
   AgentRunContext,
   AgentRunResult,
@@ -6,10 +6,15 @@ import type {
   OrchestrateResponse,
 } from "@/lib/agents/contracts";
 import {
+  buildAutomaticMemoryCommands,
   buildManualBriefingPersistencePayload,
   buildOrchestrationPersistencePayload,
   dashboardSnapshotToData,
 } from "./orchestration";
+import type { OrchestrationResult } from "@/lib/agents/contracts";
+import type { MemoryCandidate } from "@/lib/memory/contracts";
+
+vi.mock("server-only", () => ({}));
 
 const seniorId = "00000000-0000-4000-8000-000000000002";
 const clientMessageId = "message-b-1";
@@ -120,6 +125,126 @@ const response = (
 });
 
 describe("orchestration persistence mapping", () => {
+  const candidate = (
+    overrides: Partial<MemoryCandidate> = {}
+  ): MemoryCandidate => ({
+    targetStore: "memory",
+    contextKey: "Preferred Language",
+    contextType: "communication_preference",
+    content: "Prefers Mandarin voice calls",
+    sourceMessageId: clientMessageId,
+    evidenceExcerpt: "voice calls in Mandarin",
+    confidence: 0.94,
+    applicationTags: ["voice_preferred"],
+    retentionClass: "preference",
+    ...overrides,
+  });
+
+  const memoryResult = (candidates: MemoryCandidate[]): OrchestrationResult => {
+    const value = response() as OrchestrationResult;
+    Object.defineProperty(value, "contextMemoryCandidates", {
+      value: candidates,
+      enumerable: false,
+    });
+    return value;
+  };
+
+  it("uses the persisted inbound UUID for an accepted candidate command", () => {
+    const sourceContext: AgentRunContext = {
+      ...context(),
+      messages: [
+        ...context().messages,
+        {
+          id: clientMessageId,
+          sender: "senior",
+          text: "I prefer voice calls in Mandarin",
+          timestamp: "2026-07-16T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const commands = buildAutomaticMemoryCommands({
+      seniorId,
+      clientMessageId,
+      persistedInboundId: "00000000-0000-4000-8000-000000000207",
+      persistedInboundCreatedAt: "2026-07-16T00:00:00.000Z",
+      context: sourceContext,
+      result: memoryResult([candidate()]),
+    });
+
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({
+      sourceMessageId: "00000000-0000-4000-8000-000000000207",
+      payload: {
+        decision: "accepted",
+        context_key: "preferred_language",
+        evidence_excerpt: "voice calls in Mandarin",
+      },
+    });
+    expect(commands[0].commandId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("turns policy rejection into only a bounded rejection command", () => {
+    const sourceContext: AgentRunContext = {
+      ...context(),
+      messages: [{
+        id: clientMessageId,
+        sender: "senior",
+        text: "I probably have dementia",
+        timestamp: "2026-07-16T00:00:00.000Z",
+      }],
+    };
+
+    const commands = buildAutomaticMemoryCommands({
+      seniorId,
+      clientMessageId,
+      persistedInboundId: "00000000-0000-4000-8000-000000000207",
+      persistedInboundCreatedAt: "2026-07-16T00:00:00.000Z",
+      context: sourceContext,
+      result: memoryResult([
+        candidate({
+          targetStore: "health_context",
+          contextKey: "possible diagnosis",
+          contextType: "health_observation",
+          content: "Possible dementia",
+          evidenceExcerpt: "probably have dementia",
+          retentionClass: "health_accessibility",
+          applicationTags: ["accessibility_support"],
+        }),
+      ]),
+    });
+
+    expect(commands[0].payload).toEqual({
+      store: "health_context",
+      context_key: "possible_diagnosis",
+      decision: "rejected",
+      intent: "create",
+      rejection_reason: "diagnostic_inference",
+    });
+    expect(JSON.stringify(commands[0])).not.toContain("probably have dementia");
+  });
+
+  it("rejects a candidate whose source is not the current inbound message", () => {
+    const commands = buildAutomaticMemoryCommands({
+      seniorId,
+      clientMessageId,
+      persistedInboundId: "00000000-0000-4000-8000-000000000207",
+      persistedInboundCreatedAt: "2026-07-16T00:00:00.000Z",
+      context: context(),
+      result: memoryResult([
+        candidate({
+          sourceMessageId: "client_msg_1",
+          evidenceExcerpt: "Knee pain",
+        }),
+      ]),
+    });
+
+    expect(commands[0].payload).toMatchObject({
+      decision: "rejected",
+      rejection_reason: "unsupported_evidence",
+    });
+  });
+
   it("maps final policy risk as the persisted risk event", () => {
     const payload = buildOrchestrationPersistencePayload({
       seniorId,

@@ -25,8 +25,25 @@ interface Operation {
   filters: Array<[string, unknown]>;
 }
 
-function createServiceClient(messageMetadata: Record<string, unknown> = {}) {
+function createServiceClient(
+  messageMetadata: Record<string, unknown> = {},
+  options: { inboundInserted?: boolean; rpcError?: { code: string; message: string } } = {}
+) {
   const operations: Operation[] = [];
+  const rpc = vi.fn().mockImplementation(async () =>
+    options.rpcError
+      ? { data: null, error: options.rpcError }
+      : {
+          data: {
+            accepted: true,
+            store: "memory",
+            context_id: "00000000-0000-4000-8000-000000000301",
+            event: "proposal_accepted",
+            duplicate: options.inboundInserted === false,
+          },
+          error: null,
+        }
+  );
 
   function responseFor(operation: Operation) {
     if (operation.kind === "select" && operation.table === "check_ins") {
@@ -40,6 +57,35 @@ function createServiceClient(messageMetadata: Record<string, unknown> = {}) {
     }
     if (operation.table === "agent_runs" && operation.kind === "upsert") {
       return { data: [], error: null };
+    }
+    if (
+      operation.table === "messages" &&
+      operation.kind === "upsert" &&
+      operation.columns === "id, created_at"
+    ) {
+      return {
+        data:
+          options.inboundInserted === false
+            ? null
+            : {
+                id: "00000000-0000-4000-8000-000000000302",
+                created_at: "2026-07-16T08:00:00.000Z",
+              },
+        error: null,
+      };
+    }
+    if (
+      operation.table === "messages" &&
+      operation.kind === "select" &&
+      operation.columns === "id, created_at"
+    ) {
+      return {
+        data: {
+          id: "00000000-0000-4000-8000-000000000302",
+          created_at: "2026-07-16T08:00:00.000Z",
+        },
+        error: null,
+      };
     }
     if (
       operation.table === "messages" &&
@@ -114,7 +160,7 @@ function createServiceClient(messageMetadata: Record<string, unknown> = {}) {
     return builder;
   });
 
-  return { client: { from }, operations };
+  return { client: { from, rpc }, operations, rpc };
 }
 
 const context: AgentRunContext = {
@@ -254,6 +300,109 @@ describe("TrustKaki persistence senior identity", () => {
     expect(
       service.operations.some((operation) => operation.table === "senior_caregivers")
     ).toBe(false);
+  });
+
+  it("uses the persisted inbound UUID for memory and isolates an RPC failure", async () => {
+    const service = createServiceClient({}, {
+      rpcError: { code: "PT409", message: "Context changed" },
+    });
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { persistOrchestrationResult } = await import("./trustkakiRepository");
+    const resultWithMemory = orchestrationResult as OrchestrateResponse & {
+      contextMemoryCandidates: unknown[];
+    };
+    Object.defineProperty(resultWithMemory, "contextMemoryCandidates", {
+      configurable: true,
+      value: [{
+        targetStore: "memory",
+        contextKey: "meal_preference",
+        contextType: "food_preference",
+        content: "Prefers porridge for breakfast",
+        sourceMessageId: "message-b-1",
+        evidenceExcerpt: "Not hungry today.",
+        confidence: 0.93,
+        applicationTags: ["practical_meal_prompt"],
+        retentionClass: "preference",
+      }],
+      enumerable: false,
+    });
+
+    const persistence = await persistOrchestrationResult({
+      seniorId: SENIOR_B,
+      message: "Not hungry today.",
+      clientMessageId: "message-b-1",
+      context,
+      result: resultWithMemory,
+    });
+
+    expect(service.rpc).toHaveBeenCalledWith(
+      "apply_automatic_senior_context",
+      expect.objectContaining({
+        p_source_message_id: "00000000-0000-4000-8000-000000000302",
+      })
+    );
+    expect(persistence).toMatchObject({
+      persisted: true,
+      memory: {
+        attempted: 1,
+        failed: 1,
+        failures: [{ stage: "rpc", category: "conflict" }],
+      },
+    });
+    expect(payloadsFor(service.operations, "alerts")).not.toEqual([]);
+    expect(payloadsFor(service.operations, "briefs")).not.toEqual([]);
+  });
+
+  it("does not repeat orchestration writes for a replayed inbound client message", async () => {
+    const service = createServiceClient({}, { inboundInserted: false });
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { persistOrchestrationResult } = await import("./trustkakiRepository");
+    const resultWithMemory = orchestrationResult as OrchestrateResponse & {
+      contextMemoryCandidates: unknown[];
+    };
+    Object.defineProperty(resultWithMemory, "contextMemoryCandidates", {
+      configurable: true,
+      value: [{
+        targetStore: "memory",
+        contextKey: "meal_preference",
+        contextType: "food_preference",
+        content: "Prefers porridge for breakfast",
+        sourceMessageId: "message-b-1",
+        evidenceExcerpt: "Not hungry today.",
+        confidence: 0.93,
+        applicationTags: ["practical_meal_prompt"],
+        retentionClass: "preference",
+      }],
+      enumerable: false,
+    });
+
+    const persistence = await persistOrchestrationResult({
+      seniorId: SENIOR_B,
+      message: "Not hungry today.",
+      clientMessageId: "message-b-1",
+      context,
+      result: resultWithMemory,
+    });
+
+    expect(persistence).toMatchObject({ persisted: true, replayed: true });
+    expect(service.rpc).toHaveBeenCalledTimes(1);
+    expect(
+      service.operations.filter((operation) =>
+        [
+          "agent_runs",
+          "detected_signals",
+          "risk_events",
+          "alerts",
+          "briefs",
+          "patterns",
+        ].includes(operation.table)
+      )
+    ).toEqual([]);
+    expect(
+      service.operations.filter(
+        (operation) => operation.table === "messages" && operation.kind === "upsert"
+      )
+    ).toHaveLength(1);
   });
 
   it("persists a manual briefing for the explicit non-demo senior", async () => {

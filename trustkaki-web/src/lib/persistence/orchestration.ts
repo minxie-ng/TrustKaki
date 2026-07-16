@@ -4,7 +4,19 @@ import type {
   AgentRunResult,
   BriefingOutput,
   OrchestrateResponse,
+  OrchestrationResult,
 } from "@/lib/agents/contracts";
+import {
+  type MemoryCandidate,
+  type MemoryRejectionCategory,
+} from "@/lib/memory/contracts";
+import {
+  evaluateMemoryCandidate,
+  expiryForRetention,
+  normaliseContextKey,
+} from "@/lib/memory/policy";
+import type { Json } from "@/lib/supabase/types";
+import { automaticContextCommandId } from "./memoryRepository";
 import type { AlertItem, AgentTrace, DashboardData, Message, RiskLevel } from "@/lib/types";
 import type {
   BriefTrigger,
@@ -23,6 +35,22 @@ export interface PersistenceMeta {
   configured: boolean;
   persisted: boolean;
   reason?: string;
+  replayed?: boolean;
+  memory?: MemoryPersistenceSummary;
+}
+
+export interface MemoryPersistenceFailure {
+  stage: "extraction" | "policy" | "rpc";
+  category: "conflict" | "invalid_output" | "policy_error" | "provider_error" | "rpc_error";
+}
+
+export interface MemoryPersistenceSummary {
+  attempted: number;
+  accepted: number;
+  rejected: number;
+  duplicates: number;
+  failed: number;
+  failures: MemoryPersistenceFailure[];
 }
 
 export interface PersistedMessageInput {
@@ -86,6 +114,116 @@ export interface OrchestrationPersistencePayload {
   riskEvent: PersistedRiskEventInput;
   alerts: PersistedAlertInput[];
   brief: PersistedBriefInput | null;
+}
+
+type AutomaticContextIntent = "create" | "confirm" | "replace";
+
+export interface AutomaticMemoryCommand {
+  commandId: string;
+  seniorId: string;
+  sourceMessageId: string;
+  accepted: boolean;
+  payload: Json;
+}
+
+function acceptedPayload(
+  candidate: MemoryCandidate,
+  intent: AutomaticContextIntent,
+  expiresAt: string
+): Record<string, Json> {
+  const common: Record<string, Json> = {
+    store: candidate.targetStore,
+    context_key: candidate.contextKey,
+    decision: "accepted",
+    intent,
+    content: candidate.content,
+    evidence_excerpt: candidate.evidenceExcerpt,
+    confidence: candidate.confidence,
+    expires_at: expiresAt,
+    application_tags: candidate.applicationTags,
+  };
+
+  if (candidate.targetStore === "memory") {
+    common.memory_type =
+      candidate.contextType === "family_routing"
+        ? "family_context"
+        : candidate.contextType;
+  } else if (candidate.targetStore === "health_context") {
+    common.context_type =
+      candidate.contextType === "accessibility_need" ? "sensory" : "other";
+  } else {
+    common.baseline_type = "other";
+    common.label = candidate.contextKey.replace(/_/g, " ");
+    common.schedule_json = {};
+  }
+  return common;
+}
+
+function rejectionPayload(args: {
+  candidate: MemoryCandidate;
+  intent: AutomaticContextIntent;
+  reason: MemoryRejectionCategory;
+}): Record<string, Json> {
+  return {
+    store: args.candidate.targetStore,
+    context_key: normaliseContextKey(args.candidate.contextKey),
+    decision: "rejected",
+    intent: args.intent,
+    rejection_reason: args.reason,
+  };
+}
+
+export function buildAutomaticMemoryCommands(args: {
+  seniorId: string;
+  clientMessageId: string;
+  persistedInboundId: string;
+  persistedInboundCreatedAt: string;
+  context: AgentRunContext;
+  result: OrchestrateResponse | OrchestrationResult;
+}): AutomaticMemoryCommand[] {
+  const candidates =
+    (args.result as Partial<OrchestrationResult>).contextMemoryCandidates ?? [];
+
+  return candidates.map((candidate) => {
+    const intent: AutomaticContextIntent = candidate.intent ?? "create";
+    const source = args.context.messages.find(
+      (message) => message.id === candidate.sourceMessageId && message.sender === "senior"
+    );
+    const eligibility = source
+      ? evaluateMemoryCandidate(candidate, source)
+      : { accepted: false as const, reason: "unsupported_evidence" as const };
+    const currentMessageCited = candidate.sourceMessageId === args.clientMessageId;
+    const accepted = eligibility.accepted && currentMessageCited;
+    const payload = accepted
+      ? acceptedPayload(
+          eligibility.candidate,
+          intent,
+          expiryForRetention(
+            eligibility.candidate.retentionClass,
+            new Date(args.persistedInboundCreatedAt)
+          )
+        )
+      : rejectionPayload({
+          candidate,
+          intent,
+          reason: eligibility.accepted
+            ? "unsupported_evidence"
+            : eligibility.reason,
+        });
+
+    return {
+      commandId: automaticContextCommandId({
+        seniorId: args.seniorId,
+        sourceMessageId: args.persistedInboundId,
+        contextKey: candidate.contextKey,
+        intent,
+      }),
+      seniorId: args.seniorId,
+      sourceMessageId: args.persistedInboundId,
+      accepted,
+      payload,
+    };
+  });
 }
 
 export function buildOutboundClientMessageId(
