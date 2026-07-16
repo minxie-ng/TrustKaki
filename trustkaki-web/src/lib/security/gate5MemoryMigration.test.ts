@@ -231,6 +231,36 @@ describe("Gate 5 memory operationalisation migration", () => {
     expect(firstLifecycleMutation).toBeGreaterThan(replacementConflict);
   });
 
+  it("rejects missing confirm and replace targets before lifecycle mutation", () => {
+    const definition = functionDefinition("apply_automatic_senior_context");
+    const lockedRows = definition.lastIndexOf("for update;");
+    const missingTargetGuard = definition.indexOf(
+      "v_existing_id is null and v_intent in ('confirm', 'replace')"
+    );
+    const staleGuard = definition.indexOf("v_expected_updated_at is null");
+    const firstLifecycleMutation = definition.indexOf("set status = 'superseded'");
+
+    expect(missingTargetGuard).toBeGreaterThan(lockedRows);
+    expect(definition.slice(missingTargetGuard)).toContain(
+      "lifecycle intent requires an active context target"
+    );
+    expect(definition.slice(missingTargetGuard)).toContain("using errcode = 'pt409'");
+    expect(staleGuard).toBeGreaterThan(missingTargetGuard);
+    expect(firstLifecycleMutation).toBeGreaterThan(missingTargetGuard);
+  });
+
+  it("leaves create intent able to insert when no active target exists", () => {
+    const definition = functionDefinition("apply_automatic_senior_context");
+    expect(definition).toContain(
+      "v_intent text := lower(trim(coalesce(p_payload_json ->> 'intent', 'create')))"
+    );
+    expect(definition).toContain("v_intent in ('confirm', 'replace')");
+    expect(definition).not.toContain("v_intent in ('create', 'confirm', 'replace')");
+    expect(definition.indexOf("insert into public.senior_memories")).toBeGreaterThan(
+      definition.indexOf("v_existing_id is null and v_intent in ('confirm', 'replace')")
+    );
+  });
+
   it("serializes admin mutations on the same senior boundary as automatic replacement", () => {
     for (const name of ["correct_senior_context", "archive_senior_context"]) {
       expect(functionDefinition(name)).toMatch(

@@ -575,6 +575,9 @@ begin
     for update;
   end if;
 
+  if v_existing_id is null and v_intent in ('confirm', 'replace') then
+    raise exception 'Lifecycle intent requires an active context target' using errcode = 'PT409';
+  end if;
   if v_existing_id is not null and v_intent = 'replace'
      and (
        v_expected_updated_at is null
