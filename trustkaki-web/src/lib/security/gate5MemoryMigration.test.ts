@@ -29,6 +29,10 @@ const approvedRejectionCategories = [
   "invalid_candidate",
 ] as const;
 
+function quotedValues(source: string) {
+  return [...source.matchAll(/["']([^"']+)["']/g)].map((match) => match[1]);
+}
+
 function functionDefinition(name: string) {
   const match = sql.match(
     new RegExp(
@@ -114,19 +118,17 @@ describe("Gate 5 memory operationalisation migration", () => {
       /export type ContextApplicationTag =[\s\S]*?;/
     )?.[0];
     expect(contextTagTypes).toBeDefined();
-    for (const tag of approvedApplicationTags) {
-      expect(sql).toContain(`'${tag}'`);
-      expect(contextTagTypes).toContain(`"${tag}"`);
-    }
-    for (const obsoleteTag of [
-      "conversation_personalisation",
-      "pattern_watch",
-      "proactive_check_in",
-      "communication_style",
-      "caregiver_routing",
-    ]) {
-      expect(sql).not.toContain(`'${obsoleteTag}'`);
-      expect(contextTagTypes).not.toContain(`"${obsoleteTag}"`);
+
+    expect(quotedValues(contextTagTypes ?? "")).toEqual(approvedApplicationTags);
+
+    const sqlAllowlists = [
+      ...sql.matchAll(
+        /(?:application_tags|v_tags) <@ array\[([\s\S]*?)\]::text\[\]/g
+      ),
+    ];
+    expect(sqlAllowlists).toHaveLength(5);
+    for (const allowlist of sqlAllowlists) {
+      expect(quotedValues(allowlist[1])).toEqual(approvedApplicationTags);
     }
   });
 
@@ -325,6 +327,22 @@ describe("Gate 5 memory operationalisation migration", () => {
     }
   });
 
+  it("rejects null correction and archive stores before command binding", () => {
+    for (const name of ["correct_senior_context", "archive_senior_context"]) {
+      const definition = functionDefinition(name);
+      const nullStoreGuard = definition.indexOf("p_store is null");
+      const commandBinding = definition.indexOf(
+        "trustkaki_private.bind_context_command"
+      );
+
+      expect(nullStoreGuard).toBeGreaterThan(-1);
+      expect(definition.slice(nullStoreGuard, commandBinding)).toContain(
+        "using errcode = '22023'"
+      );
+      expect(commandBinding).toBeGreaterThan(nullStoreGuard);
+    }
+  });
+
   it("checks stale versions and bounded reasons before state or event writes", () => {
     for (const name of ["correct_senior_context", "archive_senior_context"]) {
       const definition = functionDefinition(name);
@@ -365,6 +383,57 @@ describe("Gate 5 memory operationalisation migration", () => {
     );
     expect(correction.indexOf("if v_duplicate then")).toBeLessThan(
       correction.indexOf("insert into public.senior_context_events")
+    );
+  });
+
+  it("records the returned final superseded row in replacement audit events", () => {
+    const definition = functionDefinition("apply_automatic_senior_context");
+    expect(definition).toContain("v_superseded_after jsonb");
+
+    for (const table of [
+      "senior_memories",
+      "senior_health_contexts",
+      "routine_baselines",
+    ]) {
+      expect(definition).toMatch(
+        new RegExp(
+          `update public\\.${table} set superseded_by_id = v_new_id[\\s\\S]{0,100}` +
+            `returning to_jsonb\\(${table}\\) into v_superseded_after`
+        )
+      );
+    }
+    expect(definition).toMatch(
+      /'superseded',[\s\S]{0,180}v_before,\s*v_superseded_after/
+    );
+    expect(definition).not.toContain(
+      "v_before || jsonb_build_object('status', 'superseded'"
+    );
+  });
+
+  it("uses the returned final superseded row throughout correction history", () => {
+    const definition = functionDefinition("correct_senior_context");
+    expect(definition).toContain("v_superseded_after jsonb");
+
+    for (const table of [
+      "senior_memories",
+      "senior_health_contexts",
+      "routine_baselines",
+    ]) {
+      expect(definition).toMatch(
+        new RegExp(
+          `update public\\.${table} set superseded_by_id = v_new_id[\\s\\S]{0,100}` +
+            `returning to_jsonb\\(${table}\\) into v_superseded_after`
+        )
+      );
+    }
+    expect(definition).toMatch(
+      /'superseded', trim\(p_reason\), v_before,\s*v_superseded_after/
+    );
+    expect(definition).toMatch(
+      /'corrected', trim\(p_reason\),\s*v_superseded_after, v_after/
+    );
+    expect(definition).not.toContain(
+      "v_before || jsonb_build_object('status', 'superseded'"
     );
   });
 });

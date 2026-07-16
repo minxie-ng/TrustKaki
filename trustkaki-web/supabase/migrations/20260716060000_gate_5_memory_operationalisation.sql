@@ -462,6 +462,7 @@ declare
   v_new_id uuid;
   v_before jsonb;
   v_after jsonb;
+  v_superseded_after jsonb;
   v_duplicate boolean;
   v_result jsonb;
   v_canonical jsonb;
@@ -674,11 +675,17 @@ begin
 
     if v_existing_id is not null then
       if v_store = 'memory' then
-        update public.senior_memories set superseded_by_id = v_new_id where id = v_existing_id;
+        update public.senior_memories set superseded_by_id = v_new_id
+        where id = v_existing_id
+        returning to_jsonb(senior_memories) into v_superseded_after;
       elsif v_store = 'health_context' then
-        update public.senior_health_contexts set superseded_by_id = v_new_id where id = v_existing_id;
+        update public.senior_health_contexts set superseded_by_id = v_new_id
+        where id = v_existing_id
+        returning to_jsonb(senior_health_contexts) into v_superseded_after;
       else
-        update public.routine_baselines set superseded_by_id = v_new_id where id = v_existing_id;
+        update public.routine_baselines set superseded_by_id = v_new_id
+        where id = v_existing_id
+        returning to_jsonb(routine_baselines) into v_superseded_after;
       end if;
     end if;
   end if;
@@ -689,8 +696,7 @@ begin
       before_snapshot, after_snapshot, actor_system, command_id
     ) values (
       p_senior_id, v_store, v_existing_id, v_context_key, 'superseded',
-      p_source_message_id, v_before,
-      v_before || jsonb_build_object('status', 'superseded', 'superseded_by_id', v_new_id),
+      p_source_message_id, v_before, v_superseded_after,
       'context_memory_policy', p_command_id
     );
   end if;
@@ -737,6 +743,7 @@ declare
   v_status text;
   v_before jsonb;
   v_after jsonb;
+  v_superseded_after jsonb;
   v_tags text[];
   v_duplicate boolean;
   v_result jsonb;
@@ -744,7 +751,7 @@ begin
   if p_reason is null or not (char_length(trim(p_reason)) between 8 and 500) then
     raise exception 'Correction reason must be between 8 and 500 characters' using errcode = '22023';
   end if;
-  if v_store not in ('memory', 'health_context', 'routine_baseline') then
+  if p_store is null or v_store not in ('memory', 'health_context', 'routine_baseline') then
     raise exception 'Invalid context store' using errcode = '22023';
   end if;
   v_actor := trustkaki_private.require_context_admin(p_senior_id);
@@ -821,7 +828,9 @@ begin
       'admin_corrected', coalesce((p_replacement_json ->> 'confidence')::numeric, 1.00),
       now(), v_tags, v_actor, v_actor
     ) returning id, to_jsonb(senior_memories) into v_new_id, v_after;
-    update public.senior_memories set superseded_by_id = v_new_id where id = p_context_id;
+    update public.senior_memories set superseded_by_id = v_new_id
+    where id = p_context_id
+    returning to_jsonb(senior_memories) into v_superseded_after;
   elsif v_store = 'health_context' then
     update public.senior_health_contexts set status = 'superseded', updated_at = now(),
       updated_by_caregiver_id = v_actor where id = p_context_id;
@@ -838,7 +847,9 @@ begin
       coalesce((p_replacement_json ->> 'confidence')::numeric, 1.00), now(),
       (p_replacement_json ->> 'expires_at')::timestamptz, v_tags, v_actor, v_actor
     ) returning id, to_jsonb(senior_health_contexts) into v_new_id, v_after;
-    update public.senior_health_contexts set superseded_by_id = v_new_id where id = p_context_id;
+    update public.senior_health_contexts set superseded_by_id = v_new_id
+    where id = p_context_id
+    returning to_jsonb(senior_health_contexts) into v_superseded_after;
   else
     update public.routine_baselines set status = 'superseded', updated_at = now(),
       updated_by_caregiver_id = v_actor where id = p_context_id;
@@ -856,7 +867,9 @@ begin
       'admin_corrected', now(), (p_replacement_json ->> 'expires_at')::timestamptz,
       v_tags, v_actor, v_actor
     ) returning id, to_jsonb(routine_baselines) into v_new_id, v_after;
-    update public.routine_baselines set superseded_by_id = v_new_id where id = p_context_id;
+    update public.routine_baselines set superseded_by_id = v_new_id
+    where id = p_context_id
+    returning to_jsonb(routine_baselines) into v_superseded_after;
   end if;
 
   insert into public.senior_context_events (
@@ -864,8 +877,7 @@ begin
     before_snapshot, after_snapshot, actor_caregiver_id, command_id
   ) values (
     p_senior_id, v_store, p_context_id, v_before ->> 'context_key',
-    'superseded', trim(p_reason), v_before,
-    v_before || jsonb_build_object('status', 'superseded', 'superseded_by_id', v_new_id),
+    'superseded', trim(p_reason), v_before, v_superseded_after,
     v_actor, p_command_id
   );
 
@@ -874,7 +886,7 @@ begin
     before_snapshot, after_snapshot, actor_caregiver_id, command_id
   ) values (
     p_senior_id, v_store, v_new_id, v_context_key, 'corrected', trim(p_reason),
-    v_before || jsonb_build_object('status', 'superseded'), v_after,
+    v_superseded_after, v_after,
     v_actor, p_command_id
   );
   v_result := jsonb_build_object(
@@ -914,7 +926,7 @@ begin
   if p_reason is null or not (char_length(trim(p_reason)) between 8 and 500) then
     raise exception 'Archive reason must be between 8 and 500 characters' using errcode = '22023';
   end if;
-  if v_store not in ('memory', 'health_context', 'routine_baseline') then
+  if p_store is null or v_store not in ('memory', 'health_context', 'routine_baseline') then
     raise exception 'Invalid context store' using errcode = '22023';
   end if;
   v_actor := trustkaki_private.require_context_admin(p_senior_id);
