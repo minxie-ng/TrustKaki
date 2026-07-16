@@ -6,27 +6,6 @@ const seniorId = "00000000-0000-4000-8000-000000000201";
 const sourceMessageId = "00000000-0000-4000-8000-000000000202";
 
 describe("memory repository", () => {
-  it("uses a stable UUID command ID for one candidate lifecycle intent", async () => {
-    const { automaticContextCommandId } = await import("./memoryRepository");
-    const input = {
-      seniorId,
-      sourceMessageId,
-      contextKey: "preferred_language",
-      intent: "create" as const,
-    };
-
-    const first = automaticContextCommandId(input);
-    const replay = automaticContextCommandId(input);
-
-    expect(first).toBe(replay);
-    expect(first).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
-    );
-    expect(
-      automaticContextCommandId({ ...input, intent: "confirm" })
-    ).not.toBe(first);
-  });
-
   it("calls the automatic lifecycle RPC with an accepted bounded payload", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: {

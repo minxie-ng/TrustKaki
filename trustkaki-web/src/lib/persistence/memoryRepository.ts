@@ -1,37 +1,8 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { Json } from "@/lib/supabase/types";
 import type { TrustKakiClient } from "./persistenceSupport";
-import { normaliseContextKey } from "@/lib/memory/policy";
-
-type AutomaticContextIntent = "create" | "confirm" | "replace";
-
-function uuidFromDigest(value: string): string {
-  const bytes = Buffer.from(createHash("sha256").update(value).digest().subarray(0, 16));
-  bytes[6] = (bytes[6] & 0x0f) | 0x50;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = bytes.toString("hex");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-export function automaticContextCommandId(args: {
-  seniorId: string;
-  sourceMessageId: string;
-  contextKey: string;
-  intent: AutomaticContextIntent;
-}): string {
-  return uuidFromDigest(
-    [
-      "trustkaki:gate5:automatic-context:v1",
-      args.seniorId,
-      args.sourceMessageId,
-      normaliseContextKey(args.contextKey),
-      args.intent,
-    ].join(":")
-  );
-}
 
 const automaticContextResultSchema = z.discriminatedUnion("accepted", [
   z.object({

@@ -6,6 +6,7 @@ import type {
   OrchestrateResponse,
 } from "@/lib/agents/contracts";
 import {
+  automaticContextCommandId,
   buildAutomaticMemoryCommands,
   buildManualBriefingPersistencePayload,
   buildOrchestrationPersistencePayload,
@@ -148,6 +149,38 @@ describe("orchestration persistence mapping", () => {
     });
     return value;
   };
+
+  it("keeps command IDs stable for identical store and candidate input", () => {
+    const input = {
+      seniorId,
+      sourceMessageId: "00000000-0000-4000-8000-000000000207",
+      targetStore: "memory" as const,
+      contextKey: "preferred_language",
+      intent: "create" as const,
+    };
+
+    const first = automaticContextCommandId(input);
+
+    expect(automaticContextCommandId(input)).toBe(first);
+    expect(first).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    );
+  });
+
+  it("does not collide when the same context key targets different stores", () => {
+    const input = {
+      seniorId,
+      sourceMessageId: "00000000-0000-4000-8000-000000000207",
+      contextKey: "daily_routine",
+      intent: "create" as const,
+    };
+
+    expect(
+      automaticContextCommandId({ ...input, targetStore: "memory" })
+    ).not.toBe(
+      automaticContextCommandId({ ...input, targetStore: "routine_baseline" })
+    );
+  });
 
   it("uses the persisted inbound UUID for an accepted candidate command", () => {
     const sourceContext: AgentRunContext = {

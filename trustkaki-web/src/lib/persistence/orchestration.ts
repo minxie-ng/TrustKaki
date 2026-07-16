@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { uncleTan } from "@/data/demo";
 import type {
   AgentRunContext,
@@ -9,6 +10,7 @@ import type {
 import {
   type MemoryCandidate,
   type MemoryRejectionCategory,
+  type MemoryTargetStore,
 } from "@/lib/memory/contracts";
 import {
   evaluateMemoryCandidate,
@@ -16,7 +18,6 @@ import {
   normaliseContextKey,
 } from "@/lib/memory/policy";
 import type { Json } from "@/lib/supabase/types";
-import { automaticContextCommandId } from "./memoryRepository";
 import type { AlertItem, AgentTrace, DashboardData, Message, RiskLevel } from "@/lib/types";
 import type {
   BriefTrigger,
@@ -126,6 +127,33 @@ export interface AutomaticMemoryCommand {
   payload: Json;
 }
 
+function uuidFromDigest(value: string): string {
+  const bytes = Buffer.from(createHash("sha256").update(value).digest().subarray(0, 16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+export function automaticContextCommandId(args: {
+  seniorId: string;
+  sourceMessageId: string;
+  targetStore: MemoryTargetStore;
+  contextKey: string;
+  intent: AutomaticContextIntent;
+}): string {
+  return uuidFromDigest(
+    [
+      "trustkaki:gate5:automatic-context:v2",
+      args.seniorId,
+      args.sourceMessageId,
+      args.targetStore,
+      normaliseContextKey(args.contextKey),
+      args.intent,
+    ].join(":")
+  );
+}
+
 function acceptedPayload(
   candidate: MemoryCandidate,
   intent: AutomaticContextIntent,
@@ -215,6 +243,7 @@ export function buildAutomaticMemoryCommands(args: {
       commandId: automaticContextCommandId({
         seniorId: args.seniorId,
         sourceMessageId: args.persistedInboundId,
+        targetStore: candidate.targetStore,
         contextKey: candidate.contextKey,
         intent,
       }),
