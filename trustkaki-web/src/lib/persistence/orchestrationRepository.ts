@@ -7,9 +7,13 @@ import type {
   OrchestrateResponse,
 } from "@/lib/agents/contracts";
 import {
+  AmbiguousMemoryCandidatesError,
   buildAutomaticMemoryCommands,
   buildManualBriefingPersistencePayload,
   buildOrchestrationPersistencePayload,
+  InvalidInternalOrchestrationResultError,
+  orchestrationArtifactId,
+  requireInternalOrchestrationResult,
   type ManualBriefingPersistencePayload,
   type OrchestrationPersistencePayload,
   type PersistenceMeta,
@@ -182,10 +186,23 @@ async function persistAutomaticMemory(args: {
 
   let commands;
   try {
-    commands = buildAutomaticMemoryCommands(args);
-  } catch {
+    commands = buildAutomaticMemoryCommands({
+      ...args,
+      result: requireInternalOrchestrationResult(args.result),
+    });
+  } catch (error) {
     summary.failed += 1;
-    summary.failures.push({ stage: "policy", category: "policy_error" });
+    summary.failures.push(
+      error instanceof InvalidInternalOrchestrationResultError
+        ? { stage: "extraction", category: "invalid_output" }
+        : {
+            stage: "policy",
+            category:
+              error instanceof AmbiguousMemoryCandidatesError
+                ? "invalid_output"
+                : "policy_error",
+          }
+    );
     return summary;
   }
 
@@ -246,22 +263,25 @@ async function persistSignals(
   checkInId: string,
   payload: OrchestrationPersistencePayload,
   agentRuns: TableRow<"agent_runs">[],
-  observedAt: string
+  observedAt: string,
+  sourceMessageId: string
 ) {
   if (payload.signals.length === 0) return;
 
   const triageRunId =
     agentRuns.find((run) => run.agent_id === "triage")?.id ?? null;
 
-  const { error } = await client.from("detected_signals").insert(
-    payload.signals.map((signal) => ({
+  const { error } = await client.from("detected_signals").upsert(
+    payload.signals.map((signal, index) => ({
+      id: orchestrationArtifactId({ sourceMessageId, artifact: "signal", index }),
       check_in_id: checkInId,
       signal_type: signal.type,
       description: signal.description,
       severity: signal.severity,
       source_agent_run_id: triageRunId,
       observed_at: observedAt,
-    }))
+    })),
+    { onConflict: "id", ignoreDuplicates: true }
   );
   throwIfError(error, "insert detected signals");
 }
@@ -276,22 +296,27 @@ async function persistRiskEvent(
   seniorId: string,
   checkInId: string,
   payload: OrchestrationPersistencePayload,
-  agentRuns: TableRow<"agent_runs">[]
+  agentRuns: TableRow<"agent_runs">[],
+  sourceMessageId: string
 ) {
   const policyRunId =
     agentRuns.find((run) => run.agent_id === "policy")?.id ?? null;
   const now = new Date().toISOString();
 
   if (payload.riskEvent.riskChange !== "none") {
-    const { error } = await client.from("risk_events").insert({
-      check_in_id: checkInId,
-      senior_id: seniorId,
-      previous_risk: payload.riskEvent.previousRisk,
-      final_risk: payload.riskEvent.finalRisk,
-      risk_change: payload.riskEvent.riskChange,
-      policy_agent_run_id: policyRunId,
-      reasoning: payload.riskEvent.reasoning,
-    });
+    const { error } = await client.from("risk_events").upsert(
+      {
+        id: orchestrationArtifactId({ sourceMessageId, artifact: "risk_event" }),
+        check_in_id: checkInId,
+        senior_id: seniorId,
+        previous_risk: payload.riskEvent.previousRisk,
+        final_risk: payload.riskEvent.finalRisk,
+        risk_change: payload.riskEvent.riskChange,
+        policy_agent_run_id: policyRunId,
+        reasoning: payload.riskEvent.reasoning,
+      },
+      { onConflict: "id", ignoreDuplicates: true }
+    );
     throwIfError(error, "insert policy risk event");
   }
 
@@ -318,12 +343,14 @@ async function persistAlerts(
   client: TrustKakiClient,
   seniorId: string,
   checkInId: string,
-  payload: OrchestrationPersistencePayload
+  payload: OrchestrationPersistencePayload,
+  sourceMessageId: string
 ) {
   if (payload.alerts.length === 0) return;
 
-  const { error } = await client.from("alerts").insert(
-    payload.alerts.map((alert) => ({
+  const { error } = await client.from("alerts").upsert(
+    payload.alerts.map((alert, index) => ({
+      id: orchestrationArtifactId({ sourceMessageId, artifact: "alert", index }),
       check_in_id: checkInId,
       senior_id: seniorId,
       signal_type: alert.type,
@@ -331,7 +358,8 @@ async function persistAlerts(
       severity: alert.severity,
       urgent: alert.urgent,
       reason: alert.reason ?? null,
-    }))
+    })),
+    { onConflict: "id", ignoreDuplicates: true }
   );
   throwIfError(error, "insert policy alerts");
 }
@@ -341,14 +369,18 @@ async function persistBrief(
   seniorId: string,
   checkInId: string,
   brief: OrchestrationPersistencePayload["brief"] | ManualBriefingPersistencePayload["brief"],
-  agentRuns: TableRow<"agent_runs">[]
+  agentRuns: TableRow<"agent_runs">[],
+  sourceMessageId?: string
 ) {
   if (!brief) return;
 
   const briefingRunId =
     agentRuns.find((run) => run.agent_id === "briefing")?.id ?? null;
 
-  const { error } = await client.from("briefs").insert({
+  const row = {
+    ...(sourceMessageId
+      ? { id: orchestrationArtifactId({ sourceMessageId, artifact: "brief" }) }
+      : {}),
     check_in_id: checkInId,
     senior_id: seniorId,
     trigger: brief.trigger,
@@ -358,7 +390,13 @@ async function persistBrief(
     key_concerns: brief.briefing.keyConcerns,
     recommended_actions: brief.briefing.recommendedActions,
     source_agent_run_id: briefingRunId,
-  });
+  };
+  const { error } = sourceMessageId
+    ? await client.from("briefs").upsert(row, {
+        onConflict: "id",
+        ignoreDuplicates: true,
+      })
+    : await client.from("briefs").insert(row);
   throwIfError(error, "insert brief");
 }
 
@@ -390,10 +428,6 @@ export async function persistOrchestrationResult(args: {
     context: args.context,
     result: args.result,
   });
-  if (!inbound.inserted) {
-    return { ...supabaseMeta(), replayed: true, memory };
-  }
-
   await upsertMessages(client, checkIn.id, payload.outboundMessages, args.seniorId);
   const agentRuns = await upsertAgentRuns(client, checkIn.id, payload.agentRuns);
   await persistSignals(
@@ -401,14 +435,15 @@ export async function persistOrchestrationResult(args: {
     checkIn.id,
     payload,
     agentRuns,
-    observedAtFromContext(args.clientMessageId, args.context)
+    observedAtFromContext(args.clientMessageId, args.context),
+    inbound.id
   );
-  await persistRiskEvent(client, args.seniorId, checkIn.id, payload, agentRuns);
-  await persistAlerts(client, args.seniorId, checkIn.id, payload);
-  await persistBrief(client, args.seniorId, checkIn.id, payload.brief, agentRuns);
+  await persistRiskEvent(client, args.seniorId, checkIn.id, payload, agentRuns, inbound.id);
+  await persistAlerts(client, args.seniorId, checkIn.id, payload, inbound.id);
+  await persistBrief(client, args.seniorId, checkIn.id, payload.brief, agentRuns, inbound.id);
   await runPatternWatchForSenior(client, args.seniorId);
 
-  return { ...supabaseMeta(), memory };
+  return { ...supabaseMeta(), replayed: !inbound.inserted || undefined, memory };
 }
 
 export async function hasPersistedMessageClientId(

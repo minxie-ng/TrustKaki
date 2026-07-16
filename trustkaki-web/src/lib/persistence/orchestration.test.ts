@@ -217,6 +217,45 @@ describe("orchestration persistence mapping", () => {
     expect(commands[0].commandId).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it("does not treat a public JSON round trip as an internal result with no commands", () => {
+    const roundTripped = JSON.parse(
+      JSON.stringify(memoryResult([candidate()]))
+    ) as OrchestrateResponse;
+
+    expect(() =>
+      buildAutomaticMemoryCommands({
+        seniorId,
+        clientMessageId,
+        persistedInboundId: "00000000-0000-4000-8000-000000000207",
+        persistedInboundCreatedAt: "2026-07-16T00:00:00.000Z",
+        context: context(),
+        result: roundTripped as OrchestrationResult,
+      })
+    ).toThrow("validated internal orchestration result");
+  });
+
+  it.each([
+    ["same intent", undefined, undefined],
+    ["mixed intent", "confirm" as const, "replace" as const],
+  ])(
+    "rejects normalized duplicate candidate keys before building commands (%s)",
+    (_label, firstIntent, secondIntent) => {
+      expect(() =>
+        buildAutomaticMemoryCommands({
+          seniorId,
+          clientMessageId,
+          persistedInboundId: "00000000-0000-4000-8000-000000000207",
+          persistedInboundCreatedAt: "2026-07-16T00:00:00.000Z",
+          context: context(),
+          result: memoryResult([
+            candidate({ contextKey: "Preferred Language", intent: firstIntent }),
+            candidate({ contextKey: " preferred-language ", intent: secondIntent }),
+          ]),
+        })
+      ).toThrow("ambiguous context candidate key");
+    }
+  );
+
   it("turns policy rejection into only a bounded rejection command", () => {
     const sourceContext: AgentRunContext = {
       ...context(),

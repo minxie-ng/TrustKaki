@@ -9,9 +9,14 @@ import type {
 vi.mock("server-only", () => ({}));
 
 const createTrustKakiServiceClientMock = vi.fn();
+const runPatternWatchForSeniorMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createTrustKakiServiceClient: createTrustKakiServiceClientMock,
+}));
+
+vi.mock("./patternRepository", () => ({
+  runPatternWatchForSenior: runPatternWatchForSeniorMock,
 }));
 
 const SENIOR_B = "00000000-0000-4000-8000-00000000000b";
@@ -22,14 +27,21 @@ interface Operation {
   kind?: "delete" | "insert" | "select" | "update" | "upsert";
   columns?: string;
   payload?: unknown;
+  options?: Record<string, unknown>;
   filters: Array<[string, unknown]>;
 }
 
 function createServiceClient(
   messageMetadata: Record<string, unknown> = {},
-  options: { inboundInserted?: boolean; rpcError?: { code: string; message: string } } = {}
+  options: {
+    inboundInserted?: boolean;
+    inboundInsertedSequence?: boolean[];
+    rpcError?: { code: string; message: string };
+  } = {}
 ) {
   const operations: Operation[] = [];
+  const storedKeys = new Map<string, Set<string>>();
+  let inboundAttempt = 0;
   const rpc = vi.fn().mockImplementation(async () =>
     options.rpcError
       ? { data: null, error: options.rpcError }
@@ -56,6 +68,7 @@ function createServiceClient(
       };
     }
     if (operation.table === "agent_runs" && operation.kind === "upsert") {
+      rememberRows(operation);
       return { data: [], error: null };
     }
     if (
@@ -65,7 +78,8 @@ function createServiceClient(
     ) {
       return {
         data:
-          options.inboundInserted === false
+          (options.inboundInsertedSequence?.[inboundAttempt++] ??
+            options.inboundInserted ?? true) === false
             ? null
             : {
                 id: "00000000-0000-4000-8000-000000000302",
@@ -73,6 +87,14 @@ function createServiceClient(
               },
         error: null,
       };
+    }
+    if (
+      operation.kind === "upsert" &&
+      ["messages", "detected_signals", "risk_events", "alerts", "briefs"].includes(
+        operation.table
+      )
+    ) {
+      rememberRows(operation);
     }
     if (
       operation.table === "messages" &&
@@ -112,6 +134,20 @@ function createServiceClient(
     return { data: null, error: null };
   }
 
+  function rememberRows(operation: Operation) {
+    const rows = Array.isArray(operation.payload)
+      ? operation.payload
+      : [operation.payload];
+    const keys = storedKeys.get(operation.table) ?? new Set<string>();
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
+      const value = row as Record<string, unknown>;
+      const key = value.id ?? value.trace_id ?? value.client_message_id;
+      if (typeof key === "string") keys.add(key);
+    }
+    storedKeys.set(operation.table, keys);
+  }
+
   const from = vi.fn((table: string) => {
     const operation: Operation = { table, filters: [] };
     operations.push(operation);
@@ -135,9 +171,10 @@ function createServiceClient(
         operation.payload = payload;
         return builder;
       }),
-      upsert: vi.fn((payload: unknown) => {
+      upsert: vi.fn((payload: unknown, upsertOptions?: Record<string, unknown>) => {
         operation.kind = "upsert";
         operation.payload = payload;
+        operation.options = upsertOptions;
         return builder;
       }),
       eq: vi.fn((column: string, value: unknown) => {
@@ -160,7 +197,7 @@ function createServiceClient(
     return builder;
   });
 
-  return { client: { from, rpc }, operations, rpc };
+  return { client: { from, rpc }, operations, rpc, storedKeys };
 }
 
 const context: AgentRunContext = {
@@ -238,6 +275,8 @@ describe("TrustKaki persistence senior identity", () => {
   beforeEach(() => {
     vi.resetModules();
     createTrustKakiServiceClientMock.mockReset();
+    runPatternWatchForSeniorMock.mockReset();
+    runPatternWatchForSeniorMock.mockResolvedValue(undefined);
   });
 
   it("propagates a non-demo senior and explicit client message ID to every orchestration write", async () => {
@@ -353,8 +392,71 @@ describe("TrustKaki persistence senior identity", () => {
     expect(payloadsFor(service.operations, "briefs")).not.toEqual([]);
   });
 
-  it("does not repeat orchestration writes for a replayed inbound client message", async () => {
-    const service = createServiceClient({}, { inboundInserted: false });
+  it("rejects ambiguous candidate keys before any memory RPC", async () => {
+    const service = createServiceClient();
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { persistOrchestrationResult } = await import("./trustkakiRepository");
+    const resultWithDuplicates = orchestrationResult as OrchestrateResponse & {
+      contextMemoryCandidates: unknown[];
+    };
+    Object.defineProperty(resultWithDuplicates, "contextMemoryCandidates", {
+      configurable: true,
+      value: [
+        {
+          targetStore: "memory",
+          contextKey: "Meal Preference",
+          contextType: "food_preference",
+          content: "Prefers porridge for breakfast",
+          sourceMessageId: "message-b-1",
+          evidenceExcerpt: "Not hungry today.",
+          confidence: 0.93,
+          applicationTags: ["practical_meal_prompt"],
+          retentionClass: "preference",
+          intent: "confirm",
+        },
+        {
+          targetStore: "memory",
+          contextKey: "meal-preference",
+          contextType: "food_preference",
+          content: "Prefers rice for breakfast",
+          sourceMessageId: "message-b-1",
+          evidenceExcerpt: "Not hungry today.",
+          confidence: 0.91,
+          applicationTags: ["practical_meal_prompt"],
+          retentionClass: "preference",
+          intent: "replace",
+        },
+      ],
+      enumerable: false,
+    });
+
+    const persistence = await persistOrchestrationResult({
+      seniorId: SENIOR_B,
+      message: "Not hungry today.",
+      clientMessageId: "message-b-1",
+      context,
+      result: resultWithDuplicates,
+    });
+
+    expect(service.rpc).not.toHaveBeenCalled();
+    expect(persistence).toMatchObject({
+      persisted: true,
+      memory: {
+        attempted: 0,
+        failed: 1,
+        failures: [{ stage: "policy", category: "invalid_output" }],
+      },
+    });
+    expect(service.storedKeys.get("alerts")?.size).toBe(1);
+  });
+
+  it("resumes a replay after a downstream failure and completes each artifact once", async () => {
+    const service = createServiceClient({}, {
+      inboundInsertedSequence: [true, false],
+    });
+    runPatternWatchForSeniorMock
+      .mockRejectedValueOnce(new Error("injected pattern watch failure"))
+      .mockResolvedValueOnce(undefined);
     createTrustKakiServiceClientMock.mockReturnValue(service.client);
     const { persistOrchestrationResult } = await import("./trustkakiRepository");
     const resultWithMemory = orchestrationResult as OrchestrateResponse & {
@@ -376,33 +478,46 @@ describe("TrustKaki persistence senior identity", () => {
       enumerable: false,
     });
 
-    const persistence = await persistOrchestrationResult({
+    const request = {
       seniorId: SENIOR_B,
       message: "Not hungry today.",
       clientMessageId: "message-b-1",
       context,
       result: resultWithMemory,
+    };
+
+    await expect(persistOrchestrationResult(request)).rejects.toThrow(
+      "injected pattern watch failure"
+    );
+    const persistence = await persistOrchestrationResult({
+      ...request,
+      result: JSON.parse(JSON.stringify(resultWithMemory)) as OrchestrateResponse,
     });
 
-    expect(persistence).toMatchObject({ persisted: true, replayed: true });
+    expect(persistence).toMatchObject({
+      persisted: true,
+      replayed: true,
+      memory: {
+        attempted: 0,
+        failed: 1,
+        failures: [{ stage: "extraction", category: "invalid_output" }],
+      },
+    });
     expect(service.rpc).toHaveBeenCalledTimes(1);
-    expect(
-      service.operations.filter((operation) =>
-        [
-          "agent_runs",
-          "detected_signals",
-          "risk_events",
-          "alerts",
-          "briefs",
-          "patterns",
-        ].includes(operation.table)
-      )
-    ).toEqual([]);
-    expect(
-      service.operations.filter(
-        (operation) => operation.table === "messages" && operation.kind === "upsert"
-      )
-    ).toHaveLength(1);
+    expect(runPatternWatchForSeniorMock).toHaveBeenCalledTimes(2);
+    expect(service.storedKeys.get("messages")?.size).toBe(1);
+    expect(service.storedKeys.get("agent_runs")?.size).toBe(1);
+    expect(service.storedKeys.get("detected_signals")?.size).toBe(1);
+    expect(service.storedKeys.get("risk_events")?.size).toBe(1);
+    expect(service.storedKeys.get("alerts")?.size).toBe(1);
+    expect(service.storedKeys.get("briefs")?.size).toBe(1);
+    for (const table of ["detected_signals", "risk_events", "alerts", "briefs"]) {
+      expect(
+        service.operations.filter(
+          (operation) => operation.table === table && operation.kind === "insert"
+        )
+      ).toEqual([]);
+    }
   });
 
   it("persists a manual briefing for the explicit non-demo senior", async () => {

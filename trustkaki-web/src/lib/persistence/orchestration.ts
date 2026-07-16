@@ -7,6 +7,7 @@ import type {
   OrchestrateResponse,
   OrchestrationResult,
 } from "@/lib/agents/contracts";
+import { memoryCandidateSchema } from "@/lib/agents/schemas";
 import {
   type MemoryCandidate,
   type MemoryRejectionCategory,
@@ -127,6 +128,20 @@ export interface AutomaticMemoryCommand {
   payload: Json;
 }
 
+export class InvalidInternalOrchestrationResultError extends Error {
+  constructor() {
+    super("automatic memory requires a validated internal orchestration result");
+    this.name = "InvalidInternalOrchestrationResultError";
+  }
+}
+
+export class AmbiguousMemoryCandidatesError extends Error {
+  constructor() {
+    super("ambiguous context candidate key");
+    this.name = "AmbiguousMemoryCandidatesError";
+  }
+}
+
 function uuidFromDigest(value: string): string {
   const bytes = Buffer.from(createHash("sha256").update(value).digest().subarray(0, 16));
   bytes[6] = (bytes[6] & 0x0f) | 0x50;
@@ -152,6 +167,31 @@ export function automaticContextCommandId(args: {
       args.intent,
     ].join(":")
   );
+}
+
+export function orchestrationArtifactId(args: {
+  sourceMessageId: string;
+  artifact: "signal" | "risk_event" | "alert" | "brief";
+  index?: number;
+}): string {
+  return uuidFromDigest(
+    [
+      "trustkaki:orchestration-artifact:v1",
+      args.sourceMessageId,
+      args.artifact,
+      String(args.index ?? 0),
+    ].join(":")
+  );
+}
+
+export function requireInternalOrchestrationResult(
+  result: OrchestrateResponse
+): OrchestrationResult {
+  const candidates = (result as Partial<OrchestrationResult>).contextMemoryCandidates;
+  if (!Array.isArray(candidates) || !memoryCandidateSchema.array().safeParse(candidates).success) {
+    throw new InvalidInternalOrchestrationResultError();
+  }
+  return result as OrchestrationResult;
 }
 
 function acceptedPayload(
@@ -207,10 +247,16 @@ export function buildAutomaticMemoryCommands(args: {
   persistedInboundId: string;
   persistedInboundCreatedAt: string;
   context: AgentRunContext;
-  result: OrchestrateResponse | OrchestrationResult;
+  result: OrchestrationResult;
 }): AutomaticMemoryCommand[] {
-  const candidates =
-    (args.result as Partial<OrchestrationResult>).contextMemoryCandidates ?? [];
+  const candidates = requireInternalOrchestrationResult(args.result)
+    .contextMemoryCandidates;
+  const candidateKeys = new Set<string>();
+  for (const candidate of candidates) {
+    const key = `${candidate.targetStore}:${normaliseContextKey(candidate.contextKey)}`;
+    if (candidateKeys.has(key)) throw new AmbiguousMemoryCandidatesError();
+    candidateKeys.add(key);
+  }
 
   return candidates.map((candidate) => {
     const intent: AutomaticContextIntent = candidate.intent ?? "create";
