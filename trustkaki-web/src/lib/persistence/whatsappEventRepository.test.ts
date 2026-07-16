@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { OrchestrationResult } from "@/lib/agents/contracts";
 
 vi.mock("server-only", () => ({}));
 
@@ -17,6 +18,7 @@ function chain(result: unknown) {
     in: vi.fn(() => object),
     order: vi.fn(() => object),
     limit: vi.fn(() => Promise.resolve(result)),
+    update: vi.fn(() => object),
   };
   return object;
 }
@@ -75,5 +77,51 @@ describe("whatsappEventRepository", () => {
 
     expect(result.duplicate).toBe(true);
     expect(result.row.id).toBe("event_1");
+  });
+
+  it("stores a versioned private orchestration retry envelope", async () => {
+    const updateChain = chain({ data: null, error: null });
+    createTrustKakiServiceClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue(updateChain),
+    });
+    const { storeWhatsAppOrchestrationResult } = await import(
+      "./whatsappEventRepository"
+    );
+    const result = {
+      messages: [],
+      traces: [],
+      alerts: [],
+      riskLevel: "green",
+      riskChange: "none",
+      signals: [],
+      policy: {
+        finalRisk: "green",
+        riskChange: "none",
+        briefingRequired: false,
+        alerts: [],
+        reasoning: [],
+      },
+      briefing: null,
+      contextMemoryCandidates: [],
+    } satisfies OrchestrationResult;
+
+    await storeWhatsAppOrchestrationResult({
+      eventId: "event_1",
+      context: { senior: {}, messages: [] } as never,
+      result,
+      selectedReplyText: null,
+      selectedReplyAgentId: null,
+      selectedReplyClientMessageId: null,
+    });
+
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orchestration_result: {
+          version: 1,
+          publicResponse: expect.objectContaining({ riskLevel: "green" }),
+          contextMemoryCandidates: [],
+        },
+      })
+    );
   });
 });

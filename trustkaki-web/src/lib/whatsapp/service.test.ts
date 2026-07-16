@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
+import type { AgentRunContext, OrchestrateResponse, OrchestrationResult } from "@/lib/agents/contracts";
+import { serializeOrchestrationRetryEnvelope } from "@/lib/persistence/orchestration";
 import type { Database, Json } from "@/lib/supabase/types";
 import { buildMetaStatusWebhookFixture, buildMetaTextWebhookFixture } from "./parser";
 
@@ -112,6 +113,25 @@ const orchestrationResponse: OrchestrateResponse = {
   },
   briefing: null,
 };
+
+function orchestrationResult(): OrchestrationResult {
+  const result = { ...orchestrationResponse } as OrchestrationResult;
+  Object.defineProperty(result, "contextMemoryCandidates", {
+    value: [{
+      targetStore: "memory",
+      contextKey: "meal_preference",
+      contextType: "food_preference",
+      content: "Prefers porridge for breakfast",
+      sourceMessageId: "wamid.inbound",
+      evidenceExcerpt: "Not hungry today.",
+      confidence: 0.93,
+      applicationTags: ["practical_meal_prompt"],
+      retentionClass: "preference",
+    }],
+    enumerable: false,
+  });
+  return result;
+}
 
 function payload(messageId = "wamid.inbound") {
   return buildMetaTextWebhookFixture({
@@ -303,6 +323,86 @@ describe("WhatsApp async service", () => {
     expect(orchestrateMock).not.toHaveBeenCalled();
     expect(persistOrchestrationResultMock).not.toHaveBeenCalled();
     expect(sendText).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores private memory candidates when retrying incomplete persistence", async () => {
+    const { processWhatsAppEventById } = await import("./service");
+    const storedResult = orchestrationResult();
+    claimWhatsAppEventMock.mockResolvedValue(
+      eventRow({
+        status: "failed",
+        orchestration_result: serializeOrchestrationRetryEnvelope(storedResult) as unknown as Json,
+        orchestration_context: {
+          ...agentContext,
+          messages: [{
+            id: "wamid.inbound",
+            sender: "senior",
+            text: "Not hungry today. Knee pain.",
+            timestamp: "2026-07-11T00:00:00.000Z",
+          }],
+        },
+        selected_reply_text: orchestrationResponse.messages[0].text,
+        selected_reply_agent_id: "triage",
+        selected_reply_client_message_id: "out_trace_orchestrator_0",
+        outbound_status: "pending",
+      })
+    );
+
+    const result = await processWhatsAppEventById("event_1", {
+      sendText: vi.fn().mockResolvedValue({ messageId: "wamid.retry", raw: {} }),
+    });
+
+    expect(result.status).toBe("processed");
+    expect(orchestrateMock).not.toHaveBeenCalled();
+    expect(persistOrchestrationResultMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: expect.objectContaining({
+          contextMemoryCandidates: storedResult.contextMemoryCandidates,
+        }),
+      })
+    );
+  });
+
+  it("does not re-orchestrate a legacy incomplete cache after provider acceptance", async () => {
+    const { processWhatsAppEventById } = await import("./service");
+    claimWhatsAppEventMock.mockResolvedValue(
+      eventRow({
+        status: "failed",
+        orchestration_result: orchestrationResponse as unknown as Json,
+        orchestration_context: agentContext as unknown as Json,
+        outbound_status: "sent",
+        outbound_message_id: "wamid.outbound",
+      })
+    );
+    const sendText = vi.fn();
+
+    const result = await processWhatsAppEventById("event_1", { sendText });
+
+    expect(result.status).toBe("error");
+    expect(orchestrateMock).not.toHaveBeenCalled();
+    expect(persistOrchestrationResultMock).not.toHaveBeenCalled();
+    expect(sendText).not.toHaveBeenCalled();
+  });
+
+  it("re-orchestrates a legacy incomplete cache before any provider acceptance", async () => {
+    const { processWhatsAppEventById } = await import("./service");
+    claimWhatsAppEventMock.mockResolvedValue(
+      eventRow({
+        status: "failed",
+        orchestration_result: orchestrationResponse as unknown as Json,
+        orchestration_context: agentContext as unknown as Json,
+        outbound_status: "pending",
+      })
+    );
+
+    const result = await processWhatsAppEventById("event_1", {
+      sendText: vi.fn().mockResolvedValue({ messageId: "wamid.retry", raw: {} }),
+    });
+
+    expect(result.status).toBe("processed");
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+    expect(storeWhatsAppOrchestrationResultMock).toHaveBeenCalledTimes(1);
+    expect(persistOrchestrationResultMock).toHaveBeenCalledTimes(1);
   });
 
   it("marks outbound failure retryable, then recovers without rerunning orchestration", async () => {

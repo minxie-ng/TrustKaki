@@ -9,7 +9,8 @@ import type {
   WhatsAppWebhookEventStatus,
 } from "@/lib/supabase/types";
 import type { AgentId } from "@/lib/types";
-import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
+import type { AgentRunContext, OrchestrationResult } from "@/lib/agents/contracts";
+import { serializeOrchestrationRetryEnvelope } from "./orchestration";
 import type { WhatsAppParsedWebhookEvent } from "@/lib/whatsapp/types";
 import { sanitizeErrorMessage } from "@/lib/whatsapp/logging";
 
@@ -118,7 +119,7 @@ export async function listRetryableWhatsAppEvents(
 export async function storeWhatsAppOrchestrationResult(args: {
   eventId: string;
   context: AgentRunContext;
-  result: OrchestrateResponse;
+  result: OrchestrationResult;
   selectedReplyText: string | null;
   selectedReplyAgentId: AgentId | null;
   selectedReplyClientMessageId: string | null;
@@ -127,7 +128,7 @@ export async function storeWhatsAppOrchestrationResult(args: {
   const { error } = await client
     .from("whatsapp_webhook_events")
     .update({
-      orchestration_result: args.result as unknown as Json,
+      orchestration_result: serializeOrchestrationRetryEnvelope(args.result) as unknown as Json,
       orchestration_context: args.context as unknown as Json,
       selected_reply_text: args.selectedReplyText,
       selected_reply_agent_id: args.selectedReplyAgentId,

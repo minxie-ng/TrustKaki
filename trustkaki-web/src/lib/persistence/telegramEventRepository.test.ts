@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { OrchestrationResult } from "@/lib/agents/contracts";
 
 vi.mock("server-only", () => ({}));
 
@@ -110,10 +111,27 @@ describe("telegramEventRepository", () => {
       updateTelegramOutboundState,
     } = await import("./telegramEventRepository");
 
+    const result = {
+      messages: [],
+      traces: [],
+      alerts: [],
+      riskLevel: "green",
+      riskChange: "none",
+      signals: [],
+      policy: {
+        finalRisk: "green",
+        riskChange: "none",
+        briefingRequired: false,
+        alerts: [],
+        reasoning: [],
+      },
+      briefing: null,
+      contextMemoryCandidates: [],
+    } satisfies OrchestrationResult;
     await storeTelegramOrchestrationResult({
       eventId: "event-1",
       context: { senior: {}, messages: [] } as never,
-      result: { messages: [], traces: [], policy: {} } as never,
+      result,
       selectedReplyText: "Please eat something light.",
       selectedReplyAgentId: "triage",
       selectedReplyClientMessageId: "reply-1",
@@ -126,6 +144,11 @@ describe("telegramEventRepository", () => {
 
     expect(orchestrationChain.update).toHaveBeenCalledWith(
       expect.objectContaining({
+        orchestration_result: {
+          version: 1,
+          publicResponse: expect.objectContaining({ riskLevel: "green" }),
+          contextMemoryCandidates: [],
+        },
         selected_reply_text: "Please eat something light.",
         outbound_status: "pending",
       })

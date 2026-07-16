@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
+import type { AgentRunContext, OrchestrateResponse, OrchestrationResult } from "@/lib/agents/contracts";
+import { serializeOrchestrationRetryEnvelope } from "@/lib/persistence/orchestration";
 import type { Database, Json } from "@/lib/supabase/types";
 
 vi.mock("server-only", () => ({}));
@@ -98,6 +99,25 @@ const orchestrationResponse: OrchestrateResponse = {
   },
   briefing: null,
 };
+
+function orchestrationResult(): OrchestrationResult {
+  const result = { ...orchestrationResponse } as OrchestrationResult;
+  Object.defineProperty(result, "contextMemoryCandidates", {
+    value: [{
+      targetStore: "memory",
+      contextKey: "meal_preference",
+      contextType: "food_preference",
+      content: "Prefers porridge for breakfast",
+      sourceMessageId: "telegram:910000001",
+      evidenceExcerpt: "Not hungry today.",
+      confidence: 0.93,
+      applicationTags: ["practical_meal_prompt"],
+      retentionClass: "preference",
+    }],
+    enumerable: false,
+  });
+  return result;
+}
 
 function eventRow(overrides: Partial<TelegramEventRow> = {}): TelegramEventRow {
   return {
@@ -315,6 +335,90 @@ describe("Telegram orchestration service", () => {
     expect(orchestrateMock).not.toHaveBeenCalled();
     expect(persistOrchestrationResultMock).not.toHaveBeenCalled();
     expect(sendText).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores private memory candidates when retrying incomplete persistence", async () => {
+    const { processTelegramEventById } = await import("./service");
+    const storedResult = orchestrationResult();
+    claimTelegramEventMock.mockResolvedValue(
+      eventRow({
+        status: "failed",
+        orchestration_result: serializeOrchestrationRetryEnvelope(storedResult) as unknown as Json,
+        orchestration_context: {
+          ...context,
+          messages: [{
+            id: "telegram:910000001",
+            sender: "senior",
+            text: "Not hungry today. Knee pain.",
+            timestamp: "2026-07-15T00:00:00.000Z",
+          }],
+        },
+        selected_reply_text: orchestrationResponse.messages[0].text,
+        selected_reply_agent_id: "triage",
+        selected_reply_client_message_id: "out_trace_orchestrator_0",
+        outbound_status: "pending",
+      })
+    );
+
+    const result = await processTelegramEventById("event-telegram-1", {
+      outboundClient: { sendText: vi.fn().mockResolvedValue({ messageId: "75" }) },
+    });
+
+    expect(result.status).toBe("processed");
+    expect(orchestrateMock).not.toHaveBeenCalled();
+    expect(persistOrchestrationResultMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: expect.objectContaining({
+          contextMemoryCandidates: storedResult.contextMemoryCandidates,
+        }),
+      })
+    );
+  });
+
+  it("does not re-orchestrate a legacy incomplete cache after provider acceptance", async () => {
+    const { processTelegramEventById } = await import("./service");
+    claimTelegramEventMock.mockResolvedValue(
+      eventRow({
+        status: "failed",
+        orchestration_result: orchestrationResponse as unknown as Json,
+        orchestration_context: context as unknown as Json,
+        outbound_status: "accepted",
+        outbound_message_id: "74",
+      })
+    );
+    const sendText = vi.fn();
+
+    const result = await processTelegramEventById("event-telegram-1", {
+      outboundClient: { sendText },
+    });
+
+    expect(result.status).toBe("error");
+    expect(orchestrateMock).not.toHaveBeenCalled();
+    expect(persistOrchestrationResultMock).not.toHaveBeenCalled();
+    expect(sendText).not.toHaveBeenCalled();
+  });
+
+  it("re-orchestrates a legacy incomplete cache before any provider acceptance", async () => {
+    const { processTelegramEventById } = await import("./service");
+    claimTelegramEventMock.mockResolvedValue(
+      eventRow({
+        status: "failed",
+        orchestration_result: orchestrationResponse as unknown as Json,
+        orchestration_context: context as unknown as Json,
+        outbound_status: "pending",
+      })
+    );
+
+    const result = await processTelegramEventById("event-telegram-1", {
+      outboundClient: {
+        sendText: vi.fn().mockResolvedValue({ messageId: "75" }),
+      },
+    });
+
+    expect(result.status).toBe("processed");
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+    expect(storeTelegramOrchestrationResultMock).toHaveBeenCalledTimes(1);
+    expect(persistOrchestrationResultMock).toHaveBeenCalledTimes(1);
   });
 
   it("preserves provider acceptance and does not resend after metadata failure", async () => {

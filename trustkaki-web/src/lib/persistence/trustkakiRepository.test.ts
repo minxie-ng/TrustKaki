@@ -3,7 +3,7 @@ import type {
   AgentRunContext,
   AgentRunResult,
   BriefingOutput,
-  OrchestrateResponse,
+  OrchestrationResult,
 } from "@/lib/agents/contracts";
 
 vi.mock("server-only", () => ({}));
@@ -36,13 +36,39 @@ function createServiceClient(
   options: {
     inboundInserted?: boolean;
     inboundInsertedSequence?: boolean[];
+    enforceBinding?: boolean;
+    failRiskEventOnce?: boolean;
     rpcError?: { code: string; message: string };
   } = {}
 ) {
   const operations: Operation[] = [];
   const storedKeys = new Map<string, Set<string>>();
   let inboundAttempt = 0;
-  const rpc = vi.fn().mockImplementation(async () =>
+  let riskEventFailed = false;
+  const bindings = new Map<string, string>();
+  const bindingCommandsByClientMessage = new Map<string, string>();
+  const rpc = vi.fn().mockImplementation(async (name: string, args: Record<string, unknown>) => {
+    if (name === "bind_orchestration_persistence") {
+      if (!options.enforceBinding) return { data: { duplicate: false }, error: null };
+      const commandId = String(args.p_command_id);
+      const clientMessageId = String(args.p_client_message_id);
+      const payload = JSON.stringify(args.p_payload_json);
+      const existing = bindings.get(commandId);
+      const existingClientCommand = bindingCommandsByClientMessage.get(clientMessageId);
+      if (
+        (existing !== undefined && existing !== payload) ||
+        (existingClientCommand !== undefined && existingClientCommand !== commandId)
+      ) {
+        return {
+          data: null,
+          error: { code: "PT409", message: "Persistence replay payload conflict" },
+        };
+      }
+      bindings.set(commandId, payload);
+      bindingCommandsByClientMessage.set(clientMessageId, commandId);
+      return { data: { duplicate: existing !== undefined }, error: null };
+    }
+    return (
     options.rpcError
       ? { data: null, error: options.rpcError }
       : {
@@ -55,7 +81,8 @@ function createServiceClient(
           },
           error: null,
         }
-  );
+    );
+  });
 
   function responseFor(operation: Operation) {
     if (operation.kind === "select" && operation.table === "check_ins") {
@@ -94,6 +121,14 @@ function createServiceClient(
         operation.table
       )
     ) {
+      if (
+        operation.table === "risk_events" &&
+        options.failRiskEventOnce &&
+        !riskEventFailed
+      ) {
+        riskEventFailed = true;
+        return { data: null, error: { message: "injected risk event failure" } };
+      }
       rememberRows(operation);
     }
     if (
@@ -227,7 +262,7 @@ const briefing: BriefingOutput = {
   recommendedActions: ["Call today"],
 };
 
-const orchestrationResult: OrchestrateResponse = {
+const orchestrationResult = {
   messages: [{ text: "Have you had some water?", agentId: "triage" }],
   traces: [
     {
@@ -263,7 +298,12 @@ const orchestrationResult: OrchestrateResponse = {
     reasoning: ["Appetite concern"],
   },
   briefing,
-};
+} as unknown as OrchestrationResult;
+Object.defineProperty(orchestrationResult, "contextMemoryCandidates", {
+  configurable: true,
+  value: [],
+  enumerable: false,
+});
 
 function payloadsFor(operations: Operation[], table: string): unknown[] {
   return operations
@@ -347,9 +387,7 @@ describe("TrustKaki persistence senior identity", () => {
     });
     createTrustKakiServiceClientMock.mockReturnValue(service.client);
     const { persistOrchestrationResult } = await import("./trustkakiRepository");
-    const resultWithMemory = orchestrationResult as OrchestrateResponse & {
-      contextMemoryCandidates: unknown[];
-    };
+    const resultWithMemory = orchestrationResult;
     Object.defineProperty(resultWithMemory, "contextMemoryCandidates", {
       configurable: true,
       value: [{
@@ -396,9 +434,7 @@ describe("TrustKaki persistence senior identity", () => {
     const service = createServiceClient();
     createTrustKakiServiceClientMock.mockReturnValue(service.client);
     const { persistOrchestrationResult } = await import("./trustkakiRepository");
-    const resultWithDuplicates = orchestrationResult as OrchestrateResponse & {
-      contextMemoryCandidates: unknown[];
-    };
+    const resultWithDuplicates = orchestrationResult;
     Object.defineProperty(resultWithDuplicates, "contextMemoryCandidates", {
       configurable: true,
       value: [
@@ -438,7 +474,9 @@ describe("TrustKaki persistence senior identity", () => {
       result: resultWithDuplicates,
     });
 
-    expect(service.rpc).not.toHaveBeenCalled();
+    expect(
+      service.rpc.mock.calls.filter(([name]) => name === "apply_automatic_senior_context")
+    ).toHaveLength(0);
     expect(persistence).toMatchObject({
       persisted: true,
       memory: {
@@ -450,18 +488,89 @@ describe("TrustKaki persistence senior identity", () => {
     expect(service.storedKeys.get("alerts")?.size).toBe(1);
   });
 
+  it("binds the complete private payload before writes and rejects changed replay input", async () => {
+    const service = createServiceClient({}, {
+      inboundInsertedSequence: [true, false],
+      enforceBinding: true,
+    });
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { persistOrchestrationResult } = await import("./trustkakiRepository");
+    const result = orchestrationResult;
+    Object.defineProperty(result, "contextMemoryCandidates", {
+      configurable: true,
+      value: [{
+        targetStore: "memory",
+        contextKey: "meal_preference",
+        contextType: "food_preference",
+        content: "Prefers porridge for breakfast",
+        sourceMessageId: "message-b-1",
+        evidenceExcerpt: "Not hungry today.",
+        confidence: 0.93,
+        applicationTags: ["practical_meal_prompt"],
+        retentionClass: "preference",
+      }],
+      enumerable: false,
+    });
+    const request = {
+      seniorId: SENIOR_B,
+      message: "Not hungry today.",
+      clientMessageId: "message-b-1",
+      context,
+      result,
+    };
+
+    await persistOrchestrationResult(request);
+    expect(service.rpc.mock.invocationCallOrder[0]).toBeLessThan(
+      service.client.from.mock.invocationCallOrder[0]
+    );
+    await expect(persistOrchestrationResult(request)).resolves.toMatchObject({
+      persisted: true,
+      replayed: true,
+    });
+    const operationsBeforeConflict = service.operations.length;
+    const changedResult = { ...result } as typeof result;
+    Object.defineProperty(changedResult, "contextMemoryCandidates", {
+      value: [{
+        ...result.contextMemoryCandidates[0],
+        content: "Prefers rice for breakfast",
+      }],
+      enumerable: false,
+    });
+
+    const changedPublicResult = {
+      ...result,
+      messages: [{ ...result.messages[0], text: "A changed reply" }],
+    } as typeof result;
+    Object.defineProperty(changedPublicResult, "contextMemoryCandidates", {
+      value: result.contextMemoryCandidates,
+      enumerable: false,
+    });
+    for (const changedRequest of [
+      { ...request, message: "Changed inbound text." },
+      { ...request, result: changedPublicResult },
+      { ...request, result: changedResult },
+      { ...request, seniorId: "00000000-0000-4000-8000-00000000000c" },
+    ]) {
+      await expect(persistOrchestrationResult(changedRequest)).rejects.toThrow(
+        "Persistence replay payload conflict"
+      );
+    }
+
+    expect(service.operations).toHaveLength(operationsBeforeConflict);
+    expect(service.rpc.mock.calls[0]?.[0]).toBe("bind_orchestration_persistence");
+    expect(
+      service.rpc.mock.calls.filter(([name]) => name === "apply_automatic_senior_context")
+    ).toHaveLength(2);
+  });
+
   it("resumes a replay after a downstream failure and completes each artifact once", async () => {
     const service = createServiceClient({}, {
       inboundInsertedSequence: [true, false],
+      failRiskEventOnce: true,
     });
-    runPatternWatchForSeniorMock
-      .mockRejectedValueOnce(new Error("injected pattern watch failure"))
-      .mockResolvedValueOnce(undefined);
     createTrustKakiServiceClientMock.mockReturnValue(service.client);
     const { persistOrchestrationResult } = await import("./trustkakiRepository");
-    const resultWithMemory = orchestrationResult as OrchestrateResponse & {
-      contextMemoryCandidates: unknown[];
-    };
+    const resultWithMemory = orchestrationResult;
     Object.defineProperty(resultWithMemory, "contextMemoryCandidates", {
       configurable: true,
       value: [{
@@ -487,24 +596,24 @@ describe("TrustKaki persistence senior identity", () => {
     };
 
     await expect(persistOrchestrationResult(request)).rejects.toThrow(
-      "injected pattern watch failure"
+      "injected risk event failure"
     );
-    const persistence = await persistOrchestrationResult({
-      ...request,
-      result: JSON.parse(JSON.stringify(resultWithMemory)) as OrchestrateResponse,
-    });
+    expect(service.storedKeys.get("detected_signals")?.size).toBe(1);
+    expect(service.storedKeys.get("risk_events")).toBeUndefined();
+    expect(service.storedKeys.get("alerts")).toBeUndefined();
+    expect(service.storedKeys.get("briefs")).toBeUndefined();
+
+    const persistence = await persistOrchestrationResult(request);
 
     expect(persistence).toMatchObject({
       persisted: true,
       replayed: true,
-      memory: {
-        attempted: 0,
-        failed: 1,
-        failures: [{ stage: "extraction", category: "invalid_output" }],
-      },
+      memory: { attempted: 1, failed: 0 },
     });
-    expect(service.rpc).toHaveBeenCalledTimes(1);
-    expect(runPatternWatchForSeniorMock).toHaveBeenCalledTimes(2);
+    expect(
+      service.rpc.mock.calls.filter(([name]) => name === "apply_automatic_senior_context")
+    ).toHaveLength(2);
+    expect(runPatternWatchForSeniorMock).toHaveBeenCalledTimes(1);
     expect(service.storedKeys.get("messages")?.size).toBe(1);
     expect(service.storedKeys.get("agent_runs")?.size).toBe(1);
     expect(service.storedKeys.get("detected_signals")?.size).toBe(1);

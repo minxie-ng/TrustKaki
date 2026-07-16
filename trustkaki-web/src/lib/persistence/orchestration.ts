@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { z } from "zod";
 import { uncleTan } from "@/data/demo";
 import type {
   AgentRunContext,
@@ -142,6 +143,35 @@ export class AmbiguousMemoryCandidatesError extends Error {
   }
 }
 
+const publicOrchestrationResponseSchema = z.object({
+  messages: z.array(z.object({ text: z.string(), agentId: z.string() }).passthrough()),
+  traces: z.array(z.object({ id: z.string(), agentId: z.string() }).passthrough()),
+  alerts: z.array(z.unknown()),
+  riskLevel: z.enum(["green", "yellow", "red"]),
+  riskChange: z.enum(["none", "increase", "decrease"]),
+  signals: z.array(z.unknown()),
+  policy: z.object({
+    finalRisk: z.enum(["green", "yellow", "red"]),
+    riskChange: z.enum(["none", "increase", "decrease"]),
+    briefingRequired: z.boolean(),
+    alerts: z.array(z.unknown()),
+    reasoning: z.array(z.string()),
+  }).passthrough(),
+  briefing: z.unknown().nullable(),
+}).passthrough();
+
+const orchestrationRetryEnvelopeSchema = z.object({
+  version: z.literal(1),
+  publicResponse: publicOrchestrationResponseSchema,
+  contextMemoryCandidates: memoryCandidateSchema.array().max(8),
+}).strict();
+
+export interface OrchestrationRetryEnvelope {
+  version: 1;
+  publicResponse: OrchestrateResponse;
+  contextMemoryCandidates: MemoryCandidate[];
+}
+
 function uuidFromDigest(value: string): string {
   const bytes = Buffer.from(createHash("sha256").update(value).digest().subarray(0, 16));
   bytes[6] = (bytes[6] & 0x0f) | 0x50;
@@ -184,6 +214,19 @@ export function orchestrationArtifactId(args: {
   );
 }
 
+export function orchestrationPersistenceCommandId(args: {
+  seniorId: string;
+  clientMessageId: string;
+}): string {
+  return uuidFromDigest(
+    [
+      "trustkaki:orchestration-persistence:v1",
+      args.seniorId,
+      args.clientMessageId,
+    ].join(":")
+  );
+}
+
 export function requireInternalOrchestrationResult(
   result: OrchestrateResponse
 ): OrchestrationResult {
@@ -192,6 +235,36 @@ export function requireInternalOrchestrationResult(
     throw new InvalidInternalOrchestrationResultError();
   }
   return result as OrchestrationResult;
+}
+
+export function serializeOrchestrationRetryEnvelope(
+  result: OrchestrationResult
+): OrchestrationRetryEnvelope {
+  const internal = requireInternalOrchestrationResult(result);
+  const { contextMemoryCandidates: _privateCandidates, ...publicResponse } = internal;
+  void _privateCandidates;
+  const parsed = orchestrationRetryEnvelopeSchema.safeParse({
+    version: 1,
+    publicResponse,
+    contextMemoryCandidates: internal.contextMemoryCandidates,
+  });
+  if (!parsed.success) throw new Error("invalid orchestration retry envelope");
+  return parsed.data as unknown as OrchestrationRetryEnvelope;
+}
+
+export function restoreOrchestrationRetryEnvelope(
+  value: unknown
+): OrchestrationResult {
+  const parsed = orchestrationRetryEnvelopeSchema.safeParse(value);
+  if (!parsed.success) throw new Error("invalid orchestration retry envelope");
+  const result = {
+    ...parsed.data.publicResponse,
+  } as unknown as OrchestrationResult;
+  Object.defineProperty(result, "contextMemoryCandidates", {
+    value: parsed.data.contextMemoryCandidates,
+    enumerable: false,
+  });
+  return result;
 }
 
 function acceptedPayload(
@@ -241,6 +314,17 @@ function rejectionPayload(args: {
   };
 }
 
+export function validateAutomaticMemoryCandidateSet(
+  candidates: MemoryCandidate[]
+): void {
+  const candidateKeys = new Set<string>();
+  for (const candidate of candidates) {
+    const key = `${candidate.targetStore}:${normaliseContextKey(candidate.contextKey)}`;
+    if (candidateKeys.has(key)) throw new AmbiguousMemoryCandidatesError();
+    candidateKeys.add(key);
+  }
+}
+
 export function buildAutomaticMemoryCommands(args: {
   seniorId: string;
   clientMessageId: string;
@@ -251,12 +335,7 @@ export function buildAutomaticMemoryCommands(args: {
 }): AutomaticMemoryCommand[] {
   const candidates = requireInternalOrchestrationResult(args.result)
     .contextMemoryCandidates;
-  const candidateKeys = new Set<string>();
-  for (const candidate of candidates) {
-    const key = `${candidate.targetStore}:${normaliseContextKey(candidate.contextKey)}`;
-    if (candidateKeys.has(key)) throw new AmbiguousMemoryCandidatesError();
-    candidateKeys.add(key);
-  }
+  validateAutomaticMemoryCandidateSet(candidates);
 
   return candidates.map((candidate) => {
     const intent: AutomaticContextIntent = candidate.intent ?? "create";

@@ -11,6 +11,9 @@ import {
   buildManualBriefingPersistencePayload,
   buildOrchestrationPersistencePayload,
   dashboardSnapshotToData,
+  orchestrationPersistenceCommandId,
+  restoreOrchestrationRetryEnvelope,
+  serializeOrchestrationRetryEnvelope,
 } from "./orchestration";
 import type { OrchestrationResult } from "@/lib/agents/contracts";
 import type { MemoryCandidate } from "@/lib/memory/contracts";
@@ -179,6 +182,47 @@ describe("orchestration persistence mapping", () => {
       automaticContextCommandId({ ...input, targetStore: "memory" })
     ).not.toBe(
       automaticContextCommandId({ ...input, targetStore: "routine_baseline" })
+    );
+  });
+
+  it("round trips a versioned private retry envelope without exposing candidates in the public response", () => {
+    const internal = memoryResult([candidate()]);
+    const envelope = serializeOrchestrationRetryEnvelope(internal);
+    const roundTripped = JSON.parse(JSON.stringify(envelope));
+    const restored = restoreOrchestrationRetryEnvelope(roundTripped);
+
+    expect(roundTripped).toMatchObject({
+      version: 1,
+      publicResponse: expect.objectContaining({ riskLevel: "yellow" }),
+      contextMemoryCandidates: [expect.objectContaining({ contextKey: "Preferred Language" })],
+    });
+    expect(roundTripped.publicResponse).not.toHaveProperty("contextMemoryCandidates");
+    expect(restored.contextMemoryCandidates).toEqual([candidate()]);
+    expect(JSON.parse(JSON.stringify(restored))).not.toHaveProperty(
+      "contextMemoryCandidates"
+    );
+  });
+
+  it("rejects malformed and legacy public-only retry payloads", () => {
+    expect(() => restoreOrchestrationRetryEnvelope(response())).toThrow(
+      "invalid orchestration retry envelope"
+    );
+    expect(() =>
+      restoreOrchestrationRetryEnvelope({
+        version: 1,
+        publicResponse: response(),
+        contextMemoryCandidates: [{ contextKey: "incomplete" }],
+      })
+    ).toThrow("invalid orchestration retry envelope");
+  });
+
+  it("derives a stable replay binding command from senior and client message IDs", () => {
+    const input = { seniorId, clientMessageId };
+    expect(orchestrationPersistenceCommandId(input)).toBe(
+      orchestrationPersistenceCommandId(input)
+    );
+    expect(orchestrationPersistenceCommandId(input)).not.toBe(
+      orchestrationPersistenceCommandId({ ...input, clientMessageId: "message-b-2" })
     );
   });
 

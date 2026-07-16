@@ -1,7 +1,8 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
+import type { AgentRunContext, OrchestrationResult } from "@/lib/agents/contracts";
+import { serializeOrchestrationRetryEnvelope } from "./orchestration";
 import { createTrustKakiServiceClient } from "@/lib/supabase/server";
 import type {
   Database,
@@ -113,7 +114,7 @@ export async function listRetryableTelegramEvents(
 export async function storeTelegramOrchestrationResult(args: {
   eventId: string;
   context: AgentRunContext;
-  result: OrchestrateResponse;
+  result: OrchestrationResult;
   selectedReplyText: string | null;
   selectedReplyAgentId: AgentId | null;
   selectedReplyClientMessageId: string | null;
@@ -122,7 +123,7 @@ export async function storeTelegramOrchestrationResult(args: {
   const { error } = await client
     .from("telegram_webhook_events")
     .update({
-      orchestration_result: args.result as unknown as Json,
+      orchestration_result: serializeOrchestrationRetryEnvelope(args.result) as unknown as Json,
       orchestration_context: args.context as unknown as Json,
       selected_reply_text: args.selectedReplyText,
       selected_reply_agent_id: args.selectedReplyAgentId,

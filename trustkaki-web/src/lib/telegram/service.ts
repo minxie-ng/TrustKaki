@@ -1,9 +1,12 @@
 import "server-only";
 
-import type { AgentRunContext, OrchestrateResponse } from "@/lib/agents/contracts";
+import type { AgentRunContext, OrchestrateResponse, OrchestrationResult } from "@/lib/agents/contracts";
 import { orchestrate } from "@/lib/agents/orchestrator";
 import { selectSeniorReply } from "@/lib/messaging/selectSeniorReply";
-import { buildOutboundClientMessageId } from "@/lib/persistence/orchestration";
+import {
+  buildOutboundClientMessageId,
+  restoreOrchestrationRetryEnvelope,
+} from "@/lib/persistence/orchestration";
 import { loadSeniorContextByMessagingIdentity } from "@/lib/persistence/seniorContextRepository";
 import { recordSeniorResponse } from "@/lib/persistence/proactiveCheckInRepository";
 import {
@@ -90,6 +93,15 @@ function isAgentRunContext(value: unknown): value is AgentRunContext {
   );
 }
 
+function completedLegacyResult(value: OrchestrateResponse): OrchestrationResult {
+  const result = { ...value } as OrchestrationResult;
+  Object.defineProperty(result, "contextMemoryCandidates", {
+    value: [],
+    enumerable: false,
+  });
+  return result;
+}
+
 function inboundFromEvent(event: PersistedTelegramEvent): TelegramInbound | null {
   if (
     event.event_type !== "inbound_text" ||
@@ -118,7 +130,7 @@ async function getOrCreateOrchestration(args: {
 }): Promise<{
   seniorId: string;
   context: AgentRunContext;
-  result: OrchestrateResponse;
+  result: OrchestrationResult;
   replyText: string | null;
   replyAgentId: AgentId | null;
   replyClientMessageId: string | null;
@@ -130,20 +142,34 @@ async function getOrCreateOrchestration(args: {
   });
   if (!senior) throw new UnmappedTelegramSenderError();
 
-  if (
-    args.event.orchestration_result &&
-    args.event.orchestration_context &&
-    isOrchestrateResponse(args.event.orchestration_result) &&
-    isAgentRunContext(args.event.orchestration_context)
-  ) {
-    return {
-      seniorId: senior.seniorId,
-      context: args.event.orchestration_context,
-      result: args.event.orchestration_result,
-      replyText: args.event.selected_reply_text,
-      replyAgentId: args.event.selected_reply_agent_id,
-      replyClientMessageId: args.event.selected_reply_client_message_id,
-    };
+  if (args.event.orchestration_result && isAgentRunContext(args.event.orchestration_context)) {
+    try {
+      return {
+        seniorId: senior.seniorId,
+        context: args.event.orchestration_context,
+        result: restoreOrchestrationRetryEnvelope(args.event.orchestration_result),
+        replyText: args.event.selected_reply_text,
+        replyAgentId: args.event.selected_reply_agent_id,
+        replyClientMessageId: args.event.selected_reply_client_message_id,
+      };
+    } catch {
+      if (!isOrchestrateResponse(args.event.orchestration_result)) {
+        throw new Error("invalid cached orchestration retry envelope");
+      }
+      if (args.event.orchestration_completed_at) {
+        return {
+          seniorId: senior.seniorId,
+          context: args.event.orchestration_context,
+          result: completedLegacyResult(args.event.orchestration_result),
+          replyText: args.event.selected_reply_text,
+          replyAgentId: args.event.selected_reply_agent_id,
+          replyClientMessageId: args.event.selected_reply_client_message_id,
+        };
+      }
+      if (args.event.outbound_message_id || args.event.outbound_status === "accepted") {
+        throw new Error("legacy orchestration retry is unsafe after provider acceptance");
+      }
+    }
   }
 
   const inboundMessage: Message = {
@@ -187,7 +213,7 @@ async function persistOrchestrationIfNeeded(args: {
   inbound: TelegramInbound;
   seniorId: string;
   context: AgentRunContext;
-  result: OrchestrateResponse;
+  result: OrchestrationResult;
 }): Promise<void> {
   if (args.event.orchestration_completed_at) return;
 

@@ -1357,6 +1357,15 @@ export interface Database {
         };
         Returns: Json;
       };
+      bind_orchestration_persistence: {
+        Args: {
+          p_command_id: string;
+          p_senior_id: string;
+          p_client_message_id: string;
+          p_payload_json: Json;
+        };
+        Returns: Json;
+      };
       finalize_proactive_check_in_timeout: {
         Args: { p_job_id: string; p_worker_id: string; p_now: string };
         Returns: Json;

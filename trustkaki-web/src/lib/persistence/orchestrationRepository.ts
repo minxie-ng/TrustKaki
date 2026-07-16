@@ -5,7 +5,9 @@ import type {
   AgentRunResult,
   BriefingOutput,
   OrchestrateResponse,
+  OrchestrationResult,
 } from "@/lib/agents/contracts";
+import type { Json } from "@/lib/supabase/types";
 import {
   AmbiguousMemoryCandidatesError,
   buildAutomaticMemoryCommands,
@@ -13,7 +15,10 @@ import {
   buildOrchestrationPersistencePayload,
   InvalidInternalOrchestrationResultError,
   orchestrationArtifactId,
+  orchestrationPersistenceCommandId,
   requireInternalOrchestrationResult,
+  serializeOrchestrationRetryEnvelope,
+  validateAutomaticMemoryCandidateSet,
   type ManualBriefingPersistencePayload,
   type OrchestrationPersistencePayload,
   type PersistenceMeta,
@@ -174,6 +179,7 @@ async function persistAutomaticMemory(args: {
   persistedInboundCreatedAt: string;
   context: AgentRunContext;
   result: OrchestrateResponse;
+  preflightError?: AmbiguousMemoryCandidatesError;
 }): Promise<MemoryPersistenceSummary> {
   const summary = emptyMemorySummary();
   const extractionTrace = args.result.traces.find(
@@ -182,6 +188,12 @@ async function persistAutomaticMemory(args: {
   if (extractionTrace) {
     summary.failed += 1;
     summary.failures.push({ stage: "extraction", category: "provider_error" });
+  }
+
+  if (args.preflightError) {
+    summary.failed += 1;
+    summary.failures.push({ stage: "policy", category: "invalid_output" });
+    return summary;
   }
 
   let commands;
@@ -222,6 +234,42 @@ async function persistAutomaticMemory(args: {
     }
   }
   return summary;
+}
+
+async function bindOrchestrationPersistence(args: {
+  client: TrustKakiClient;
+  seniorId: string;
+  message: string;
+  clientMessageId: string;
+  context: AgentRunContext;
+  result: OrchestrationResult;
+  payload: OrchestrationPersistencePayload;
+}): Promise<boolean> {
+  const commandId = orchestrationPersistenceCommandId(args);
+  const { data, error } = await args.client.rpc("bind_orchestration_persistence", {
+    p_command_id: commandId,
+    p_senior_id: args.seniorId,
+    p_client_message_id: args.clientMessageId,
+    p_payload_json: {
+      version: 1,
+      seniorId: args.seniorId,
+      clientMessageId: args.clientMessageId,
+      inboundText: args.message,
+      context: args.context,
+      orchestration: serializeOrchestrationRetryEnvelope(args.result),
+      persistence: args.payload,
+    } as unknown as Json,
+  });
+  throwIfError(error, "bind orchestration persistence");
+  if (
+    !data ||
+    typeof data !== "object" ||
+    Array.isArray(data) ||
+    typeof (data as { duplicate?: unknown }).duplicate !== "boolean"
+  ) {
+    throw new Error("bind orchestration persistence: invalid RPC response");
+  }
+  return (data as { duplicate: boolean }).duplicate;
 }
 
 export async function upsertAgentRuns(
@@ -405,13 +453,25 @@ export async function persistOrchestrationResult(args: {
   message: string;
   clientMessageId: string;
   context: AgentRunContext;
-  result: OrchestrateResponse;
+  result: OrchestrationResult;
 }): Promise<PersistenceMeta> {
   const client = getClient();
   if (!client) return localDemoMeta();
 
-  const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
+  const result = requireInternalOrchestrationResult(args.result);
+  let memoryPreflightError: AmbiguousMemoryCandidatesError | undefined;
+  try {
+    validateAutomaticMemoryCandidateSet(result.contextMemoryCandidates);
+  } catch (error) {
+    if (error instanceof AmbiguousMemoryCandidatesError) {
+      memoryPreflightError = error;
+    } else {
+      throw error;
+    }
+  }
   const payload = buildOrchestrationPersistencePayload(args);
+  await bindOrchestrationPersistence({ ...args, client, result, payload });
+  const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
 
   const inbound = await upsertInboundMessage(
     client,
@@ -427,6 +487,7 @@ export async function persistOrchestrationResult(args: {
     persistedInboundCreatedAt: inbound.createdAt,
     context: args.context,
     result: args.result,
+    preflightError: memoryPreflightError,
   });
   await upsertMessages(client, checkIn.id, payload.outboundMessages, args.seniorId);
   const agentRuns = await upsertAgentRuns(client, checkIn.id, payload.agentRuns);
