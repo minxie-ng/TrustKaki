@@ -549,6 +549,8 @@ export interface Database {
           last_error_category: string | null;
           completed_at: string | null;
           cancelled_at: string | null;
+          send_intent_at: string | null;
+          send_reconciliation_required_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -570,6 +572,8 @@ export interface Database {
           last_error_category?: string | null;
           completed_at?: string | null;
           cancelled_at?: string | null;
+          send_intent_at?: string | null;
+          send_reconciliation_required_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

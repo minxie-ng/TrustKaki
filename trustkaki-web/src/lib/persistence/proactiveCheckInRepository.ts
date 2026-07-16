@@ -76,6 +76,10 @@ const completionResultSchema = z.object({
   duplicate: z.boolean(),
 });
 
+const sendIntentResultSchema = z.object({
+  result: z.enum(["send_ready", "reconciliation_required"]),
+});
+
 const workflowResultSchema = z.object({
   result: z.string().min(1),
   workflow_id: uuidSchema.optional(),
@@ -412,6 +416,34 @@ export async function recordProviderAcceptance(args: {
     { onConflict: "client_message_id" }
   );
   if (error) throw new Error("Proactive outbound acceptance persistence failed");
+}
+
+export async function beginSendIntent(args: {
+  jobId: string;
+  workerId: string;
+  now: string;
+}) {
+  const data = await serviceRpc("begin_proactive_check_in_send", {
+    p_job_id: uuidSchema.parse(args.jobId),
+    p_worker_id: z.string().trim().min(1).max(100).parse(args.workerId),
+    p_now: timestampSchema.parse(args.now),
+  });
+  return sendIntentResultSchema.parse(data);
+}
+
+export async function markSendUncertain(args: {
+  jobId: string;
+  workerId: string;
+  errorCategory: string;
+  now: string;
+}): Promise<void> {
+  const data = await serviceRpc("mark_proactive_send_uncertain", {
+    p_job_id: uuidSchema.parse(args.jobId),
+    p_worker_id: z.string().trim().min(1).max(100).parse(args.workerId),
+    p_error_category: z.string().trim().min(1).max(80).parse(args.errorCategory),
+    p_now: timestampSchema.parse(args.now),
+  });
+  z.null().parse(data);
 }
 
 export async function completeJob(args: {

@@ -1,6 +1,7 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { processDueProactiveJobs } from "@/lib/checkins/service";
+import { retryPendingTelegramEvents } from "@/lib/telegram/service";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -27,6 +28,7 @@ async function processRequest(request: NextRequest) {
   }
 
   try {
+    await retryPendingTelegramEvents({ limit: PROCESS_LIMIT });
     const result = await processDueProactiveJobs({
       limit: PROCESS_LIMIT,
       workerId: `check-in-${randomUUID()}`,

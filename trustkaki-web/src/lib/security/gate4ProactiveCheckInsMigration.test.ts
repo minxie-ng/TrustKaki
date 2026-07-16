@@ -11,6 +11,15 @@ function migrationSql() {
   return readFileSync(join(directory, file), "utf8").toLowerCase();
 }
 
+function auditRemediationSql() {
+  const directory = join(process.cwd(), "supabase/migrations");
+  const file = readdirSync(directory).find((name) =>
+    name.endsWith("_gate_4_delivery_race_remediation.sql")
+  );
+  if (!file) throw new Error("Gate 4 delivery-race remediation migration is missing");
+  return readFileSync(join(directory, file), "utf8").toLowerCase();
+}
+
 describe("Gate 4 proactive check-in migration", () => {
   it("defines bounded schedules, workflows, and durable idempotent jobs", () => {
     const sql = migrationSql();
@@ -81,5 +90,26 @@ describe("Gate 4 proactive check-in migration", () => {
     expect(sql).toContain("create or replace function trustkaki_private.next_proactive_check_in_run");
     expect(sql).toContain("for v_day_offset in 0..8 loop");
     expect(sql).not.toContain("v_offset integer");
+  });
+
+  it("guards claimed-job transitions against a concurrent senior response", () => {
+    const sql = auditRemediationSql();
+
+    expect(sql).toContain("v_expected_workflow_status");
+    expect(sql).toContain("job claim is stale");
+    expect(sql).toContain("status = 'responded'");
+    expect(sql).toContain("status in ('pending', 'failed', 'running')");
+    expect(sql).toContain("initial_sent_at <= p_responded_at");
+    expect(sql).not.toContain("started_at <= p_responded_at");
+  });
+
+  it("persists send intent and provides a terminal uncertain-delivery command", () => {
+    const sql = auditRemediationSql();
+
+    expect(sql).toContain("send_intent_at timestamptz");
+    expect(sql).toContain("begin_proactive_check_in_send");
+    expect(sql).toContain("mark_proactive_send_uncertain");
+    expect(sql).toContain("send_reconciliation_required");
+    expect(sql).toContain("to service_role");
   });
 });

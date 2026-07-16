@@ -26,11 +26,21 @@ function request(args?: { authorization?: string; limit?: number }): NextRequest
   });
 }
 
+function getRequest(authorization?: string): NextRequest {
+  const headers = new Headers();
+  if (authorization) headers.set("authorization", authorization);
+  return new NextRequest("http://localhost/api/internal/telegram/process-pending", {
+    method: "GET",
+    headers,
+  });
+}
+
 describe("/api/internal/telegram/process-pending", () => {
   beforeEach(() => {
     mocks.retryPendingTelegramEvents.mockReset();
     mocks.logTelegramError.mockReset();
     delete process.env.TELEGRAM_INTERNAL_PROCESSOR_SECRET;
+    delete process.env.CRON_SECRET;
   });
 
   it("is unavailable when the processor secret is not configured", async () => {
@@ -79,5 +89,23 @@ describe("/api/internal/telegram/process-pending", () => {
       statuses: ["processed", "senior_not_found", "error"],
     });
     expect(JSON.stringify(body)).not.toContain("processor_secret");
+  });
+
+  it("supports the same protected bounded processing from Vercel Cron GET", async () => {
+    const { GET } = await import("./route");
+    process.env.CRON_SECRET = "cron_secret";
+    mocks.retryPendingTelegramEvents.mockResolvedValue({
+      processed: 1,
+      failed: 0,
+      skipped: 0,
+      statuses: ["processed"],
+    });
+
+    const response = await GET(getRequest("Bearer cron_secret"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.retryPendingTelegramEvents).toHaveBeenCalledWith({ limit: 10 });
+    expect(body).toMatchObject({ status: "processed", processed: 1, failed: 0 });
   });
 });

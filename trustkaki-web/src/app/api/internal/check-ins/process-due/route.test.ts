@@ -4,9 +4,14 @@ import { NextRequest } from "next/server";
 vi.mock("server-only", () => ({}));
 
 const processDueProactiveJobsMock = vi.fn();
+const retryPendingTelegramEventsMock = vi.fn();
 
 vi.mock("@/lib/checkins/service", () => ({
   processDueProactiveJobs: processDueProactiveJobsMock,
+}));
+
+vi.mock("@/lib/telegram/service", () => ({
+  retryPendingTelegramEvents: retryPendingTelegramEventsMock,
 }));
 
 function request(method: "GET" | "POST", authorization?: string) {
@@ -20,6 +25,13 @@ describe("/api/internal/check-ins/process-due", () => {
   beforeEach(() => {
     vi.resetModules();
     processDueProactiveJobsMock.mockReset();
+    retryPendingTelegramEventsMock.mockReset();
+    retryPendingTelegramEventsMock.mockResolvedValue({
+      processed: 0,
+      failed: 0,
+      skipped: 0,
+      statuses: [],
+    });
     delete process.env.CRON_SECRET;
   });
 
@@ -70,6 +82,10 @@ describe("/api/internal/check-ins/process-due", () => {
     expect(processDueProactiveJobsMock).toHaveBeenCalledWith(
       expect.objectContaining({ limit: 10 })
     );
+    expect(retryPendingTelegramEventsMock).toHaveBeenCalledWith({ limit: 10 });
+    expect(
+      retryPendingTelegramEventsMock.mock.invocationCallOrder[0]
+    ).toBeLessThan(processDueProactiveJobsMock.mock.invocationCallOrder[0]);
     expect(json).toEqual({ status: "processed", claimed: 3, processed: 2, failed: 1 });
   });
 

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -67,5 +67,36 @@ describe("deployment hardening", () => {
         expect(contents, `${file} must not reference ${key}`).not.toContain(key);
       }
     }
+  });
+
+  it("uses a Hobby-compatible Supabase cadence for Telegram recovery and deadlines", () => {
+    const config = JSON.parse(source("vercel.json")) as {
+      crons?: Array<{ path: string; schedule: string }>;
+    };
+    const migrations = readdirSync(join(process.cwd(), "supabase/migrations"));
+    const scheduler = migrations.find((name) =>
+      name.endsWith("_gate_4_supabase_scheduler.sql")
+    );
+    expect(scheduler).toBeTruthy();
+    const sql = source(`supabase/migrations/${scheduler}`);
+
+    expect(config.crons ?? []).toEqual([]);
+    expect(sql).toContain("cron.schedule");
+    expect(sql).toContain("*/5 * * * *");
+    expect(sql).toContain("/api/internal/check-ins/process-due");
+    expect(sql).toContain("trustkaki_cron_secret");
+    expect(sql).toContain("trustkaki_base_url");
+  });
+
+  it("keeps the scheduler networking extension out of the public schema", () => {
+    const migrations = readdirSync(join(process.cwd(), "supabase/migrations"));
+    const remediation = migrations.find((name) =>
+      name.endsWith("_gate_4_scheduler_extension_schema.sql")
+    );
+
+    expect(remediation).toBeTruthy();
+    expect(source(`supabase/migrations/${remediation}`)).toContain(
+      "create extension pg_net with schema extensions"
+    );
   });
 });

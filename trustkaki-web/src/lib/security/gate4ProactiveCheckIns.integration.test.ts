@@ -209,6 +209,28 @@ describeDatabase("Gate 4 proactive check-in integration", () => {
 
     const winner = String(claims[0].claimed_by);
     const nextAt = new Date(Date.parse(now) + 7_200_000).toISOString();
+    const acceptedCheckIn = await serviceA
+      .from("check_ins")
+      .insert({
+        senior_id: sharedSeniorId,
+        status: "active",
+        risk_before: "green",
+        risk_after: "green",
+      })
+      .select("id")
+      .single();
+    expect(acceptedCheckIn.error).toBeNull();
+    const acceptance = await serviceA.from("messages").insert({
+      check_in_id: acceptedCheckIn.data!.id,
+      senior_id: sharedSeniorId,
+      sender: "trustkaki",
+      text: "Good morning. How are you today?",
+      client_message_id: `gate4-message-${workflowId}`,
+      external_platform: "telegram",
+      external_message_id: `telegram-${randomUUID()}`,
+      created_at: now,
+    });
+    expect(acceptance.error).toBeNull();
     const first = await serviceA.rpc("advance_proactive_check_in_job", {
       p_job_id: jobId,
       p_worker_id: winner,
@@ -312,6 +334,157 @@ describeDatabase("Gate 4 proactive check-in integration", () => {
     expect(workflow.data?.status).toBe("responded");
     expect(pendingJob.data?.status).toBe("cancelled");
     expect(queue.data).toEqual([]);
+  });
+
+  it("keeps a timely response authoritative against a claimed deadline job", async () => {
+    const raceWorkflowId = randomUUID();
+    const raceJobId = randomUUID();
+    const checkInId = randomUUID();
+    const clientMessageId = `gate4-race-${randomUUID()}`;
+    const initialSentAt = new Date(Date.now() - 60_000).toISOString();
+    const respondedAt = new Date().toISOString();
+    const workerId = `gate4-race-worker-${randomUUID()}`;
+
+    const inserts = await Promise.all([
+      serviceA.from("proactive_check_in_workflows").insert({
+        id: raceWorkflowId,
+        schedule_id: scheduleId,
+        senior_id: sharedSeniorId,
+        status: "awaiting_initial_response",
+        started_at: initialSentAt,
+        initial_sent_at: initialSentAt,
+      }),
+      serviceA.from("check_ins").insert({
+        id: checkInId,
+        senior_id: sharedSeniorId,
+        status: "active",
+        risk_before: "green",
+        risk_after: "green",
+      }),
+      serviceA.from("scheduled_jobs").insert({
+        id: raceJobId,
+        senior_id: sharedSeniorId,
+        job_type: "morning_check_in",
+        status: "running",
+        scheduled_for: respondedAt,
+        next_eligible_at: respondedAt,
+        schedule_id: scheduleId,
+        workflow_id: raceWorkflowId,
+        stage: "initial_deadline",
+        idempotency_key: `gate4:${raceWorkflowId}:initial_deadline`,
+        claimed_by: workerId,
+        claim_expires_at: new Date(Date.now() + 300_000).toISOString(),
+        payload: {},
+      }),
+    ]);
+    expect(inserts.every(({ error }) => error === null)).toBe(true);
+    const message = await serviceA.from("messages").insert({
+      check_in_id: checkInId,
+      senior_id: sharedSeniorId,
+      sender: "senior",
+      text: "I am okay, thank you.",
+      client_message_id: clientMessageId,
+      created_at: respondedAt,
+    });
+    expect(message.error).toBeNull();
+
+    const [response, advancement] = await Promise.all([
+      serviceA.rpc("record_proactive_check_in_response", {
+        p_senior_id: sharedSeniorId,
+        p_client_message_id: clientMessageId,
+        p_responded_at: respondedAt,
+      }),
+      serviceB.rpc("advance_proactive_check_in_job", {
+        p_job_id: raceJobId,
+        p_worker_id: workerId,
+        p_next_stage: "retry_send",
+        p_next_scheduled_for: respondedAt,
+        p_client_message_id: `gate4-race-ready-${randomUUID()}`,
+        p_now: respondedAt,
+      }),
+    ]);
+    const [workflow, activeJobs, queue] = await Promise.all([
+      serviceA
+        .from("proactive_check_in_workflows")
+        .select("status")
+        .eq("id", raceWorkflowId)
+        .single(),
+      serviceA
+        .from("scheduled_jobs")
+        .select("id")
+        .eq("workflow_id", raceWorkflowId)
+        .in("status", ["pending", "failed", "running"]),
+      serviceA
+        .from("caregiver_queue_items")
+        .select("id")
+        .eq("source_id", raceWorkflowId),
+    ]);
+
+    expect(response.error).toBeNull();
+    expect([null, "PT409"]).toContain(advancement.error?.code ?? null);
+    expect(workflow.data?.status).toBe("responded");
+    expect(activeJobs.data).toEqual([]);
+    expect(queue.data).toEqual([]);
+  });
+
+  it("does not correlate a message received before provider acceptance", async () => {
+    const correlationWorkflowId = randomUUID();
+    const checkInId = randomUUID();
+    const clientMessageId = `gate4-correlation-${randomUUID()}`;
+    const startedAt = new Date(Date.now() - 120_000).toISOString();
+    const respondedAt = new Date(Date.now() - 60_000).toISOString();
+    const initialSentAt = new Date().toISOString();
+
+    const inserts = await Promise.all([
+      serviceA.from("proactive_check_in_workflows").insert({
+        id: correlationWorkflowId,
+        schedule_id: scheduleId,
+        senior_id: sharedSeniorId,
+        status: "awaiting_initial_response",
+        started_at: startedAt,
+        initial_sent_at: initialSentAt,
+      }),
+      serviceA.from("check_ins").insert({
+        id: checkInId,
+        senior_id: sharedSeniorId,
+        status: "active",
+        risk_before: "green",
+        risk_after: "green",
+      }),
+    ]);
+    expect(inserts.every(({ error }) => error === null)).toBe(true);
+    const message = await serviceA.from("messages").insert({
+      check_in_id: checkInId,
+      senior_id: sharedSeniorId,
+      sender: "senior",
+      text: "This message belongs to the earlier conversation.",
+      client_message_id: clientMessageId,
+      created_at: respondedAt,
+    });
+    expect(message.error).toBeNull();
+
+    const response = await serviceA.rpc("record_proactive_check_in_response", {
+      p_senior_id: sharedSeniorId,
+      p_client_message_id: clientMessageId,
+      p_responded_at: respondedAt,
+    });
+    const workflow = await serviceA
+      .from("proactive_check_in_workflows")
+      .select("status, response_message_id")
+      .eq("id", correlationWorkflowId)
+      .single();
+
+    expect(response.error).toBeNull();
+    expect(response.data).toMatchObject({ result: "no_open_workflow" });
+    expect(workflow.data).toMatchObject({
+      status: "awaiting_initial_response",
+      response_message_id: null,
+    });
+    const cleanup = await serviceA
+      .from("proactive_check_in_workflows")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", correlationWorkflowId);
+    expect(cleanup.error).toBeNull();
   });
 
   it("creates one Yellow case and records a repeated late response once", async () => {

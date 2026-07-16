@@ -273,6 +273,49 @@ describe("proactive check-in repository", () => {
     ]);
   });
 
+  it("uses transactional database commands for send intent and uncertain delivery", async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { result: "send_ready" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
+    createTrustKakiServiceClientMock.mockReturnValue({ rpc });
+    const repository = await import("./proactiveCheckInRepository");
+
+    await expect(
+      repository.beginSendIntent({
+        jobId: "00000000-0000-4000-8000-000000000104",
+        workerId: "worker-a",
+        now: "2026-07-15T01:00:00.000Z",
+      })
+    ).resolves.toEqual({ result: "send_ready" });
+    await repository.markSendUncertain({
+      jobId: "00000000-0000-4000-8000-000000000104",
+      workerId: "worker-a",
+      errorCategory: "uncertain_provider_outcome",
+      now: "2026-07-15T01:00:01.000Z",
+    });
+
+    expect(rpc.mock.calls).toEqual([
+      [
+        "begin_proactive_check_in_send",
+        {
+          p_job_id: "00000000-0000-4000-8000-000000000104",
+          p_worker_id: "worker-a",
+          p_now: "2026-07-15T01:00:00.000Z",
+        },
+      ],
+      [
+        "mark_proactive_send_uncertain",
+        {
+          p_job_id: "00000000-0000-4000-8000-000000000104",
+          p_worker_id: "worker-a",
+          p_error_category: "uncertain_provider_outcome",
+          p_now: "2026-07-15T01:00:01.000Z",
+        },
+      ],
+    ]);
+  });
+
   it("rejects malformed database results", async () => {
     createTrustKakiServiceClientMock.mockReturnValue({
       rpc: vi.fn().mockResolvedValue({ data: [{ id: "not-a-uuid" }], error: null }),

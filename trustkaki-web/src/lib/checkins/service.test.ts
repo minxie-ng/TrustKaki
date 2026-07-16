@@ -47,6 +47,8 @@ function setup(stage: ClaimedProactiveJob["stage"]) {
     })),
     findTelegramChatIdForSenior: vi.fn(async () => "chat-123"),
     findAcceptedOutbound: vi.fn(async () => null),
+    beginSendIntent: vi.fn(async () => ({ result: "send_ready" as const })),
+    markSendUncertain: vi.fn(async () => undefined),
     recordProviderAcceptance: vi.fn(async () => {
       calls.push("accepted");
     }),
@@ -77,6 +79,11 @@ describe("proactive check-in processor", () => {
       dependencies: fixture.dependencies,
     });
 
+    const intentCall = vi.mocked(fixture.dependencies.beginSendIntent).mock
+      .invocationCallOrder[0];
+    const sendCall = vi.mocked(fixture.outboundClient.sendText).mock
+      .invocationCallOrder[0];
+    expect(intentCall).toBeLessThan(sendCall);
     expect(fixture.calls).toEqual(["sent", "accepted", "completed"]);
     expect(fixture.dependencies.completeJob).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -104,6 +111,45 @@ describe("proactive check-in processor", () => {
     expect(fixture.outboundClient.sendText).not.toHaveBeenCalled();
     expect(fixture.dependencies.recordProviderAcceptance).not.toHaveBeenCalled();
     expect(fixture.dependencies.completeJob).toHaveBeenCalledOnce();
+  });
+
+  it("does not resend when an earlier send intent has an uncertain outcome", async () => {
+    const fixture = setup("initial_send");
+    vi.mocked(fixture.dependencies.beginSendIntent).mockResolvedValue({
+      result: "reconciliation_required",
+    });
+
+    const result = await processDueProactiveJobs({
+      limit: 10,
+      workerId: "worker-1",
+      now,
+      outboundClient: fixture.outboundClient,
+      dependencies: fixture.dependencies,
+    });
+
+    expect(fixture.outboundClient.sendText).not.toHaveBeenCalled();
+    expect(fixture.dependencies.markSendUncertain).toHaveBeenCalledOnce();
+    expect(fixture.dependencies.retryJob).not.toHaveBeenCalled();
+    expect(result).toEqual({ claimed: 1, processed: 0, failed: 1 });
+  });
+
+  it("marks the attempt uncertain instead of retrying after provider I/O begins", async () => {
+    const fixture = setup("initial_send");
+    vi.mocked(fixture.outboundClient.sendText).mockRejectedValue(
+      new Error("Telegram request outcome is unknown")
+    );
+
+    const result = await processDueProactiveJobs({
+      limit: 10,
+      workerId: "worker-1",
+      now,
+      outboundClient: fixture.outboundClient,
+      dependencies: fixture.dependencies,
+    });
+
+    expect(fixture.dependencies.markSendUncertain).toHaveBeenCalledOnce();
+    expect(fixture.dependencies.retryJob).not.toHaveBeenCalled();
+    expect(result).toEqual({ claimed: 1, processed: 0, failed: 1 });
   });
 
   it("moves an expired initial window to a separate retry-send job", async () => {
@@ -177,7 +223,7 @@ describe("proactive check-in processor", () => {
     );
   });
 
-  it("classifies transport failure and leaves the job retryable", async () => {
+  it("does not retry a transport failure after durable send intent", async () => {
     const fixture = setup("initial_send");
     vi.mocked(fixture.outboundClient.sendText).mockRejectedValue(
       new Error("Telegram send failed")
@@ -191,9 +237,8 @@ describe("proactive check-in processor", () => {
       dependencies: fixture.dependencies,
     });
 
-    expect(fixture.dependencies.retryJob).toHaveBeenCalledWith(
-      expect.objectContaining({ errorCategory: "telegram_transport" })
-    );
+    expect(fixture.dependencies.markSendUncertain).toHaveBeenCalledOnce();
+    expect(fixture.dependencies.retryJob).not.toHaveBeenCalled();
     expect(result).toEqual({ claimed: 1, processed: 0, failed: 1 });
   });
 });

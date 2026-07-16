@@ -214,14 +214,16 @@ The authenticated caregiver dashboard retained the senior's Yellow state,
 latest response, active follow-up item, and priority case after refresh. See
 `docs/superpowers/verification/2026-07-15-gate-3t-live-telegram.md`.
 
-Gate 4 proactive check-ins are implemented through Task 8 and ready for focused
-independent audit. Supabase stores admin-managed schedules, workflows, events,
+Gate 4 proactive check-ins and the focused audit remediation are implemented and
+ready for re-audit. Supabase stores admin-managed schedules, workflows, events,
 and atomically claimed jobs. The bounded processor sends one initial Telegram
 check-in, waits two hours, sends one gentle retry, waits one hour, and then
 creates one Yellow operational case without changing policy risk. Timely replies
-cancel pending work; late replies annotate but do not resolve the case. Three
-consecutive live Supabase runs passed 4/4, full validation passed with 367 tests,
-and temporary verification fixtures were removed. A real timely reply reached
+cancel pending or claimed work; stale workers cannot overwrite `responded`.
+Provider sends use durable intent and uncertain outcomes require reconciliation
+instead of automatic resend. Three consecutive live Supabase runs passed 6/6,
+full validation passed with 375 tests, and temporary verification fixtures were
+removed. A real timely reply reached
 the current production webhook, but Vercel still runs the pre-Gate-4 build; the
 same persisted event closed correctly through the current local processor. See
 `docs/superpowers/verification/2026-07-15-gate-4-proactive-check-ins.md` and do
@@ -343,17 +345,18 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Run one focused independent Gate 4 audit using
-`docs/superpowers/plans/2026-07-15-gate-4-proactive-check-ins.md` and
+Run one focused independent Gate 4 re-audit using
+`docs/superpowers/plans/2026-07-16-gate-4-audit-remediation.md` and
 `docs/superpowers/verification/2026-07-15-gate-4-proactive-check-ins.md`.
-The implementation, repeated live Supabase suite, real Telegram send,
+The remediated implementation, repeated live Supabase suite, real Telegram send,
 accelerated no-response workflow, and authenticated dashboard read pass. A real
 timely reply reached the production webhook, but Vercel is still on the older
-deployment; current code closed that same persisted event only when processed
-locally. Do not claim production Gate 4 operation until the audit passes, the
-reviewed commits are promoted, and one production timely-response workflow is
-rerun. Keep Gate 5 memory work, family fan-out, tenancy, and UI redesign out of
-the audit checkpoint.
+deployment. The Supabase Cron job is installed at five-minute cadence, but its
+Vault URL and credential remain intentionally absent so it cannot invoke the
+older production build. Do not claim production Gate 4 operation until the
+re-audit passes, the reviewed commits are promoted, Cron Vault values are
+activated, and one production timely-response workflow is rerun. Keep Gate 5
+memory work, family fan-out, tenancy, and UI redesign out of the audit checkpoint.
 
 ## Working rules
 - inspect before modifying

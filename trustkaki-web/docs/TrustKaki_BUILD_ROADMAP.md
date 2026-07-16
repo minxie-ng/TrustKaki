@@ -965,7 +965,7 @@ continuity channel and does not replace the implemented WhatsApp path.
 
 - [x] approve the bounded architecture and operating policy
 - [x] add senior-specific admin-managed schedules, quiet hours, and pause/resume
-- [x] add Vercel Cron with atomically claimed, idempotent Supabase jobs
+- [x] add Supabase Cron with atomically claimed, idempotent Supabase jobs
 - [x] send the initial Telegram check-in and wait two hours
 - [x] send exactly one gentle retry and wait one additional hour
 - [x] cancel pending work when the senior responds before escalation
@@ -980,11 +980,14 @@ Telegram is the first live transport; the existing WhatsApp path remains intact.
 
 Gate 4 implementation verification is recorded in
 `docs/superpowers/verification/2026-07-15-gate-4-proactive-check-ins.md`.
-The current code passed repeated live Supabase tests, a real Telegram send, the
-timely-response cancellation path, the initial-plus-retry no-response path, and
-an authenticated persisted dashboard read. The production Vercel deployment is
-still on the earlier build, so Gate 4 must pass independent audit and then be
-promoted before production Cron and webhook behavior are claimed live.
+The audit remediation adds workflow-state guards for claimed-job races, response
+correlation from the accepted initial send, durable send intent, uncertain-send
+reconciliation, and five-minute Supabase Cron recovery compatible with the
+current Vercel Hobby plan. The current code passed repeated live Supabase tests,
+a real Telegram send, the timely-response cancellation path, the
+initial-plus-retry no-response path, and an authenticated persisted dashboard
+read. The production Vercel deployment is still on the earlier build, and the
+Cron Vault values remain intentionally inactive until an approved promotion.
 
 #### Gate 5 — Memory Operationalisation
 
@@ -1014,9 +1017,10 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-Gate 4 is implemented and locally/live-database verified. The next step is one
-focused independent Gate 4 audit. If it passes, promote the reviewed commits to
-Vercel and rerun one real scheduled timely reply against production before
+Gate 4 audit remediation is implemented and locally/live-database verified. The
+next step is one focused independent Gate 4 re-audit. If it passes, approve the
+production promotion, activate the Cron Vault values, and rerun one real
+scheduled timely reply against production before
 starting Gate 5. Preserve the Telegram demo path and WhatsApp code. Do not mix
 the audit or deployment checkpoint with caregiver notification fan-out,
 organisation tenancy, memory operationalisation, or broad UI redesign.

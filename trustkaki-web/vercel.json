@@ -1,8 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/internal/check-ins/process-due",
-      "schedule": "*/5 * * * *"
-    }
-  ]
+  "crons": []
 }

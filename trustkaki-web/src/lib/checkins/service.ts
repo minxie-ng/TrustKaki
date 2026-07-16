@@ -1,11 +1,13 @@
 import "server-only";
 
 import {
+  beginSendIntent,
   claimDueJobs,
   completeJob,
   enqueueDueSchedules,
   finalizeTimeout,
   findAcceptedOutbound,
+  markSendUncertain,
   readProcessingSchedule,
   recordProviderAcceptance,
   retryJob,
@@ -19,12 +21,21 @@ import { isWithinQuietHours, nextProactiveAction } from "./policy";
 
 const PROCESSOR_RETRY_DELAY_MS = 5 * 60 * 1000;
 
+class UncertainProactiveSendError extends Error {
+  constructor() {
+    super("Proactive send requires reconciliation");
+    this.name = "UncertainProactiveSendError";
+  }
+}
+
 export interface ProactiveCheckInProcessorDependencies {
   enqueueDueSchedules: typeof enqueueDueSchedules;
   claimDueJobs: typeof claimDueJobs;
   readProcessingSchedule: (scheduleId: string) => Promise<ProactiveProcessingSchedule>;
   findTelegramChatIdForSenior: (seniorId: string) => Promise<string | null>;
   findAcceptedOutbound: typeof findAcceptedOutbound;
+  beginSendIntent: typeof beginSendIntent;
+  markSendUncertain: typeof markSendUncertain;
   recordProviderAcceptance: typeof recordProviderAcceptance;
   completeJob: typeof completeJob;
   retryJob: typeof retryJob;
@@ -37,6 +48,8 @@ const defaultDependencies: ProactiveCheckInProcessorDependencies = {
   readProcessingSchedule,
   findTelegramChatIdForSenior,
   findAcceptedOutbound,
+  beginSendIntent,
+  markSendUncertain,
   recordProviderAcceptance,
   completeJob,
   retryJob,
@@ -95,14 +108,43 @@ async function sendStage(args: {
       args.job.senior_id
     );
     if (!chatId) throw new Error("Telegram identity is unavailable");
-    const outbound = await args.outboundClient.sendText({ chatId, text });
-    await args.dependencies.recordProviderAcceptance({
-      seniorId: args.job.senior_id,
-      clientMessageId: messageId,
-      text,
-      externalMessageId: outbound.messageId,
-      acceptedAt: args.now,
+    const intent = await args.dependencies.beginSendIntent({
+      jobId: args.job.id,
+      workerId: args.job.claimed_by,
+      now: args.now,
     });
+    if (intent.result === "reconciliation_required") {
+      await args.dependencies
+        .markSendUncertain({
+          jobId: args.job.id,
+          workerId: args.job.claimed_by,
+          errorCategory: "unresolved_send_intent",
+          now: args.now,
+        })
+        .catch(() => undefined);
+      throw new UncertainProactiveSendError();
+    }
+
+    try {
+      const outbound = await args.outboundClient.sendText({ chatId, text });
+      await args.dependencies.recordProviderAcceptance({
+        seniorId: args.job.senior_id,
+        clientMessageId: messageId,
+        text,
+        externalMessageId: outbound.messageId,
+        acceptedAt: args.now,
+      });
+    } catch {
+      await args.dependencies
+        .markSendUncertain({
+          jobId: args.job.id,
+          workerId: args.job.claimed_by,
+          errorCategory: "uncertain_provider_outcome",
+          now: args.now,
+        })
+        .catch(() => undefined);
+      throw new UncertainProactiveSendError();
+    }
   }
 
   await args.dependencies.completeJob({
@@ -201,12 +243,14 @@ export async function processDueProactiveJobs(args: {
       processed += 1;
     } catch (error) {
       failed += 1;
-      await deferJob({
-        job,
-        now: args.now,
-        category: errorCategory(error),
-        dependencies,
-      }).catch(() => undefined);
+      if (!(error instanceof UncertainProactiveSendError)) {
+        await deferJob({
+          job,
+          now: args.now,
+          category: errorCategory(error),
+          dependencies,
+        }).catch(() => undefined);
+      }
     }
   }
 
