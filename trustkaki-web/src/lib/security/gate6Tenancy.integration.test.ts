@@ -39,7 +39,7 @@ describeLive("Gate 6 organisation tenancy and revocation", () => {
   const caregiverIds = Array.from({ length: 6 }, () => randomUUID());
   const checkInIds = [randomUUID(), randomUUID()];
   const messageIds = [randomUUID(), randomUUID()];
-  const createdUserIds: string[] = [];
+  const pendingUserIds = new Set<string>();
   let service: SupabaseClient | undefined;
   let adminA: IdentityFixture;
   let staffA: IdentityFixture;
@@ -68,7 +68,7 @@ describeLive("Gate 6 organisation tenancy and revocation", () => {
     });
     requireSuccess(`Gate 6 ${label} auth creation`, created);
     if (!created.data.user) throw new Error(`Gate 6 ${label} auth user missing`);
-    createdUserIds.push(created.data.user.id);
+    pendingUserIds.add(created.data.user.id);
 
     requireSuccess(
       `Gate 6 ${label} caregiver creation`,
@@ -152,11 +152,13 @@ describeLive("Gate 6 organisation tenancy and revocation", () => {
       service.from("organisations").delete().in("id", organisationIds)
     );
 
-    for (const userId of createdUserIds) {
+    for (const userId of [...pendingUserIds]) {
       try {
         const deletion = await service.auth.admin.deleteUser(userId);
         if (deletion.error) {
           failures.push(boundedFailure("Gate 6 auth user cleanup", deletion.error));
+        } else {
+          pendingUserIds.delete(userId);
         }
       } catch {
         failures.push(boundedFailure("Gate 6 auth user cleanup", null));
