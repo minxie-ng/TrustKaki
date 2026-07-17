@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getSupabaseServerConfig } from "@/lib/supabase/config";
+import type { CheckInStatus } from "@/lib/supabase/types";
 import { assertTrustKakiLiveProjectIdentity } from "./liveProjectGuard";
 
 const describeLive = process.env.TRUSTKAKI_RUN_LIVE_SUPABASE === "1"
@@ -39,6 +40,7 @@ describeLive("Gate 6 organisation tenancy and revocation", () => {
   const caregiverIds = Array.from({ length: 6 }, () => randomUUID());
   const checkInIds = [randomUUID(), randomUUID()];
   const messageIds = [randomUUID(), randomUUID()];
+  const checkInStatus: CheckInStatus = "active";
   const pendingUserIds = new Set<string>();
   let service: SupabaseClient | undefined;
   let adminA: IdentityFixture;
@@ -253,8 +255,8 @@ describeLive("Gate 6 organisation tenancy and revocation", () => {
       requireSuccess(
         "Gate 6 check-in creation",
         await service.from("check_ins").insert([
-          { id: checkInIds[0], senior_id: seniorIds[0], status: "in_progress" },
-          { id: checkInIds[1], senior_id: seniorIds[2], status: "in_progress" },
+          { id: checkInIds[0], senior_id: seniorIds[0], status: checkInStatus },
+          { id: checkInIds[1], senior_id: seniorIds[2], status: checkInStatus },
         ])
       );
       requireSuccess(
