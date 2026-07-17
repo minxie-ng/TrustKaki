@@ -3,15 +3,213 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const createTrustKakiServiceClientMock = vi.fn();
+const createTrustKakiUserClientMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createTrustKakiServiceClient: createTrustKakiServiceClientMock,
+  createTrustKakiUserClient: createTrustKakiUserClientMock,
 }));
 
 const seniorId = "00000000-0000-4000-8000-000000000201";
 const sourceMessageId = "00000000-0000-4000-8000-000000000202";
 
 describe("memory repository", () => {
+  it("reads active senior context through the caregiver JWT without private fields", async () => {
+    const queries: Array<{
+      table: string;
+      columns?: string;
+      filters: Array<[string, unknown]>;
+      orFilters: string[];
+    }> = [];
+    const rowsByTable: Record<string, unknown[]> = {
+      senior_memories: [
+        {
+          id: "00000000-0000-4000-8000-000000000211",
+          context_key: "preferred_language",
+          memory_type: "communication_preference",
+          content: "Prefers concise Mandarin messages",
+          importance: 4,
+          safe_use_notes: "Use for message style only.",
+          application_tags: ["concise_text"],
+          extraction_method: "ai_extracted",
+          last_confirmed_at: "2026-07-16T02:00:00.000Z",
+          expires_at: null,
+          updated_at: "2026-07-16T02:00:00.000Z",
+          confidence: 0.99,
+          source_message_id: sourceMessageId,
+        },
+      ],
+      senior_health_contexts: [],
+      routine_baselines: [],
+    };
+    const from = vi.fn((table: string) => {
+      const query: (typeof queries)[number] = {
+        table,
+        filters: [],
+        orFilters: [],
+      };
+      queries.push(query);
+      const builder = {
+        select: vi.fn((columns: string) => {
+          query.columns = columns;
+          return builder;
+        }),
+        eq: vi.fn((column: string, value: unknown) => {
+          query.filters.push([column, value]);
+          return builder;
+        }),
+        or: vi.fn((filter: string) => {
+          query.orFilters.push(filter);
+          return builder;
+        }),
+        order: vi.fn(() => builder),
+        then: (
+          resolve: (value: { data: unknown[]; error: null }) => unknown,
+          reject: (reason: unknown) => unknown
+        ) =>
+          Promise.resolve({ data: rowsByTable[table] ?? [], error: null }).then(
+            resolve,
+            reject
+          ),
+      };
+      return builder;
+    });
+    createTrustKakiUserClientMock.mockReturnValue({ from });
+    const { readSeniorContext } = await import("./memoryRepository");
+
+    const result = await readSeniorContext({
+      accessToken: "caregiver-token",
+      seniorId,
+      now: "2026-07-17T00:00:00.000Z",
+    });
+
+    expect(createTrustKakiUserClientMock).toHaveBeenCalledWith("caregiver-token");
+    expect(result.items[0]).toEqual({
+      id: "00000000-0000-4000-8000-000000000211",
+      store: "memory",
+      contextKey: "preferred_language",
+      memoryType: "communication_preference",
+      content: "Prefers concise Mandarin messages",
+      importance: 4,
+      safeUseNotes: "Use for message style only.",
+      applicationTags: ["concise_text"],
+      source: "ai_extracted",
+      lastConfirmedAt: "2026-07-16T02:00:00.000Z",
+      expiresAt: null,
+      updatedAt: "2026-07-16T02:00:00.000Z",
+    });
+    expect(JSON.stringify(result)).not.toMatch(/confidence|sourceMessage|snapshot/i);
+    for (const query of queries) {
+      expect(query.filters).toEqual([
+        ["senior_id", seniorId],
+        ["status", "active"],
+      ]);
+      expect(query.orFilters[0]).toMatch(
+        /^expires_at\.is\.null,expires_at\.gt\./
+      );
+    }
+  });
+
+  it("binds archive commands to the admin JWT and maps stale conflicts", async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          store: "memory",
+          context_id: "00000000-0000-4000-8000-000000000211",
+          updated_at: "2026-07-17T01:00:00.000Z",
+          duplicate: false,
+        },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: null,
+        error: { code: "PT409" },
+      });
+    createTrustKakiUserClientMock.mockReturnValue({ rpc });
+    const { ContextConflictError, mutateSeniorContext } = await import(
+      "./memoryRepository"
+    );
+    const command = {
+      action: "archive" as const,
+      commandId: "00000000-0000-4000-8000-000000000099",
+      contextId: "00000000-0000-4000-8000-000000000211",
+      store: "memory" as const,
+      expectedUpdatedAt: "2026-07-16T02:00:00.000Z",
+      reason: "Archived after caregiver review.",
+    };
+
+    await mutateSeniorContext({
+      accessToken: "admin-token",
+      seniorId,
+      command,
+    });
+    await expect(
+      mutateSeniorContext({ accessToken: "admin-token", seniorId, command })
+    ).rejects.toBeInstanceOf(ContextConflictError);
+
+    expect(rpc).toHaveBeenNthCalledWith(1, "archive_senior_context", {
+      p_command_id: command.commandId,
+      p_senior_id: seniorId,
+      p_store: "memory",
+      p_context_id: command.contextId,
+      p_expected_updated_at: command.expectedUpdatedAt,
+      p_reason: command.reason,
+    });
+  });
+
+  it("maps a memory correction to the closed RPC replacement payload", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        store: "memory",
+        context_id: "00000000-0000-4000-8000-000000000212",
+        updated_at: "2026-07-17T01:00:00.000Z",
+        duplicate: false,
+      },
+      error: null,
+    });
+    createTrustKakiUserClientMock.mockReturnValue({ rpc });
+    const { mutateSeniorContext } = await import("./memoryRepository");
+
+    await mutateSeniorContext({
+      accessToken: "admin-token",
+      seniorId,
+      command: {
+        action: "correct",
+        commandId: "00000000-0000-4000-8000-000000000099",
+        contextId: "00000000-0000-4000-8000-000000000211",
+        store: "memory",
+        expectedUpdatedAt: "2026-07-16T02:00:00.000Z",
+        reason: "Corrected after caregiver confirmation.",
+        replacement: {
+          contextKey: "preferred_language",
+          memoryType: "communication_preference",
+          content: "Prefers concise Mandarin messages",
+          importance: 4,
+          safeUseNotes: "Use for message style only.",
+          applicationTags: ["concise_text"],
+          expiresAt: null,
+        },
+      },
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      "correct_senior_context",
+      expect.objectContaining({
+        p_senior_id: seniorId,
+        p_replacement_json: {
+          context_key: "preferred_language",
+          memory_type: "communication_preference",
+          content: "Prefers concise Mandarin messages",
+          importance: 4,
+          safe_use_notes: "Use for message style only.",
+          application_tags: ["concise_text"],
+          expires_at: null,
+        },
+      })
+    );
+  });
+
   it("loads only active non-expired application tags without context content", async () => {
     const queries: Array<{
       table: string;

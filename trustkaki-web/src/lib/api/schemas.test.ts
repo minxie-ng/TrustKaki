@@ -9,6 +9,7 @@ import {
   manualBriefingRequestSchema,
   queueActionRequestSchema,
   proactiveCheckInScheduleRequestSchema,
+  seniorContextActionRequestSchema,
   specialistAgentRequestSchema,
 } from "./schemas";
 
@@ -36,6 +37,57 @@ const validContext = {
 };
 
 describe("API request schemas", () => {
+  it("requires a bound context version and meaningful correction reason", () => {
+    const valid = {
+      action: "correct",
+      commandId,
+      contextId: "00000000-0000-4000-8000-000000000088",
+      store: "memory",
+      expectedUpdatedAt,
+      reason: "Corrected after caregiver confirmation.",
+      replacement: {
+        contextKey: "preferred_language",
+        memoryType: "communication_preference",
+        content: "Prefers concise Mandarin messages",
+        importance: 4,
+        safeUseNotes: "Use for message style only.",
+        applicationTags: ["concise_text"],
+        expiresAt: null,
+      },
+    };
+
+    expect(seniorContextActionRequestSchema.safeParse(valid).success).toBe(true);
+    expect(
+      seniorContextActionRequestSchema.safeParse({ ...valid, reason: "Too short" })
+        .success
+    ).toBe(false);
+    expect(
+      seniorContextActionRequestSchema.safeParse({
+        ...valid,
+        expectedUpdatedAt: "stale",
+      }).success
+    ).toBe(false);
+    expect(
+      seniorContextActionRequestSchema.safeParse({
+        ...valid,
+        replacement: { ...valid.replacement, confidence: 0.99 },
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts archive commands without replacement data", () => {
+    expect(
+      seniorContextActionRequestSchema.safeParse({
+        action: "archive",
+        commandId,
+        contextId: "00000000-0000-4000-8000-000000000088",
+        store: "health_context",
+        expectedUpdatedAt,
+        reason: "Archived after caregiver review.",
+      }).success
+    ).toBe(true);
+  });
+
   it("validates proactive schedule commands and meaningful pause reasons", () => {
     const base = {
       commandId,

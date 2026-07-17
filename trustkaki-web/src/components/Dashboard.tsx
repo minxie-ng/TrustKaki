@@ -2,6 +2,7 @@
 
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
+import type { SeniorContextReadModel } from "@/lib/api/schemas";
 import type { AgentTrace, DashboardData, MaskedContactPlan } from "@/lib/types";
 import { followUpQueueForSenior } from "./dashboardViewModel";
 import { DemoControls } from "./dashboard/DemoControls";
@@ -13,6 +14,7 @@ import {
   contactPlanInstanceKey,
 } from "./dashboard/ContactPlanPanel";
 import { ProactiveCheckInPanel } from "./dashboard/ProactiveCheckInPanel";
+import { SeniorContextPanel } from "./dashboard/SeniorContextPanel";
 
 interface DashboardProps {
   data: DashboardData;
@@ -32,6 +34,10 @@ interface DashboardProps {
   checkInScheduleLoading?: boolean;
   checkInScheduleError?: string | null;
   onRefreshCheckInSchedule?: () => void;
+  seniorContext?: SeniorContextReadModel | null;
+  seniorContextLoading?: boolean;
+  seniorContextError?: string | null;
+  onSeniorContextChanged?: (context: SeniorContextReadModel) => void;
 }
 
 export default function Dashboard({
@@ -52,6 +58,10 @@ export default function Dashboard({
   checkInScheduleLoading = false,
   checkInScheduleError = null,
   onRefreshCheckInSchedule,
+  seniorContext = null,
+  seniorContextLoading = false,
+  seniorContextError = null,
+  onSeniorContextChanged,
 }: DashboardProps) {
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
@@ -83,6 +93,17 @@ export default function Dashboard({
             onSelect={(seniorId) => onSelectSenior?.(seniorId)}
           />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
+          <SeniorContextPanel
+            key={`senior-context:${selectedSeniorId ?? "none"}`}
+            context={seniorContext}
+            loading={seniorContextLoading}
+            error={seniorContextError}
+            isAdmin={isDemoAdmin}
+            seniorId={selectedSeniorId}
+            authToken={authToken ?? ""}
+            onChanged={(context) => onSeniorContextChanged?.(context)}
+            onUnauthorized={unauthorized}
+          />
           <ProactiveCheckInPanel
             key={`proactive-check-in:${selectedSeniorId ?? "none"}`}
             overview={checkInSchedule}

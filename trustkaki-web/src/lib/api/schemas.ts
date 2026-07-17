@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  memoryApplicationTags,
+  type MemoryApplicationTag,
+} from "@/lib/memory/contracts";
 
 const seniorIdSchema = z.string().uuid();
 const commandIdSchema = z.string().uuid();
@@ -12,6 +16,181 @@ const timezoneSchema = z.string().trim().min(1).max(80).refine((value) => {
     return false;
   }
 });
+
+export const contextStoreSchema = z.enum([
+  "memory",
+  "health_context",
+  "routine_baseline",
+]);
+
+const contextKeySchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(120)
+  .regex(/^[a-z0-9_:-]+$/);
+const applicationTagsSchema = z
+  .array(z.enum(memoryApplicationTags))
+  .max(memoryApplicationTags.length)
+  .refine((tags) => new Set(tags).size === tags.length, {
+    message: "Application tags must be unique.",
+  });
+const expiresAtSchema = z.string().datetime({ offset: true }).nullable();
+const safeUseNotesSchema = z.string().trim().max(500).nullable();
+export const contextScheduleSchema = z.record(z.string(), z.json());
+const contextCommandBase = {
+  commandId: commandIdSchema,
+  contextId: z.string().uuid(),
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  reason: z.string().trim().min(10).max(500),
+};
+
+export const seniorContextActionRequestSchema = z.union([
+  z
+    .object({
+      ...contextCommandBase,
+      action: z.literal("archive"),
+      store: contextStoreSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...contextCommandBase,
+      action: z.literal("correct"),
+      store: z.literal("memory"),
+      replacement: z
+        .object({
+          contextKey: contextKeySchema,
+          memoryType: z.enum([
+            "communication_preference",
+            "family_context",
+            "food_preference",
+            "routine_preference",
+            "aac_preference",
+            "other",
+          ]),
+          content: z.string().trim().min(1).max(500),
+          importance: z.number().int().min(1).max(5),
+          safeUseNotes: safeUseNotesSchema,
+          applicationTags: applicationTagsSchema,
+          expiresAt: expiresAtSchema,
+        })
+        .strict(),
+    })
+    .strict(),
+  z
+    .object({
+      ...contextCommandBase,
+      action: z.literal("correct"),
+      store: z.literal("health_context"),
+      replacement: z
+        .object({
+          contextKey: contextKeySchema,
+          contextType: z.enum([
+            "mobility",
+            "appetite",
+            "medication",
+            "sensory",
+            "cognitive",
+            "social",
+            "other",
+          ]),
+          description: z.string().trim().min(1).max(500),
+          safeUseNotes: z.string().trim().min(1).max(500),
+          applicationTags: applicationTagsSchema,
+          expiresAt: expiresAtSchema,
+        })
+        .strict(),
+    })
+    .strict(),
+  z
+    .object({
+      ...contextCommandBase,
+      action: z.literal("correct"),
+      store: z.literal("routine_baseline"),
+      replacement: z
+        .object({
+          contextKey: contextKeySchema,
+          baselineType: z.enum([
+            "response_cadence",
+            "meal",
+            "mobility",
+            "aac_participation",
+            "social_comfort",
+            "medication",
+            "other",
+          ]),
+          label: z.string().trim().min(1).max(120),
+          usualPattern: z.string().trim().min(1).max(500),
+          scheduleJson: contextScheduleSchema,
+          safeUseNotes: safeUseNotesSchema,
+          applicationTags: applicationTagsSchema,
+          expiresAt: expiresAtSchema,
+        })
+        .strict(),
+    })
+    .strict(),
+]);
+
+export type SeniorContextActionCommand = z.infer<
+  typeof seniorContextActionRequestSchema
+>;
+
+interface SeniorContextReadItemBase {
+  id: string;
+  contextKey: string;
+  safeUseNotes: string | null;
+  applicationTags: MemoryApplicationTag[];
+  source: string;
+  lastConfirmedAt: string;
+  expiresAt: string | null;
+  updatedAt: string;
+}
+
+export type SeniorContextReadItem =
+  | (SeniorContextReadItemBase & {
+      store: "memory";
+      memoryType:
+        | "communication_preference"
+        | "family_context"
+        | "food_preference"
+        | "routine_preference"
+        | "aac_preference"
+        | "other";
+      content: string;
+      importance: number;
+    })
+  | (SeniorContextReadItemBase & {
+      store: "health_context";
+      contextType:
+        | "mobility"
+        | "appetite"
+        | "medication"
+        | "sensory"
+        | "cognitive"
+        | "social"
+        | "other";
+      description: string;
+    })
+  | (SeniorContextReadItemBase & {
+      store: "routine_baseline";
+      baselineType:
+        | "response_cadence"
+        | "meal"
+        | "mobility"
+        | "aac_participation"
+        | "social_comfort"
+        | "medication"
+        | "other";
+      label: string;
+      usualPattern: string;
+      scheduleJson: z.infer<typeof contextScheduleSchema>;
+    });
+
+export interface SeniorContextReadModel {
+  seniorId: string;
+  items: SeniorContextReadItem[];
+}
 
 export const contactKindSchema = z.enum([
   "family_guardian", "aac_staff", "healthcare_contact",

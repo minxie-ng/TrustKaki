@@ -19,6 +19,7 @@ import {
 } from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
+import type { SeniorContextReadModel } from "@/lib/api/schemas";
 import type { AgentTrace, DashboardData, MaskedContactPlan, RiskLevel } from "@/lib/types";
 
 interface DashboardStateResponse {
@@ -54,10 +55,15 @@ export default function Home() {
     useState<ProactiveCheckInScheduleOverview | null>(null);
   const [checkInScheduleLoading, setCheckInScheduleLoading] = useState(false);
   const [checkInScheduleError, setCheckInScheduleError] = useState<string | null>(null);
+  const [seniorContext, setSeniorContext] =
+    useState<SeniorContextReadModel | null>(null);
+  const [seniorContextLoading, setSeniorContextLoading] = useState(false);
+  const [seniorContextError, setSeniorContextError] = useState<string | null>(null);
   const selectedSeniorIdRef = useRef<string | null>(null);
   const dashboardRequestSeq = useRef(0);
   const contactPlanRequestSeq = useRef(0);
   const checkInScheduleRequestSeq = useRef(0);
+  const seniorContextRequestSeq = useRef(0);
   const authToken = session?.access_token ?? null;
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
@@ -182,6 +188,38 @@ export default function Home() {
     });
   }, [authToken, handleUnauthorized, isDemoAdmin]);
 
+  const refreshSeniorContext = useCallback((nextSeniorId?: string | null) => {
+    if (!authToken) return;
+    const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
+    if (!seniorId) return;
+    const requestId = seniorContextRequestSeq.current + 1;
+    seniorContextRequestSeq.current = requestId;
+    setSeniorContextLoading(true);
+    setSeniorContextError(null);
+    void fetch(`/api/seniors/${encodeURIComponent(seniorId)}/context`, {
+      cache: "no-store",
+      headers: authHeader(authToken),
+    }).then(async (response) => {
+      if (response.status === 401) {
+        handleUnauthorized();
+        return null;
+      }
+      if (!response.ok) throw new Error("senior_context_request_failed");
+      return (await response.json()) as { context: SeniorContextReadModel };
+    }).then((result) => {
+      if (requestId !== seniorContextRequestSeq.current || !result) return;
+      setSeniorContext(result.context);
+    }).catch(() => {
+      if (requestId === seniorContextRequestSeq.current) {
+        setSeniorContextError("Known context is temporarily unavailable.");
+      }
+    }).finally(() => {
+      if (requestId === seniorContextRequestSeq.current) {
+        setSeniorContextLoading(false);
+      }
+    });
+  }, [authToken, handleUnauthorized]);
+
   const selectSenior = useCallback(
     (seniorId: string) => {
       selectedSeniorIdRef.current = seniorId;
@@ -190,6 +228,8 @@ export default function Home() {
       setContactPlanLoading(true);
       setCheckInSchedule(null);
       setCheckInScheduleLoading(isDemoAdmin);
+      setSeniorContext(null);
+      setSeniorContextLoading(true);
       setLiveDashboardData((current) =>
         current ? optimisticDashboardForSenior(current, seniorId) : current
       );
@@ -259,10 +299,17 @@ export default function Home() {
         refreshDashboardState();
         refreshContactPlan();
         refreshCheckInSchedule();
+        refreshSeniorContext();
       },
     });
     return () => subscription?.unsubscribe();
-  }, [authToken, refreshCheckInSchedule, refreshContactPlan, refreshDashboardState]);
+  }, [
+    authToken,
+    refreshCheckInSchedule,
+    refreshContactPlan,
+    refreshDashboardState,
+    refreshSeniorContext,
+  ]);
 
   useEffect(() => {
     if (authToken && selectedSeniorId) refreshContactPlan(selectedSeniorId);
@@ -273,6 +320,10 @@ export default function Home() {
       refreshCheckInSchedule(selectedSeniorId);
     }
   }, [authToken, isDemoAdmin, refreshCheckInSchedule, selectedSeniorId]);
+
+  useEffect(() => {
+    if (authToken && selectedSeniorId) refreshSeniorContext(selectedSeniorId);
+  }, [authToken, refreshSeniorContext, selectedSeniorId]);
 
   async function signIn(email: string, password: string) {
     const client = createTrustKakiBrowserClient();
@@ -305,6 +356,7 @@ export default function Home() {
     setLiveBriefing(null);
     setContactPlan(null);
     setCheckInSchedule(null);
+    setSeniorContext(null);
     selectedSeniorIdRef.current = null;
   }
 
@@ -367,6 +419,10 @@ export default function Home() {
               checkInScheduleLoading={checkInScheduleLoading}
               checkInScheduleError={checkInScheduleError}
               onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
+              seniorContext={seniorContext}
+              seniorContextLoading={seniorContextLoading}
+              seniorContextError={seniorContextError}
+              onSeniorContextChanged={setSeniorContext}
             />
           ) : (
             <main className="flex h-full items-center justify-center bg-gray-50 p-6">
