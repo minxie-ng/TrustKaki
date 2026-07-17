@@ -18,6 +18,8 @@ export type KnownContextItemType =
 
 export type KnownContextItem = {
   type: KnownContextItemType;
+  targetStore?: MemoryTargetStore;
+  contextKey?: string;
   content: string;
   safeUseNotes: string | null;
   applicationTags: MemoryApplicationTag[];

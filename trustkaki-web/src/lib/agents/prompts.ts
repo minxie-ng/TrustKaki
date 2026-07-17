@@ -165,6 +165,8 @@ ${
     .join("\n") || "(none)"
 }
 
+For an active store/key with the same fact, use intent=confirm. For a changed fact, use intent=replace. Reuse the exact active contextKey.
+
 Propose only safe durable context supported by exact current-message evidence. Return JSON.`;
 
 // ─── Triage ───

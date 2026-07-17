@@ -158,7 +158,19 @@ function contextMemoryInput(
         ...item,
         text: redactProhibitedMemoryData(item.text),
       })),
-    activeContext: [],
+    activeContext: (ctx.knownContext?.items ?? [])
+      .filter(
+        (item): item is typeof item & {
+          targetStore: NonNullable<typeof item.targetStore>;
+          contextKey: string;
+        } => Boolean(item.targetStore && item.contextKey)
+      )
+      .slice(0, 12)
+      .map((item) => ({
+        targetStore: item.targetStore,
+        contextKey: item.contextKey,
+        summary: item.content,
+      })),
   };
 }
 

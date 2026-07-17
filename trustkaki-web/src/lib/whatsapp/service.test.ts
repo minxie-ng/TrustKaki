@@ -9,6 +9,7 @@ vi.mock("server-only", () => ({}));
 const orchestrateMock = vi.fn();
 const loadSeniorContextByVerifiedPhoneMock = vi.fn();
 const persistOrchestrationResultMock = vi.fn();
+const hasPersistedMessageClientIdMock = vi.fn();
 const recordInboundMessageMetadataMock = vi.fn();
 const recordOutboundMessageMetadataMock = vi.fn();
 const recordWhatsAppDeliveryStatusMock = vi.fn();
@@ -26,6 +27,7 @@ vi.mock("@/lib/agents/orchestrator", () => ({
 }));
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
+  hasPersistedMessageClientId: hasPersistedMessageClientIdMock,
   persistOrchestrationResult: persistOrchestrationResultMock,
   recordInboundMessageMetadata: recordInboundMessageMetadataMock,
   recordOutboundMessageMetadata: recordOutboundMessageMetadataMock,
@@ -188,6 +190,7 @@ describe("WhatsApp async service", () => {
       configured: true,
       persisted: true,
     });
+    hasPersistedMessageClientIdMock.mockResolvedValue(false);
     recordOutboundMessageMetadataMock.mockResolvedValue({
       mode: "supabase",
       configured: true,
@@ -403,6 +406,36 @@ describe("WhatsApp async service", () => {
     expect(orchestrateMock).toHaveBeenCalledTimes(1);
     expect(storeWhatsAppOrchestrationResultMock).toHaveBeenCalledTimes(1);
     expect(persistOrchestrationResultMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("resumes a legacy cache without re-orchestrating when inbound persistence exists", async () => {
+    const { processWhatsAppEventById } = await import("./service");
+    hasPersistedMessageClientIdMock.mockResolvedValue(true);
+    claimWhatsAppEventMock.mockResolvedValue(
+      eventRow({
+        status: "failed",
+        orchestration_result: orchestrationResponse as unknown as Json,
+        orchestration_context: agentContext as unknown as Json,
+        selected_reply_text: orchestrationResponse.messages[0].text,
+        selected_reply_agent_id: "triage",
+        selected_reply_client_message_id: "out_trace_orchestrator_0",
+        outbound_status: "pending",
+      })
+    );
+    const sendText = vi.fn().mockResolvedValue({
+      messageId: "wamid.retry",
+      raw: {},
+    });
+
+    const result = await processWhatsAppEventById("event_1", { sendText });
+
+    expect(result.status).toBe("processed");
+    expect(hasPersistedMessageClientIdMock).toHaveBeenCalledWith("wamid.inbound");
+    expect(orchestrateMock).not.toHaveBeenCalled();
+    expect(persistOrchestrationResultMock).not.toHaveBeenCalled();
+    expect(recordInboundMessageMetadataMock).toHaveBeenCalledTimes(1);
+    expect(markWhatsAppOrchestrationCompletedMock).toHaveBeenCalledTimes(1);
+    expect(sendText).toHaveBeenCalledTimes(1);
   });
 
   it("marks outbound failure retryable, then recovers without rerunning orchestration", async () => {

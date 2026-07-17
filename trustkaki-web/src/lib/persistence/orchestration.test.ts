@@ -255,6 +255,7 @@ describe("orchestration persistence mapping", () => {
       payload: {
         decision: "accepted",
         context_key: "preferred_language",
+        content: "voice calls in Mandarin",
         evidence_excerpt: "voice calls in Mandarin",
       },
     });

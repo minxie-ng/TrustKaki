@@ -31,6 +31,7 @@ describe("memory eligibility policy", () => {
       candidate: {
         ...validPreference,
         contextKey: "preferred_message_style",
+        content: "Please keep messages short",
       },
       expiresInDays: 180,
     });
@@ -49,6 +50,39 @@ describe("memory eligibility policy", () => {
     expect(
       evaluateMemoryCandidate(
         { ...validPreference, evidenceExcerpt: "keep messages concise" },
+        sourceMessage
+      )
+    ).toEqual({ accepted: false, reason: "unsupported_evidence" });
+  });
+
+  it("uses exact evidence instead of an unsupported generated paraphrase", () => {
+    expect(
+      evaluateMemoryCandidate(
+        { ...validPreference, content: "Prefers long voice calls." },
+        sourceMessage
+      )
+    ).toMatchObject({
+      accepted: true,
+      candidate: { content: "Please keep messages short" },
+    });
+  });
+
+  it("does not retain a hallucinated phone number from generated content", () => {
+    expect(
+      evaluateMemoryCandidate(
+        { ...validPreference, content: "Call +65 9000 0000 for reminders." },
+        sourceMessage
+      )
+    ).toMatchObject({
+      accepted: true,
+      candidate: { content: "Please keep messages short" },
+    });
+  });
+
+  it("rejects evidence excerpts too small to support durable context", () => {
+    expect(
+      evaluateMemoryCandidate(
+        { ...validPreference, evidenceExcerpt: "short" },
         sourceMessage
       )
     ).toEqual({ accepted: false, reason: "unsupported_evidence" });
@@ -144,6 +178,25 @@ describe("memory eligibility policy", () => {
           ...validPreference,
           targetStore: "health_context",
           contextKey: "suspected_condition",
+          contextType: "health_observation",
+          content: text,
+          evidenceExcerpt: text,
+          applicationTags: ["gentle_one_to_one"],
+          retentionClass: "health_accessibility",
+        },
+        { ...sourceMessage, text }
+      )
+    ).toEqual({ accepted: false, reason: "diagnostic_inference" });
+  });
+
+  it("rejects direct diagnostic claims without enumerating the condition", () => {
+    const text = "I have hypertension";
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "health_context",
+          contextKey: "lasting_health_context",
           contextType: "health_observation",
           content: text,
           evidenceExcerpt: text,

@@ -16,6 +16,7 @@ const MINIMUM_CONFIDENCE = 0.85;
 const MAX_CONTEXT_KEY_LENGTH = 80;
 const MAX_CONTENT_LENGTH = 500;
 const MAX_EVIDENCE_LENGTH = 500;
+const MIN_EVIDENCE_LENGTH = 8;
 const MAX_APPLICATION_TAGS = 3;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -101,6 +102,7 @@ const diagnosticPatterns = [
   /\b(?:likely|probably|possibly|may|might|must)\s+(?:have|has|be)\b/i,
   /\b(?:suspect|suggests?|indicates?|appears? to have)\b/i,
   /\b(?:have|has)\s+(?:dementia|diabetes|cancer|parkinson(?:'s)?|depression)\b/i,
+  /(?:^|\n)\s*i\s+(?:have|live with|suffer from)\s+(?:[a-z][a-z'-]*[ \t]+){0,4}(?:[a-z][a-z'-]*(?:itis|osis|emia|oma|pathy|tension)|[a-z][a-z'-]*[ \t]+(?:syndrome|disease|disorder)|alzheimer(?:'s)?)\b/i,
 ];
 
 const selfDiagnosticClaimPatterns = [
@@ -211,7 +213,7 @@ export function evaluateMemoryCandidate(
     candidate.sourceMessageId !== sourceMessage.id ||
     typeof sourceMessage.text !== "string" ||
     typeof candidate.evidenceExcerpt !== "string" ||
-    candidate.evidenceExcerpt.trim().length === 0 ||
+    candidate.evidenceExcerpt.trim().length < MIN_EVIDENCE_LENGTH ||
     !sourceMessage.text.includes(candidate.evidenceExcerpt)
   ) {
     return { accepted: false, reason: "unsupported_evidence" };
@@ -239,6 +241,7 @@ export function evaluateMemoryCandidate(
     candidate: {
       ...candidate,
       contextKey: normaliseContextKey(candidate.contextKey),
+      content: candidate.evidenceExcerpt.trim(),
     },
     expiresInDays: retentionDays[candidate.retentionClass],
   };

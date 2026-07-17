@@ -74,6 +74,8 @@ export const agentRunContextSchema = z.object({
                 "usual_routine",
                 "observed_operational_context",
               ]),
+              targetStore: z.enum(memoryTargetStores).optional(),
+              contextKey: z.string().min(1).max(120).optional(),
               content: z.string().min(1).max(280),
               safeUseNotes: z.string().max(280).nullable(),
               applicationTags: z.array(z.enum(memoryApplicationTags)).max(3),

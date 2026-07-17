@@ -61,6 +61,8 @@ function boundedNotes(value: string | null): string | null {
 
 function rankedItem(args: {
   type: KnownContextItemType;
+  targetStore: KnownContextItem["targetStore"];
+  contextKey: string;
   content: string;
   safeUseNotes: string | null;
   applicationTags: KnownContextItem["applicationTags"];
@@ -72,6 +74,8 @@ function rankedItem(args: {
   if (!content) return null;
   return {
     type: args.type,
+    targetStore: args.targetStore,
+    contextKey: args.contextKey,
     content,
     safeUseNotes: boundedNotes(args.safeUseNotes),
     applicationTags: args.applicationTags.slice(0, 3),
@@ -90,6 +94,8 @@ function buildKnownContext(
     ...memories.map((row) =>
       rankedItem({
         type: "preference",
+        targetStore: "memory",
+        contextKey: row.context_key,
         content: row.content,
         safeUseNotes: row.safe_use_notes,
         applicationTags: row.application_tags,
@@ -101,6 +107,8 @@ function buildKnownContext(
     ...routines.map((row) =>
       rankedItem({
         type: "usual_routine",
+        targetStore: "routine_baseline",
+        contextKey: row.context_key,
         content: `${row.label}: ${row.usual_pattern}`,
         safeUseNotes: row.safe_use_notes,
         applicationTags: row.application_tags,
@@ -112,8 +120,12 @@ function buildKnownContext(
     ...healthContexts.map((row) =>
       rankedItem({
         type: "observed_operational_context",
+        targetStore: "health_context",
+        contextKey: row.context_key,
         content: row.description,
-        safeUseNotes: `${NON_DIAGNOSTIC_NOTE} ${row.safe_use_notes}`,
+        safeUseNotes: row.safe_use_notes
+          ? `${NON_DIAGNOSTIC_NOTE} ${row.safe_use_notes}`
+          : NON_DIAGNOSTIC_NOTE,
         applicationTags: row.application_tags,
         rank: row.confidence * 5,
         confidence: row.confidence,
@@ -134,6 +146,8 @@ function buildKnownContext(
   return {
     items: ranked.slice(0, KNOWN_CONTEXT_LIMIT).map((item) => ({
       type: item.type,
+      targetStore: item.targetStore,
+      contextKey: item.contextKey,
       content: item.content,
       safeUseNotes: item.safeUseNotes,
       applicationTags: item.applicationTags,
@@ -181,7 +195,7 @@ async function loadContext(
     client
       .from("routine_baselines")
       .select(
-        "baseline_type, label, usual_pattern, confidence, safe_use_notes, application_tags, last_confirmed_at"
+        "context_key, baseline_type, label, usual_pattern, confidence, safe_use_notes, application_tags, last_confirmed_at"
       )
       .eq("senior_id", senior.id)
       .eq("status", "active")
@@ -192,7 +206,7 @@ async function loadContext(
     client
       .from("senior_health_contexts")
       .select(
-        "context_type, description, confidence, safe_use_notes, application_tags, last_confirmed_at"
+        "context_key, context_type, description, confidence, safe_use_notes, application_tags, last_confirmed_at"
       )
       .eq("senior_id", senior.id)
       .eq("status", "active")
@@ -203,7 +217,7 @@ async function loadContext(
     client
       .from("senior_memories")
       .select(
-        "memory_type, content, importance, confidence, safe_use_notes, application_tags, last_confirmed_at"
+        "context_key, memory_type, content, importance, confidence, safe_use_notes, application_tags, last_confirmed_at"
       )
       .eq("senior_id", senior.id)
       .eq("status", "active")

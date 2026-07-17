@@ -129,11 +129,20 @@ describe("agent prompts", () => {
         text: "I prefer voice calls in Mandarin.",
       },
       recentMessages: [],
-      activeContext: [],
+      activeContext: [
+        {
+          targetStore: "memory",
+          contextKey: "preferred_language",
+          summary: "I prefer voice calls in Mandarin.",
+        },
+      ],
     });
 
     expect(prompt).toContain("message-voice-language");
     expect(prompt).toContain("I prefer voice calls in Mandarin.");
+    expect(prompt).toContain("store=memory; key=preferred_language");
+    expect(prompt).toContain("same fact, use intent=confirm");
+    expect(prompt).toContain("changed fact, use intent=replace");
   });
 
   it("accepts exact memory candidates and a safe empty result", () => {

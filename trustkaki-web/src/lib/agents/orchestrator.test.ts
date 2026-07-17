@@ -292,6 +292,42 @@ describe("orchestrate", () => {
     );
   });
 
+  it("supplies bounded active store keys so repeated facts can confirm or replace", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const ctx = context();
+    ctx.knownContext = {
+      items: [
+        {
+          type: "preference",
+          targetStore: "memory",
+          contextKey: "preferred_language",
+          content: "I prefer voice calls in Mandarin.",
+          safeUseNotes: null,
+          applicationTags: ["voice_preferred"],
+        },
+      ],
+    };
+    ctx.messages.push({
+      id: "changed-language",
+      sender: "senior",
+      text: "I now prefer voice calls in English.",
+      timestamp: "2026-07-16T00:00:00.000Z",
+    });
+    runAgentMock
+      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
+      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(result("context_memory", memoryData()));
+
+    await orchestrate("I now prefer voice calls in English.", ctx);
+
+    const contextCall = runAgentMock.mock.calls.find(
+      (call) => call[0].agentId === "context_memory"
+    )?.[0];
+    expect(contextCall?.userPrompt).toContain(
+      'store=memory; key=preferred_language; summary="I prefer voice calls in Mandarin."'
+    );
+  });
+
   it.each([
     "Okay thank you.",
     "Hello!",

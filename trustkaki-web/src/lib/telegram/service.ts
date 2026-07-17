@@ -21,6 +21,7 @@ import {
   type PersistedTelegramEvent,
 } from "@/lib/persistence/telegramEventRepository";
 import {
+  hasPersistedMessageClientId,
   persistOrchestrationResult,
   recordInboundMessageMetadata,
   recordOutboundMessageMetadata,
@@ -134,6 +135,7 @@ async function getOrCreateOrchestration(args: {
   replyText: string | null;
   replyAgentId: AgentId | null;
   replyClientMessageId: string | null;
+  persistenceAlreadyCompleted: boolean;
 }> {
   const senior = await loadSeniorContextByMessagingIdentity({
     platform: "telegram",
@@ -151,6 +153,7 @@ async function getOrCreateOrchestration(args: {
         replyText: args.event.selected_reply_text,
         replyAgentId: args.event.selected_reply_agent_id,
         replyClientMessageId: args.event.selected_reply_client_message_id,
+        persistenceAlreadyCompleted: Boolean(args.event.orchestration_completed_at),
       };
     } catch {
       if (!isOrchestrateResponse(args.event.orchestration_result)) {
@@ -164,10 +167,22 @@ async function getOrCreateOrchestration(args: {
           replyText: args.event.selected_reply_text,
           replyAgentId: args.event.selected_reply_agent_id,
           replyClientMessageId: args.event.selected_reply_client_message_id,
+          persistenceAlreadyCompleted: true,
         };
       }
       if (args.event.outbound_message_id || args.event.outbound_status === "accepted") {
         throw new Error("legacy orchestration retry is unsafe after provider acceptance");
+      }
+      if (await hasPersistedMessageClientId(args.inbound.clientMessageId)) {
+        return {
+          seniorId: senior.seniorId,
+          context: args.event.orchestration_context,
+          result: completedLegacyResult(args.event.orchestration_result),
+          replyText: args.event.selected_reply_text,
+          replyAgentId: args.event.selected_reply_agent_id,
+          replyClientMessageId: args.event.selected_reply_client_message_id,
+          persistenceAlreadyCompleted: true,
+        };
       }
     }
   }
@@ -205,6 +220,7 @@ async function getOrCreateOrchestration(args: {
     replyText,
     replyAgentId: reply?.agentId ?? null,
     replyClientMessageId,
+    persistenceAlreadyCompleted: false,
   };
 }
 
@@ -214,16 +230,19 @@ async function persistOrchestrationIfNeeded(args: {
   seniorId: string;
   context: AgentRunContext;
   result: OrchestrationResult;
+  persistenceAlreadyCompleted: boolean;
 }): Promise<void> {
   if (args.event.orchestration_completed_at) return;
 
-  await persistOrchestrationResult({
-    seniorId: args.seniorId,
-    message: args.inbound.text,
-    clientMessageId: args.inbound.clientMessageId,
-    context: args.context,
-    result: args.result,
-  });
+  if (!args.persistenceAlreadyCompleted) {
+    await persistOrchestrationResult({
+      seniorId: args.seniorId,
+      message: args.inbound.text,
+      clientMessageId: args.inbound.clientMessageId,
+      context: args.context,
+      result: args.result,
+    });
+  }
   await recordInboundMessageMetadata({
     externalPlatform: "telegram",
     clientMessageId: args.inbound.clientMessageId,
@@ -335,6 +354,7 @@ export async function processTelegramEventById(
       seniorId: orchestration.seniorId,
       context: orchestration.context,
       result: orchestration.result,
+      persistenceAlreadyCompleted: orchestration.persistenceAlreadyCompleted,
     });
     const outboundMessageId = await sendOrResumeOutbound({
       event,

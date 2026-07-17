@@ -223,6 +223,7 @@ describe("senior context repository", () => {
     const longContent = `Prefers Mandarin voice calls ${"x".repeat(300)}`;
     const memories = Array.from({ length: 11 }, (_, index) => ({
       id: `memory-${index}`,
+      context_key: `preference_${index}`,
       memory_type: "communication_preference",
       content: index === 0 ? longContent : `Preference ${index}`,
       importance: 5 - (index % 5),
@@ -252,6 +253,7 @@ describe("senior context repository", () => {
         ],
         routine_baselines: Array.from({ length: 4 }, (_, index) => ({
           id: `routine-${index}`,
+          context_key: `breakfast_${index}`,
           baseline_type: "meal",
           label: `Breakfast ${index}`,
           usual_pattern: "Usually eats before 9am",
@@ -265,6 +267,7 @@ describe("senior context repository", () => {
         senior_health_contexts: [
           {
             id: "health-1",
+            context_key: "knee_mobility",
             context_type: "mobility",
             description: "Knee discomfort can affect downstairs trips",
             confidence: 0.95,
@@ -302,7 +305,9 @@ describe("senior context repository", () => {
     expect(Object.keys(context.knownContext?.items[0] ?? {}).sort()).toEqual([
       "applicationTags",
       "content",
+      "contextKey",
       "safeUseNotes",
+      "targetStore",
       "type",
     ]);
     expect(
@@ -310,6 +315,14 @@ describe("senior context repository", () => {
         (item) => item.type === "observed_operational_context"
       )?.safeUseNotes
     ).toMatch(/not a diagnosis/i);
+    expect(
+      context.knownContext?.items.find(
+        (item) => item.type === "observed_operational_context"
+      )
+    ).toMatchObject({
+      targetStore: "health_context",
+      contextKey: "knee_mobility",
+    });
 
     for (const table of [
       "routine_baselines",
@@ -328,6 +341,36 @@ describe("senior context repository", () => {
       );
       expect(query?.limit).toBe(12);
     }
+  });
+
+  it("does not stringify a null health safe-use note", async () => {
+    const service = createServiceClient({
+      contextRows: {
+        senior_health_contexts: [
+          {
+            id: "health-null-note",
+            context_key: "hearing_support",
+            context_type: "sensory",
+            description: "Needs spoken prompts repeated clearly",
+            confidence: 0.95,
+            safe_use_notes: null,
+            application_tags: ["accessibility_support"],
+            last_confirmed_at: "2099-01-19T00:00:00.000Z",
+            expires_at: null,
+            status: "active",
+          },
+        ],
+      },
+    });
+    canAccessSeniorMock.mockReturnValue(true);
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { loadAuthorizedAgentContext } = await import("./seniorContextRepository");
+
+    const context = await loadAuthorizedAgentContext({ auth, seniorId });
+
+    expect(context.knownContext?.items[0]?.safeUseNotes).toBe(
+      "This is not a diagnosis."
+    );
   });
 
   it("clamps the message limit to 50", async () => {
