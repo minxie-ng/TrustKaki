@@ -110,6 +110,17 @@ describe("agent prompts", () => {
     expect(CONTEXT_MEMORY_PROMPT).toContain('{ "candidates": [] }');
   });
 
+  it("provides a JSON example that satisfies the context memory schema", () => {
+    const marker = "Return ONLY valid JSON:";
+    const example = JSON.parse(
+      CONTEXT_MEMORY_PROMPT.slice(
+        CONTEXT_MEMORY_PROMPT.indexOf(marker) + marker.length
+      ).trim()
+    );
+
+    expect(contextMemoryOutputSchema.safeParse(example).success).toBe(true);
+  });
+
   it("includes the current message id and exact senior-authored text in the memory prompt", () => {
     const prompt = contextMemoryUserPrompt({
       message: {

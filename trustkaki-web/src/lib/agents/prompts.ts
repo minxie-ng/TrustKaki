@@ -3,6 +3,12 @@
 // and the exact JSON schema the LLM must return.
 
 import type { AgentRunContext, ContextMemoryInput } from "./contracts";
+import {
+  memoryApplicationTags,
+  memoryContextTypes,
+  memoryRetentionClasses,
+  memoryTargetStores,
+} from "@/lib/memory/contracts";
 
 function seniorAgeForPrompt(age: number): string {
   return age > 0 ? String(age) : "unknown";
@@ -105,22 +111,28 @@ Never propose or return:
 - unsupported family routing or inferred relationships;
 - raw provider payloads, hidden reasoning, or chain-of-thought.
 
-Use only the closed target stores, context types, application tags, retention classes, and optional confirm/replace intent shown below. If there is no safe durable context, explicitly return the safe empty result { "candidates": [] }.
+Use exactly one value from each closed list. Never combine options into one pipe-delimited string:
+- targetStore: ${memoryTargetStores.join(", ")}
+- contextType: ${memoryContextTypes.join(", ")}
+- applicationTags: ${memoryApplicationTags.join(", ")}
+- retentionClass: ${memoryRetentionClasses.join(", ")}
+- optional intent: confirm, replace
+
+If there is no safe durable context, explicitly return the safe empty result { "candidates": [] }.
 
 Return ONLY valid JSON:
 {
   "candidates": [
     {
-      "targetStore": "memory|health_context|routine_baseline",
-      "contextKey": "stable_snake_case_key",
-      "contextType": "communication_preference|food_preference|routine_preference|aac_preference|family_routing|health_observation|accessibility_need|routine_baseline",
-      "content": "concise supported context",
+      "targetStore": "memory",
+      "contextKey": "communication_style",
+      "contextType": "communication_preference",
+      "content": "Prefers short text for important messages",
       "sourceMessageId": "exact current message id",
       "evidenceExcerpt": "exact excerpt copied from the current senior-authored message",
-      "confidence": 0.0,
-      "applicationTags": ["concise_text|gentle_one_to_one|voice_preferred|practical_meal_prompt|accessibility_support|trusted_contact_route"],
-      "retentionClass": "health_accessibility|routine_baseline|preference|family_routing",
-      "intent": "confirm|replace"
+      "confidence": 0.95,
+      "applicationTags": ["concise_text"],
+      "retentionClass": "preference"
     }
   ]
 }`;
