@@ -1,15 +1,14 @@
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getSupabaseServerConfig } from "@/lib/supabase/config";
 import type { Json } from "@/lib/supabase/types";
+import { assertTrustKakiLiveProjectIdentity } from "./liveProjectGuard";
 
 const execFileAsync = promisify(execFile);
-const EXPECTED_PROJECT_REF = "mbzolhqtcbdfosifjkmd";
 const describeLive =
   process.env.TRUSTKAKI_RUN_LIVE_SUPABASE === "1"
     ? describe.sequential
@@ -22,72 +21,9 @@ interface CaregiverFixture {
 
 const supabaseRoot = resolve(process.cwd(), "../../..");
 
-export function validateGate5ProjectIdentity(args: {
-  linkedProjectRef: string;
-  configuredUrls: string[];
-}): void {
-  if (args.linkedProjectRef.trim() !== EXPECTED_PROJECT_REF) {
-    throw new Error("Gate 5 live project guard rejected linked project ref");
-  }
-  if (args.configuredUrls.length === 0) {
-    throw new Error("Gate 5 live project guard requires a configured Supabase URL");
-  }
-  for (const configuredUrl of args.configuredUrls) {
-    let hostname: string;
-    try {
-      hostname = new URL(configuredUrl).hostname.toLowerCase();
-    } catch {
-      throw new Error("Gate 5 live project guard rejected configured Supabase URL");
-    }
-    if (hostname !== `${EXPECTED_PROJECT_REF}.supabase.co`) {
-      throw new Error("Gate 5 live project guard rejected configured project host");
-    }
-  }
-}
-
 async function assertGate5LiveProjectIdentity(): Promise<void> {
-  const linkedProjectRef = await readFile(
-    resolve(supabaseRoot, "supabase/.temp/project-ref"),
-    "utf8"
-  );
-  const configuredUrls = [
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_URL,
-  ].filter((value): value is string => Boolean(value));
-  validateGate5ProjectIdentity({ linkedProjectRef, configuredUrls });
+  await assertTrustKakiLiveProjectIdentity(supabaseRoot);
 }
-
-describe("Gate 5 live project guard", () => {
-  it("accepts only the TrustKaki link and configured host", () => {
-    expect(() =>
-      validateGate5ProjectIdentity({
-        linkedProjectRef: EXPECTED_PROJECT_REF,
-        configuredUrls: [`https://${EXPECTED_PROJECT_REF}.supabase.co`],
-      })
-    ).not.toThrow();
-  });
-
-  it("rejects either a mismatched link or configured host", () => {
-    expect(() =>
-      validateGate5ProjectIdentity({
-        linkedProjectRef: "wrong-project",
-        configuredUrls: [`https://${EXPECTED_PROJECT_REF}.supabase.co`],
-      })
-    ).toThrow("linked project ref");
-    expect(() =>
-      validateGate5ProjectIdentity({
-        linkedProjectRef: EXPECTED_PROJECT_REF,
-        configuredUrls: ["https://wrong-project.supabase.co"],
-      })
-    ).toThrow("configured project host");
-    expect(() =>
-      validateGate5ProjectIdentity({
-        linkedProjectRef: EXPECTED_PROJECT_REF,
-        configuredUrls: [`https://${EXPECTED_PROJECT_REF}.example.com`],
-      })
-    ).toThrow("configured project host");
-  });
-});
 
 function rpcResult(value: unknown): Record<string, Json> {
   return value as Record<string, Json>;
