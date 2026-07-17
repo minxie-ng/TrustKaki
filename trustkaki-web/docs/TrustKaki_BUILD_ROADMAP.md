@@ -994,7 +994,7 @@ Telegram check-in received a timely senior reply. The workflow became
 caregiver case. The personal test schedule was paused after verification; the
 shared scheduler remains active.
 
-#### Gate 5 — Memory Operationalisation
+#### Gate 5 — Memory Operationalisation (complete)
 
 - [x] add closed typed context contracts and deterministic eligibility policy
 - [x] add provenance, expiry, retention, immutable events, and lifecycle RPCs
@@ -1004,12 +1004,17 @@ shared scheduler remains active.
 - [x] add fixed-variant memory-aware proactive check-ins without raw memory text
 - [x] add authenticated shared reads and admin correction/archive controls
 - [x] pass the full non-live test, typecheck, lint, and production-build baseline
-- [ ] rerun final live Supabase isolation, migration, lint, and advisor checks
-- [ ] verify real Telegram extraction, later use, correction/archive, and cleanup
+- [x] rerun final live Supabase isolation, migration, lint, and advisor checks
+- [x] verify real Telegram extraction, later use, correction/archive, and cleanup
 
 The implementation baseline is recorded in
 `docs/superpowers/verification/2026-07-16-gate-5-memory-operationalisation.md`.
-Gate 5 remains open until the final live evidence is authorized and completed.
+The final guarded Supabase suite passed 10/10 with aligned migrations, no
+error-level advisor findings, and zero synthetic fixture residue. Real Telegram
+messages proved one safe expiring extraction and later bounded personalization
+without changing policy-authoritative risk. The authenticated production admin
+flow proved correction, preserved closed tags and expiry, immutable lifecycle
+events, archive, refresh survival, and zero active test preference afterward.
 
 #### Gate 6 — Organisation and Scale Readiness
 
@@ -1033,13 +1038,11 @@ Gate 5 remains open until the final live evidence is authorized and completed.
 
 ## 16A. Best Next Step
 
-Gate 5 implementation and non-live validation are complete. The next bounded
-step is final live Gate 5 verification: rerun linked Supabase isolation and
-advisor checks, prove one real Telegram extraction and later personalization,
-exercise correction/archive with two authorized caregivers and one unrelated
-caregiver, and confirm zero cleanup residue. Preserve the Telegram demo path
-and WhatsApp code. Do not mix Gate 5 with caregiver notification fan-out,
-organisation tenancy, or broad UI redesign.
+Gate 5 is complete and live verified. The next bounded step is Gate 6
+organisation and scale readiness: define organisation tenancy and staff roles
+before changing authorization or RLS, then add roster management and operational
+observability in small audited increments. Preserve the Telegram demo path and
+WhatsApp code. Do not mix the tenancy foundation with broad UI redesign.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 

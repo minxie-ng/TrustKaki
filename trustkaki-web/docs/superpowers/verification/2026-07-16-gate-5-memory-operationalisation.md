@@ -1,7 +1,7 @@
 # Gate 5 Memory Operationalisation Verification
 
 Date: 2026-07-17
-Status: Implementation and non-live validation complete; live release evidence pending
+Status: Complete and live verified
 
 ## Scope
 
@@ -49,6 +49,8 @@ e95f98a fix: bind orchestration persistence retries
 eb6e2de feat: use bounded senior context
 6d7e01f feat: personalise proactive check-ins safely
 d035acd feat: add senior context correction controls
+de8fb97 docs: record gate 5 non-live verification
+4cc6795 fix: align live context memory persistence
 ```
 
 ## Non-Live Verification
@@ -89,7 +91,7 @@ npm run validate
 
 Result:
 
-- Vitest: 90 files passed, 3 gated suites skipped; 535 tests passed, 34 skipped.
+- Vitest: 91 files passed, 3 gated suites skipped; 537 tests passed, 34 skipped.
 - TypeScript: passed with `tsc --noEmit`.
 - ESLint: passed.
 - Next.js production build: passed; 23 static pages generated and both senior
@@ -98,38 +100,75 @@ Result:
 The build emitted the existing multiple-workspace-lockfile root warning. It did
 not fail compilation or validation.
 
-## Earlier Task 4 Live Evidence
+## Live Supabase Evidence
 
-Before the final retry-binding and bounded-consumption remediation, the reported
-Task 4 evidence was: focused 25/25, project guard 2/2, live 10/10 on three
-consecutive runs, zero cleanup residue, aligned migration history, and passing
-typecheck/lint. That evidence is useful historical coverage, but it was not
-rerun during this continuation and does not close the current release gate.
+Fresh final run after all remediation commits:
 
-## Live Evidence Still Required
+```bash
+TRUSTKAKI_RUN_LIVE_SUPABASE=1 npm test -- \
+  src/lib/security/gate5Memory.integration.test.ts
+```
 
-The following operations were not run because this work continued under an
-explicit no-live-operations restriction:
+Result: 1 file passed; 10/10 tests passed. The guarded suite proved exact
+project identity, same-command replay idempotency, changed-payload rejection,
+confirmation refresh, transactional replacement, stale-conflict rejection with
+no partial state, immutable events, admin-only mutation, shared authorized
+reads, unrelated-caregiver isolation, expiry exclusion, and cleanup.
 
-1. Rerun `gate5Memory.integration.test.ts` with
-   `TRUSTKAKI_RUN_LIVE_SUPABASE=1` after all remediation commits.
-2. Check linked migration history, database lint, and Supabase security and
-   performance advisors.
-3. Send a real Telegram durable preference and prove one extraction, one active
-   sourced record, one later fixed personalization, and unchanged
-   policy-authoritative risk.
-4. Correct or archive the record through the admin path and prove immutable
-   history, refresh survival, second-caregiver visibility, unrelated-caregiver
-   denial, stale conflict, idempotent retry, and cleanup.
-5. Inspect cleanup for zero temporary users, caregiver links, context rows,
-   commands, events, messages, and agent runs.
+The linked worktree migration list aligned through:
 
-No destination, phone number, token, provider payload, or credential was logged
-or added to this document.
+- `20260716060000_gate_5_memory_operationalisation.sql`
+- `20260716093309_gate_5_orchestration_replay_binding.sql`
+- `20260717114922_gate_5_context_memory_agent_id.sql`
+
+Linked database lint completed with no error-level findings. It reported one
+pre-existing warning in `reset_trustkaki_demo` about a text-to-UUID assignment;
+this is outside Gate 5 and did not fail lint. Linked security and performance
+advisors reported no error-level issues.
+
+Post-suite cleanup queries returned zero Gate 5 synthetic seniors, caregivers,
+messages, and auth users. The suite also verified zero rows for its exact
+temporary senior IDs across context and immutable-event stores before exit.
+
+## Real Telegram And Admin Evidence
+
+A real Telegram durable communication preference was processed by the deployed
+application. The Context Memory Agent used the real model, returned valid typed
+output without fallback, and created exactly one active
+`communication_preference` memory sourced to the persisted inbound message. It
+carried the closed `concise_text` application tag and a bounded expiry. No risk
+event was created.
+
+A later real care question loaded that persisted tag into orchestration. The
+reply was concise, while deterministic policy kept the final risk Yellow and
+recorded no risk change or risk event. The dashboard refresh showed the active
+preference and excluded confidence, source-message text, provider data, and
+other private provenance from the public read model.
+
+Through the authenticated production admin UI, the preference was corrected
+with a reason. Production state then contained one active `admin_corrected`
+record and one linked superseded record; the closed tag and expiry were
+preserved. The correction emitted command-bound `superseded` and `corrected`
+events with immutable before/after snapshots. The corrected record was then
+archived with a reason. The UI immediately reduced the active preference count,
+and production state showed zero active test preferences while retaining the
+superseded and archived rows and all four lifecycle events.
+
+Shared-caregiver visibility, non-admin mutation denial, unrelated-caregiver
+isolation, stale conflict, retry idempotency, event immutability, and fixture
+cleanup were proved by the authenticated live Supabase suite. The real UI flow
+used the demo-admin account; it did not claim a second real caregiver browser
+session.
+
+No destination, phone number, Telegram identifier, token, provider payload,
+credential, or secret was logged or added to this document.
 
 ## Decision
 
-Gate 5 implementation is complete and the non-live release baseline is green.
-Gate 5 is not yet release-verified or ready to mark complete because the final
-live Supabase, Telegram, two-caregiver, advisor, and cleanup evidence remains
-pending. No push or deployment was performed.
+Gate 5 is complete and live verified. Automatic extraction, later bounded use,
+admin correction and archive, immutable history, stale and retry behavior,
+authenticated sharing and isolation, advisor checks, full validation, and
+cleanup all passed.
+
+The remediation baseline is deployed at `https://trustkaki.vercel.app`. No Git
+push was performed as part of this verification close-out.

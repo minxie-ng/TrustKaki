@@ -242,8 +242,8 @@ Phase 5 Judge View work focuses on making the real flow understandable in under
 one minute: reset demo, run Quick Demo, inspect timeline/evidence, assign,
 record outcome, resolve, and see the active queue clear.
 
-Phase 7A / Gate 5 operational memory is implemented and passes the full
-non-live validation baseline. Pattern Watch and agents now read bounded active,
+Phase 7A / Gate 5 operational memory is implemented, deployed, and live
+verified. Pattern Watch and agents now read bounded active,
 non-expired senior-specific context instead of treating the tables as passive
 schema foundation:
 
@@ -259,8 +259,7 @@ from closed application tags; raw memory content is never copied. The dashboard
 provides compact shared reads and demo-admin correction/archive controls.
 
 These records remain operational support only. They guide follow-up questions
-and caregiver/AAC action, not diagnosis. Final live Gate 5 verification remains
-open; see
+and caregiver/AAC action, not diagnosis. Final Gate 5 evidence is recorded in
 `docs/superpowers/verification/2026-07-16-gate-5-memory-operationalisation.md`.
 
 Phase 7B multi-senior foundation is partially implemented. The dashboard reads
@@ -353,14 +352,11 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Complete final Gate 5 live verification only after live operations are
-explicitly authorized. Rerun the linked Supabase integration, migration, lint,
-and advisor checks; prove one real Telegram extraction and later fixed
-personalization; then exercise correction/archive, shared-caregiver visibility,
-unrelated-caregiver isolation, stale conflict, immutable history, and cleanup.
-Do not mark Gate 5 complete, push, or deploy before that evidence is recorded.
-Keep family fan-out, tenancy, WhatsApp recovery, and broad UI redesign out of
-this gate.
+Begin Gate 6 with a written organisation-tenancy and staff-role design. Map the
+existing caregiver-to-senior authorization model, RLS helpers, service-only
+operations, roster ownership, and migration path before implementation. Keep
+family fan-out, WhatsApp recovery, and broad UI redesign outside the tenancy
+foundation. Do not push without explicit approval.
 
 ## Working rules
 - inspect before modifying

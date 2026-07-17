@@ -1,9 +1,9 @@
 # Gate 5 Memory Operationalisation Implementation Plan
 
-Implementation status on 2026-07-17: Tasks 1-7 and Task 8 non-live validation
-are complete. Task 8 live Supabase, Telegram, two-caregiver, advisor, and cleanup
-evidence remains pending under the no-live-operations restriction. Gate 5 must
-not be marked complete until those checks pass.
+Implementation status on 2026-07-17: Tasks 1-8 are implemented and live
+verified. The final evidence covers real Telegram extraction and later bounded
+use, production admin correction/archive, authenticated Supabase sharing and
+isolation, stale and retry behavior, immutable events, advisors, and cleanup.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -452,7 +452,7 @@ Run all policy, agent, repository, route, UI, migration, Pattern Watch, and
 Gate 4 regression tests named above.
 Expected: PASS with no skipped non-live Gate 5 tests.
 
-- [ ] **Step 2: Run live Supabase tests and database checks**
+- [x] **Step 2: Run live Supabase tests and database checks**
 
 Run: `TRUSTKAKI_RUN_LIVE_SUPABASE=1 npm test -- src/lib/security/gate5Memory.integration.test.ts`
 Run: `supabase migration list`
@@ -461,7 +461,7 @@ Run relevant Supabase security and performance advisors.
 Expected: migration aligned; Gate 5 integration passes; no new actionable
 security or performance finding.
 
-- [ ] **Step 3: Perform one real Telegram memory flow**
+- [x] **Step 3: Perform one real Telegram memory flow**
 
 Send a durable preference from the mapped demo senior, for example “Important
 messages easier for me by short text.” Verify one Context Memory Agent run, one
@@ -469,7 +469,7 @@ active sourced record, and no approval step. Send a later care message and
 verify the senior-facing reply uses the preference without changing
 policy-authoritative risk. Refresh the app and verify persistence.
 
-- [ ] **Step 4: Verify correction, shared visibility, and isolation**
+- [x] **Step 4: Verify correction, shared visibility, and isolation**
 
 Correct or archive the extracted item through the admin panel with a reason.
 Verify immutable history, refresh survival, shared visibility for a second
@@ -494,7 +494,7 @@ Mark Gate 5 complete only if automatic extraction, later use, correction,
 expiry exclusion, live Supabase evidence, live Telegram evidence, and full
 validation all pass. Otherwise record the precise open evidence gap.
 
-- [ ] **Step 8: Commit the verified Gate 5 baseline**
+- [x] **Step 8: Commit the verified Gate 5 baseline**
 
 ```bash
 git add docs src supabase
