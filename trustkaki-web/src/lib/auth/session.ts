@@ -1,16 +1,31 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { createTrustKakiServiceClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import {
+  createTrustKakiServiceClient,
+  createTrustKakiUserClient,
+} from "@/lib/supabase/server";
+import type { OrganisationMembershipRole } from "@/lib/supabase/types";
 
-interface CaregiverAuthRow {
-  id: string;
-  display_name: string;
-}
+const caregiverAuthRowSchema = z.object({
+  id: z.string().uuid(),
+  display_name: z.string().min(1),
+});
 
-interface SeniorAccessRow {
-  senior_id: string;
-}
+const membershipRowsSchema = z.array(
+  z.object({
+    organisation_id: z.string().uuid(),
+    role: z.enum(["org_admin", "staff", "volunteer"]),
+  })
+);
+
+const seniorRowsSchema = z.array(
+  z.object({
+    id: z.string().uuid(),
+    organisation_id: z.string().uuid(),
+  })
+);
 
 export interface AuthenticatedCaregiver {
   userId: string;
@@ -18,7 +33,12 @@ export interface AuthenticatedCaregiver {
   role: string | null;
   caregiverId: string;
   caregiverName: string;
+  organisationMemberships: Array<{
+    organisationId: string;
+    role: OrganisationMembershipRole;
+  }>;
   accessibleSeniorIds: string[];
+  administrableSeniorIds: string[];
 }
 
 export interface AuthFailure {
@@ -35,6 +55,17 @@ export interface AuthSuccess {
 
 export type AuthResult = AuthSuccess | AuthFailure;
 
+async function capture<T>(operation: () => PromiseLike<T> | T): Promise<
+  | { ok: true; value: T }
+  | { ok: false }
+> {
+  try {
+    return { ok: true, value: await operation() };
+  } catch {
+    return { ok: false };
+  }
+}
+
 function bearerToken(request: Request): string | null {
   const header = request.headers.get("authorization");
   if (!header?.toLowerCase().startsWith("bearer ")) return null;
@@ -47,6 +78,13 @@ export function canAccessSenior(
   seniorId: string
 ): boolean {
   return auth.accessibleSeniorIds.includes(seniorId);
+}
+
+export function canAdministerSenior(
+  auth: AuthenticatedCaregiver,
+  seniorId: string
+): boolean {
+  return auth.administrableSeniorIds.includes(seniorId);
 }
 
 export function authJsonError(result: AuthFailure) {
@@ -66,38 +104,82 @@ export async function requireAuthenticatedCaregiver(
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const { data: userData, error: userError } = await client.auth.getUser(token);
+  const userResult = await capture(() => client.auth.getUser(token));
+  if (!userResult.ok) {
+    return { ok: false, status: 401, error: "Unauthorized" };
+  }
+  const { data: userData, error: userError } = userResult.value;
   const user = userData.user;
   if (userError || !user) {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const caregiverResult = await client
-    .from("caregivers")
-    .select("id, display_name")
-    .eq("auth_user_id", user.id)
-    .single();
-  const { data: caregiver, error: caregiverError } = caregiverResult as {
-    data: CaregiverAuthRow | null;
-    error: { message?: string } | null;
-  };
-
-  if (caregiverError || !caregiver) {
+  const caregiverResult = await capture(() =>
+    client
+      .from("caregivers")
+      .select("id, display_name")
+      .eq("auth_user_id", user.id)
+      .single()
+  );
+  if (!caregiverResult.ok || caregiverResult.value.error) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+  const caregiver = caregiverAuthRowSchema.safeParse(caregiverResult.value.data);
+  if (!caregiver.success) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
 
-  const seniorResult = await client
-    .from("senior_caregivers")
-    .select("senior_id")
-    .eq("caregiver_id", caregiver.id);
-  const { data: seniorRows, error: seniorError } = seniorResult as {
-    data: SeniorAccessRow[] | null;
-    error: { message?: string } | null;
-  };
-
-  if (seniorError) {
+  const userClientResult = await capture(() => createTrustKakiUserClient(token));
+  if (!userClientResult.ok || !userClientResult.value) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
+  const userClient = userClientResult.value;
+  const accessResults = await capture(() =>
+    Promise.all([
+      userClient
+        .from("organisation_memberships")
+        .select("organisation_id, role")
+        .eq("caregiver_id", caregiver.data.id)
+        .eq("active", true),
+      userClient.from("seniors").select("id, organisation_id"),
+    ])
+  );
+  if (!accessResults.ok) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+  const [membershipResult, seniorResult] = accessResults.value;
+
+  if (membershipResult.error || seniorResult.error) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+  const membershipRows = membershipRowsSchema.safeParse(membershipResult.data);
+  const seniorRows = seniorRowsSchema.safeParse(seniorResult.data);
+  if (!membershipRows.success || !seniorRows.success) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+
+  const organisationMemberships = membershipRows.data
+    .map((membership) => ({
+      organisationId: membership.organisation_id,
+      role: membership.role,
+    }))
+    .sort(
+      (left, right) =>
+        left.organisationId.localeCompare(right.organisationId) ||
+        left.role.localeCompare(right.role)
+    );
+  const adminOrganisationIds = new Set(
+    organisationMemberships
+      .filter((membership) => membership.role === "org_admin")
+      .map((membership) => membership.organisationId)
+  );
+  const accessibleSeniorIds = seniorRows.data
+    .map((senior) => senior.id)
+    .sort();
+  const administrableSeniorIds = seniorRows.data
+    .filter((senior) => adminOrganisationIds.has(senior.organisation_id))
+    .map((senior) => senior.id)
+    .sort();
 
   const role =
     typeof user.app_metadata?.role === "string" ? user.app_metadata.role : null;
@@ -109,11 +191,28 @@ export async function requireAuthenticatedCaregiver(
       userId: user.id,
       email: user.email ?? null,
       role,
-      caregiverId: caregiver.id,
-      caregiverName: caregiver.display_name,
-      accessibleSeniorIds: (seniorRows ?? []).map((row) => row.senior_id),
+      caregiverId: caregiver.data.id,
+      caregiverName: caregiver.data.display_name,
+      organisationMemberships,
+      accessibleSeniorIds,
+      administrableSeniorIds,
     },
   };
+}
+
+export async function requireOrganisationAdmin(
+  request: Request
+): Promise<AuthResult> {
+  const result = await requireAuthenticatedCaregiver(request);
+  if (!result.ok) return result;
+  if (
+    !result.auth.organisationMemberships.some(
+      (membership) => membership.role === "org_admin"
+    )
+  ) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+  return result;
 }
 
 export async function requireDemoAdmin(request: Request): Promise<AuthResult> {

@@ -27,7 +27,9 @@ const auth = {
   role: "caregiver",
   caregiverId: "caregiver-1",
   caregiverName: "Rachel Tan",
+  organisationMemberships: [],
   accessibleSeniorIds: [seniorId],
+  administrableSeniorIds: [],
 };
 
 interface QueryRecord {
