@@ -2,10 +2,86 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+const createTrustKakiServiceClientMock = vi.fn();
+
+vi.mock("@/lib/supabase/server", () => ({
+  createTrustKakiServiceClient: createTrustKakiServiceClientMock,
+}));
+
 const seniorId = "00000000-0000-4000-8000-000000000201";
 const sourceMessageId = "00000000-0000-4000-8000-000000000202";
 
 describe("memory repository", () => {
+  it("loads only active non-expired application tags without context content", async () => {
+    const queries: Array<{
+      table: string;
+      columns?: string;
+      filters: Array<[string, unknown]>;
+      orFilters: string[];
+    }> = [];
+    const from = vi.fn((table: string) => {
+      const query: (typeof queries)[number] = {
+        table,
+        filters: [],
+        orFilters: [],
+      };
+      queries.push(query);
+      const rows =
+        table === "senior_memories"
+          ? [{ application_tags: ["voice_preferred", "concise_text"] }]
+          : table === "routine_baselines"
+            ? [{ application_tags: ["practical_meal_prompt", "concise_text"] }]
+            : [{ application_tags: ["gentle_one_to_one"] }];
+      const builder = {
+        select: vi.fn((columns: string) => {
+          query.columns = columns;
+          return builder;
+        }),
+        eq: vi.fn((column: string, value: unknown) => {
+          query.filters.push([column, value]);
+          return builder;
+        }),
+        or: vi.fn((filter: string) => {
+          query.orFilters.push(filter);
+          return builder;
+        }),
+        then: (
+          resolve: (value: { data: typeof rows; error: null }) => unknown,
+          reject: (reason: unknown) => unknown
+        ) => Promise.resolve({ data: rows, error: null }).then(resolve, reject),
+      };
+      return builder;
+    });
+    createTrustKakiServiceClientMock.mockReturnValue({ from });
+    const { loadActiveContextApplicationTags } = await import(
+      "./memoryRepository"
+    );
+
+    const tags = await loadActiveContextApplicationTags({
+      seniorId,
+      now: "2026-07-17T00:00:00.000Z",
+    });
+
+    expect(tags).toEqual([
+      "concise_text",
+      "gentle_one_to_one",
+      "voice_preferred",
+      "practical_meal_prompt",
+    ]);
+    expect(queries).toHaveLength(3);
+    for (const query of queries) {
+      expect(query.columns).toBe("application_tags");
+      expect(query.filters).toEqual([
+        ["senior_id", seniorId],
+        ["status", "active"],
+      ]);
+      expect(query.orFilters).toEqual([
+        "expires_at.is.null,expires_at.gt.2026-07-17T00:00:00.000Z",
+      ]);
+    }
+    expect(JSON.stringify(queries)).not.toMatch(/content|description|usual_pattern/);
+  });
+
   it("calls the automatic lifecycle RPC with an accepted bounded payload", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: {

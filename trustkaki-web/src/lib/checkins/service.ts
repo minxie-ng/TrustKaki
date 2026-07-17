@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { MemoryApplicationTag } from "@/lib/memory/contracts";
+import { loadActiveContextApplicationTags } from "@/lib/persistence/memoryRepository";
 import {
   beginSendIntent,
   claimDueJobs,
@@ -17,6 +19,7 @@ import {
 import { findTelegramChatIdForSenior } from "@/lib/persistence/seniorMessagingIdentityRepository";
 import { telegramOutboundClient } from "@/lib/telegram/client";
 import type { TelegramOutboundClient } from "@/lib/telegram/types";
+import type { ProactiveCheckInStage } from "./contracts";
 import { isWithinQuietHours, nextProactiveAction } from "./policy";
 
 const PROCESSOR_RETRY_DELAY_MS = 5 * 60 * 1000;
@@ -32,6 +35,7 @@ export interface ProactiveCheckInProcessorDependencies {
   enqueueDueSchedules: typeof enqueueDueSchedules;
   claimDueJobs: typeof claimDueJobs;
   readProcessingSchedule: (scheduleId: string) => Promise<ProactiveProcessingSchedule>;
+  loadActiveContextApplicationTags: typeof loadActiveContextApplicationTags;
   findTelegramChatIdForSenior: (seniorId: string) => Promise<string | null>;
   findAcceptedOutbound: typeof findAcceptedOutbound;
   beginSendIntent: typeof beginSendIntent;
@@ -46,6 +50,7 @@ const defaultDependencies: ProactiveCheckInProcessorDependencies = {
   enqueueDueSchedules,
   claimDueJobs,
   readProcessingSchedule,
+  loadActiveContextApplicationTags,
   findTelegramChatIdForSenior,
   findAcceptedOutbound,
   beginSendIntent,
@@ -62,6 +67,27 @@ function plusMinutes(instant: string, minutes: number): string {
 
 function clientMessageId(job: ClaimedProactiveJob): string {
   return `proactive:${job.workflow_id}:${job.stage}`;
+}
+
+export function personaliseCheckIn(
+  baseText: string,
+  tags: readonly MemoryApplicationTag[],
+  stage: ProactiveCheckInStage
+): string {
+  const tagSet = new Set(tags);
+  const retry = stage === "retry_send";
+  let text = baseText.trim();
+  if (tagSet.has("gentle_one_to_one")) {
+    text = retry
+      ? "No rush. Just reply when convenient."
+      : "Hi, just checking in. No rush - how are you today?";
+  } else if (tagSet.has("concise_text")) {
+    text = retry ? "Please reply when convenient." : "How are you today?";
+  }
+  if (tagSet.has("practical_meal_prompt")) {
+    text = `${text} Have you managed to eat today?`;
+  }
+  return text;
 }
 
 function errorCategory(error: unknown): string {
@@ -97,13 +123,20 @@ async function sendStage(args: {
   dependencies: ProactiveCheckInProcessorDependencies;
 }) {
   const isInitial = args.job.stage === "initial_send";
-  const text = isInitial
+  const baseText = isInitial
     ? args.schedule.initialMessageTemplate
     : args.schedule.retryMessageTemplate;
   const messageId = clientMessageId(args.job);
   const accepted = await args.dependencies.findAcceptedOutbound(messageId);
 
   if (!accepted) {
+    const tags = await args.dependencies
+      .loadActiveContextApplicationTags({
+        seniorId: args.job.senior_id,
+        now: args.now,
+      })
+      .catch(() => [] as MemoryApplicationTag[]);
+    const text = personaliseCheckIn(baseText, tags, args.job.stage);
     const chatId = await args.dependencies.findTelegramChatIdForSenior(
       args.job.senior_id
     );
