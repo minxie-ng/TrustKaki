@@ -442,6 +442,8 @@ describe("memory repository", () => {
   });
 
   it("reads one active context version for the first replacement", async () => {
+    const activeKey =
+      "seed:memory:communication_preference:00000000-0000-4000-8000-000000000211";
     const rpc = vi.fn().mockResolvedValue({
       data: {
         accepted: true,
@@ -481,7 +483,7 @@ describe("memory repository", () => {
       sourceMessageId,
       payload: {
         store: "memory",
-        context_key: "preferred_language",
+        context_key: activeKey,
         decision: "accepted",
         intent: "replace",
         content: "Now prefers English calls",
@@ -495,7 +497,7 @@ describe("memory repository", () => {
 
     expect(client.from).toHaveBeenCalledWith("senior_memories");
     expect(activeBuilder.eq).toHaveBeenCalledWith("senior_id", seniorId);
-    expect(activeBuilder.eq).toHaveBeenCalledWith("context_key", "preferred_language");
+    expect(activeBuilder.eq).toHaveBeenCalledWith("context_key", activeKey);
     expect(activeBuilder.eq).toHaveBeenCalledWith("status", "active");
     expect(rpc.mock.calls[0][1].p_payload_json.expected_updated_at).toBe(
       "2026-07-16T02:00:00.000Z"

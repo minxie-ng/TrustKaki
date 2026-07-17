@@ -137,7 +137,7 @@ describe("orchestration persistence mapping", () => {
     contextType: "communication_preference",
     content: "Prefers Mandarin voice calls",
     sourceMessageId: clientMessageId,
-    evidenceExcerpt: "voice calls in Mandarin",
+    evidenceExcerpt: "I prefer voice calls in Mandarin",
     confidence: 0.94,
     applicationTags: ["voice_preferred"],
     retentionClass: "preference",
@@ -255,11 +255,117 @@ describe("orchestration persistence mapping", () => {
       payload: {
         decision: "accepted",
         context_key: "preferred_language",
-        content: "voice calls in Mandarin",
-        evidence_excerpt: "voice calls in Mandarin",
+        content: "I prefer voice calls in Mandarin",
+        evidence_excerpt: "I prefer voice calls in Mandarin",
       },
     });
     expect(commands[0].commandId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("preserves a seeded active key and stored content for confirmation", () => {
+    const activeKey =
+      "seed:memory:communication_preference:00000000-0000-4000-8000-000000000211";
+    const message = "I still prefer Mandarin voice calls.";
+    const sourceContext: AgentRunContext = {
+      ...context(),
+      knownContext: {
+        items: [
+          {
+            type: "preference",
+            targetStore: "memory",
+            contextKey: activeKey,
+            content: "Prefers Mandarin voice calls",
+            safeUseNotes: null,
+            applicationTags: ["voice_preferred"],
+          },
+        ],
+      },
+      messages: [
+        {
+          id: clientMessageId,
+          sender: "senior",
+          text: message,
+          timestamp: "2026-07-17T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const [command] = buildAutomaticMemoryCommands({
+      seniorId,
+      clientMessageId,
+      persistedInboundId: "00000000-0000-4000-8000-000000000207",
+      persistedInboundCreatedAt: "2026-07-17T00:00:00.000Z",
+      context: sourceContext,
+      result: memoryResult([
+        candidate({
+          contextKey: activeKey,
+          content: "Prefers Mandarin voice calls",
+          evidenceExcerpt: message,
+          intent: "confirm",
+        }),
+      ]),
+    });
+
+    expect(command.payload).toMatchObject({
+      decision: "accepted",
+      intent: "confirm",
+      context_key: activeKey,
+      content: "Prefers Mandarin voice calls",
+      evidence_excerpt: message,
+    });
+  });
+
+  it("preserves a seeded active key and uses current evidence for replacement", () => {
+    const activeKey =
+      "seed:memory:communication_preference:00000000-0000-4000-8000-000000000211";
+    const message = "I now prefer short English text messages.";
+    const sourceContext: AgentRunContext = {
+      ...context(),
+      knownContext: {
+        items: [
+          {
+            type: "preference",
+            targetStore: "memory",
+            contextKey: activeKey,
+            content: "Prefers Mandarin voice calls",
+            safeUseNotes: null,
+            applicationTags: ["voice_preferred"],
+          },
+        ],
+      },
+      messages: [
+        {
+          id: clientMessageId,
+          sender: "senior",
+          text: message,
+          timestamp: "2026-07-17T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const [command] = buildAutomaticMemoryCommands({
+      seniorId,
+      clientMessageId,
+      persistedInboundId: "00000000-0000-4000-8000-000000000207",
+      persistedInboundCreatedAt: "2026-07-17T00:00:00.000Z",
+      context: sourceContext,
+      result: memoryResult([
+        candidate({
+          contextKey: activeKey,
+          content: "Prefers short English text messages",
+          evidenceExcerpt: message,
+          intent: "replace",
+        }),
+      ]),
+    });
+
+    expect(command.payload).toMatchObject({
+      decision: "accepted",
+      intent: "replace",
+      context_key: activeKey,
+      content: message,
+      evidence_excerpt: message,
+    });
   });
 
   it("does not treat a public JSON round trip as an internal result with no commands", () => {
@@ -294,7 +400,7 @@ describe("orchestration persistence mapping", () => {
           context: context(),
           result: memoryResult([
             candidate({ contextKey: "Preferred Language", intent: firstIntent }),
-            candidate({ contextKey: " preferred-language ", intent: secondIntent }),
+            candidate({ contextKey: " preferred Language ", intent: secondIntent }),
           ]),
         })
       ).toThrow("ambiguous context candidate key");

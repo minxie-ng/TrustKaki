@@ -313,12 +313,26 @@ describe("orchestrate", () => {
       text: "I now prefer voice calls in English.",
       timestamp: "2026-07-16T00:00:00.000Z",
     });
+    const replacement = {
+      targetStore: "memory" as const,
+      contextKey: "preferred_language",
+      contextType: "communication_preference" as const,
+      content: "Prefers voice calls in English.",
+      sourceMessageId: "changed-language",
+      evidenceExcerpt: "I now prefer voice calls in English.",
+      confidence: 0.95,
+      applicationTags: ["voice_preferred" as const],
+      retentionClass: "preference" as const,
+      intent: "replace" as const,
+    };
     runAgentMock
       .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()))
-      .mockResolvedValueOnce(result("context_memory", memoryData()));
+      .mockResolvedValueOnce(
+        result("context_memory", memoryData({ candidates: [replacement] }))
+      );
 
-    await orchestrate("I now prefer voice calls in English.", ctx);
+    const response = await orchestrate("I now prefer voice calls in English.", ctx);
 
     const contextCall = runAgentMock.mock.calls.find(
       (call) => call[0].agentId === "context_memory"
@@ -326,6 +340,7 @@ describe("orchestrate", () => {
     expect(contextCall?.userPrompt).toContain(
       'store=memory; key=preferred_language; summary="I prefer voice calls in Mandarin."'
     );
+    expect(response.contextMemoryCandidates).toEqual([replacement]);
   });
 
   it.each([

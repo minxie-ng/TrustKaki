@@ -109,7 +109,7 @@ export const orchestratorOutputSchema = z
 export const memoryCandidateSchema = z
   .object({
     targetStore: z.enum(memoryTargetStores),
-    contextKey: z.string().trim().min(1).max(80),
+    contextKey: z.string().trim().min(1).max(120),
     contextType: z.enum(memoryContextTypes),
     content: z.string().trim().min(1).max(500),
     sourceMessageId: z.string().trim().min(1).max(120),

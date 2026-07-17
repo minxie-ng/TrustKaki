@@ -347,12 +347,30 @@ export function buildAutomaticMemoryCommands(args: {
       : { accepted: false as const, reason: "unsupported_evidence" as const };
     const currentMessageCited = candidate.sourceMessageId === args.clientMessageId;
     const accepted = eligibility.accepted && currentMessageCited;
-    const payload = accepted
+    const activeContext = args.context.knownContext?.items.find(
+      (item) =>
+        item.targetStore === candidate.targetStore &&
+        item.contextKey &&
+        normaliseContextKey(item.contextKey) ===
+          normaliseContextKey(candidate.contextKey)
+    );
+    const acceptedCandidate = accepted
+      ? {
+          ...eligibility.candidate,
+          ...(activeContext && intent !== "create"
+            ? { contextKey: activeContext.contextKey }
+            : {}),
+          ...(activeContext && intent === "confirm"
+            ? { content: activeContext.content }
+            : {}),
+        }
+      : null;
+    const payload = acceptedCandidate
       ? acceptedPayload(
-          eligibility.candidate,
+          acceptedCandidate,
           intent,
           expiryForRetention(
-            eligibility.candidate.retentionClass,
+            acceptedCandidate.retentionClass,
             new Date(args.persistedInboundCreatedAt)
           )
         )

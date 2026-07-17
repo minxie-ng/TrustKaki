@@ -170,6 +170,29 @@ describe("agent prompts", () => {
     expect(contextMemoryFallback()).toEqual({ candidates: [] });
   });
 
+  it("accepts active context keys up to the database limit", () => {
+    const contextKey = `seed:memory:${"x".repeat(108)}`;
+    expect(contextKey).toHaveLength(120);
+    expect(
+      contextMemoryOutputSchema.safeParse({
+        candidates: [
+          {
+            targetStore: "memory",
+            contextKey,
+            contextType: "communication_preference",
+            content: "Prefers voice calls",
+            sourceMessageId: "message-voice-language",
+            evidenceExcerpt: "I prefer voice calls in Mandarin.",
+            confidence: 0.96,
+            applicationTags: ["voice_preferred"],
+            retentionClass: "preference",
+            intent: "confirm",
+          },
+        ],
+      }).success
+    ).toBe(true);
+  });
+
   it.each([
     ["unknown candidate field", { rawProviderPayload: "hidden" }],
     ["open target store", { targetStore: "profile" }],

@@ -13,7 +13,7 @@ import {
 } from "./contracts";
 
 const MINIMUM_CONFIDENCE = 0.85;
-const MAX_CONTEXT_KEY_LENGTH = 80;
+const MAX_CONTEXT_KEY_LENGTH = 120;
 const MAX_CONTENT_LENGTH = 500;
 const MAX_EVIDENCE_LENGTH = 500;
 const MIN_EVIDENCE_LENGTH = 8;
@@ -105,6 +105,63 @@ const diagnosticPatterns = [
   /(?:^|\n)\s*i\s+(?:have|live with|suffer from)\s+(?:[a-z][a-z'-]*[ \t]+){0,4}(?:[a-z][a-z'-]*(?:itis|osis|emia|oma|pathy|tension)|[a-z][a-z'-]*[ \t]+(?:syndrome|disease|disorder)|alzheimer(?:'s)?)\b/i,
 ];
 
+const nonDiagnosticDirectObservationPatterns = [
+  /^(?:(?:persistent|ongoing|chronic|long[- ]term|recurring|severe|mild)\s+)*(?:(?:knee|back|joint|hip|leg|arm|shoulder|neck|chest|stomach)\s+)?(?:pain|ache|soreness|stiffness|swelling)(?:\s+for\s+.+)?$/i,
+  /^(?:pain|ache|soreness|stiffness|swelling)\s+(?:in|around)\s+.+$/i,
+  /^(?:difficulty|trouble|problems?)\s+(?:hearing|seeing|reading|walking|moving|breathing|sleeping)(?:\s+for\s+.+)?$/i,
+  /^(?:reduced|poor|little|no|low)\s+appetite(?:\s+for\s+.+)?$/i,
+  /^(?:hearing|vision|mobility|breathing|appetite|sleep)\s+(?:difficulty|problems?|loss|issues?)(?:\s+for\s+.+)?$/i,
+] as const;
+
+function hasAllPatterns(value: string, patterns: readonly RegExp[]): boolean {
+  return patterns.every((pattern) => pattern.test(value));
+}
+
+const contextEvidenceMatchers: Record<
+  MemoryContextType,
+  (value: string) => boolean
+> = {
+  communication_preference: (value) =>
+    hasAllPatterns(value, [
+      /\b(?:voice|calls?|texts?|messages?|language|mandarin|english|short|concise)\b/i,
+      /\b(?:prefer|would rather|keep|use|send|short|concise|hard to follow|cannot follow|can't follow)\b/i,
+    ]),
+  food_preference: (value) =>
+    hasAllPatterns(value, [
+      /\b(?:food|meal|breakfast|lunch|dinner|porridge|rice|meat|vegetables?|vegetarian|vegan|pescatarian)\b/i,
+      /\b(?:prefer|like|warm|cold|do not eat|don't eat|cannot eat|can't eat|allergic|vegetarian|vegan|pescatarian|always|usually|daily)\b/i,
+    ]),
+  routine_preference: (value) =>
+    hasAllPatterns(value, [
+      /\b(?:morning|afternoon|evening|night|walk|exercise|visit|call|wake|sleep|routine|schedule)\b/i,
+      /\b(?:prefer|like|would rather)\b/i,
+    ]),
+  aac_preference: (value) =>
+    hasAllPatterns(value, [
+      /\b(?:aac|active ageing|one[- ]to[- ]one|group activit(?:y|ies))\b/i,
+      /\b(?:prefer|like|comfortable|would rather)\b/i,
+    ]),
+  family_routing: (value) =>
+    hasAllPatterns(value, [
+      /\b(?:daughter|son|wife|husband|sister|brother|caregiver|niece|nephew)\b/i,
+      /\b(?:call|contact|tell|notify|message|handles?|manages?|arranges?|first)\b/i,
+    ]),
+  health_observation: (value) =>
+    hasAllPatterns(value, [
+      /\b(?:pain|ache|soreness|stiffness|swelling|mobility|hearing|vision|walking|breathing|appetite|sleep)\b/i,
+      /\b(?:persistent|ongoing|chronic|long[- ]term|recurring|for (?:many )?(?:years|months))\b/i,
+    ]),
+  accessibility_need: (value) =>
+    /\b(?:large(?:r)? text|small (?:text|words)|hearing aid|hard of hearing|wheelchair|screen reader|captions?|difficulty (?:hearing|seeing|reading|walking)|trouble (?:hearing|seeing|reading|walking)|cannot (?:hear|see|read|walk)|can't (?:hear|see|read|walk))\b/i.test(
+      value
+    ),
+  routine_baseline: (value) =>
+    hasAllPatterns(value, [
+      /\b(?:always|usually|every (?:day|morning|afternoon|evening|night|week)|daily|weekly)\b/i,
+      /\b(?:eat|have|wake|sleep|walk|call|visit|exercise|take)\b/i,
+    ]),
+};
+
 const selfDiagnosticClaimPatterns = [
   /(?:^|\n)\s*i\s+(?:think|believe)\s+i\s+(?:have|may have|might have)\s+[a-z][a-z'-]*(?:[ \t]+[a-z][a-z'-]*){0,5}[.!?]?(?=\n|$)/i,
 ];
@@ -119,6 +176,16 @@ function includes<T extends string>(values: readonly T[], value: unknown): value
 
 function hasPattern(value: string, patterns: readonly RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(value));
+}
+
+function isDirectDiagnosticClaim(candidate: MemoryCandidate): boolean {
+  if (candidate.contextType !== "health_observation") return false;
+  const match = candidate.evidenceExcerpt
+    .trim()
+    .match(/(?:^|[.!?]\s*)i\s+(?:have|live with|suffer from)\s+([^.!?\n]+)[.!?]?$/i);
+  if (!match) return false;
+  const claim = match[1].trim();
+  return !hasPattern(claim, nonDiagnosticDirectObservationPatterns);
 }
 
 function isSupportedCandidate(candidate: MemoryCandidate): boolean {
@@ -177,8 +244,8 @@ export function normaliseContextKey(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    .replace(/[^a-z0-9_:-]+/g, "_")
+    .replace(/^[_:-]+|[_:-]+$/g, "");
 }
 
 export function expiryForRetention(
@@ -225,7 +292,8 @@ export function evaluateMemoryCandidate(
   }
   if (
     hasPattern(proposedText, diagnosticPatterns) ||
-    hasPattern(proposedText, selfDiagnosticClaimPatterns)
+    hasPattern(proposedText, selfDiagnosticClaimPatterns) ||
+    isDirectDiagnosticClaim(candidate)
   ) {
     return { accepted: false, reason: "diagnostic_inference" };
   }
@@ -234,6 +302,9 @@ export function evaluateMemoryCandidate(
   }
   if (!hasValidBounds(candidate) || !isSupportedCandidate(candidate)) {
     return { accepted: false, reason: "invalid_candidate" };
+  }
+  if (!contextEvidenceMatchers[candidate.contextType](candidate.evidenceExcerpt)) {
+    return { accepted: false, reason: "unsupported_evidence" };
   }
 
   return {

@@ -88,6 +88,77 @@ describe("memory eligibility policy", () => {
     ).toEqual({ accepted: false, reason: "unsupported_evidence" });
   });
 
+  it("rejects evidence that does not support the declared context type", () => {
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "memory",
+          contextKey: "preferred_breakfast",
+          contextType: "food_preference",
+          content: "Prefers porridge.",
+          evidenceExcerpt: "messages",
+          applicationTags: ["practical_meal_prompt"],
+        },
+        sourceMessage
+      )
+    ).toEqual({ accepted: false, reason: "unsupported_evidence" });
+  });
+
+  it.each([
+    {
+      text: "I prefer morning walks.",
+      targetStore: "memory" as const,
+      contextType: "routine_preference" as const,
+      applicationTags: ["gentle_one_to_one" as const],
+      retentionClass: "preference" as const,
+    },
+    {
+      text: "I prefer one-to-one AAC visits.",
+      targetStore: "memory" as const,
+      contextType: "aac_preference" as const,
+      applicationTags: ["accessibility_support" as const],
+      retentionClass: "preference" as const,
+    },
+    {
+      text: "Call my daughter first for appointments.",
+      targetStore: "memory" as const,
+      contextType: "family_routing" as const,
+      applicationTags: ["trusted_contact_route" as const],
+      retentionClass: "family_routing" as const,
+    },
+    {
+      text: "Please use large text because I cannot read small words.",
+      targetStore: "health_context" as const,
+      contextType: "accessibility_need" as const,
+      applicationTags: ["accessibility_support" as const],
+      retentionClass: "health_accessibility" as const,
+    },
+    {
+      text: "I usually eat breakfast at 8 every morning.",
+      targetStore: "routine_baseline" as const,
+      contextType: "routine_baseline" as const,
+      applicationTags: ["practical_meal_prompt" as const],
+      retentionClass: "routine_baseline" as const,
+    },
+  ])("accepts supported $contextType evidence", (example) => {
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: example.targetStore,
+          contextKey: example.contextType,
+          contextType: example.contextType,
+          content: example.text,
+          evidenceExcerpt: example.text,
+          applicationTags: example.applicationTags,
+          retentionClass: example.retentionClass,
+        },
+        { ...sourceMessage, text: example.text }
+      )
+    ).toMatchObject({ accepted: true });
+  });
+
   it("rejects whitespace-only evidence", () => {
     expect(
       evaluateMemoryCandidate(
@@ -208,6 +279,68 @@ describe("memory eligibility policy", () => {
     ).toEqual({ accepted: false, reason: "diagnostic_inference" });
   });
 
+  it.each(["I have asthma", "I have COPD", "I have high blood pressure"])(
+    "rejects a direct condition claim: %s",
+    (text) => {
+      expect(
+        evaluateMemoryCandidate(
+          {
+            ...validPreference,
+            targetStore: "health_context",
+            contextKey: "lasting_health_context",
+            contextType: "health_observation",
+            content: text,
+            evidenceExcerpt: text,
+            applicationTags: ["gentle_one_to_one"],
+            retentionClass: "health_accessibility",
+          },
+          { ...sourceMessage, text }
+        )
+      ).toEqual({ accepted: false, reason: "diagnostic_inference" });
+    }
+  );
+
+  it("rejects a condition combined with an otherwise allowed symptom", () => {
+    const text = "I have asthma and persistent knee pain for years.";
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "health_context",
+          contextKey: "lasting_health_context",
+          contextType: "health_observation",
+          content: text,
+          evidenceExcerpt: text,
+          applicationTags: ["gentle_one_to_one"],
+          retentionClass: "health_accessibility",
+        },
+        { ...sourceMessage, text }
+      )
+    ).toEqual({ accepted: false, reason: "diagnostic_inference" });
+  });
+
+  it.each([
+    "I have persistent knee pain for many years.",
+    "I have difficulty walking for many months.",
+    "I have reduced appetite for many months.",
+  ])("accepts a lasting non-diagnostic observation: %s", (text) => {
+    expect(
+      evaluateMemoryCandidate(
+        {
+          ...validPreference,
+          targetStore: "health_context",
+          contextKey: "lasting_health_context",
+          contextType: "health_observation",
+          content: text,
+          evidenceExcerpt: text,
+          applicationTags: ["gentle_one_to_one"],
+          retentionClass: "health_accessibility",
+        },
+        { ...sourceMessage, text }
+      )
+    ).toMatchObject({ accepted: true });
+  });
+
   it("rejects common treatment instructions", () => {
     const text = "Take two aspirin daily";
     expect(
@@ -270,7 +403,7 @@ describe("memory eligibility policy", () => {
         {
           ...validPreference,
           content: "Uses the phrase take care.",
-          evidenceExcerpt: "take care",
+          evidenceExcerpt: "Please keep messages short and take care.",
         },
         { ...sourceMessage, text: "Please keep messages short and take care." }
       )
@@ -291,10 +424,17 @@ describe("memory eligibility policy", () => {
 
   it("normalises stable context keys", () => {
     expect(normaliseContextKey("  Breakfast---Routine / Weekdays  ")).toBe(
-      "breakfast_routine_weekdays"
+      "breakfast---routine_weekdays"
     );
     expect(normaliseContextKey("___Preferred_LANGUAGE___")).toBe(
       "preferred_language"
+    );
+    expect(
+      normaliseContextKey(
+        "seed:memory:communication_preference:00000000-0000-4000-8000-000000000001"
+      )
+    ).toBe(
+      "seed:memory:communication_preference:00000000-0000-4000-8000-000000000001"
     );
   });
 

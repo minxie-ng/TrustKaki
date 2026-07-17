@@ -594,7 +594,7 @@ describe("TrustKaki persistence senior identity", () => {
         },
         {
           targetStore: "memory",
-          contextKey: "meal-preference",
+          contextKey: " meal Preference ",
           contextType: "food_preference",
           content: "Prefers rice for breakfast",
           sourceMessageId: "message-b-1",
