@@ -1,5 +1,10 @@
 # Gate 5 Memory Operationalisation Implementation Plan
 
+Implementation status on 2026-07-17: Tasks 1-7 and Task 8 non-live validation
+are complete. Task 8 live Supabase, Telegram, two-caregiver, advisor, and cleanup
+evidence remains pending under the no-live-operations restriction. Gate 5 must
+not be marked complete until those checks pass.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Automatically extract safe, sourced, expiring senior context and use it to personalise later agent replies, Pattern Watch comparisons, and proactive check-ins without adding a caregiver approval queue.
@@ -39,7 +44,7 @@
 - Create: `src/lib/memory/policy.ts`
 - Create: `src/lib/memory/policy.test.ts`
 
-- [ ] **Step 1: Write failing policy tests**
+- [x] **Step 1: Write failing policy tests**
 
 Cover confidence `0.85`, exact evidence matching, supported stores/types,
 sensitive-data rejection, diagnostic-inference rejection, category retention,
@@ -56,12 +61,12 @@ expect(evaluateMemoryCandidate(diagnosisCandidate, sourceMessage))
   .toEqual({ accepted: false, reason: "diagnostic_inference" });
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `npm test -- src/lib/memory/policy.test.ts`
 Expected: FAIL because the memory policy module does not exist.
 
-- [ ] **Step 3: Implement minimal contracts and pure policy**
+- [x] **Step 3: Implement minimal contracts and pure policy**
 
 Define `MemoryCandidate` with `targetStore`, `contextKey`, `contextType`,
 `content`, `sourceMessageId`, `evidenceExcerpt`, `confidence`,
@@ -78,12 +83,12 @@ Use a closed application-tag enum:
 `practical_meal_prompt`, `accessibility_support`, and `trusted_contact_route`.
 Do not call Supabase, an LLM, or the system clock inside policy functions.
 
-- [ ] **Step 4: Run focused tests and typecheck**
+- [x] **Step 4: Run focused tests and typecheck**
 
 Run: `npm test -- src/lib/memory/policy.test.ts && npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/memory
@@ -97,7 +102,7 @@ git commit -m "feat: define memory eligibility policy"
 - Create: `src/lib/security/gate5MemoryMigration.test.ts`
 - Modify: `src/lib/supabase/types.ts`
 
-- [ ] **Step 1: Create the migration filename normally**
+- [x] **Step 1: Create the migration filename normally**
 
 Run: `supabase migration new gate_5_memory_operationalisation`
 Expected: one new timestamped SQL file under `supabase/migrations`. Before
@@ -105,7 +110,7 @@ writing SQL, rename that empty file to the reserved, collision-free plan path
 `20260716060000_gate_5_memory_operationalisation.sql`; the migration remains a
 normal Supabase migration and retains ordering after all existing Gate 4 files.
 
-- [ ] **Step 2: Write the failing migration contract test**
+- [x] **Step 2: Write the failing migration contract test**
 
 Assert that all three existing context tables gain `context_key`, provenance,
 confidence, confirmation, expiry, supersession, and application-tag fields;
@@ -120,12 +125,12 @@ expect(sql).toContain("archive_senior_context");
 expect(sql).not.toMatch(/grant (insert|update|delete).*senior_context_events.*authenticated/i);
 ```
 
-- [ ] **Step 3: Run the migration test and verify RED**
+- [x] **Step 3: Run the migration test and verify RED**
 
 Run: `npm test -- src/lib/security/gate5MemoryMigration.test.ts`
 Expected: FAIL until the schema and commands satisfy the contract.
 
-- [ ] **Step 4: Implement the smallest transactional schema**
+- [x] **Step 4: Implement the smallest transactional schema**
 
 Add shared fields to existing tables, a partial unique index for one active
 `(senior_id, context_key)` per table, and append-only event rows. Implement:
@@ -142,12 +147,12 @@ IDs to actor plus normalized payload using the existing private keyed-digest
 pattern. Replays return the prior result; changed replays fail. Stale expected
 versions raise a conflict before any state or event write.
 
-- [ ] **Step 5: Update generated-equivalent TypeScript database types and run checks**
+- [x] **Step 5: Update generated-equivalent TypeScript database types and run checks**
 
 Run: `npm test -- src/lib/security/gate5MemoryMigration.test.ts && npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add supabase/migrations src/lib/security/gate5MemoryMigration.test.ts src/lib/supabase/types.ts
@@ -166,7 +171,7 @@ git commit -m "feat: add auditable senior context lifecycle"
 - Modify: `src/lib/agents/orchestrator.ts`
 - Modify: `src/lib/agents/orchestrator.test.ts`
 
-- [ ] **Step 1: Write failing schema, prompt, and routing tests**
+- [x] **Step 1: Write failing schema, prompt, and routing tests**
 
 Prove a separate `context_memory` agent contract, exact evidence fields,
 closed tags, safe empty fallback, invocation for “I prefer voice calls in
@@ -179,12 +184,12 @@ expect(greetingResult.traces.map((trace) => trace.agentId))
 expect(contextMemoryOutputSchema.safeParse({ candidates: [] }).success).toBe(true);
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `npm test -- src/lib/agents/prompts.test.ts src/lib/agents/orchestrator.test.ts`
 Expected: FAIL because `context_memory` is not defined or routed.
 
-- [ ] **Step 3: Add the specialist prompt, schema, fallback, and runner**
+- [x] **Step 3: Add the specialist prompt, schema, fallback, and runner**
 
 The prompt must request candidates only, require an exact excerpt, forbid
 diagnosis/credentials, and return `{ candidates: MemoryCandidate[] }`. The
@@ -192,7 +197,7 @@ fallback returns no candidates. Add the agent through the existing shared
 `runAgent` runner so latency, model, trace ID, summaries, fallback, and errors
 are persisted like every other agent.
 
-- [ ] **Step 4: Add bounded deterministic invocation**
+- [x] **Step 4: Add bounded deterministic invocation**
 
 Keep orchestrator planning visible, but guard the specialist with a small local
 `mayContainDurableContext(message)` function. Run when either the validated plan
@@ -200,12 +205,12 @@ requests it or the message contains durable-context cues; skip greetings and
 unchanged acknowledgements. Return eligible candidates internally without
 including hidden reasoning or raw provider output in the API response.
 
-- [ ] **Step 5: Run focused agent tests and typecheck**
+- [x] **Step 5: Run focused agent tests and typecheck**
 
 Run: `npm test -- src/lib/agents/prompts.test.ts src/lib/agents/orchestrator.test.ts src/lib/agents/provider.test.ts && npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/types.ts src/lib/agents
@@ -223,7 +228,7 @@ git commit -m "feat: add context memory agent"
 - Modify: `src/lib/persistence/orchestration.test.ts`
 - Modify: `src/lib/persistence/trustkakiRepository.test.ts`
 
-- [ ] **Step 1: Write failing repository and orchestration tests**
+- [x] **Step 1: Write failing repository and orchestration tests**
 
 Prove policy rejection causes no RPC, accepted candidates use the persisted
 inbound message ID, extraction failure does not fail orchestration, and repeated
@@ -238,7 +243,7 @@ expect(result.persistence.persisted).toBe(true);
 expect(reply).toBeDefined();
 ```
 
-- [ ] **Step 2: Implement repository methods and orchestration wiring**
+- [x] **Step 2: Implement repository methods and orchestration wiring**
 
 `memoryRepository.ts` owns only parsed RPC calls and bounded reads. After the
 inbound message is upserted, map its database ID, evaluate every validated
@@ -246,27 +251,27 @@ candidate, and call `apply_automatic_senior_context`. Catch and classify memory
 errors separately so signals, policy risk, briefing, and outbound reply still
 persist.
 
-- [ ] **Step 3: Apply the migration through the normal workflow**
+- [x] **Step 3: Apply the migration through the normal workflow**
 
 Run: `supabase db push`
 Run: `supabase migration list`
 Expected: local and remote Gate 5 migration versions align on the linked
 TrustKaki project only.
 
-- [ ] **Step 4: Add live two-caregiver integration tests**
+- [x] **Step 4: Add live two-caregiver integration tests**
 
 Create two authorized caregivers for one temporary senior plus an unrelated
 caregiver/senior. Prove automatic insertion, idempotent replay, changed-payload
 rejection, confirmation refresh, transactional supersession, stale correction
 conflict, immutable events, shared reads, unrelated isolation, and cleanup.
 
-- [ ] **Step 5: Run focused and live tests repeatedly**
+- [x] **Step 5: Run focused and live tests repeatedly**
 
 Run: `npm test -- src/lib/persistence/memoryRepository.test.ts src/lib/persistence/orchestration.test.ts src/lib/persistence/trustkakiRepository.test.ts`
 Run three times: `TRUSTKAKI_RUN_LIVE_SUPABASE=1 npm test -- src/lib/security/gate5Memory.integration.test.ts`
 Expected: all runs pass with no duplicate active context or events.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/persistence src/lib/security/gate5Memory.integration.test.ts
@@ -285,7 +290,7 @@ git commit -m "feat: persist automatic senior context"
 - Modify: `src/lib/persistence/patternRepository.ts`
 - Modify: `src/lib/persistence/trustkakiRepository.test.ts`
 
-- [ ] **Step 1: Write failing context-read tests**
+- [x] **Step 1: Write failing context-read tests**
 
 Prove only active non-expired records are returned, at most twelve concise
 items enter `knownContext`, health context is labelled non-diagnostic, and
@@ -297,32 +302,32 @@ expect(context.knownContext.items).not.toContainEqual(expect.objectContaining({ 
 expect(pattern.memoryNotes).not.toContain("Archived preference");
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `npm test -- src/lib/persistence/seniorContextRepository.test.ts src/lib/agents/prompts.test.ts src/lib/persistence/trustkakiRepository.test.ts`
 Expected: FAIL because agent context lacks `knownContext` and Pattern Watch does
 not enforce expiry.
 
-- [ ] **Step 3: Implement bounded server-side loading**
+- [x] **Step 3: Implement bounded server-side loading**
 
 Load active rows with `(expires_at is null or expires_at > now)` for the one
 authorized senior. Sort by importance/confidence and recency, cap the combined
 bundle at twelve items and each content value at 280 characters, and expose
 only type, content, safe-use notes, and application tags.
 
-- [ ] **Step 4: Add prompt labels and Pattern Watch filters**
+- [x] **Step 4: Add prompt labels and Pattern Watch filters**
 
 Render separate “Preferences,” “Usual routine,” and “Observed operational
 context” sections. Explicitly tell agents that context may be stale and is not
 a diagnosis. Keep deterministic policy risk authoritative. Apply identical
 active/expiry filters in `patternRepository.ts`.
 
-- [ ] **Step 5: Run focused tests and typecheck**
+- [x] **Step 5: Run focused tests and typecheck**
 
 Run: `npm test -- src/lib/persistence/seniorContextRepository.test.ts src/lib/agents/prompts.test.ts src/lib/persistence/trustkakiRepository.test.ts && npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/agents src/lib/persistence/seniorContextRepository.ts src/lib/persistence/seniorContextRepository.test.ts src/lib/persistence/patternRepository.ts src/lib/persistence/trustkakiRepository.test.ts
@@ -337,7 +342,7 @@ git commit -m "feat: use bounded senior context"
 - Modify: `src/lib/persistence/memoryRepository.ts`
 - Modify: `src/lib/persistence/memoryRepository.test.ts`
 
-- [ ] **Step 1: Write failing wording tests**
+- [x] **Step 1: Write failing wording tests**
 
 Prove `concise_text` shortens the configured check-in, `gentle_one_to_one`
 selects a low-pressure variant, `practical_meal_prompt` adds only the approved
@@ -349,24 +354,24 @@ expect(personaliseCheckIn(base, ["practical_meal_prompt"])).toContain("managed t
 expect(personaliseCheckIn(base, tags)).not.toContain(rawMemoryContent);
 ```
 
-- [ ] **Step 2: Run the service test and verify RED**
+- [x] **Step 2: Run the service test and verify RED**
 
 Run: `npm test -- src/lib/checkins/service.test.ts`
 Expected: FAIL because sends use only the stored template.
 
-- [ ] **Step 3: Implement pure fixed-variant selection**
+- [x] **Step 3: Implement pure fixed-variant selection**
 
 Export `personaliseCheckIn(baseText, tags, stage)` as a pure function. At send
 time load only active tags for the senior; make no LLM call. Preserve Gate 4
 client-message IDs, send-intent handling, exactly-one retry, response windows,
 and provider reconciliation unchanged.
 
-- [ ] **Step 4: Run Gate 4 regression and memory tests**
+- [x] **Step 4: Run Gate 4 regression and memory tests**
 
 Run: `npm test -- src/lib/checkins/service.test.ts src/lib/checkins/policy.test.ts src/lib/persistence/proactiveCheckInRepository.test.ts src/lib/persistence/memoryRepository.test.ts`
 Expected: PASS with existing Gate 4 timing and idempotency unchanged.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/checkins src/lib/persistence/memoryRepository.ts src/lib/persistence/memoryRepository.test.ts
@@ -387,7 +392,7 @@ git commit -m "feat: personalise proactive check-ins safely"
 - Modify: `src/app/page.tsx`
 - Modify: `src/components/Dashboard.tsx`
 
-- [ ] **Step 1: Write failing route and presentation tests**
+- [x] **Step 1: Write failing route and presentation tests**
 
 Prove authorized shared reads, unrelated isolation, admin-only correction and
 archive, required ten-character reason, expected-version conflict, duplicate
@@ -401,19 +406,19 @@ expect(memoryPanelPresentation(items, false)).toMatchObject({
 expect(renderedText).not.toMatch(/approve|provider response|confidence percentage/i);
 ```
 
-- [ ] **Step 2: Run focused tests and verify RED**
+- [x] **Step 2: Run focused tests and verify RED**
 
 Run: `npm test -- 'src/app/api/seniors/[seniorId]/context/route.test.ts' 'src/app/api/admin/seniors/[seniorId]/context/route.test.ts' src/components/dashboard/SeniorContextPanel.test.ts`
 Expected: FAIL because routes and panel do not exist.
 
-- [ ] **Step 3: Implement strict routes**
+- [x] **Step 3: Implement strict routes**
 
 GET uses authenticated senior access. POST requires `demo_admin`, accepts only
 `correct` or `archive`, binds `commandId`, `seniorId`, context identity,
 `expectedUpdatedAt`, replacement fields, and reason, and maps stale state to
 HTTP 409. Responses contain the updated read model only.
 
-- [ ] **Step 4: Implement the compact context panel**
+- [x] **Step 4: Implement the compact context panel**
 
 Use one collapsed `details` section under the selected senior. Show concise
 grouped context by default and source age/expiry after expansion. Admins can
@@ -421,12 +426,12 @@ correct or archive one item through a small inline form; disable controls while
 saving, reuse command ID only for an identical retry, refresh after success,
 and show safe retry text on failure.
 
-- [ ] **Step 5: Run focused UI/API tests, typecheck, and lint**
+- [x] **Step 5: Run focused UI/API tests, typecheck, and lint**
 
 Run: `npm test -- 'src/app/api/seniors/[seniorId]/context/route.test.ts' 'src/app/api/admin/seniors/[seniorId]/context/route.test.ts' src/components/dashboard/SeniorContextPanel.test.ts src/lib/api/schemas.test.ts && npm run typecheck && npm run lint`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/api/seniors src/app/api/admin/seniors src/components src/app/page.tsx src/lib/api
@@ -441,7 +446,7 @@ git commit -m "feat: add senior context correction controls"
 - Modify: `docs/TrustKaki_CODEX_HANDOFF.md`
 - Modify: `docs/superpowers/plans/2026-07-16-gate-5-memory-operationalisation.md`
 
-- [ ] **Step 1: Run all focused Gate 5 suites**
+- [x] **Step 1: Run all focused Gate 5 suites**
 
 Run all policy, agent, repository, route, UI, migration, Pattern Watch, and
 Gate 4 regression tests named above.
@@ -471,19 +476,19 @@ Verify immutable history, refresh survival, shared visibility for a second
 authorized caregiver, unrelated-caregiver denial, and no raw provider data or
 secret exposure.
 
-- [ ] **Step 5: Run complete validation**
+- [x] **Step 5: Run complete validation**
 
 Run: `npm run validate`
 Expected: all Vitest tests, TypeScript, ESLint, and production build pass.
 
-- [ ] **Step 6: Inspect repository hygiene and write exact evidence**
+- [x] **Step 6: Inspect repository hygiene and write exact evidence**
 
 Record commands, counts, migration version, live Telegram messages without
 destinations or secrets, extracted context, later personalization, correction,
 two-user evidence, advisors, limitations, and production status. Inspect the
 diff and leave the unrelated `package-lock.json` change untouched.
 
-- [ ] **Step 7: Update roadmap and handoff truthfully**
+- [x] **Step 7: Update roadmap and handoff truthfully**
 
 Mark Gate 5 complete only if automatic extraction, later use, correction,
 expiry exclusion, live Supabase evidence, live Telegram evidence, and full

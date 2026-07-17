@@ -242,17 +242,26 @@ Phase 5 Judge View work focuses on making the real flow understandable in under
 one minute: reset demo, run Quick Demo, inspect timeline/evidence, assign,
 record outcome, resolve, and see the active queue clear.
 
-Phase 7A senior context schema foundation exists. Operational memory workflows
-remain incomplete. The intended production direction is to make Pattern Watch
-compare new signals against stored senior-specific context instead of generic
-keyword-like assumptions:
+Phase 7A / Gate 5 operational memory is implemented and passes the full
+non-live validation baseline. Pattern Watch and agents now read bounded active,
+non-expired senior-specific context instead of treating the tables as passive
+schema foundation:
 
 - `routine_baselines`
 - `senior_health_contexts`
 - `senior_memories`
 
-These records are operational support only. They should guide follow-up
-questions and caregiver/AAC action, not diagnose medical conditions.
+Automatic Context Memory proposals use exact senior-authored evidence and a
+deterministic eligibility policy. Transactional RPCs provide provenance,
+retention, immutable events, idempotency, stale-conflict rejection, correction,
+and archive. Proactive check-ins personalize only through fixed variants chosen
+from closed application tags; raw memory content is never copied. The dashboard
+provides compact shared reads and demo-admin correction/archive controls.
+
+These records remain operational support only. They guide follow-up questions
+and caregiver/AAC action, not diagnosis. Final live Gate 5 verification remains
+open; see
+`docs/superpowers/verification/2026-07-16-gate-5-memory-operationalisation.md`.
 
 Phase 7B multi-senior foundation is partially implemented. The dashboard reads
 all seniors accessible to the authenticated caregiver, aggregates the follow-up
@@ -344,11 +353,14 @@ different household contexts, caregiver relationships, and risk levels.
 
 ## Immediate next task
 
-Begin Gate 5 Memory Operationalisation as a separate bounded plan. The existing
-`routine_baselines`, `senior_health_contexts`, and `senior_memories` tables need
-caregiver review, provenance, expiry, retention, and safe extraction proposals
-before agents consume them as trusted context. Keep family fan-out, tenancy,
-WhatsApp recovery, and broad UI redesign out of this gate.
+Complete final Gate 5 live verification only after live operations are
+explicitly authorized. Rerun the linked Supabase integration, migration, lint,
+and advisor checks; prove one real Telegram extraction and later fixed
+personalization; then exercise correction/archive, shared-caregiver visibility,
+unrelated-caregiver isolation, stale conflict, immutable history, and cleanup.
+Do not mark Gate 5 complete, push, or deploy before that evidence is recorded.
+Keep family fan-out, tenancy, WhatsApp recovery, and broad UI redesign out of
+this gate.
 
 ## Working rules
 - inspect before modifying

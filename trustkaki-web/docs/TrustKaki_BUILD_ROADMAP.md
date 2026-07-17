@@ -996,9 +996,20 @@ shared scheduler remains active.
 
 #### Gate 5 — Memory Operationalisation
 
-The `routine_baselines`, `senior_health_contexts`, and `senior_memories` tables
-already exist. This gate completes caregiver review, provenance, expiry,
-retention, safe extraction proposals, and memory-aware check-ins.
+- [x] add closed typed context contracts and deterministic eligibility policy
+- [x] add provenance, expiry, retention, immutable events, and lifecycle RPCs
+- [x] add conditional Context Memory Agent proposals and transactional persistence
+- [x] bind private persistence retries and recover partial failures safely
+- [x] add bounded active/non-expired agent and Pattern Watch context reads
+- [x] add fixed-variant memory-aware proactive check-ins without raw memory text
+- [x] add authenticated shared reads and admin correction/archive controls
+- [x] pass the full non-live test, typecheck, lint, and production-build baseline
+- [ ] rerun final live Supabase isolation, migration, lint, and advisor checks
+- [ ] verify real Telegram extraction, later use, correction/archive, and cleanup
+
+The implementation baseline is recorded in
+`docs/superpowers/verification/2026-07-16-gate-5-memory-operationalisation.md`.
+Gate 5 remains open until the final live evidence is authorized and completed.
 
 #### Gate 6 — Organisation and Scale Readiness
 
@@ -1022,12 +1033,13 @@ retention, safe extraction proposals, and memory-aware check-ins.
 
 ## 16A. Best Next Step
 
-Gate 4 passed independent audit and production verification. The next bounded
-step is Gate 5 Memory Operationalisation: add caregiver review, provenance,
-expiry, retention, and safe extraction proposals around the memory tables that
-already exist. Preserve the Telegram demo path and WhatsApp code. Do not mix
-Gate 5 with caregiver notification fan-out, organisation tenancy, or broad UI
-redesign.
+Gate 5 implementation and non-live validation are complete. The next bounded
+step is final live Gate 5 verification: rerun linked Supabase isolation and
+advisor checks, prove one real Telegram extraction and later personalization,
+exercise correction/archive with two authorized caregivers and one unrelated
+caregiver, and confirm zero cleanup residue. Preserve the Telegram demo path
+and WhatsApp code. Do not mix Gate 5 with caregiver notification fan-out,
+organisation tenancy, or broad UI redesign.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
