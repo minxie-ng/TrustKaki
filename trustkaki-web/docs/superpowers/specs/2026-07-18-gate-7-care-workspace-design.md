@@ -272,7 +272,7 @@ Browser verification must cover at least:
 - mobile layout at 390x844;
 - ranked ordering and visible urgency;
 - senior switching;
-- opening and submitting the existing case form without overlap;
+- opening and exercising the existing case form fields without overlap;
 - empty and loading states;
 - keyboard focus;
 - reduced motion;
@@ -280,7 +280,8 @@ Browser verification must cover at least:
   broken portrait assets.
 
 Use screenshots to compare the implemented result with the approved calm case
-workspace. Live database operations are not required unless implementation
+workspace. Existing focused tests verify case submission semantics and stale
+conflicts. Live database operations are not required unless implementation
 changes a server or persistence boundary, which this design explicitly avoids.
 
 ## Out Of Scope
