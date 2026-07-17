@@ -117,6 +117,16 @@ async function createAdminFixture(
     if (relationship.error) {
       throw new Error("Gate 2 admin relationship creation failed");
     }
+    const membership = await fixture.serviceClient
+      .from("organisation_memberships")
+      .insert({
+        organisation_id: fixture.organisationId,
+        caregiver_id: caregiverId,
+        role: "org_admin",
+      });
+    if (membership.error) {
+      throw new Error("Gate 2 admin membership creation failed");
+    }
 
     const authClient = createClient(config.url, config.anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -159,9 +169,9 @@ describeDatabase("Gate 2 contacts and consent integration", () => {
   });
 
   afterAll(async () => {
-    await fixture?.cleanup();
     await admin?.cleanup();
     await observer?.cleanup();
+    await fixture?.cleanup();
   });
 
   it("keeps contact plans admin-only and senior-scoped", async () => {

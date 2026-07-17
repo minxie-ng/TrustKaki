@@ -103,6 +103,7 @@ function requireSuccess(
 describeLive("Gate 5 memory lifecycle and isolation", () => {
   const runId = randomUUID();
   const marker = `trustkaki-gate5-${runId}`;
+  const organisationIds = [randomUUID(), randomUUID()];
   const seniorIds = [randomUUID(), randomUUID()];
   const caregiverIds = [randomUUID(), randomUUID(), randomUUID()];
   const checkInId = randomUUID();
@@ -192,6 +193,9 @@ describeLive("Gate 5 memory lifecycle and isolation", () => {
     await assertGate5LiveProjectIdentity();
 
     const seniorList = seniorIds.map((id) => `'${id}'::uuid`).join(", ");
+    const organisationList = organisationIds
+      .map((id) => `'${id}'::uuid`)
+      .join(", ");
     const sql = `
 begin;
 alter table public.senior_context_events disable trigger senior_context_events_append_only;
@@ -206,6 +210,7 @@ delete from public.check_ins where senior_id in (${seniorList});
 delete from public.senior_caregivers where senior_id in (${seniorList});
 delete from public.caregivers where external_ref like '${marker}%';
 delete from public.seniors where external_ref like '${marker}%';
+delete from public.organisations where id in (${organisationList});
 commit;`;
     await execFileAsync(
       "npx",
@@ -225,13 +230,14 @@ commit;`;
       requireSuccess("Gate 5 auth user cleanup", deletion);
     }
 
-    const [seniors, caregivers, contexts, events] = await Promise.all([
+    const [seniors, caregivers, contexts, events, organisations] = await Promise.all([
       service.from("seniors").select("id").in("id", seniorIds),
       service.from("caregivers").select("id").in("id", caregiverIds),
       service.from("senior_memories").select("id").in("senior_id", seniorIds),
       service.from("senior_context_events").select("id").in("senior_id", seniorIds),
+      service.from("organisations").select("id").in("id", organisationIds),
     ]);
-    for (const result of [seniors, caregivers, contexts, events]) {
+    for (const result of [seniors, caregivers, contexts, events, organisations]) {
       requireSuccess("Gate 5 cleanup verification", result);
       if (result.data?.length) throw new Error("Gate 5 cleanup left temporary rows");
     }
@@ -250,18 +256,45 @@ commit;`;
       caregiverB = await createCaregiver(1, "caregiver");
       unrelated = await createCaregiver(2, "caregiver");
       requireSuccess(
+        "Gate 5 organisation creation",
+        await service.from("organisations").insert([
+          {
+            id: organisationIds[0],
+            slug: `gate5-a-${runId}`,
+            display_name: "Gate 5 Organisation A",
+            organisation_type: "aac_centre",
+          },
+          {
+            id: organisationIds[1],
+            slug: `gate5-b-${runId}`,
+            display_name: "Gate 5 Organisation B",
+            organisation_type: "aac_centre",
+          },
+        ])
+      );
+      requireSuccess(
+        "Gate 5 administrator membership creation",
+        await service.from("organisation_memberships").insert({
+          organisation_id: organisationIds[0],
+          caregiver_id: caregiverIds[0],
+          role: "org_admin",
+        })
+      );
+      requireSuccess(
         "Gate 5 senior creation",
         await service.from("seniors").insert([
           {
             id: seniorIds[0],
             external_ref: `${marker}-shared-senior`,
             display_name: "Gate 5 Shared Senior",
+            organisation_id: organisationIds[0],
             risk_level: "green",
           },
           {
             id: seniorIds[1],
             external_ref: `${marker}-unrelated-senior`,
             display_name: "Gate 5 Unrelated Senior",
+            organisation_id: organisationIds[1],
             risk_level: "green",
           },
         ])

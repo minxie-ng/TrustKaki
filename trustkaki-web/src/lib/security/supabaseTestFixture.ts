@@ -12,6 +12,7 @@ interface TestIdentity {
 
 export interface SupabaseRlsFixture {
   serviceClient: TrustKakiClient;
+  organisationId: string;
   caregiverA: TestIdentity;
   caregiverB: TestIdentity;
   sharedSeniorId: string;
@@ -55,6 +56,7 @@ export async function createSupabaseRlsFixture(): Promise<SupabaseRlsFixture> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const createdUserIds: string[] = [];
+  const organisationId = randomUUID();
   const caregiverIds = [randomUUID(), randomUUID()];
   const seniorIds = [randomUUID(), randomUUID()];
   const sharedPatternIds = [randomUUID(), randomUUID()];
@@ -79,9 +81,21 @@ export async function createSupabaseRlsFixture(): Promise<SupabaseRlsFixture> {
         .in("id", caregiverIds);
       if (error) failedOperations.push("caregiver cleanup");
     }
+    const { error: organisationError } = await serviceClient
+      .from("organisations")
+      .delete()
+      .eq("id", organisationId);
+    if (organisationError) failedOperations.push("organisation cleanup");
     for (const userId of createdUserIds) {
       const { error } = await serviceClient.auth.admin.deleteUser(userId);
       if (error) failedOperations.push("Auth user cleanup");
+    }
+    const { data: organisations, error: verificationError } = await serviceClient
+      .from("organisations")
+      .select("id")
+      .eq("id", organisationId);
+    if (verificationError || organisations?.length) {
+      failedOperations.push("organisation cleanup verification");
     }
     if (failedOperations.length > 0) {
       throw new Error(
@@ -91,6 +105,16 @@ export async function createSupabaseRlsFixture(): Promise<SupabaseRlsFixture> {
   };
 
   try {
+    const { error: organisationError } = await serviceClient
+      .from("organisations")
+      .insert({
+        id: organisationId,
+        slug: `gate0-${runId}`,
+        display_name: "Gate 0 Test Organisation",
+        organisation_type: "aac_centre",
+      });
+    requireNoError("organisation creation", organisationError);
+
     const credentials = [0, 1].map((index) => ({
       email: `trustkaki-gate0-${runId}-${index}@example.com`,
       password: `Tk-${randomUUID()}`,
@@ -130,12 +154,14 @@ export async function createSupabaseRlsFixture(): Promise<SupabaseRlsFixture> {
         id: seniorIds[0],
         external_ref: `gate0-shared-senior-${runId}`,
         display_name: "Gate 0 Shared Senior",
+        organisation_id: organisationId,
         risk_level: "yellow",
       },
       {
         id: seniorIds[1],
         external_ref: `gate0-private-senior-${runId}`,
         display_name: "Gate 0 Private Senior",
+        organisation_id: organisationId,
         risk_level: "yellow",
       },
     ]);
@@ -238,6 +264,7 @@ export async function createSupabaseRlsFixture(): Promise<SupabaseRlsFixture> {
 
     return {
       serviceClient,
+      organisationId,
       caregiverA: {
         userId: createdUserIds[0],
         caregiverId: caregiverIds[0],

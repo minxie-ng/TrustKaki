@@ -113,10 +113,61 @@ export type ProactiveCheckInStage =
   | "initial_deadline"
   | "retry_send"
   | "final_deadline";
+export type OrganisationType = "aac_centre";
+export type OrganisationMembershipRole =
+  | "org_admin"
+  | "staff"
+  | "volunteer";
 
 export interface Database {
   public: {
     Tables: {
+      organisations: {
+        Row: {
+          id: string;
+          slug: string;
+          display_name: string;
+          organisation_type: OrganisationType;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          display_name: string;
+          organisation_type: OrganisationType;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["organisations"]["Insert"]>;
+      };
+      organisation_memberships: {
+        Row: {
+          id: string;
+          organisation_id: string;
+          caregiver_id: string;
+          role: OrganisationMembershipRole;
+          active: boolean;
+          deactivated_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organisation_id: string;
+          caregiver_id: string;
+          role: OrganisationMembershipRole;
+          active?: boolean;
+          deactivated_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["organisation_memberships"]["Insert"]
+        >;
+      };
       seniors: {
         Row: {
           id: string;
@@ -127,6 +178,7 @@ export interface Database {
           address_text: string | null;
           living_situation: string | null;
           phone_e164: string | null;
+          organisation_id: string;
           risk_level: RiskLevel;
           last_check_in_at: string | null;
           created_at: string;
@@ -140,6 +192,7 @@ export interface Database {
           address_text?: string | null;
           living_situation?: string | null;
           phone_e164?: string | null;
+          organisation_id: string;
           risk_level?: RiskLevel;
           last_check_in_at?: string | null;
           created_at?: string;

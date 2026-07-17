@@ -28,6 +28,8 @@ import {
   throwIfError,
 } from "./persistenceSupport";
 
+const DEMO_ORGANISATION_ID = "00000000-0000-4000-8000-000000000006";
+
 export async function resetDemoPersistence(args: {
   accessToken: string;
 }): Promise<PersistenceMeta> {
@@ -54,6 +56,7 @@ async function ensureDemoPeople(client: TrustKakiClient, context?: AgentRunConte
       id: DEMO_SENIOR_ID,
       external_ref: "demo_uncle_tan",
       display_name: senior?.name ?? uncleTan.name,
+      organisation_id: DEMO_ORGANISATION_ID,
       age: senior?.age ?? uncleTan.age,
       living_situation: senior?.livingSituation ?? uncleTan.livingSituation,
       phone_e164: demoSeniorPhone,

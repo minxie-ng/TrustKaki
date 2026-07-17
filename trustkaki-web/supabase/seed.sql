@@ -20,6 +20,7 @@ insert into public.seniors (
   gender,
   address_text,
   living_situation,
+  organisation_id,
   risk_level
 ) values (
   '00000000-0000-4000-8000-000000000001',
@@ -29,6 +30,7 @@ insert into public.seniors (
   'Male',
   'Block 123 Toa Payoh Lorong 1, #08-456',
   'Lives alone in a HDB flat in Toa Payoh',
+  '00000000-0000-4000-8000-000000000006',
   'green'
 ) on conflict (id) do update set
   external_ref = excluded.external_ref,
@@ -36,7 +38,8 @@ insert into public.seniors (
   age = excluded.age,
   gender = excluded.gender,
   address_text = excluded.address_text,
-  living_situation = excluded.living_situation;
+  living_situation = excluded.living_situation,
+  organisation_id = excluded.organisation_id;
 
 insert into public.seniors (
   id,
@@ -46,6 +49,7 @@ insert into public.seniors (
   gender,
   address_text,
   living_situation,
+  organisation_id,
   risk_level
 ) values (
   '00000000-0000-4000-8000-000000000011',
@@ -55,6 +59,7 @@ insert into public.seniors (
   'Female',
   'Block 218 Bishan Street 23, #06-112',
   'Lives with her son in Bishan',
+  '00000000-0000-4000-8000-000000000006',
   'green'
 ) on conflict (id) do update set
   external_ref = excluded.external_ref,
@@ -62,7 +67,8 @@ insert into public.seniors (
   age = excluded.age,
   gender = excluded.gender,
   address_text = excluded.address_text,
-  living_situation = excluded.living_situation;
+  living_situation = excluded.living_situation,
+  organisation_id = excluded.organisation_id;
 
 insert into public.seniors (
   id,
@@ -72,6 +78,7 @@ insert into public.seniors (
   gender,
   address_text,
   living_situation,
+  organisation_id,
   risk_level,
   last_check_in_at
 ) values (
@@ -82,6 +89,7 @@ insert into public.seniors (
   'Female',
   'Block 44 Bedok South Road, #05-118',
   'Lives alone; eldest daughter checks in after work',
+  '00000000-0000-4000-8000-000000000006',
   'red',
   '2026-07-12T18:20:00+00:00'
 ) on conflict (id) do update set
@@ -91,6 +99,7 @@ insert into public.seniors (
   gender = excluded.gender,
   address_text = excluded.address_text,
   living_situation = excluded.living_situation,
+  organisation_id = excluded.organisation_id,
   risk_level = excluded.risk_level,
   last_check_in_at = excluded.last_check_in_at;
 

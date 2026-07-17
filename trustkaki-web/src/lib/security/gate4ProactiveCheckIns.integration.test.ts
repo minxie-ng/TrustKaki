@@ -19,6 +19,7 @@ describeDatabase("Gate 4 proactive check-in integration", () => {
   let serviceB: SupabaseClient;
   let adminA: AdminFixture;
   let adminB: AdminFixture;
+  const organisationIds = [randomUUID(), randomUUID()];
   let sharedSeniorId: string;
   let privateSeniorId: string;
   let scheduleId: string;
@@ -66,6 +67,34 @@ describeDatabase("Gate 4 proactive check-in integration", () => {
     });
     adminA = await createAdmin("admin-a");
     adminB = await createAdmin("admin-b");
+    const organisations = await serviceA.from("organisations").insert([
+      {
+        id: organisationIds[0],
+        slug: `gate4-a-${randomUUID()}`,
+        display_name: "Gate 4 Organisation A",
+        organisation_type: "aac_centre",
+      },
+      {
+        id: organisationIds[1],
+        slug: `gate4-b-${randomUUID()}`,
+        display_name: "Gate 4 Organisation B",
+        organisation_type: "aac_centre",
+      },
+    ]);
+    if (organisations.error) throw new Error("Gate 4 organisation creation failed");
+    const memberships = await serviceA.from("organisation_memberships").insert([
+      {
+        organisation_id: organisationIds[0],
+        caregiver_id: adminA.caregiverId,
+        role: "org_admin",
+      },
+      {
+        organisation_id: organisationIds[1],
+        caregiver_id: adminB.caregiverId,
+        role: "org_admin",
+      },
+    ]);
+    if (memberships.error) throw new Error("Gate 4 membership creation failed");
     sharedSeniorId = randomUUID();
     privateSeniorId = randomUUID();
     const seniors = await serviceA.from("seniors").insert([
@@ -73,12 +102,14 @@ describeDatabase("Gate 4 proactive check-in integration", () => {
         id: sharedSeniorId,
         external_ref: `gate4-shared-${randomUUID()}`,
         display_name: "Gate 4 Shared Senior",
+        organisation_id: organisationIds[0],
         risk_level: "green",
       },
       {
         id: privateSeniorId,
         external_ref: `gate4-private-${randomUUID()}`,
         display_name: "Gate 4 Private Senior",
+        organisation_id: organisationIds[1],
         risk_level: "green",
       },
     ]);
@@ -148,6 +179,20 @@ describeDatabase("Gate 4 proactive check-in integration", () => {
     for (const admin of [adminA, adminB].filter(Boolean)) {
       await serviceA.from("caregivers").delete().eq("id", admin.caregiverId);
       await serviceA.auth.admin.deleteUser(admin.userId);
+    }
+    const organisationCleanup = await serviceA
+      .from("organisations")
+      .delete()
+      .in("id", organisationIds);
+    if (organisationCleanup.error) {
+      throw new Error("Gate 4 organisation cleanup failed");
+    }
+    const organisationResidue = await serviceA
+      .from("organisations")
+      .select("id")
+      .in("id", organisationIds);
+    if (organisationResidue.error || organisationResidue.data?.length) {
+      throw new Error("Gate 4 organisation cleanup left temporary rows");
     }
   });
 

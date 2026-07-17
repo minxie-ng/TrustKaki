@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 vi.mock("server-only", () => ({}));
 
@@ -40,5 +42,17 @@ describe("demo repository", () => {
     await expect(
       resetDemoPersistence({ accessToken: "verified-token" })
     ).rejects.toThrow("reset TrustKaki demo failed");
+  });
+
+  it("binds Quick Demo senior upserts to the stable demo organisation", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/lib/persistence/demoRepository.ts"),
+      "utf8"
+    );
+
+    expect(source).toContain(
+      'const DEMO_ORGANISATION_ID = "00000000-0000-4000-8000-000000000006"'
+    );
+    expect(source).toContain("organisation_id: DEMO_ORGANISATION_ID");
   });
 });
