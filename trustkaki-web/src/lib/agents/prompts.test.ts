@@ -49,6 +49,53 @@ describe("agent prompts", () => {
     expect(prompt).not.toContain("- Age: 0");
   });
 
+  it("renders bounded context in separate safe-use sections", () => {
+    const context: AgentRunContext = {
+      senior: {
+        name: "Senior B",
+        age: 78,
+        livingSituation: "Lives alone",
+        caregiver: "Caregiver B",
+        aacVolunteer: "Volunteer B",
+      },
+      messages: [],
+      currentRiskLevel: "green",
+      knownContext: {
+        items: [
+          {
+            type: "preference",
+            content: "Prefers voice calls in Mandarin",
+            safeUseNotes: "Use for communication style only.",
+            applicationTags: ["voice_preferred"],
+          },
+          {
+            type: "usual_routine",
+            content: "Breakfast: Usually eats before 9am",
+            safeUseNotes: null,
+            applicationTags: ["practical_meal_prompt"],
+          },
+          {
+            type: "observed_operational_context",
+            content: "Knee discomfort can affect downstairs trips",
+            safeUseNotes: "Use only for follow-up; this is not a diagnosis.",
+            applicationTags: ["accessibility_support"],
+          },
+        ],
+      },
+    };
+
+    const prompt = orchestratorUserPrompt("Hello", context);
+
+    expect(prompt).toContain("Preferences:");
+    expect(prompt).toContain("Prefers voice calls in Mandarin");
+    expect(prompt).toContain("Usual routine:");
+    expect(prompt).toContain("Breakfast: Usually eats before 9am");
+    expect(prompt).toContain("Observed operational context:");
+    expect(prompt).toContain("Knee discomfort can affect downstairs trips");
+    expect(prompt).toMatch(/may be stale/i);
+    expect(prompt).toMatch(/not diagnostic|not a diagnosis/i);
+  });
+
   it("defines a proposal-only context memory prompt with safe exclusions", () => {
     expect(CONTEXT_MEMORY_PROMPT).toMatch(/proposals? only/i);
     expect(CONTEXT_MEMORY_PROMPT).toMatch(/exact.*senior-authored.*evidence/i);

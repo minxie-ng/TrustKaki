@@ -33,14 +33,21 @@ const auth = {
 interface QueryRecord {
   table: string;
   filters: Array<[string, unknown]>;
+  orFilters: string[];
   limit?: number;
   order?: { column: string; ascending: boolean };
 }
+
+type ContextTable =
+  | "routine_baselines"
+  | "senior_health_contexts"
+  | "senior_memories";
 
 function createServiceClient(options?: {
   age?: number | null;
   unknownPhone?: boolean;
   messageCount?: number;
+  contextRows?: Partial<Record<ContextTable, Array<Record<string, unknown>>>>;
 }) {
   const queries: QueryRecord[] = [];
 
@@ -93,16 +100,45 @@ function createServiceClient(options?: {
       };
     }
 
+    if (
+      query.table === "routine_baselines" ||
+      query.table === "senior_health_contexts" ||
+      query.table === "senior_memories"
+    ) {
+      const rows = options?.contextRows?.[query.table] ?? [];
+      return {
+        data: rows.filter((row) => {
+          const active = query.filters.some(
+            ([column, value]) => column === "status" && value === "active"
+          );
+          const filtersExpiry = query.orFilters.some((filter) =>
+            filter.startsWith("expires_at.is.null,expires_at.gt.")
+          );
+          return (
+            (!active || row.status === "active") &&
+            (!filtersExpiry ||
+              row.expires_at === null ||
+              String(row.expires_at) > "2090-01-01T00:00:00.000Z")
+          );
+        }),
+        error: null,
+      };
+    }
+
     throw new Error(`Unexpected table ${query.table}`);
   }
 
   const from = vi.fn((table: string) => {
-    const query: QueryRecord = { table, filters: [] };
+    const query: QueryRecord = { table, filters: [], orFilters: [] };
     queries.push(query);
     const builder = {
       select: vi.fn(() => builder),
       eq: vi.fn((column: string, value: unknown) => {
         query.filters.push([column, value]);
+        return builder;
+      }),
+      or: vi.fn((filter: string) => {
+        query.orFilters.push(filter);
         return builder;
       }),
       order: vi.fn((column: string, config: { ascending: boolean }) => {
@@ -168,6 +204,7 @@ describe("senior context repository", () => {
         },
       ],
       currentRiskLevel: "yellow",
+      knownContext: { items: [] },
     });
     expect(service.queries.find((query) => query.table === "seniors")?.filters)
       .toContainEqual(["id", seniorId]);
@@ -180,6 +217,117 @@ describe("senior context repository", () => {
         ["senior_id", seniorId],
         ["check_in_id", "active-check-in-1"],
       ]));
+  });
+
+  it("loads only active non-expired context and bounds the combined bundle", async () => {
+    const longContent = `Prefers Mandarin voice calls ${"x".repeat(300)}`;
+    const memories = Array.from({ length: 11 }, (_, index) => ({
+      id: `memory-${index}`,
+      memory_type: "communication_preference",
+      content: index === 0 ? longContent : `Preference ${index}`,
+      importance: 5 - (index % 5),
+      confidence: index === 10 ? 0.8 : 0.9,
+      safe_use_notes: "Use for communication style only.",
+      application_tags: ["voice_preferred"],
+      last_confirmed_at: `2099-01-${String(20 - index).padStart(2, "0")}T00:00:00.000Z`,
+      expires_at: null,
+      status: "active",
+    }));
+    const service = createServiceClient({
+      contextRows: {
+        senior_memories: [
+          ...memories,
+          {
+            ...memories[0],
+            id: "expired",
+            content: "Expired preference",
+            expires_at: "2000-01-01T00:00:00.000Z",
+          },
+          {
+            ...memories[0],
+            id: "archived",
+            content: "Archived preference",
+            status: "archived",
+          },
+        ],
+        routine_baselines: Array.from({ length: 4 }, (_, index) => ({
+          id: `routine-${index}`,
+          baseline_type: "meal",
+          label: `Breakfast ${index}`,
+          usual_pattern: "Usually eats before 9am",
+          confidence: 0.85,
+          safe_use_notes: null,
+          application_tags: ["practical_meal_prompt"],
+          last_confirmed_at: `2099-01-${String(10 - index).padStart(2, "0")}T00:00:00.000Z`,
+          expires_at: null,
+          status: "active",
+        })),
+        senior_health_contexts: [
+          {
+            id: "health-1",
+            context_type: "mobility",
+            description: "Knee discomfort can affect downstairs trips",
+            confidence: 0.95,
+            safe_use_notes: "Ask a gentle follow-up question.",
+            application_tags: ["accessibility_support"],
+            last_confirmed_at: "2099-01-19T00:00:00.000Z",
+            expires_at: null,
+            status: "active",
+          },
+        ],
+      },
+    });
+    canAccessSeniorMock.mockReturnValue(true);
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { loadAuthorizedAgentContext } = await import("./seniorContextRepository");
+
+    const context = await loadAuthorizedAgentContext({ auth, seniorId });
+
+    expect(context.knownContext?.items).toHaveLength(12);
+    expect(context.knownContext?.items.map((item) => item.content)).not.toEqual(
+      expect.arrayContaining(["Expired preference", "Archived preference"])
+    );
+    expect(context.knownContext?.items[0]).toMatchObject({
+      type: "preference",
+      applicationTags: ["voice_preferred"],
+    });
+    expect(context.knownContext?.items[0].content).toHaveLength(280);
+    expect(
+      context.knownContext?.items.slice(0, 3).map((item) => item.content)
+    ).toEqual([
+      longContent.slice(0, 280),
+      "Preference 5",
+      "Preference 10",
+    ]);
+    expect(Object.keys(context.knownContext?.items[0] ?? {}).sort()).toEqual([
+      "applicationTags",
+      "content",
+      "safeUseNotes",
+      "type",
+    ]);
+    expect(
+      context.knownContext?.items.find(
+        (item) => item.type === "observed_operational_context"
+      )?.safeUseNotes
+    ).toMatch(/not a diagnosis/i);
+
+    for (const table of [
+      "routine_baselines",
+      "senior_health_contexts",
+      "senior_memories",
+    ]) {
+      const query = service.queries.find((item) => item.table === table);
+      expect(query?.filters).toEqual(
+        expect.arrayContaining([
+          ["senior_id", seniorId],
+          ["status", "active"],
+        ])
+      );
+      expect(query?.orFilters[0]).toMatch(
+        /^expires_at\.is\.null,expires_at\.gt\./
+      );
+      expect(query?.limit).toBe(12);
+    }
   });
 
   it("clamps the message limit to 50", async () => {

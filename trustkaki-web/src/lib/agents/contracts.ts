@@ -3,6 +3,7 @@
 
 import type { AgentId, RiskLevel, Message, AgentTrace } from "@/lib/types";
 import type {
+  MemoryApplicationTag,
   MemoryCandidate,
   MemorySourceMessage,
   MemoryTargetStore,
@@ -10,6 +11,18 @@ import type {
 import type { PolicyResult } from "./policy";
 
 // ─── Shared Context ───
+export type KnownContextItemType =
+  | "preference"
+  | "usual_routine"
+  | "observed_operational_context";
+
+export type KnownContextItem = {
+  type: KnownContextItemType;
+  content: string;
+  safeUseNotes: string | null;
+  applicationTags: MemoryApplicationTag[];
+};
+
 export interface AgentRunContext {
   senior: {
     name: string;
@@ -20,6 +33,9 @@ export interface AgentRunContext {
   };
   messages: Message[];
   currentRiskLevel: RiskLevel;
+  knownContext?: {
+    items: KnownContextItem[];
+  };
 }
 
 // ─── Agent Run Result ───

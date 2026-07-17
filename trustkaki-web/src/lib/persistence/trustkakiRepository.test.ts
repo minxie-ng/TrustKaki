@@ -29,6 +29,7 @@ interface Operation {
   payload?: unknown;
   options?: Record<string, unknown>;
   filters: Array<[string, unknown]>;
+  orFilters?: string[];
 }
 
 function createServiceClient(
@@ -184,7 +185,7 @@ function createServiceClient(
   }
 
   const from = vi.fn((table: string) => {
-    const operation: Operation = { table, filters: [] };
+    const operation: Operation = { table, filters: [], orFilters: [] };
     operations.push(operation);
     const builder = {
       delete: vi.fn(() => {
@@ -218,6 +219,10 @@ function createServiceClient(
       }),
       in: vi.fn((column: string, value: unknown) => {
         operation.filters.push([column, value]);
+        return builder;
+      }),
+      or: vi.fn((filter: string) => {
+        operation.orFilters?.push(filter);
         return builder;
       }),
       order: vi.fn(() => builder),
@@ -317,6 +322,143 @@ describe("TrustKaki persistence senior identity", () => {
     createTrustKakiServiceClientMock.mockReset();
     runPatternWatchForSeniorMock.mockReset();
     runPatternWatchForSeniorMock.mockResolvedValue(undefined);
+  });
+
+  it("excludes expired and archived context from Pattern Watch evidence", async () => {
+    const operations: Operation[] = [];
+    const contextRows = {
+      routine_baselines: [],
+      senior_health_contexts: [],
+      senior_memories: [
+        {
+          id: "active-memory",
+          memory_type: "communication_preference",
+          content: "Prefers Mei Ling to call",
+          status: "active",
+          expires_at: null,
+        },
+        {
+          id: "expired-memory",
+          memory_type: "food_preference",
+          content: "Expired preference",
+          status: "active",
+          expires_at: "2000-01-01T00:00:00.000Z",
+        },
+        {
+          id: "archived-memory",
+          memory_type: "food_preference",
+          content: "Archived preference",
+          status: "archived",
+          expires_at: null,
+        },
+      ],
+    };
+    const from = vi.fn((table: string) => {
+      const operation: Operation = { table, filters: [], orFilters: [] };
+      operations.push(operation);
+      const response = () => {
+        if (table === "check_ins") {
+          return { data: [{ id: "check-in-b" }], error: null };
+        }
+        if (table === "detected_signals") {
+          return {
+            data: [
+              {
+                id: "signal-1",
+                signal_type: "health",
+                description: "Knee pain while walking",
+                severity: "medium",
+                observed_at: "2026-07-15T08:00:00.000Z",
+              },
+              {
+                id: "signal-2",
+                signal_type: "health",
+                description: "Staying home due to knee pain",
+                severity: "medium",
+                observed_at: "2026-07-16T08:00:00.000Z",
+              },
+            ],
+            error: null,
+          };
+        }
+        if (table in contextRows) {
+          const rows = contextRows[table as keyof typeof contextRows];
+          const activeOnly = operation.filters.some(
+            ([column, value]) => column === "status" && value === "active"
+          );
+          const filtersExpiry = operation.orFilters?.some((filter) =>
+            filter.startsWith("expires_at.is.null,expires_at.gt.")
+          );
+          return {
+            data: rows.filter(
+              (row) =>
+                (!activeOnly || row.status === "active") &&
+                (!filtersExpiry ||
+                  row.expires_at === null ||
+                  row.expires_at > "2090-01-01T00:00:00.000Z")
+            ),
+            error: null,
+          };
+        }
+        if (table === "patterns" && operation.kind === "select") {
+          return { data: operation.filters.some(([column]) => column === "pattern_type") ? null : [], error: null };
+        }
+        if (table === "patterns" && operation.kind === "insert") {
+          return { data: { id: "pattern-1", ...(operation.payload as object) }, error: null };
+        }
+        return { data: [], error: null };
+      };
+      const builder = {
+        select: vi.fn((columns: string) => {
+          if (!operation.kind) operation.kind = "select";
+          operation.columns = columns;
+          return builder;
+        }),
+        insert: vi.fn((payload: unknown) => {
+          operation.kind = "insert";
+          operation.payload = payload;
+          return builder;
+        }),
+        eq: vi.fn((column: string, value: unknown) => {
+          operation.filters.push([column, value]);
+          return builder;
+        }),
+        in: vi.fn((column: string, value: unknown) => {
+          operation.filters.push([column, value]);
+          return builder;
+        }),
+        or: vi.fn((filter: string) => {
+          operation.orFilters?.push(filter);
+          return builder;
+        }),
+        order: vi.fn(() => builder),
+        limit: vi.fn(() => builder),
+        maybeSingle: vi.fn(async () => response()),
+        single: vi.fn(async () => response()),
+        then: (
+          resolve: (value: ReturnType<typeof response>) => unknown,
+          reject: (reason: unknown) => unknown
+        ) => Promise.resolve(response()).then(resolve, reject),
+      };
+      return builder;
+    });
+    const actual = await vi.importActual<typeof import("./patternRepository")>(
+      "./patternRepository"
+    );
+
+    await actual.runPatternWatchForSenior({ from } as never, SENIOR_B);
+
+    const patternPayload = operations.find(
+      (operation) => operation.table === "patterns" && operation.kind === "insert"
+    )?.payload as { memory_notes?: string[] };
+    expect(patternPayload.memory_notes).toEqual(["Prefers Mei Ling to call"]);
+    for (const table of Object.keys(contextRows)) {
+      const query = operations.find((operation) => operation.table === table);
+      expect(query?.filters).toContainEqual(["status", "active"]);
+      expect(query?.orFilters?.[0]).toMatch(
+        /^expires_at\.is\.null,expires_at\.gt\./
+      );
+    }
   });
 
   it("propagates a non-demo senior and explicit client message ID to every orchestration write", async () => {
@@ -430,7 +572,7 @@ describe("TrustKaki persistence senior identity", () => {
     expect(payloadsFor(service.operations, "briefs")).not.toEqual([]);
   });
 
-  it("rejects ambiguous candidate keys before any memory RPC", async () => {
+  it("rejects ambiguous candidate keys before any RPC or table write", async () => {
     const service = createServiceClient();
     createTrustKakiServiceClientMock.mockReturnValue(service.client);
     const { persistOrchestrationResult } = await import("./trustkakiRepository");
@@ -466,26 +608,18 @@ describe("TrustKaki persistence senior identity", () => {
       enumerable: false,
     });
 
-    const persistence = await persistOrchestrationResult({
-      seniorId: SENIOR_B,
-      message: "Not hungry today.",
-      clientMessageId: "message-b-1",
-      context,
-      result: resultWithDuplicates,
-    });
+    await expect(
+      persistOrchestrationResult({
+        seniorId: SENIOR_B,
+        message: "Not hungry today.",
+        clientMessageId: "message-b-1",
+        context,
+        result: resultWithDuplicates,
+      })
+    ).rejects.toThrow("ambiguous context candidate key");
 
-    expect(
-      service.rpc.mock.calls.filter(([name]) => name === "apply_automatic_senior_context")
-    ).toHaveLength(0);
-    expect(persistence).toMatchObject({
-      persisted: true,
-      memory: {
-        attempted: 0,
-        failed: 1,
-        failures: [{ stage: "policy", category: "invalid_output" }],
-      },
-    });
-    expect(service.storedKeys.get("alerts")?.size).toBe(1);
+    expect(service.rpc).not.toHaveBeenCalled();
+    expect(service.operations).toEqual([]);
   });
 
   it("binds the complete private payload before writes and rejects changed replay input", async () => {

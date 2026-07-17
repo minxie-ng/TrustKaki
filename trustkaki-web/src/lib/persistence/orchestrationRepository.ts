@@ -179,7 +179,6 @@ async function persistAutomaticMemory(args: {
   persistedInboundCreatedAt: string;
   context: AgentRunContext;
   result: OrchestrateResponse;
-  preflightError?: AmbiguousMemoryCandidatesError;
 }): Promise<MemoryPersistenceSummary> {
   const summary = emptyMemorySummary();
   const extractionTrace = args.result.traces.find(
@@ -188,12 +187,6 @@ async function persistAutomaticMemory(args: {
   if (extractionTrace) {
     summary.failed += 1;
     summary.failures.push({ stage: "extraction", category: "provider_error" });
-  }
-
-  if (args.preflightError) {
-    summary.failed += 1;
-    summary.failures.push({ stage: "policy", category: "invalid_output" });
-    return summary;
   }
 
   let commands;
@@ -459,16 +452,7 @@ export async function persistOrchestrationResult(args: {
   if (!client) return localDemoMeta();
 
   const result = requireInternalOrchestrationResult(args.result);
-  let memoryPreflightError: AmbiguousMemoryCandidatesError | undefined;
-  try {
-    validateAutomaticMemoryCandidateSet(result.contextMemoryCandidates);
-  } catch (error) {
-    if (error instanceof AmbiguousMemoryCandidatesError) {
-      memoryPreflightError = error;
-    } else {
-      throw error;
-    }
-  }
+  validateAutomaticMemoryCandidateSet(result.contextMemoryCandidates);
   const payload = buildOrchestrationPersistencePayload(args);
   await bindOrchestrationPersistence({ ...args, client, result, payload });
   const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
@@ -487,7 +471,6 @@ export async function persistOrchestrationResult(args: {
     persistedInboundCreatedAt: inbound.createdAt,
     context: args.context,
     result: args.result,
-    preflightError: memoryPreflightError,
   });
   await upsertMessages(client, checkIn.id, payload.outboundMessages, args.seniorId);
   const agentRuns = await upsertAgentRuns(client, checkIn.id, payload.agentRuns);

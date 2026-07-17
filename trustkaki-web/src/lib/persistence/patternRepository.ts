@@ -58,24 +58,28 @@ async function readSeniorPatternContext(
   client: TrustKakiClient,
   seniorId: string
 ): Promise<SeniorPatternContext> {
+  const now = new Date().toISOString();
   const [baselinesResult, healthResult, memoriesResult] = await Promise.all([
     client
       .from("routine_baselines")
       .select("id, baseline_type, label, usual_pattern")
       .eq("senior_id", seniorId)
       .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order("baseline_type", { ascending: true }),
     client
       .from("senior_health_contexts")
       .select("id, context_type, description, safe_use_notes")
       .eq("senior_id", seniorId)
       .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order("created_at", { ascending: true }),
     client
       .from("senior_memories")
       .select("id, memory_type, content")
       .eq("senior_id", seniorId)
       .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order("importance", { ascending: false }),
   ]);
 

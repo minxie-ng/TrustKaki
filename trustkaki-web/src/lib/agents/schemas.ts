@@ -63,6 +63,27 @@ export const agentRunContextSchema = z.object({
     })
   ),
   currentRiskLevel: riskLevelSchema,
+  knownContext: z
+    .object({
+      items: z
+        .array(
+          z
+            .object({
+              type: z.enum([
+                "preference",
+                "usual_routine",
+                "observed_operational_context",
+              ]),
+              content: z.string().min(1).max(280),
+              safeUseNotes: z.string().max(280).nullable(),
+              applicationTags: z.array(z.enum(memoryApplicationTags)).max(3),
+            })
+            .strict()
+        )
+        .max(12),
+    })
+    .strict()
+    .default({ items: [] }),
 });
 
 export const orchestratorInputSchema = z.object({
