@@ -1,11 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+const rpcMock = vi.fn();
+vi.mock("@/lib/supabase/server", () => ({
+  createTrustKakiUserClient: () => ({ rpc: rpcMock }),
+}));
 import {
+  ContactPlanForbiddenError,
+  contactPlanCommands,
   mapRecipientResult,
   mapMaskedContactPlan,
   maskContactDestination,
 } from "./contactPlanRepository";
+
+describe("contact plan command authorization", () => {
+  it("maps database authorization denial without exposing its message", async () => {
+    rpcMock.mockResolvedValueOnce({
+      data: null,
+      error: { code: "42501", message: "private database detail" },
+    });
+
+    const error = await contactPlanCommands
+      .updateContact("token", {})
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ContactPlanForbiddenError);
+    expect((error as Error).message).toBe("Forbidden");
+    expect((error as Error).message).not.toContain("private database detail");
+  });
+});
 
 describe("contact plan read model", () => {
   it.each([

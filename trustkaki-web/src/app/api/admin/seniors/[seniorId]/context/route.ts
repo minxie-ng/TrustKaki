@@ -6,8 +6,8 @@ import {
 } from "@/lib/api/schemas";
 import {
   authJsonError,
-  canAccessSenior,
-  requireDemoAdmin,
+  canAdministerSenior,
+  requireOrganisationAdmin,
 } from "@/lib/auth/session";
 import {
   ContextConflictError,
@@ -21,10 +21,10 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ seniorId: string }> }
 ) {
-  const authResult = await requireDemoAdmin(request);
+  const authResult = await requireOrganisationAdmin(request);
   if (!authResult.ok) return authJsonError(authResult);
   const { seniorId } = await context.params;
-  if (!canAccessSenior(authResult.auth, seniorId)) {
+  if (!canAdministerSenior(authResult.auth, seniorId)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const parsed = await parseJsonBody(request, seniorContextActionRequestSchema);

@@ -124,6 +124,13 @@ export class ContactPlanConflictError extends Error {
   }
 }
 
+export class ContactPlanForbiddenError extends Error {
+  constructor() {
+    super("Forbidden");
+    this.name = "ContactPlanForbiddenError";
+  }
+}
+
 const commandResultSchema = z.object({
   id: z.string().uuid(),
   updated_at: z.string().optional(),
@@ -182,6 +189,7 @@ async function rpcCommand(
       data: unknown; error: { code?: string } | null;
     }>;
   }).rpc(name, payload);
+  if (error?.code === "42501") throw new ContactPlanForbiddenError();
   if (error?.code === "PT409") throw new ContactPlanConflictError();
   if (error) throw new Error("Contact plan command failed");
   return commandResultSchema.parse(data);

@@ -6,8 +6,8 @@ import {
 } from "@/lib/api/schemas";
 import {
   authJsonError,
-  canAccessSenior,
-  requireDemoAdmin,
+  canAdministerSenior,
+  requireOrganisationAdmin,
 } from "@/lib/auth/session";
 import {
   ProactiveCheckInConflictError,
@@ -20,10 +20,10 @@ export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ seniorId: string }> };
 
 async function authorize(request: Request, context: RouteContext) {
-  const authResult = await requireDemoAdmin(request);
+  const authResult = await requireOrganisationAdmin(request);
   if (!authResult.ok) return { ok: false, response: authJsonError(authResult) } as const;
   const { seniorId } = await context.params;
-  if (!canAccessSenior(authResult.auth, seniorId)) {
+  if (!canAdministerSenior(authResult.auth, seniorId)) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),

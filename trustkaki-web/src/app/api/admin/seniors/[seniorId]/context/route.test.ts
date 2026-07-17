@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdmin = vi.fn();
-const canAccessSenior = vi.fn();
+const canAdministerSenior = vi.fn();
 const mutateSeniorContext = vi.fn();
 const readSeniorContext = vi.fn();
 
 class ContextConflictError extends Error {}
 
 vi.mock("@/lib/auth/session", () => ({
-  requireDemoAdmin: requireAdmin,
-  canAccessSenior,
+  requireOrganisationAdmin: requireAdmin,
+  canAdministerSenior,
   authJsonError: (result: { status: number; error: string }) =>
     Response.json({ error: result.error }, { status: result.status }),
 }));
@@ -37,14 +37,14 @@ describe("admin senior context route", () => {
     requireAdmin.mockResolvedValue({
       ok: true,
       accessToken: "admin-token",
-      auth: { accessibleSeniorIds: [seniorId], role: "demo_admin" },
+      auth: { administrableSeniorIds: [seniorId] },
     });
-    canAccessSenior.mockReturnValue(true);
+    canAdministerSenior.mockReturnValue(true);
     mutateSeniorContext.mockResolvedValue({ duplicate: false });
     readSeniorContext.mockResolvedValue({ seniorId, items: [] });
   });
 
-  it("requires demo admin and senior access before mutation", async () => {
+  it("requires organisation admin and senior access before mutation", async () => {
     requireAdmin.mockResolvedValueOnce({
       ok: false,
       status: 403,
@@ -61,9 +61,9 @@ describe("admin senior context route", () => {
     requireAdmin.mockResolvedValueOnce({
       ok: true,
       accessToken: "admin-token",
-      auth: { accessibleSeniorIds: [] },
+      auth: { administrableSeniorIds: [] },
     });
-    canAccessSenior.mockReturnValueOnce(false);
+    canAdministerSenior.mockReturnValueOnce(false);
     const deniedSenior = await route.POST(
       new Request("http://localhost", {
         method: "POST",

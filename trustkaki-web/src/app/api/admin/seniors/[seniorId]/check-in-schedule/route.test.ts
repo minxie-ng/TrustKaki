@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdmin = vi.fn();
-const canAccessSenior = vi.fn();
+const canAdministerSenior = vi.fn();
 const readScheduleOverviewForSenior = vi.fn();
 const saveScheduleCommand = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({
-  requireDemoAdmin: requireAdmin,
-  canAccessSenior,
+  requireOrganisationAdmin: requireAdmin,
+  canAdministerSenior,
   authJsonError: (result: { status: number; error: string }) =>
     Response.json({ error: result.error }, { status: result.status }),
 }));
@@ -40,9 +40,9 @@ describe("admin proactive check-in schedule route", () => {
     requireAdmin.mockResolvedValue({
       ok: true,
       accessToken: "admin-token",
-      auth: { accessibleSeniorIds: [seniorId], role: "demo_admin" },
+      auth: { administrableSeniorIds: [seniorId] },
     });
-    canAccessSenior.mockReturnValue(true);
+    canAdministerSenior.mockReturnValue(true);
     readScheduleOverviewForSenior.mockResolvedValue({ schedule: null, state: "not_configured" });
     saveScheduleCommand.mockResolvedValue({
       scheduleId: seniorId,
@@ -60,9 +60,9 @@ describe("admin proactive check-in schedule route", () => {
     requireAdmin.mockResolvedValueOnce({
       ok: true,
       accessToken: "admin-token",
-      auth: { accessibleSeniorIds: [], role: "demo_admin" },
+      auth: { administrableSeniorIds: [] },
     });
-    canAccessSenior.mockReturnValueOnce(false);
+    canAdministerSenior.mockReturnValueOnce(false);
     const deniedSenior = await route.POST(new Request("http://localhost", {
       method: "POST",
       body: JSON.stringify(body),

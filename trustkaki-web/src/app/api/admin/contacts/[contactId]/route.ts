@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/responses";
 import { parseJsonBody, seniorContactUpdateRequestSchema } from "@/lib/api/schemas";
-import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
-import { ContactPlanConflictError, contactPlanCommands } from "@/lib/persistence/contactPlanRepository";
+import { authJsonError, requireOrganisationAdmin } from "@/lib/auth/session";
+import { ContactPlanConflictError, ContactPlanForbiddenError, contactPlanCommands } from "@/lib/persistence/contactPlanRepository";
 
 export async function PATCH(request: Request, context: { params: Promise<{ contactId: string }> }) {
-  const authResult = await requireDemoAdmin(request);
+  const authResult = await requireOrganisationAdmin(request);
   if (!authResult.ok) return authJsonError(authResult);
   const parsed = await parseJsonBody(request, seniorContactUpdateRequestSchema);
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: parsed.status });
@@ -22,6 +22,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ conta
     });
     return NextResponse.json({ status: "ok", ...result });
   } catch (error) {
+    if (error instanceof ContactPlanForbiddenError) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (error instanceof ContactPlanConflictError) return NextResponse.json({ error: "Contact plan changed", code: "contact_plan_conflict" }, { status: 409 });
     return jsonError("Failed to update contact", { error, status: 500 });
   }
