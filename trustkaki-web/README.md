@@ -77,6 +77,16 @@ This runs all unit tests, TypeScript checking, ESLint, and the production build.
 The live two-user Supabase suite remains separately opt-in because it creates
 and removes temporary Auth users and database rows.
 
+## Project Documentation
+
+- `docs/TrustKaki_BUILD_ROADMAP.md` is the current product direction and gate status.
+- `docs/superpowers/specs/` records approved security and feature designs.
+- `docs/superpowers/verification/` records completed gate evidence.
+- `docs/superpowers/plans/` preserves historical implementation plans.
+
+There is no separate handoff document. The README, roadmap, current code, and
+dated verification records are the maintained sources of truth.
+
 ## Environment Variables
 
 Required for Judge View:

@@ -1016,14 +1016,28 @@ without changing policy-authoritative risk. The authenticated production admin
 flow proved correction, preserved closed tags and expiry, immutable lifecycle
 events, archive, refresh survival, and zero active test preference afterward.
 
-#### Gate 6 — Organisation and Scale Readiness
+#### Gate 6 — Organisation Tenancy Foundation (complete)
 
-- organisation tenancy and staff roles
-- roster management and true shared-case realtime updates
-- distributed rate limiting, worker observability, backup/recovery
-- audit retention, data export/deletion, concurrency and load tests
+- [x] add organisations and required senior ownership
+- [x] add active `org_admin`, `staff`, and `volunteer` memberships
+- [x] give admins/staff organisation-wide access and volunteers assigned-case access
+- [x] preserve independent direct family-caregiver access
+- [x] revoke access immediately for inactive memberships or organisations
+- [x] authorize production administration through database organisation roles
+- [x] keep `demo_admin` limited to demo and simulator operations
+- [x] prove two-organisation RLS isolation, mutation boundaries, and cleanup
+- [x] pass live regression suites, validation, migration alignment, and audit
 
-#### Gate 7 — Adoption and UI Refinement
+The verified foundation is recorded in
+`docs/superpowers/verification/2026-07-17-gate-6-organisation-tenancy-foundation.md`.
+The live Gate 6 suite passed 4/4 three times, the existing RLS and Gate 4/5
+regressions passed, and final validation passed with 583 tests. No synthetic
+fixtures remained. Roster UI, distributed rate limiting, broader observability,
+backup/recovery exercises, export/deletion workflows, and load testing are
+deferred until a pilot or measured need justifies them; they are not required
+for the hackathon demo.
+
+#### Gate 7 — Adoption and UI Refinement (next)
 
 - caregiver/AAC usability testing
 - accessibility, mobile, multilingual readiness
@@ -1038,11 +1052,13 @@ events, archive, refresh survival, and zero active test preference afterward.
 
 ## 16A. Best Next Step
 
-Gate 5 is complete and live verified. The next bounded step is Gate 6
-organisation and scale readiness: define organisation tenancy and staff roles
-before changing authorization or RLS, then add roster management and operational
-observability in small audited increments. Preserve the Telegram demo path and
-WhatsApp code. Do not mix the tenancy foundation with broad UI redesign.
+Gate 6's organisation-tenancy foundation is complete, independently audited,
+and live verified. The next bounded step is Gate 7 UI refinement for the judged
+workflow: improve the senior coverage and follow-up experience, add optional
+circular profile photos with a safe fallback, check mobile/accessibility, and
+reduce default technical detail. Preserve the Telegram demo and WhatsApp paths.
+Do not add enterprise roster or scaling infrastructure without a demonstrated
+pilot need.
 
 ## 16B. Multi-Senior and Caregiver Relationship Foundation
 
@@ -1052,7 +1068,7 @@ generic senior. Seed profiles should use respectful full names, gender/context
 for outreach, different household situations, and at least one high-risk case
 so the queue demonstrates real prioritisation.
 
-Phase 7B target:
+Implemented foundation:
 
 1. Dashboard state reads all seniors accessible to the signed-in caregiver.
 2. The follow-up queue is aggregated across accessible seniors.
@@ -1063,22 +1079,21 @@ Phase 7B target:
    relationship.
 7. Senior switching should feel immediate through optimistic local selection,
    with Supabase hydration updating details in the background.
-8. Shared-caregiver dashboard state should stay reasonably fresh through
-   authenticated lightweight polling and refresh-on-focus while the app remains
-   simple enough for the hackathon build.
+8. Shared-caregiver dashboard state stays fresh through authorized Realtime
+   refresh hints, authenticated polling, and refresh-on-focus.
+9. Each senior belongs to one organisation; staff access follows active roles,
+   volunteers require assignment, and family access remains direct.
 
-What this does not finish yet:
+Deferred until justified by pilot needs:
 
-- organisation/AAC centre tenancy
 - caregiver notification preferences
-- true Supabase Realtime subscriptions for sub-second multi-user updates
 - multi-recipient WhatsApp outbound fan-out
-- consent and escalation policies
-- production caregiver roster management
+- production staff roster UI and self-service onboarding
+- high-scale Realtime, rate limiting, load testing, and recovery exercises
 
-Those capabilities are now sequenced explicitly in Gates 1, 2, 3, and 6. The
-current sync layer is persisted and multi-user aware, but it is not yet a live
-collaborative websocket experience.
+Contacts, consent, escalation, organisation tenancy, and authorized Realtime
+refresh hints are already implemented. The deferred items should not expand the
+hackathon scope unless they become part of a real pilot workflow.
 
 ## 17. Build Rules
 
