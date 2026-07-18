@@ -5,6 +5,18 @@
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+:root {
+  --care-ink: #17211d;
+  --care-paper: #f4f7f5;
+  --care-line: #dce3df;
+  --care-green: #187652;
+  --care-soft-green: #e1f3e9;
+  --care-amber: #c27a20;
+  --care-red: #b53a37;
+  --care-plum: #705a82;
+  --care-soft-purple: #f0ebf4;
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -30,7 +42,11 @@ body {
   background: #a1a1aa;
 }
 
-/* Smooth scrolling */
-* {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

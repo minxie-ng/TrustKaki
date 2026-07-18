@@ -72,27 +72,37 @@ export default function Dashboard({
   const interactionsDisabled = !authToken;
 
   return (
-    <main className="flex h-full flex-col bg-gray-50">
-      <header className="shrink-0 border-b border-gray-200 bg-white px-5 py-5">
-        <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-          Today&apos;s follow-up queue
-        </div>
-        <h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-950">
-          Who needs human attention?
-        </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Prioritised by risk, pattern changes, response gaps, and unresolved follow-up.
-        </p>
-      </header>
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-7xl space-y-5 p-4 md:p-6">
+    <main className="h-full overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)]">
+      <div className="mx-auto grid min-h-full w-full max-w-[1600px] gap-4 p-3 sm:p-4 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_18rem] xl:gap-5 xl:p-5">
+        <aside className="min-w-0 lg:row-span-2 xl:sticky xl:top-5 xl:h-[calc(100vh-6.5rem)]">
           <SeniorCoverage
             seniors={seniors}
+            queue={data.followUpQueue}
             selectedSeniorId={selectedSeniorId}
             disabled={interactionsDisabled}
             onSelect={(seniorId) => onSelectSenior?.(seniorId)}
           />
+        </aside>
+        <section className="min-w-0 space-y-4">
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
+          <PriorityCase
+            items={queue}
+            data={data}
+            traces={traces}
+            briefing={briefing}
+            authToken={authToken ?? ""}
+            disabled={interactionsDisabled}
+            onSaved={refresh}
+            onUnauthorized={unauthorized}
+          />
+          <DemoControls
+            authToken={authToken ?? ""}
+            visible={Boolean(isDemoAdmin && demoMode && authToken)}
+            onRefresh={refresh}
+            onUnauthorized={unauthorized}
+          />
+        </section>
+        <aside className="min-w-0 space-y-3 lg:col-start-2 xl:col-start-3 xl:row-start-1">
           <SeniorContextPanel
             key={`senior-context:${selectedSeniorId ?? "none"}`}
             context={seniorContext}
@@ -126,27 +136,7 @@ export default function Dashboard({
             onSaved={() => onRefreshContactPlan?.()}
             onUnauthorized={unauthorized}
           />
-          <DemoControls
-            authToken={authToken ?? ""}
-            visible={Boolean(isDemoAdmin && demoMode && authToken)}
-            onRefresh={refresh}
-            onUnauthorized={unauthorized}
-          />
-          <PriorityCase
-            items={queue}
-            data={data}
-            traces={traces}
-            briefing={briefing}
-            authToken={authToken ?? ""}
-            disabled={interactionsDisabled}
-            onSaved={refresh}
-            onUnauthorized={unauthorized}
-          />
-          <div className="px-1 text-xs text-gray-500">
-            Current profile: {data.senior.name}, {data.senior.age}. This queue is
-            operational guidance only and does not provide medical diagnosis.
-          </div>
-        </div>
+        </aside>
       </div>
     </main>
   );

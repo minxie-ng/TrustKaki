@@ -117,8 +117,8 @@ export function ProactiveCheckInPanel(props: Props) {
   }
 
   return (
-    <details className="rounded-xl border border-gray-200 bg-white shadow-sm">
-      <summary className="cursor-pointer list-none px-5 py-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
+    <details className="rounded-lg border border-gray-200 bg-white shadow-sm">
+      <summary className="cursor-pointer list-none px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -131,7 +131,7 @@ export function ProactiveCheckInPanel(props: Props) {
           <span className="text-sm font-semibold text-emerald-700">Manage</span>
         </div>
       </summary>
-      <div className="border-t border-gray-200 px-5 py-4">
+      <div className="border-t border-gray-200 px-4 py-3">
         {props.error ? (
           <p className="text-sm text-red-700">{props.error}</p>
         ) : (
