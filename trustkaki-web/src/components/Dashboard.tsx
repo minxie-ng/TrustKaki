@@ -42,7 +42,6 @@ interface DashboardProps {
 
 export default function Dashboard({
   data,
-  traces = [],
   briefing,
   onRefresh,
   authToken,
@@ -88,7 +87,6 @@ export default function Dashboard({
           <PriorityCase
             items={queue}
             data={data}
-            traces={traces}
             briefing={briefing}
             authToken={authToken ?? ""}
             disabled={interactionsDisabled}

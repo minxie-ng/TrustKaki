@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BriefingOutput } from "@/lib/agents/contracts";
-import type { AgentTrace, DashboardData, FollowUpQueueItem } from "@/lib/types";
+import type { DashboardData, FollowUpQueueItem } from "@/lib/types";
 import { mainQueueCardFields } from "../dashboardViewModel";
 import { CaseDetails } from "./CaseDetails";
 import { CaseUpdateForm } from "./CaseUpdateForm";
@@ -11,7 +11,6 @@ import { formatDate, labelPattern, riskConfig, statusLabel } from "./presentatio
 interface PriorityCaseProps {
   items: FollowUpQueueItem[];
   data: DashboardData;
-  traces: AgentTrace[];
   briefing?: BriefingOutput | null;
   authToken: string;
   disabled: boolean;
@@ -22,7 +21,6 @@ interface PriorityCaseProps {
 export function PriorityCase({
   items,
   data,
-  traces,
   briefing,
   authToken,
   disabled,
@@ -32,7 +30,7 @@ export function PriorityCase({
   if (items.length === 0) {
     const risk = riskConfig[data.senior.riskLevel];
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="font-semibold text-gray-900">
           {data.senior.name} does not currently require follow-up.
         </div>
@@ -40,7 +38,7 @@ export function PriorityCase({
           No active priority case is open for this selected senior.
         </p>
         {data.senior.riskLevel !== "green" && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl bg-gray-50 p-3 text-sm text-gray-700">
+          <div className="mt-4 flex items-start gap-2 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${risk.bg} ${risk.text}`}>
               {risk.label} risk
             </span>
@@ -59,7 +57,6 @@ export function PriorityCase({
       key={item.id}
       item={item}
       data={data}
-      traces={traces}
       briefing={briefing}
       authToken={authToken}
       disabled={disabled}
@@ -72,7 +69,6 @@ export function PriorityCase({
 function PriorityCaseCard({
   item,
   data,
-  traces,
   briefing,
   authToken,
   disabled,
@@ -84,16 +80,15 @@ function PriorityCaseCard({
   const fields = mainQueueCardFields(item);
 
   return (
-    <section className={`rounded-2xl border border-l-4 bg-white p-6 shadow-sm ${risk.border} ${
+    <section className={`rounded-lg border border-l-4 bg-white p-5 shadow-sm ${risk.border} ${
       detailsOpen ? "border-gray-300 shadow-md" : "border-gray-200"
     }`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Priority case</div>
-          <h3 className="mt-1 text-2xl font-bold text-gray-950">{fields.seniorName}</h3>
+          <h3 className="mt-1 text-xl font-bold text-gray-950">{item.headline}</h3>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${risk.bg} ${risk.text}`}>{risk.label}</span>
-            <span className="text-sm font-medium text-gray-700">{item.headline}</span>
           </div>
         </div>
         <span className="rounded-full bg-gray-100 px-3 py-1.5 text-xs text-gray-700">
@@ -102,7 +97,7 @@ function PriorityCaseCard({
       </div>
       <div className="mt-6 grid gap-5 text-sm md:grid-cols-2">
         <div>
-          <div className="text-xs font-semibold text-gray-500">Why</div>
+          <div className="text-xs font-semibold text-gray-500">Why now</div>
           <div className="mt-1 text-lg font-bold leading-snug text-gray-950">{fields.reason}</div>
         </div>
         <div>
@@ -118,8 +113,8 @@ function PriorityCaseCard({
           <div className="text-gray-900">{fields.assignedTo ?? "Unassigned"}</div>
         </div>
       </div>
-      <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
-        <div className="text-xs font-semibold text-gray-500">Suggested action</div>
+      <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="text-xs font-semibold text-gray-500">Recommended next step</div>
         <div className="mt-1 text-base font-semibold text-gray-950">{fields.recommendedAction}</div>
       </div>
       {item.relatedPatterns.length > 0 && (
@@ -129,13 +124,6 @@ function PriorityCaseCard({
         </div>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setDetailsOpen((current) => !current)}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
-        >
-          {detailsOpen ? "Hide details" : "View details"}
-        </button>
         <CaseUpdateForm
           key={`${item.id}:${item.status}`}
           item={item}
@@ -145,9 +133,16 @@ function PriorityCaseCard({
           onSaved={onSaved}
           onUnauthorized={onUnauthorized}
         />
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((current) => !current)}
+          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+        >
+          {detailsOpen ? "Hide details" : "View details"}
+        </button>
       </div>
       {detailsOpen && (
-        <CaseDetails item={item} data={data} traces={traces} briefing={briefing} />
+        <CaseDetails item={item} data={data} briefing={briefing} />
       )}
     </section>
   );
