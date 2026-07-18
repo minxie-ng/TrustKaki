@@ -47,21 +47,22 @@ function formatTime(ts: string) {
 
 export default function AgentTracePanel({ traces, visible, onToggle }: AgentTracePanelProps) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col border-t border-[var(--care-plum)] bg-[var(--care-soft-purple)]">
       <button
+        type="button"
         onClick={onToggle}
-        className="flex items-center justify-between px-4 py-3 bg-gray-900 text-white hover:bg-gray-800 transition-colors shrink-0"
+        aria-expanded={visible}
+        className="flex min-h-11 shrink-0 items-center justify-between bg-[var(--care-plum)] px-4 py-3 text-white transition-colors hover:bg-[#604d70] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-plum)]"
       >
         <div className="flex items-center gap-2">
-          <span>🧠</span>
           <span className="font-semibold text-sm">TrustKaki Reasoning</span>
-          <span className="text-xs bg-gray-700 px-2 py-0.5 rounded-full">{traces.length}</span>
+          <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs">{traces.length}</span>
         </div>
-        <span className="text-xs">{visible ? "▼" : "▲"}</span>
+        <span className="text-xs" aria-hidden="true">{visible ? "Hide" : "Show"}</span>
       </button>
 
       {visible && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-950">
+        <div className="flex-1 space-y-3 overflow-y-auto bg-[var(--care-ink)] p-3 font-mono">
           {traces.map((trace) => (
             <div
               key={trace.id}

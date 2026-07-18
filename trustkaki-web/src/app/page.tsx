@@ -5,6 +5,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import NavBar from "@/components/NavBar";
 import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
+import AgentTracePanel from "@/components/AgentTracePanel";
 import SignInForm from "@/components/SignInForm";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
@@ -41,6 +42,7 @@ export default function Home() {
   const [authBusy, setAuthBusy] = useState(false);
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("green");
   const [demoMode, setDemoMode] = useState(false);
+  const [reasoningVisible, setReasoningVisible] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
     useState<DashboardData | null>(null);
   const [liveTraces, setLiveTraces] = useState<AgentTrace[]>([]);
@@ -82,6 +84,8 @@ export default function Home() {
     void client?.auth.signOut();
     setSession(null);
     setUser(null);
+    setDemoMode(false);
+    setReasoningVisible(false);
     setAuthError("Please sign in again to continue.");
   }, []);
 
@@ -351,6 +355,8 @@ export default function Home() {
     await client?.auth.signOut();
     setSession(null);
     setUser(null);
+    setDemoMode(false);
+    setReasoningVisible(false);
     setLiveDashboardData(null);
     setLiveTraces([]);
     setLiveBriefing(null);
@@ -381,21 +387,35 @@ export default function Home() {
         onSignOut={signOut}
         canShowDemoMode={isDemoAdmin}
         demoMode={demoMode}
-        onDemoModeChange={setDemoMode}
+        onDemoModeChange={(enabled) => {
+          setDemoMode(enabled);
+          if (!enabled) setReasoningVisible(false);
+        }}
       />
 
       <div className="flex-1 flex overflow-hidden">
-        {surface.showDemoControls && (
-          <div className="hidden flex-col flex-1 border-r border-gray-200 md:flex md:max-w-md">
-            <ChatSimulation
-              key={chatState.instanceKey}
-              messages={chatMessages}
-              seniorId={chatState.submissionSeniorId}
-              isSeniorLoading={!chatState.canSubmit && Boolean(selectedSeniorId)}
-              onComplete={refreshDashboardState}
-              authToken={authToken}
-              onUnauthorized={handleUnauthorized}
-            />
+        {surface.showChatSimulator && (
+          <div className="hidden flex-1 flex-col border-r border-[var(--care-line)] md:flex md:max-w-md">
+            <div className="min-h-0 flex-1">
+              <ChatSimulation
+                key={chatState.instanceKey}
+                messages={chatMessages}
+                seniorId={chatState.submissionSeniorId}
+                isSeniorLoading={!chatState.canSubmit && Boolean(selectedSeniorId)}
+                onComplete={refreshDashboardState}
+                authToken={authToken}
+                onUnauthorized={handleUnauthorized}
+              />
+            </div>
+            {surface.showReasoningRail && (
+              <div className="max-h-[45%] shrink-0">
+                <AgentTracePanel
+                  traces={liveTraces}
+                  visible={reasoningVisible}
+                  onToggle={() => setReasoningVisible((current) => !current)}
+                />
+              </div>
+            )}
           </div>
         )}
 

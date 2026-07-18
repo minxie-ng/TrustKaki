@@ -139,17 +139,18 @@ const dashboardData: DashboardData = {
 };
 
 describe("dashboard view model", () => {
-  it("keeps caregiver and judge surfaces focused on the dashboard", () => {
-    expect(appShellSurface({ isDemoAdmin: false, demoMode: false })).toMatchObject({
+  it("keeps technical surfaces closed except for enabled demo admins", () => {
+    expect(appShellSurface({ isDemoAdmin: false, demoMode: true })).toEqual({
       showChatSimulator: false,
       showReasoningRail: false,
       showDemoControls: false,
+      proofPlacement: "plain_language_case",
     });
-    expect(appShellSurface({ isDemoAdmin: true, demoMode: true })).toMatchObject({
-      showChatSimulator: false,
-      showReasoningRail: false,
+    expect(appShellSurface({ isDemoAdmin: true, demoMode: true })).toEqual({
+      showChatSimulator: true,
+      showReasoningRail: true,
       showDemoControls: true,
-      proofPlacement: "collapsed_details",
+      proofPlacement: "demo_only",
     });
   });
 

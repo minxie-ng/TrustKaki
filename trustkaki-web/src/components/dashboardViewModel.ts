@@ -27,11 +27,12 @@ export function shouldPollDashboard(args: {
 }
 
 export function appShellSurface(args: { isDemoAdmin: boolean; demoMode: boolean }) {
+  const enabled = args.isDemoAdmin && args.demoMode;
   return {
-    showChatSimulator: false,
-    showReasoningRail: false,
-    showDemoControls: args.isDemoAdmin && args.demoMode,
-    proofPlacement: "collapsed_details" as const,
+    showChatSimulator: enabled,
+    showReasoningRail: enabled,
+    showDemoControls: enabled,
+    proofPlacement: enabled ? ("demo_only" as const) : ("plain_language_case" as const),
   };
 }
 
