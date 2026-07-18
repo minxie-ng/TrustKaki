@@ -487,6 +487,7 @@ export async function readDashboardState(options: {
     .maybeSingle();
 
   const checkInId = checkIn?.id;
+  const exposeTechnicalTraces = options.auth?.role === "demo_admin";
 
   const allFollowUpQueue = (
     await Promise.all(
@@ -525,7 +526,7 @@ export async function readDashboardState(options: {
             .eq("check_in_id", checkInId)
             .order("created_at", { ascending: true })
         : Promise.resolve({ data: [] as TableRow<"messages">[] }),
-      checkInId
+      checkInId && exposeTechnicalTraces
         ? client
             .from("agent_runs")
             .select("*")
@@ -578,7 +579,7 @@ export async function readDashboardState(options: {
         }
       : null,
     messages: (messages ?? []).map(messageFromRow),
-    traces: (traces ?? []).map(traceFromAgentRun),
+    traces: exposeTechnicalTraces ? (traces ?? []).map(traceFromAgentRun) : [],
     alerts: (alerts ?? []).map((alert) => ({
       id: alert.id,
       type: alert.signal_type,

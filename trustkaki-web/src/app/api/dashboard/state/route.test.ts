@@ -11,6 +11,7 @@ const auth = {
   caregiverName: "Rachel Tan",
   accessibleSeniorIds: ["00000000-0000-0000-0000-000000000001"],
 };
+const caregiverAuth = { ...auth, role: "caregiver" };
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   readDashboardState: readDashboardStateMock,
@@ -93,6 +94,39 @@ describe("/api/dashboard/state", () => {
     expect(json.data.senior.riskLevel).toBe("yellow");
     expect(json.data.activeSessions[0].summary).toBe("Stored summary");
     expect(readDashboardStateMock).toHaveBeenCalledWith({ auth });
+  });
+
+  it("does not return technical traces to a normal caregiver", async () => {
+    const { GET } = await import("./route");
+    requireAuthenticatedCaregiverMock.mockResolvedValue({
+      ok: true,
+      auth: caregiverAuth,
+    });
+    readDashboardStateMock.mockResolvedValue({
+      persistence: { mode: "supabase", configured: true, persisted: true },
+      data: {
+        senior: {
+          name: "Uncle Tan",
+          age: 76,
+          livingSituation: "Lives alone",
+          caregiver: "Rachel Tan",
+          aacVolunteer: "Mei Ling",
+          riskLevel: "yellow",
+          lastCheckIn: null,
+        },
+        activeSessions: [{ id: "session-1", messages: [], traces: [] }],
+        recentAlerts: [],
+      },
+      briefing: null,
+      traces: [{ id: "raw-trace", agentId: "triage", input: "secret" }],
+    });
+
+    const response = await GET(new Request("http://localhost/api/dashboard/state"));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.traces).toEqual([]);
+    expect(json.data.activeSessions[0].traces).toEqual([]);
   });
 
   it("passes an optional selected senior id to dashboard state reads", async () => {

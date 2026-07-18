@@ -8,6 +8,24 @@ import { readDashboardState } from "@/lib/persistence/trustkakiRepository";
 
 export const runtime = "nodejs";
 
+function suppressTechnicalTraces(
+  state: Awaited<ReturnType<typeof readDashboardState>>,
+  exposeTechnicalTraces: boolean
+) {
+  if (exposeTechnicalTraces) return state;
+  return {
+    ...state,
+    data: {
+      ...state.data,
+      activeSessions: state.data.activeSessions.map((session) => ({
+        ...session,
+        traces: [],
+      })),
+    },
+    traces: [],
+  };
+}
+
 export async function GET(request: Request) {
   const authResult = await requireAuthenticatedCaregiver(request);
   if (!authResult.ok) return authJsonError(authResult);
@@ -19,7 +37,9 @@ export async function GET(request: Request) {
       auth: authResult.auth,
       seniorId: seniorId?.trim() || undefined,
     });
-    return NextResponse.json(state);
+    return NextResponse.json(
+      suppressTechnicalTraces(state, authResult.auth.role === "demo_admin")
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "Forbidden") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
