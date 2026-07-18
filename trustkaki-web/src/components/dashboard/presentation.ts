@@ -1,5 +1,11 @@
 import type { FollowUpStatus, RiskLevel } from "@/lib/types";
 
+export const coverageRiskStyle: Record<RiskLevel, { edge: string; tint: string }> = {
+  green: { edge: "border-l-emerald-400", tint: "bg-emerald-50" },
+  yellow: { edge: "border-l-amber-400", tint: "bg-amber-50" },
+  red: { edge: "border-l-red-500", tint: "bg-red-50" },
+};
+
 export const riskConfig: Record<
   RiskLevel,
   { bg: string; text: string; border: string; label: string }
