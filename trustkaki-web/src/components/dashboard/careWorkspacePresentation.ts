@@ -33,7 +33,7 @@ export function initialsForSenior(name: string): string {
   const ignored = new Set(["mr", "mdm", "mrs", "ms", "dr"]);
   const words = name.trim().split(/\s+/).filter((word) => word && !ignored.has(word.toLowerCase()));
   if (words.length === 0) return "TK";
-  const candidates = words.slice(0, 2);
+  const candidates = words[1]?.toLowerCase() === "ah" ? [words[0], words.at(-1)!] : words.slice(0, 2);
   return candidates.map((word) => word[0]?.toUpperCase() ?? "").join("").slice(0, 2) || "TK";
 }
 
