@@ -109,6 +109,7 @@ describe("CaseDetails staff presentation", () => {
     }));
 
     expect(html).toContain("Chronological evidence");
+    expect(html).toContain("Medium severity");
     expect(html).toContain("Why TrustKaki suggested this");
     expect(html).toContain("Recorded actions");
     expect(html).toContain("A short check-in may clarify what changed.");

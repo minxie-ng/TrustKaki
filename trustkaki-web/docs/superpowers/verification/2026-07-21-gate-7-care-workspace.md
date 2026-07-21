@@ -45,8 +45,8 @@ the acceptance evidence above is the user's direct authenticated review.
 
 `npm run validate` passed on 2026-07-21:
 
-- 96 test files passed and 5 were skipped;
-- 599 tests passed and 38 were skipped;
+- 97 test files passed and 5 were skipped;
+- 601 tests passed and 38 were skipped;
 - TypeScript typecheck passed;
 - ESLint passed;
 - the Next.js production build passed and generated 23 static pages.

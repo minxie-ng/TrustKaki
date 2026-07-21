@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MaskedContactPlan } from "@/lib/types";
 import {
+  contactMethodHelpId,
   contactPlanInstanceKey,
   contactPlanPresentation,
   isValidWhatsAppDestination,
@@ -87,6 +88,13 @@ describe("contact plan presentation", () => {
   it("uses a different component instance for each selected senior", () => {
     expect(contactPlanInstanceKey("senior-1")).not.toBe(
       contactPlanInstanceKey("senior-2")
+    );
+  });
+
+  it("uses a unique WhatsApp help id for each contact", () => {
+    expect(contactMethodHelpId("contact-1")).toBe("whatsapp-number-help-contact-1");
+    expect(contactMethodHelpId("contact-1")).not.toBe(
+      contactMethodHelpId("contact-2")
     );
   });
 

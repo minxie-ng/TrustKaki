@@ -23,6 +23,12 @@ const evidenceMarker = {
   high: "bg-[var(--care-red)]",
 } as const;
 
+const evidenceSeverityLabel = {
+  low: "Low severity",
+  medium: "Medium severity",
+  high: "High severity",
+} as const;
+
 export function formatCaregiverActionHistory(
   action: CaregiverActionItem
 ): string {
@@ -78,6 +84,9 @@ export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
                   </div>
                   <div className="mt-1 text-sm font-bold text-gray-950">
                     {labelPattern(evidence.type)}
+                    <span className="font-medium text-gray-500">
+                      {` · ${evidenceSeverityLabel[evidence.severity]}`}
+                    </span>
                   </div>
                   <div className="mt-1 text-sm leading-6 text-gray-700">
                     {evidence.description}

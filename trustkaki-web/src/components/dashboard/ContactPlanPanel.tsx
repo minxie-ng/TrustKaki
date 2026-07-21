@@ -34,6 +34,10 @@ export function contactPlanInstanceKey(seniorId: string | null) {
   return `contact-plan:${seniorId ?? "none"}`;
 }
 
+export function contactMethodHelpId(contactId: string): string {
+  return `whatsapp-number-help-${contactId}`;
+}
+
 export function isValidWhatsAppDestination(value: string): boolean {
   const normalized = value.trim().replace(/[\s().-]/g, "");
   return /^\+[1-9]\d{7,14}$/.test(normalized);
@@ -281,6 +285,7 @@ function AddMethodForm(props: {
   onSaved: () => void;
   onUnauthorized: () => void;
 }) {
+  const helpId = contactMethodHelpId(props.contactId);
   const [open, setOpen] = useState(false);
   const [destination, setDestination] = useState("");
   const [busy, setBusy] = useState(false);
@@ -334,12 +339,12 @@ function AddMethodForm(props: {
           inputMode="tel"
           aria-label="WhatsApp number"
           aria-invalid={Boolean(error)}
-          aria-describedby="whatsapp-number-help"
+          aria-describedby={helpId}
           className="rounded border px-2 py-1"
         />
         <button type="button" disabled={busy} onClick={submit} className="rounded bg-[var(--care-brand-strong)] px-3 py-1 text-xs font-semibold text-white hover:bg-[var(--care-brand-hover)]">Save</button>
       </div>
-      <p id="whatsapp-number-help" className="mt-1 text-xs text-gray-500">
+      <p id={helpId} className="mt-1 text-xs text-gray-500">
         Use international format, for example +6581234567.
       </p>
       {error && <p className="mt-1 text-xs font-semibold text-red-700" role="alert">{error}</p>}
