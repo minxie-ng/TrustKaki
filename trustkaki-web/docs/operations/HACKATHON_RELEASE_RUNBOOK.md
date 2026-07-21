@@ -103,10 +103,12 @@ and should remain unset for the primary judge path.
 ## Deploy And Public Smoke
 
 1. **Approval checkpoint:** obtain explicit deployment approval for the selected
-   commit. Deploy it to preview using the project's established Vercel workflow;
-   do not change callbacks, webhooks, or schedules.
-2. Record the preview deployment ID and deployed commit SHA. Never record tokens,
-   Auth UUIDs, phone numbers, Telegram identifiers, or payloads.
+   commit. Use Preview only when it has isolated non-production configuration.
+   If that would require copying production secrets, create a production-target
+   candidate with `--skip-domain` so no public alias changes. Do not change
+   callbacks, webhooks, or schedules.
+2. Record the candidate deployment ID and deployed commit SHA. Never record
+   tokens, Auth UUIDs, phone numbers, Telegram identifiers, or payloads.
 3. **Approval checkpoint:** obtain separate approval before inspecting the live
    Vercel project. Then inspect deployment metadata and verify the SHA matches
    the approved commit:
@@ -116,8 +118,8 @@ and should remain unset for the primary judge path.
    npx vercel inspect "$TRUSTKAKI_RELEASE_URL"
    ```
 
-   Use the preview URL in `TRUSTKAKI_RELEASE_URL` until promotion is approved;
-   the URL above is the production example.
+   Use the unaliased candidate URL in `TRUSTKAKI_RELEASE_URL` until promotion is
+   approved; the URL above is the production example.
 4. Run the credential-free, non-mutating public smoke:
 
    ```bash
@@ -125,10 +127,10 @@ and should remain unset for the primary judge path.
    ```
 
 5. Record endpoint pass/fail and time only. Do not save response bodies.
-6. Continue to authenticated verification on preview. **Approval checkpoint:**
-   promote the verified deployment only after public smoke and authenticated
-   judge verification pass. Record the promoted deployment ID and commit SHA,
-   then rerun public smoke against the production URL.
+6. Continue to authenticated verification on the candidate. **Approval
+   checkpoint:** promote the verified deployment only after public smoke and
+   authenticated judge verification pass. Record the promoted deployment ID and
+   commit SHA, then rerun public smoke against the production URL.
 
 ## Authenticated Judge Verification
 

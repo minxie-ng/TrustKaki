@@ -54,24 +54,22 @@ the Next.js `app` directory is under `trustkaki-web`. No secret values appeared
 in the inspected logs.
 
 All 19 configured Vercel variable names were scoped to Production. No values
-were viewed or copied, and no user records were queried. A Preview deployment
-therefore remains blocked until a separately approved, bounded configuration
-strategy is selected. Transport, scheduler, replay, and simulator configuration
-must remain absent from Preview.
+were viewed or copied, and no user records were queried. Copying production
+service and provider secrets into Preview was rejected as unnecessary exposure.
 
 The recommended alternative is an explicitly approved production-target
 candidate deployed with `--skip-domain`. This uses the existing Production
 configuration without copying it into Preview and leaves the public alias on the
-last Ready deployment until public smoke and authenticated checks pass. Correcting
-the Vercel project root to `trustkaki-web` and creating that candidate remain
-separate, unapproved mutations.
+last Ready deployment until public smoke and authenticated checks pass. The
+Vercel project root was separately approved, changed from `.` to
+`trustkaki-web`, and verified without triggering a deployment. Creating the
+candidate remains unapproved.
 
 ## Live Checkpoints Still Required
 
 The following evidence remains pending:
 
 - deployment;
-- Preview configuration strategy;
 - authenticated production review;
 - Telegram transport re-verification;
 - WhatsApp transport re-verification;
