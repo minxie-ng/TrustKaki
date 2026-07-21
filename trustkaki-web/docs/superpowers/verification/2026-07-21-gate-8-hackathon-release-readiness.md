@@ -41,15 +41,28 @@ servers were stopped after the checks.
 
 ## Security And Privacy Checks
 
-No webhooks, processors, simulators, demo reset, outbound providers, linked
-projects, live data, or credentials were used. No live services were accessed.
+The local validation and smoke used no webhooks, processors, simulators, demo
+reset, outbound providers, linked projects, live data, or credentials.
+
+An explicitly approved read-only linked-project inspection was completed later
+on 2026-07-21. The linked TrustKaki Supabase project reported healthy, with all
+36 local and remote migrations aligned. The Vercel project and current
+production deployment reported Ready. Two more recent Git deployments, one
+Preview and one Production, reported Error before producing application build
+output; their build logs were not accessed.
+
+All 19 configured Vercel variable names were scoped to Production. No values
+were viewed or copied, and no user records were queried. A Preview deployment
+therefore remains blocked until a separately approved, bounded configuration
+strategy is selected. Transport, scheduler, replay, and simulator configuration
+must remain absent from Preview.
 
 ## Live Checkpoints Still Required
 
 The following evidence remains pending:
 
 - deployment;
-- linked-project inspection;
+- Preview configuration strategy;
 - authenticated production review;
 - Telegram transport re-verification;
 - WhatsApp transport re-verification;
