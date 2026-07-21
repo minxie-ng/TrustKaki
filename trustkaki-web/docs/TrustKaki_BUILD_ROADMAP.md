@@ -1182,18 +1182,39 @@ localisation remains deferred until a pilot identifies required languages and
 translated operational copy; the current layout and controls remain suitable
 for that later work.
 
-#### Gate 8 — Pilot and Deployment Approval
+#### Gate 8 — Hackathon Release Readiness (in progress)
 
-- security/privacy review, monitoring, incident ownership, rollback rehearsal
-- production Meta credentials and controlled AAC pilot
-- metrics-based go/no-go decision
+- [x] Task 1: expose sanitized release-health readiness without secret values or
+  making optional transports part of core health
+- [x] Task 2: add the credential-free, non-mutating public deployment smoke command
+- [x] Task 3: complete recursive API/client secret hardening and explicit Node.js
+  runtime coverage
+- [x] Task 4: add the bounded hackathon release runbook and current release
+  documentation
+- [ ] Task 5: complete and record full local validation, production dependency
+  assessment, and local production-build smoke
+- [ ] deploy the independently audited final commit and pass public plus
+  authenticated judge checks
+- [ ] retry WhatsApp restoration through approved Meta recovery and signed webhook setup
+- [ ] reverify the bounded Telegram production path on the final selected commit
+- [ ] rehearse rollback to the last verified deployment and repeat smoke plus
+  authenticated read-only checks
+- [ ] complete the independent Gate 8 audit with no unresolved Critical or
+  Important findings
+- [ ] record the final hackathon go/no-go decision and complete approved cleanup
+
+Gate 8 is scoped to a reversible hackathon demonstration. It does not approve a
+controlled AAC pilot or enterprise operations. Tasks 1-4 are local
+implementation status only; Task 5 validation and every live checkpoint remain
+unverified until their dated evidence is completed.
 
 ## 16A. Best Next Step
 
-Gates 0 through 7 are complete. The next hackathon release step is a bounded
-Gate 8 pass: deploy the judged workflow, retry production WhatsApp linking,
-preserve Telegram as the reliable live-demo fallback, run the final security
-and privacy review, and rehearse rollback and the judge walkthrough. Do not add
+Gates 0 through 7 are complete, and Gate 8 Tasks 1-4 are implemented locally.
+The next hackathon release step is Task 5 local validation and independent audit
+before any approved deployment. Live work must then deploy the judged workflow,
+retry production WhatsApp linking, reverify Telegram as the live-demo fallback
+on the final commit, and rehearse rollback and the judge walkthrough. Do not add
 enterprise roster or scaling infrastructure without a demonstrated pilot need.
 
 ## 16B. Multi-Senior Support Network Foundation

@@ -83,6 +83,8 @@ and removes temporary Auth users and database rows.
 - `docs/superpowers/specs/` records approved security and feature designs.
 - `docs/superpowers/verification/` records completed gate evidence.
 - `docs/superpowers/plans/` preserves historical implementation plans.
+- `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` is the bounded hackathon release,
+  rollback, incident, and go/no-go checklist.
 
 There is no separate handoff document. The README, roadmap, current code, and
 dated verification records are the maintained sources of truth.
@@ -190,10 +192,16 @@ Do not use `user_metadata` for authorization. Do not commit judge credentials or
 The deployment smoke check is:
 
 ```bash
-curl https://<deployment-url>/api/health
+export TRUSTKAKI_RELEASE_URL=https://trustkaki.vercel.app
+npm run release:smoke -- "$TRUSTKAKI_RELEASE_URL"
 ```
 
-The response is sanitized and only reports booleans plus non-sensitive version metadata. It does not call the LLM, call Meta, send WhatsApp messages, expose phone numbers, or mutate data.
+The smoke command checks `/api/health`, `/privacy`, and `/data-deletion` without
+credentials or mutation. The direct `/api/health` response is sanitized and
+only reports booleans plus non-sensitive version metadata. It does not call the
+LLM, call Meta, send WhatsApp messages, expose phone numbers, or mutate data.
+See the [hackathon release runbook](docs/operations/HACKATHON_RELEASE_RUNBOOK.md)
+for approval checkpoints, rollback ordering, and bounded release records.
 
 ## Test Commands
 
@@ -296,6 +304,7 @@ Do not bypass deterministic policy, Pattern Watch, or Supabase persistence when 
 - Public self-service registration, password reset, and organization administration are intentionally out of scope.
 - Full Agent Replay is slow and is not the primary production judge path.
 - WhatsApp recovery is protected but still needs an external scheduler or manual trigger for production-grade retry cadence.
-- Telegram continuity has not completed live bot verification yet; bot creation, verified senior identity binding, webhook registration, and one real reply remain outstanding.
+- The bounded Telegram production path passed on 15 July 2026; it must be
+  reverified on the final selected commit before the hackathon release go/no-go.
 - WorkBuddy provider integration is not implemented yet.
 - EdgeOne deployment has not been verified yet.
