@@ -4,6 +4,8 @@ import { parseJsonBody, seniorContactUpdateRequestSchema } from "@/lib/api/schem
 import { authJsonError, requireOrganisationAdmin } from "@/lib/auth/session";
 import { ContactPlanConflictError, ContactPlanForbiddenError, contactPlanCommands } from "@/lib/persistence/contactPlanRepository";
 
+export const runtime = "nodejs";
+
 export async function PATCH(request: Request, context: { params: Promise<{ contactId: string }> }) {
   const authResult = await requireOrganisationAdmin(request);
   if (!authResult.ok) return authJsonError(authResult);

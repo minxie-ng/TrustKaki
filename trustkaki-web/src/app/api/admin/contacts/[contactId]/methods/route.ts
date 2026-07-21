@@ -4,6 +4,8 @@ import { contactMethodCreateRequestSchema, parseJsonBody } from "@/lib/api/schem
 import { authJsonError, requireOrganisationAdmin } from "@/lib/auth/session";
 import { ContactPlanForbiddenError, contactPlanCommands } from "@/lib/persistence/contactPlanRepository";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request, context: { params: Promise<{ contactId: string }> }) {
   const authResult = await requireOrganisationAdmin(request);
   if (!authResult.ok) return authJsonError(authResult);

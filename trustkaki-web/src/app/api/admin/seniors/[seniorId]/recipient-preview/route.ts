@@ -4,6 +4,8 @@ import { parseJsonBody, recipientPreviewRequestSchema } from "@/lib/api/schemas"
 import { authJsonError, canAdministerSenior, requireOrganisationAdmin } from "@/lib/auth/session";
 import { previewRecipient } from "@/lib/persistence/contactPlanRepository";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request, context: { params: Promise<{ seniorId: string }> }) {
   const authResult = await requireOrganisationAdmin(request);
   if (!authResult.ok) return authJsonError(authResult);
