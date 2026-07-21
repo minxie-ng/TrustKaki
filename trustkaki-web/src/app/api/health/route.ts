@@ -11,6 +11,8 @@ const REQUIRED_TABLES = [
   "patterns",
   "caregiver_queue_items",
   "whatsapp_webhook_events",
+  "telegram_webhook_events",
+  "proactive_check_in_schedules",
 ] as const;
 
 function hasValue(value: string | undefined): boolean {
@@ -44,6 +46,16 @@ async function canReachRequiredTables(): Promise<boolean> {
 export async function GET() {
   const supabasePublicConfigured = !!getSupabasePublicConfig();
   const supabaseServiceConfigured = !!getSupabaseServerConfig();
+  const telegramConfigured =
+    hasValue(process.env.TELEGRAM_BOT_TOKEN) &&
+    hasValue(process.env.TELEGRAM_WEBHOOK_SECRET);
+  const telegramProcessorConfigured = hasValue(
+    process.env.TELEGRAM_INTERNAL_PROCESSOR_SECRET
+  );
+  const schedulerConfigured = hasValue(process.env.CRON_SECRET);
+  const whatsappProcessorConfigured = hasValue(
+    process.env.WHATSAPP_INTERNAL_PROCESSOR_SECRET
+  );
   const checks = {
     app: true,
     supabasePublicConfigured,
@@ -58,9 +70,11 @@ export async function GET() {
       hasValue(process.env.WHATSAPP_VERIFY_TOKEN) &&
       hasValue(process.env.META_APP_SECRET) &&
       hasValue(process.env.TRUSTKAKI_DEMO_SENIOR_PHONE),
-    internalProcessorConfigured: hasValue(
-      process.env.WHATSAPP_INTERNAL_PROCESSOR_SECRET
-    ),
+    telegramConfigured,
+    telegramProcessorConfigured,
+    schedulerConfigured,
+    whatsappProcessorConfigured,
+    internalProcessorConfigured: whatsappProcessorConfigured,
   };
 
   const criticalOk =
