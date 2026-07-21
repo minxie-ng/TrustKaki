@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const selectMock = vi.fn();
-const fromMock = vi.fn(() => ({ select: selectMock }));
+const fromMock = vi.fn<(table: string) => { select: typeof selectMock }>(() => ({
+  select: selectMock,
+}));
 const createTrustKakiServiceClientMock = vi.fn(() => ({ from: fromMock }));
 
 vi.mock("@/lib/supabase/server", () => ({
