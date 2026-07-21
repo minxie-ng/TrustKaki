@@ -8,17 +8,27 @@
 :root {
   --care-ink: #17211d;
   --care-paper: #f4f7f5;
+  --care-surface: #ffffff;
+  --care-surface-muted: #f8faf9;
+  --care-rail: #edf3f0;
+  --care-rail-deep: #183d35;
+  --care-workspace: #fbfcfb;
   --care-line: #dce3df;
   --care-green: #187652;
   --care-soft-green: #e1f3e9;
   --care-amber: #c27a20;
   --care-red: #b53a37;
-  --care-plum: #705a82;
-  --care-soft-purple: #f0ebf4;
+  --care-brand: #2f6f61;
+  --care-brand-strong: #24584d;
+  --care-brand-hover: #1d463e;
+  --care-soft-teal: #eaf4f1;
+  --care-teal-line: #c8ded8;
 }
 
 body {
   font-family: var(--font-sans);
+  background: var(--care-paper);
+  color: var(--care-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -18,8 +18,8 @@ const agentColors: Record<string, string> = {
   daily_living: "bg-blue-100 border-blue-400 text-blue-800",
   health_frailty: "bg-red-100 border-red-400 text-red-800",
   aac_nudge: "bg-green-100 border-green-400 text-green-800",
-  digital_safety: "bg-purple-100 border-purple-400 text-purple-800",
-  briefing: "bg-indigo-100 border-indigo-400 text-indigo-800",
+  digital_safety: "bg-cyan-100 border-cyan-400 text-cyan-800",
+  briefing: "bg-sky-100 border-sky-400 text-sky-800",
   orchestrator: "bg-slate-100 border-slate-400 text-slate-800",
   policy: "bg-gray-100 border-gray-400 text-gray-800",
   pattern_watch: "bg-teal-100 border-teal-400 text-teal-800",
@@ -47,12 +47,12 @@ function formatTime(ts: string) {
 
 export default function AgentTracePanel({ traces, visible, onToggle }: AgentTracePanelProps) {
   return (
-    <div className="flex h-full flex-col border-t border-[var(--care-plum)] bg-[var(--care-soft-purple)]">
+    <div className="flex h-full flex-col border-t border-[var(--care-brand)] bg-[var(--care-soft-teal)]">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={visible}
-        className="flex min-h-11 shrink-0 items-center justify-between bg-[var(--care-plum)] px-4 py-3 text-white transition-colors hover:bg-[#604d70] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-plum)]"
+        className="flex min-h-11 shrink-0 items-center justify-between bg-[var(--care-brand)] px-4 py-3 text-white transition-colors hover:bg-[var(--care-brand-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
       >
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm">TrustKaki Reasoning</span>

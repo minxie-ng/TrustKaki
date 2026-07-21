@@ -60,6 +60,8 @@ describe("SeniorCoverage", () => {
     expect(html).toContain("Stable");
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain("Select Mr Tan");
+    expect(html).toContain('title="Selected senior"');
+    expect(html).not.toContain("ring-2");
     expect(html).toContain("Monitoring");
     expect(html).not.toContain("years old");
     expect(html).not.toContain("active follow-up item");

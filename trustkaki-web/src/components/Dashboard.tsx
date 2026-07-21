@@ -71,9 +71,10 @@ export default function Dashboard({
   const interactionsDisabled = !authToken;
 
   return (
-    <main className="h-full overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)]">
-      <div className="mx-auto grid min-h-full w-full max-w-[1600px] gap-4 p-3 sm:p-4 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_18rem] xl:gap-5 xl:p-5">
-        <aside className="min-w-0 lg:row-span-2 xl:sticky xl:top-5 xl:h-[calc(100vh-6.5rem)]">
+    <main className="h-full overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] xl:overflow-hidden">
+      <div className="mx-auto grid min-h-full w-full max-w-[1760px] gap-4 p-3 sm:p-4 lg:grid-cols-[17rem_minmax(0,1fr)] xl:h-full xl:min-h-0 xl:grid-cols-[17rem_minmax(0,1fr)_19rem] xl:gap-0 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white xl:p-0">
+        <aside className="min-w-0 lg:row-span-2 xl:row-span-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-r xl:border-[var(--care-line)] xl:bg-[var(--care-surface-muted)] xl:p-5">
+          <WorkspaceLabel eyebrow="Coverage" title="Senior roster" />
           <SeniorCoverage
             seniors={seniors}
             queue={data.followUpQueue}
@@ -82,7 +83,8 @@ export default function Dashboard({
             onSelect={(seniorId) => onSelectSenior?.(seniorId)}
           />
         </aside>
-        <section className="min-w-0 space-y-4">
+        <section className="min-w-0 space-y-4 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:bg-[var(--care-workspace)] xl:p-5">
+          <WorkspaceLabel eyebrow="Today" title="Care workspace" />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
           <PriorityCase
             items={queue}
@@ -100,7 +102,8 @@ export default function Dashboard({
             onUnauthorized={unauthorized}
           />
         </section>
-        <aside className="min-w-0 space-y-3 lg:col-start-2 xl:col-start-3 xl:row-start-1">
+        <aside className="min-w-0 space-y-3 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-[var(--care-line)] xl:bg-[var(--care-surface-muted)] xl:p-5">
+          <WorkspaceLabel eyebrow="Selected senior" title="Supporting care" />
           <SeniorContextPanel
             key={`senior-context:${selectedSeniorId ?? "none"}`}
             context={seniorContext}
@@ -137,5 +140,16 @@ export default function Dashboard({
         </aside>
       </div>
     </main>
+  );
+}
+
+function WorkspaceLabel({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="mb-3 hidden border-b border-[var(--care-line)] pb-3 xl:block">
+      <div className="text-[10px] font-bold uppercase text-[var(--care-brand)]">
+        {eyebrow}
+      </div>
+      <h2 className="mt-1 text-sm font-extrabold text-[var(--care-ink)]">{title}</h2>
+    </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   initialsForSenior,
   portraitForSenior,
 } from "./careWorkspacePresentation";
+import { riskConfig, riskHeadlineLabel, riskHeadlineText } from "./presentation";
 
 function senior(
   id: string,
@@ -81,9 +82,9 @@ describe("care workspace presentation", () => {
   });
 
   it("maps only fictional demo names to local portraits", () => {
-    expect(portraitForSenior("Mr Tan Ah Hock")).toBe("/seniors/mr-tan-ah-hock.webp");
-    expect(portraitForSenior("Mdm Lim Siew Lan")).toBe("/seniors/mdm-lim-siew-lan.webp");
-    expect(portraitForSenior("Mdm Siti Fatimah Binte Rahman")).toBe("/seniors/mdm-siti-fatimah.webp");
+    expect(portraitForSenior("Mr Tan Ah Hock")).toBe("/seniors/mr-tan-ah-hock-photo.webp");
+    expect(portraitForSenior("Mdm Lim Siew Lan")).toBe("/seniors/mdm-lim-siew-lan-photo.webp");
+    expect(portraitForSenior("Mdm Siti Fatimah Binte Rahman")).toBe("/seniors/mdm-siti-fatimah-photo.webp");
     expect(portraitForSenior("New Senior")).toBeNull();
   });
 
@@ -123,5 +124,17 @@ describe("care workspace presentation", () => {
       "yellow-old-name",
       "yellow-old",
     ]);
+  });
+
+  it("uses severity wording instead of colour names for risk", () => {
+    expect(riskConfig.green.label).toBe("Low");
+    expect(riskConfig.yellow.label).toBe("Medium");
+    expect(riskConfig.red.label).toBe("High");
+    expect(riskHeadlineLabel("Yellow · Follow-up suggested", "yellow")).toBe(
+      "Medium · Follow-up suggested"
+    );
+    expect(riskHeadlineText("Red · Follow-up suggested")).toBe(
+      "Follow-up suggested"
+    );
   });
 });

@@ -34,6 +34,11 @@ export function contactPlanInstanceKey(seniorId: string | null) {
   return `contact-plan:${seniorId ?? "none"}`;
 }
 
+export function isValidWhatsAppDestination(value: string): boolean {
+  const normalized = value.trim().replace(/[\s().-]/g, "");
+  return /^\+[1-9]\d{7,14}$/.test(normalized);
+}
+
 export function nextContactPriority(
   plan: MaskedContactPlan | null | undefined,
   contactKind: MaskedContactPlan["contacts"][number]["contactKind"]
@@ -42,6 +47,12 @@ export function nextContactPriority(
     .filter((contact) => contact.active && contact.contactKind === contactKind)
     .map((contact) => contact.escalationPriority);
   return Math.max(0, ...priorities) + 1;
+}
+
+export function nextMethodPriority(
+  contact: MaskedContactPlan["contacts"][number]
+): number {
+  return Math.max(0, ...contact.methods.map((method) => method.methodPriority)) + 1;
 }
 
 const recipientReasonLabels = {
@@ -178,11 +189,13 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
   }
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white p-4 shadow-[0_3px_12px_rgba(23,33,29,0.04)] transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]">
+      <div className="-mx-4 -mt-4 mb-4 border-b border-[var(--care-line)] bg-[var(--care-surface-muted)] px-4 py-3 text-sm font-bold text-[var(--care-brand)]">
+        Contact plan
+      </div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Contact plan</div>
-          <h3 className="mt-1 text-lg font-bold text-gray-950">{view.primaryContact}</h3>
+          <h3 className="text-lg font-bold text-gray-950">{view.primaryContact}</h3>
           <p className="mt-1 text-sm text-gray-700">
             {props.loading ? "Loading contact plan..." : view.primaryMethod}
           </p>
@@ -223,6 +236,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
               {props.isAdmin && showAdmin && (
                 <AddMethodForm
                   contactId={contact.id}
+                  methodPriority={nextMethodPriority(contact)}
                   authToken={props.authToken}
                   onSaved={props.onSaved}
                   onUnauthorized={props.onUnauthorized}
@@ -246,7 +260,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
             </select>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={createContact} disabled={busy || !name.trim() || !relationship.trim()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            <button type="button" onClick={createContact} disabled={busy || !name.trim() || !relationship.trim()} className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50">
               {busy ? "Saving..." : "Add contact"}
             </button>
             <button type="button" onClick={previewRecipient} disabled={busy || !props.plan?.contacts.length} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold disabled:opacity-50">
@@ -262,6 +276,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
 
 function AddMethodForm(props: {
   contactId: string;
+  methodPriority: number;
   authToken: string;
   onSaved: () => void;
   onUnauthorized: () => void;
@@ -269,10 +284,16 @@ function AddMethodForm(props: {
   const [open, setOpen] = useState(false);
   const [destination, setDestination] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const commandRef = useRef<string | null>(null);
   async function submit() {
     if (!destination.trim() || busy) return;
+    if (!isValidWhatsAppDestination(destination)) {
+      setError("Enter a WhatsApp number in international format, for example +6581234567.");
+      return;
+    }
     setBusy(true);
+    setError(null);
     const commandId = commandRef.current ?? crypto.randomUUID();
     commandRef.current = commandId;
     try {
@@ -280,7 +301,7 @@ function AddMethodForm(props: {
         url: `/api/admin/contacts/${props.contactId}/methods`, method: "POST",
         authToken: props.authToken, onUnauthorized: props.onUnauthorized,
         body: {
-          commandId, channel: "whatsapp", destination, methodPriority: 1,
+          commandId, channel: "whatsapp", destination, methodPriority: props.methodPriority,
           timezone: "Asia/Singapore", quietHoursStart: "22:00", quietHoursEnd: "07:00",
         },
       });
@@ -288,15 +309,40 @@ function AddMethodForm(props: {
       setDestination("");
       setOpen(false);
       props.onSaved();
+    } catch (cause) {
+      setError(
+        cause instanceof Error && cause.message === "conflict"
+          ? "The contact plan changed. Refresh and try again."
+          : "Could not save the WhatsApp method. Check the number format and try again."
+      );
     } finally {
       setBusy(false);
     }
   }
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-2 text-xs font-semibold text-emerald-700">Add WhatsApp method</button>;
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-2 text-xs font-semibold text-[var(--care-brand)] hover:text-[var(--care-brand-hover)]">Add WhatsApp method</button>;
   return (
-    <div className="mt-2 flex gap-2">
-      <input value={destination} onChange={(event) => { commandRef.current = null; setDestination(event.target.value); }} placeholder="WhatsApp number" className="rounded border px-2 py-1" />
-      <button type="button" disabled={busy} onClick={submit} className="rounded bg-gray-900 px-3 py-1 text-xs font-semibold text-white">Save</button>
+    <div className="mt-2">
+      <div className="flex flex-wrap gap-2">
+        <input
+          value={destination}
+          onChange={(event) => {
+            commandRef.current = null;
+            setDestination(event.target.value);
+            setError(null);
+          }}
+          placeholder="+65 8123 4567"
+          inputMode="tel"
+          aria-label="WhatsApp number"
+          aria-invalid={Boolean(error)}
+          aria-describedby="whatsapp-number-help"
+          className="rounded border px-2 py-1"
+        />
+        <button type="button" disabled={busy} onClick={submit} className="rounded bg-[var(--care-brand-strong)] px-3 py-1 text-xs font-semibold text-white hover:bg-[var(--care-brand-hover)]">Save</button>
+      </div>
+      <p id="whatsapp-number-help" className="mt-1 text-xs text-gray-500">
+        Use international format, for example +6581234567.
+      </p>
+      {error && <p className="mt-1 text-xs font-semibold text-red-700" role="alert">{error}</p>}
     </div>
   );
 }
@@ -345,7 +391,7 @@ function MethodAdminControls(props: {
     }
   }
   return (
-    <button type="button" onClick={verifyAndConsent} disabled={busy} className="ml-2 text-xs font-semibold text-emerald-700 disabled:opacity-50">
+    <button type="button" onClick={verifyAndConsent} disabled={busy} className="ml-2 text-xs font-semibold text-[var(--care-brand)] hover:text-[var(--care-brand-hover)] disabled:opacity-50">
       {busy ? "Saving..." : "Verify and record consent"}
     </button>
   );

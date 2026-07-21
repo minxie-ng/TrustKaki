@@ -153,6 +153,7 @@ export function SeniorContextPanel(props: Props) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   const commandRef = useRef<{ fingerprint: string; id: string } | null>(null);
 
   if (!props.seniorId || !view.visible) return null;
@@ -231,11 +232,14 @@ export function SeniorContextPanel(props: Props) {
   }
 
   return (
-    <details className="rounded-lg border border-gray-200 bg-white shadow-sm">
-      <summary className="cursor-pointer list-none px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
+    <details
+      className="group overflow-hidden rounded-lg border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white shadow-[0_3px_12px_rgba(23,33,29,0.04)] transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary className="cursor-pointer list-none bg-[var(--care-surface-muted)] px-4 py-3 transition-colors hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="text-sm font-bold text-[var(--care-brand)]">
               Known context
             </div>
             <div className="mt-1 text-sm text-gray-700">
@@ -248,7 +252,9 @@ export function SeniorContextPanel(props: Props) {
                   : "No active context"}
             </div>
           </div>
-          <span className="text-sm font-semibold text-emerald-700">View</span>
+          <span className="text-sm font-semibold text-gray-700">
+            {open ? "Hide" : "View"}
+          </span>
         </div>
       </summary>
       <div className="border-t border-gray-200 px-4 py-3">
@@ -283,9 +289,9 @@ export function SeniorContextPanel(props: Props) {
                                 type="button"
                                 disabled={busy}
                                 onClick={() => beginCorrection(item)}
-                                className="text-xs font-semibold text-emerald-700 disabled:opacity-50"
+                                className="text-xs font-semibold text-[var(--care-brand)] hover:text-[var(--care-brand-hover)] disabled:opacity-50"
                               >
-                                Correct
+                                Confirm details
                               </button>
                               <button
                                 type="button"
@@ -333,7 +339,7 @@ export function SeniorContextPanel(props: Props) {
                                   type="button"
                                   disabled={busy || content.trim().length === 0 || reason.trim().length < 10}
                                   onClick={() => void submit(item, "correct")}
-                                  className="rounded-md bg-gray-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                                  className="rounded-md bg-[var(--care-brand-strong)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--care-brand-hover)] disabled:opacity-50"
                                 >
                                   Save correction
                                 </button>

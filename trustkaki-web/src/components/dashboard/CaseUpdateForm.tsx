@@ -268,7 +268,7 @@ export function CaseUpdateForm({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        className="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold transition-colors hover:border-[var(--care-teal-line)] hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
         disabled={disabled || pending}
       >
         {open ? "Close update" : "Update case"}
@@ -299,7 +299,7 @@ export function CaseUpdateForm({
                     setAction(event.target.value as CaseUpdateAction)
                   )
                 }
-                className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
                 disabled={pending}
               >
                 {availableActions.map((value) => (
@@ -317,7 +317,7 @@ export function CaseUpdateForm({
                       setOutcome(event.target.value as ContactOutcome)
                     )
                   }
-                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
                   disabled={pending}
                 >
                   {outcomeOptions.map((option) => (
@@ -336,7 +336,7 @@ export function CaseUpdateForm({
                       setAssignedCaregiverId(event.target.value || null)
                     )
                   }
-                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
                   disabled={pending}
                 >
                   {caregiverOptions.length === 0 && (
@@ -365,7 +365,7 @@ export function CaseUpdateForm({
                   onChange={(event) =>
                     changeCommandInput(() => setSnoozeHours(event.target.value))
                   }
-                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
                   disabled={pending}
                 >
                   <option value="2">2 hours</option>
@@ -387,7 +387,7 @@ export function CaseUpdateForm({
                       )
                     )
                   }
-                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
                   disabled={pending}
                 >
                   {escalationOptions.map((option) => (
@@ -407,7 +407,7 @@ export function CaseUpdateForm({
                   onChange={(event) => changeCommandInput(() =>
                     setNotificationCategory(event.target.value as NotificationCategory)
                   )}
-                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                  className="mt-1 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
                   disabled={pending || escalationDestination === "emergency_guidance"}
                 >
                   {notificationCategoryOptions.map((option) => (
@@ -455,7 +455,7 @@ export function CaseUpdateForm({
                     ? "Example: Unable to reach him twice. AAC supervisor should review today."
                   : "Example: Rachel spoke to him. He ate lunch and agrees to a check-in tomorrow."
               }
-              className="mt-1 min-h-11 w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+              className="mt-1 min-h-11 w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
               disabled={pending}
             />
           </label>
@@ -485,7 +485,7 @@ export function CaseUpdateForm({
               disabled={
                 pending || !canSaveCaseAction(action, note, assignedCaregiverId)
               }
-              className="min-h-11 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 disabled:opacity-50"
+              className="min-h-11 rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)] disabled:opacity-50"
             >
               {pending ? "Saving..." : "Save update"}
             </button>
@@ -493,7 +493,7 @@ export function CaseUpdateForm({
               type="button"
               onClick={() => { setOpen(false); reset(); }}
               disabled={pending}
-              className="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50"
+              className="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold transition-colors hover:border-[var(--care-teal-line)] hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)] disabled:opacity-50"
             >
               Cancel
             </button>

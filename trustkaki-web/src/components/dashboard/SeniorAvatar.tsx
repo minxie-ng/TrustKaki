@@ -21,7 +21,7 @@ export function SeniorAvatar(props: {
 
   return (
     <span
-      className="relative grid aspect-square shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--care-line)] bg-[var(--care-soft-purple)] font-bold text-[var(--care-plum)]"
+      className="relative grid aspect-square shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--care-line)] bg-[var(--care-soft-teal)] font-bold text-[var(--care-brand)]"
       style={{ width: pixels, height: pixels }}
       aria-hidden="true"
     >

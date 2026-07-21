@@ -110,10 +110,79 @@ describe("CaseDetails staff presentation", () => {
 
     expect(html).toContain("Chronological evidence");
     expect(html).toContain("Why TrustKaki suggested this");
-    expect(html).toContain("Caregiver-recorded action history");
+    expect(html).toContain("Recorded actions");
     expect(html).toContain("A short check-in may clarify what changed.");
     expect(html).not.toContain("Agent runs completed");
     expect(html).not.toContain("Advanced technical trace");
     expect(html).not.toMatch(/model|provider response|duration ms/i);
+  });
+
+  it("uses one clear empty evidence state and structured action history", () => {
+    const item = {
+      id: "queue-empty",
+      seniorId: "senior-empty",
+      seniorName: "Mdm Siti Fatimah",
+      riskLevel: "red",
+      headline: "Follow-up required",
+      reason: "A recent change needs review.",
+      changeFromUsual: "Different from usual.",
+      lastResponseAt: null,
+      recommendedAction: "Contact the senior.",
+      status: "pending",
+      assignedTo: null,
+      lastUpdatedAt: "2026-07-18T02:00:00.000Z",
+      priority: 1,
+      relatedPatterns: [],
+      pattern: {
+        id: "pattern-empty",
+        type: "combined_wellbeing_decline",
+        status: "active",
+        severity: "high",
+        conciseSummary: "A recent change needs review.",
+        recommendedAction: "Contact the senior.",
+        firstObservedAt: "2026-07-18T01:00:00.000Z",
+        latestObservedAt: "2026-07-18T01:00:00.000Z",
+        evidence: [],
+        triggerExplanation: "Several related changes appeared together.",
+        comparison: "Different from the usual response pattern.",
+        previousActions: [{
+          id: "action-empty",
+          actionType: "snooze",
+          outcomeType: null,
+          escalationDestination: null,
+          assignedCaregiver: null,
+          caregiver: "Rachel Tan",
+          note: "Covering another urgent visit.",
+          createdAt: "2026-07-18T02:00:00.000Z",
+        }],
+        knownContext: [],
+        memoryNotes: [],
+      },
+    } satisfies FollowUpQueueItem;
+    const data = {
+      senior: {
+        name: "Mdm Siti Fatimah",
+        age: 77,
+        livingSituation: "Lives with family",
+        caregiver: "Nur Aishah",
+        aacVolunteer: "Mei Ling",
+        riskLevel: "red",
+        lastCheckIn: null,
+      },
+      activeSessions: [],
+      recentAlerts: [],
+      followUpQueue: [item],
+    } satisfies DashboardData;
+
+    const html = renderToStaticMarkup(createElement(CaseDetails, {
+      item,
+      data,
+    }));
+
+    expect(html).toContain("No timeline evidence yet");
+    expect(html).toContain("No senior messages recorded for this case yet");
+    expect(html).toContain("Recommendation basis");
+    expect(html).toContain("Recorded actions");
+    expect(html).toContain("Covering another urgent visit.");
   });
 });

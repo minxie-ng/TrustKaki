@@ -1,4 +1,5 @@
 import type { FollowUpQueueItem, RiskLevel, SeniorListItem } from "@/lib/types";
+import { riskHeadlineLabel } from "./presentation";
 
 export type CareUrgency = "urgent" | "today" | "monitoring" | "stable";
 
@@ -13,9 +14,9 @@ export interface SeniorCoverageView {
 }
 
 const portraits: Record<string, string> = {
-  "mr tan ah hock": "/seniors/mr-tan-ah-hock.webp",
-  "mdm lim siew lan": "/seniors/mdm-lim-siew-lan.webp",
-  "mdm siti fatimah binte rahman": "/seniors/mdm-siti-fatimah.webp",
+  "mr tan ah hock": "/seniors/mr-tan-ah-hock-photo.webp",
+  "mdm lim siew lan": "/seniors/mdm-lim-siew-lan-photo.webp",
+  "mdm siti fatimah binte rahman": "/seniors/mdm-siti-fatimah-photo.webp",
 };
 
 const riskOrder: Record<RiskLevel, number> = { red: 0, yellow: 1, green: 2 };
@@ -72,7 +73,11 @@ export function buildSeniorCoverage(
       activeItem,
       position: index + 1,
       urgency: urgencyFor(senior, activeItem),
-      reason: activeItem ? compactCoverageReason(activeItem.headline) : null,
+      reason: activeItem
+        ? compactCoverageReason(
+            riskHeadlineLabel(activeItem.headline, activeItem.riskLevel)
+          )
+        : null,
       portraitSrc: portraitForSenior(senior.name),
       initials: initialsForSenior(senior.name),
     }));

@@ -457,7 +457,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => refreshDashboardState()}
-                    className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+                    className="mt-4 rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)]"
                   >
                     Retry
                   </button>

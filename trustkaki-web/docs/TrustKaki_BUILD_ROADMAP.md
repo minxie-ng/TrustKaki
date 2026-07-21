@@ -9,6 +9,10 @@ pattern-aware last-mile engagement layer that turns quiet daily changes into
 concrete human follow-up actions for Singapore caregiver and Active Ageing
 Centre (AAC) workflows.
 
+TrustKaki builds a context model of each senior and uses AI agents to turn
+daily interactions into personalised engagement and actionable human
+follow-up.
+
 It should help seniors age with greater safety, independence, dignity, routine, and social connection by:
 
 - checking in proactively
@@ -70,49 +74,95 @@ This build chat should focus on architecture, code structure, prompts, schemas, 
 
 ## 4. Core Demo Scenario
 
-1. TrustKaki runs a morning check-in.
-2. Uncle Tan replies: “Not hungry today. Knee pain.”
-3. The Triage Agent detects `daily_living` and `health_frailty_signal`.
-4. Risk changes from Green to Yellow.
-5. Uncle Tan resists an AAC suggestion with: “Don’t want. Paiseh.”
-6. The AAC Nudge Agent responds gently without pressuring him.
-7. Uncle Tan shares a suspicious SingPost SMS.
-8. The Digital Safety Agent analyses it and advises him safely.
-9. Uncle Tan misses his usual morning reply the next day.
-10. Pattern Watch detects a possible routine + mobility + social withdrawal pattern.
-11. The Briefing Agent generates a concise caregiver/AAC summary.
-12. The dashboard recommends a concrete next human action: Mei Ling should try a 1-to-1 lift lobby check-in instead of inviting Uncle Tan to a group event.
-13. The dashboard updates from real stored events.
+1. The demo starts with Uncle Tan's manually curated Senior Care Context
+   Profile: preferred language and tone, known knee discomfort, morning reply
+   routine, social preferences, and trusted support contacts.
+2. TrustKaki runs a context-aware morning check-in using only the relevant,
+   safe subset of that profile.
+3. Uncle Tan replies: “Not hungry today. Knee pain.”
+4. The Triage Agent compares the message with his usual routine and detects
+   `daily_living` and `health_frailty_signal`.
+5. Uncle Tan later resists an AAC suggestion with: “Don’t want. Paiseh.” The
+   AAC Nudge Agent offers a low-pressure one-to-one alternative.
+6. Uncle Tan shares a suspicious SingPost SMS. The Digital Safety Agent
+   analyses it and advises him safely.
+7. Uncle Tan misses his usual morning reply the next day.
+8. Deterministic Pattern Watch compares recent signals with his routine
+   baseline and detects a possible routine + mobility + social withdrawal
+   pattern.
+9. The Briefing Agent separates observed facts, relevant context, and the
+   suggested human action.
+10. Today's Follow-up Queue shows one consolidated case recommending that Mei
+    Ling try a one-to-one lift-lobby check-in instead of a group invitation.
+11. A caregiver records the outcome and resolves the active case while the
+    action history and underlying policy evidence remain available.
 
 ## 5. Target Architecture
 
 ```text
-WhatsApp / Demo Trigger
+Senior Care Context Profile
++ Recent Messages
++ Detected Signals
++ Routine Baselines
++ Personal Memories
         ↓
-Inbound Message API
+Context Assembler
         ↓
-Message Router / Orchestrator
+Multi-agent Orchestrator
         ↓
 Relevant Specialist Agent(s)
         ↓
-Policy + Safety Checks
+Deterministic Policy + Pattern Watch
         ↓
-Memory + Pattern Watch
-        ↓
-State and Risk Update
-        ↓
-Outbound Reply / Human Alert
+State Update / Personalised Reply / Human Recommendation
         ↓
 Supabase Persistence
         ↓
-Caregiver/AAC Dashboard
+Today's Follow-up Queue and Caregiver/AAC Workspace
 ```
 
+The Senior Care Context Profile is a logical product view, not a separate
+"Relationship Layer" and not one unbounded profile blob. The server-side
+Context Assembler selects the minimum relevant, authorised, active, and
+non-expired context from normalized records before an agent runs. It is a
+deterministic composition responsibility, not another LLM agent.
+
+Keep these concepts separate:
+
+1. **Senior Care Context Profile** — stable, caregiver-confirmed information
+   such as language, communication style, support network, social preferences,
+   routine baseline, and non-diagnostic body-condition context.
+2. **Personal Memories** — bounded details learned over time that can make a
+   future interaction more familiar or timely.
+3. **Signals** — observed events such as skipped breakfast, no reply, pain, or
+   declining an activity.
+4. **Pattern Watch** — deterministic interpretation of signals over time
+   against the senior's normal routine.
+
 ## 6. Agent Responsibilities
+
+### Context Assembler (deterministic service)
+
+- authorize the senior and requesting workflow
+- retrieve only relevant, active, non-expired context
+- keep stable profile context, personal memories, recent signals, and routine
+  baselines source-labelled and distinct
+- enforce bounded item counts and safe-use restrictions before agent input
+- provide the same factual context package to downstream agents without making
+  an independent risk decision
+
+### Check-in Agent
+
+- use preferred tone and language
+- select only relevant recent memories and non-diagnostic health context
+- refer naturally to prior context without exposing private profile data
+- ask one clear, low-burden question
+- preserve the existing deterministic schedule, retry, and non-response policy
 
 ### Orchestrator Agent
 
 - inspect an event or incoming message
+- receive a bounded context package assembled server-side
 - decide which specialist agent should run
 - avoid unnecessary agent calls
 - return a structured execution plan
@@ -121,6 +171,10 @@ Caregiver/AAC Dashboard
 
 - detect soft risk signals
 - classify the message
+- compare the current message with normal routine, recent signals, and relevant
+  non-diagnostic health context
+- answer whether the event is unusual for this senior without presenting that
+  comparison as a diagnosis
 - assess current risk
 - recommend the next action
 
@@ -139,6 +193,8 @@ Example output:
 ### AAC Nudge Agent
 
 - respond to reluctance, embarrassment, or social withdrawal
+- use relevant social preferences, previous activity responses, and trusted
+  human contacts
 - avoid guilt, pressure, or infantilising language
 - offer low-friction alternatives
 - preserve senior autonomy
@@ -153,10 +209,11 @@ Example output:
 
 ### Briefing Agent
 
-- summarise recent events for caregivers or AAC volunteers
-- distinguish facts from inferences
+- present observed facts: what happened
+- present relevant context: why it may matter for this senior
+- distinguish facts, known context, and AI-generated interpretation
 - highlight risk changes
-- recommend a clear next human action
+- recommend one clear next human action and the appropriate trusted contact
 - avoid overwhelming the human reader
 
 ### Pattern Watch
@@ -185,6 +242,10 @@ Pattern Watch should produce structured observations with:
 - `confidence`
 - `suggested_human_action`
 - `human_follow_up_recommended`
+
+Pattern Watch remains deterministic policy-authoritative logic. Agent-generated
+language may explain its result, but must not invent a pattern or override the
+stored routine comparison.
 
 Example:
 
@@ -242,12 +303,42 @@ Event memory tables:
 - `briefs`
 - `scheduled_jobs`
 
-Recommended memory and pattern additions for the next database phase:
+Existing context and pattern foundations:
 
 - `senior_memories`
 - `routine_baselines`
-- `senior_health_contexts` or `health_contexts`
-- `pattern_watch_items` or `pattern_observations`
+- `senior_health_contexts`
+- `patterns`
+- `caregiver_queue_items`
+
+### Database schema direction
+
+Do not add a duplicate `senior_care_context_profiles` table solely to match the
+product label. Assemble the Senior Care Context Profile from normalized sources:
+
+- `seniors` for identity and basic information
+- `senior_caregivers`, contact-plan records, and organisation assignments for
+  the support network and preferred human contact
+- `routine_baselines` for normal response, meal, mobility, participation, and
+  social-comfort patterns
+- `senior_health_contexts` for explicitly known, non-diagnostic body-condition
+  context
+- `senior_memories` for bounded communication, family, food, routine, and AAC
+  preferences learned over time
+- `messages` and `detected_signals` for recent observations
+- `patterns` for Pattern Watch outputs
+- `caregiver_queue_items` for consolidated human follow-up work
+
+Basic profile fields such as birthday, preferred language, and communication
+style may be added to the appropriate stable senior/profile record when the
+care workflow needs them. Support-network relationships remain normalized and
+authorised; they are not a separate product layer.
+
+For the hackathon, seed a manually curated Uncle Tan profile and prove bounded
+context retrieval into the existing agents. Do not add a vector database,
+knowledge graph, complex relationship model, or open-ended memory mining
+system. Preserve the existing Gate 5 allowlisted, evidence-bound context
+capture rather than expanding it into autonomous free-form extraction.
 
 Suggested fields for `senior_memories`:
 
@@ -289,35 +380,52 @@ Suggested fields for Pattern Watch:
 - `created_at`
 - `resolved_at`
 
-## 8A. Memory Architecture
+## 8A. Senior Care Context Profile
 
-TrustKaki memory has four layers.
+The profile should answer four practical questions before TrustKaki responds or
+recommends action:
 
-### A. Event Memory
+- Who is this senior and how should TrustKaki communicate with them?
+- What is normal for them?
+- Who supports them and who should be involved when needed?
+- What recent change is unusual enough to matter?
 
-- `messages`
-- `check_ins`
-- `agent_runs`
-- `alerts`
-- `briefs`
+The logical profile has four bounded context groups.
 
-### B. Signal Memory
+### A. Basic and Support Context
 
-- `detected_signals`
-- `risk_events`
-- examples: `reduced_appetite`, `knee_pain`, `social_hesitation`, `suspicious_sms`, `non_response`
+- name, age, birthday when useful, and preferred language
+- warm, respectful, simple communication style
+- family, caregiver, and AAC support network
+- preferred human contact and relationship to the senior
 
-### C. Senior Profile / Baseline Memory
+### B. Social and Communication Preferences
+
+- interests such as kopi, gardening, or familiar conversation topics
+- dislikes and pressure sensitivities
+- preferred one-to-one or group engagement style
+- previous responses to activity suggestions
+
+### C. Routine Baseline
 
 - preferred language
 - usual reply time
 - usual meal time
 - usual activity level
-- assigned caregiver
-- assigned AAC volunteer
 - usual social comfort level
 
-### D. Personal and Health-Context Memory
+### D. Non-Diagnostic Health and Body-Condition Context
+
+- recurring knee discomfort
+- mobility difficulty
+- poor eyesight or hearing difficulty
+- other explicitly known context that helps form a safe follow-up question
+
+Personal memories, signals, and Pattern Watch outputs remain separate stores.
+They may be selected by the Context Assembler, but they are not merged into the
+stable profile.
+
+### Personal Memory
 
 - personal facts
 - food/items from family
@@ -541,7 +649,7 @@ from the queue.
 
 The detailed caregiver/AAC dashboard should display live stored data:
 
-- senior profile
+- concise Senior Care Context Profile
 - latest risk level
 - Pattern Watch items
 - recent messages
@@ -586,16 +694,29 @@ plain.
 Existing AI check-in systems validate the need. TrustKaki does not claim to be
 the only system capable of pattern recognition.
 
-TrustKaki focuses on pattern-to-action:
+**Positioning:** TrustKaki builds a context model of each senior and uses AI
+agents to turn daily interactions into personalised engagement and actionable
+human follow-up.
 
+TrustKaki focuses on context-aware pattern-to-action:
+
+- understands what is normal and what communication approach works for each
+  senior
 - detects quiet daily changes over time
+- compares current events with routine baselines and relevant known context
 - connects them to Singapore AAC/caregiver workflows
 - recommends the next best human action
 - keeps humans in the loop
 - shows risk movement and agent traces transparently
 
-TrustKaki could complement voice agents like NANA as the dashboard, risk, memory,
-and action layer behind proactive senior engagement.
+This differs from a generic companion chatbot, which may respond warmly without
+tracking operational follow-up, and from an alert-only system, which may flag an
+event without knowing whether it is unusual for that senior. TrustKaki does not
+replace human relationships; it helps the right human notice and act earlier.
+
+TrustKaki could complement voice agents like NANA and care-coordination products
+such as CareKampung as the context, pattern, and action layer behind proactive
+senior engagement.
 
 ## 14. Safety Boundaries
 
@@ -802,12 +923,17 @@ TrustKaki must become strong across five dimensions:
   - what happened after follow-up
 - The system should reduce staff uncertainty and alert fatigue, not just display AI outputs.
 
-#### B. Senior Context and Memory
+#### B. Senior Care Context Profile
 
 - Structured `senior_memories`, `senior_health_contexts`, and
   `routine_baselines` tables already exist.
-- Complete caregiver review, provenance, expiry, retention, and safe extraction
-  before treating memory as operationally authoritative.
+- Treat the Senior Care Context Profile as a bounded logical view assembled from
+  stable senior information, support-network records, routine baselines,
+  non-diagnostic health context, and relevant personal memories.
+- Keep stable profile context, personal memories, observed signals, and Pattern
+  Watch interpretations distinct in storage and caregiver explanations.
+- Preserve caregiver review, provenance, expiry, retention, and the existing
+  evidence-bound Gate 5 extraction policy.
 - Use context for explanation and follow-up planning, not diagnosis.
 
 Do not add duplicate `pattern_watch_items` or `today_follow_up_queue` tables
@@ -994,7 +1120,7 @@ Telegram check-in received a timely senior reply. The workflow became
 caregiver case. The personal test schedule was paused after verification; the
 shared scheduler remains active.
 
-#### Gate 5 — Memory Operationalisation (complete)
+#### Gate 5 — Senior Care Context Operationalisation (complete)
 
 - [x] add closed typed context contracts and deterministic eligibility policy
 - [x] add provenance, expiry, retention, immutable events, and lifecycle RPCs
@@ -1037,12 +1163,24 @@ backup/recovery exercises, export/deletion workflows, and load testing are
 deferred until a pilot or measured need justifies them; they are not required
 for the hackathon demo.
 
-#### Gate 7 — Adoption and UI Refinement (next)
+#### Gate 7 — Adoption and UI Refinement (complete)
 
-- caregiver/AAC usability testing
-- accessibility, mobile, multilingual readiness
-- reduced reading and action burden
-- technical traces outside the default operational workflow
+- [x] rank accessible seniors by deterministic care priority
+- [x] add fictional circular portraits with a safe initials fallback
+- [x] reduce default reading burden around the selected priority case
+- [x] keep technical traces outside the normal caregiver workflow
+- [x] support compact mobile coverage and independent desktop column scrolling
+- [x] add clear focus, validation, disclosure, empty, and conflict states
+- [x] verify authenticated senior switching, contact-method saving, and case details
+- [x] pass the complete test, typecheck, lint, and production-build baseline
+
+The final evidence is recorded in
+`docs/superpowers/verification/2026-07-21-gate-7-care-workspace.md`.
+Authenticated manual review covered desktop and compact layouts because the
+automated browser connector could not attach to the local worktree path. Full
+localisation remains deferred until a pilot identifies required languages and
+translated operational copy; the current layout and controls remain suitable
+for that later work.
 
 #### Gate 8 — Pilot and Deployment Approval
 
@@ -1052,15 +1190,13 @@ for the hackathon demo.
 
 ## 16A. Best Next Step
 
-Gate 6's organisation-tenancy foundation is complete, independently audited,
-and live verified. The next bounded step is Gate 7 UI refinement for the judged
-workflow: improve the senior coverage and follow-up experience, add optional
-circular profile photos with a safe fallback, check mobile/accessibility, and
-reduce default technical detail. Preserve the Telegram demo and WhatsApp paths.
-Do not add enterprise roster or scaling infrastructure without a demonstrated
-pilot need.
+Gates 0 through 7 are complete. The next hackathon release step is a bounded
+Gate 8 pass: deploy the judged workflow, retry production WhatsApp linking,
+preserve Telegram as the reliable live-demo fallback, run the final security
+and privacy review, and rehearse rollback and the judge walkthrough. Do not add
+enterprise roster or scaling infrastructure without a demonstrated pilot need.
 
-## 16B. Multi-Senior and Caregiver Relationship Foundation
+## 16B. Multi-Senior Support Network Foundation
 
 TrustKaki must support many seniors and many caregivers/AAC staff concurrently.
 The demo should now show a small but realistic coverage list, not a single
@@ -1094,6 +1230,9 @@ Deferred until justified by pilot needs:
 Contacts, consent, escalation, organisation tenancy, and authorized Realtime
 refresh hints are already implemented. The deferred items should not expand the
 hackathon scope unless they become part of a real pilot workflow.
+
+This support-network foundation is part of the Senior Care Context Profile. It
+must not become a separate "Relationship Layer" or a parallel source of truth.
 
 ## 17. Build Rules
 

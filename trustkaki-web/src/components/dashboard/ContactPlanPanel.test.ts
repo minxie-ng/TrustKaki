@@ -3,7 +3,9 @@ import type { MaskedContactPlan } from "@/lib/types";
 import {
   contactPlanInstanceKey,
   contactPlanPresentation,
+  isValidWhatsAppDestination,
   nextContactPriority,
+  nextMethodPriority,
   recipientPreviewPresentation,
 } from "./ContactPlanPanel";
 
@@ -88,6 +90,12 @@ describe("contact plan presentation", () => {
     );
   });
 
+  it("accepts only international WhatsApp destinations", () => {
+    expect(isValidWhatsAppDestination("+6581234567")).toBe(true);
+    expect(isValidWhatsAppDestination("+65 8123 4567")).toBe(true);
+    expect(isValidWhatsAppDestination("12345678")).toBe(false);
+  });
+
   it("appends a new contact within its own escalation group", () => {
     expect(nextContactPriority(plan, "family_guardian")).toBe(2);
     expect(nextContactPriority(plan, "aac_staff")).toBe(1);
@@ -98,5 +106,9 @@ describe("contact plan presentation", () => {
         { ...plan.contacts[0], id: "contact-2", escalationPriority: 3 },
       ],
     }, "family_guardian")).toBe(4);
+  });
+
+  it("assigns a new contact method the next available priority", () => {
+    expect(nextMethodPriority(plan.contacts[0])).toBe(2);
   });
 });

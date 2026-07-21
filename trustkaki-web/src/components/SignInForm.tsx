@@ -22,12 +22,12 @@ export default function SignInForm({
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--care-paper)] p-4">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm bg-white border rounded-lg p-5 shadow-sm"
+        className="w-full max-w-sm rounded-lg border border-gray-200 border-t-4 border-t-[var(--care-brand)] bg-white p-6 shadow-sm"
       >
-        <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="text-sm font-bold text-[var(--care-brand)]">
           TrustKaki
         </div>
         <h1 className="mt-1 text-xl font-bold text-gray-900">
@@ -46,7 +46,7 @@ export default function SignInForm({
             disabled={disabled}
             autoComplete="email"
             required
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            className="mt-1 min-h-11 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
           />
         </label>
 
@@ -59,7 +59,7 @@ export default function SignInForm({
             disabled={disabled}
             autoComplete="current-password"
             required
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            className="mt-1 min-h-11 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
           />
         </label>
 
@@ -72,7 +72,7 @@ export default function SignInForm({
         <button
           type="submit"
           disabled={disabled}
-          className="mt-4 w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="mt-4 min-h-11 w-full rounded-md bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)] disabled:opacity-50"
         >
           {disabled ? "Signing in..." : "Sign in"}
         </button>

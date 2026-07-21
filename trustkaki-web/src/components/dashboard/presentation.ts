@@ -14,21 +14,29 @@ export const riskConfig: Record<
     bg: "bg-emerald-100",
     text: "text-emerald-800",
     border: "border-l-emerald-400",
-    label: "Green",
+    label: "Low",
   },
   yellow: {
     bg: "bg-yellow-100",
     text: "text-yellow-800",
     border: "border-l-yellow-400",
-    label: "Yellow",
+    label: "Medium",
   },
   red: {
     bg: "bg-red-100",
     text: "text-red-800",
     border: "border-l-red-500",
-    label: "Red",
+    label: "High",
   },
 };
+
+export function riskHeadlineLabel(value: string, riskLevel: RiskLevel): string {
+  return value.replace(/^(green|yellow|red)\b/i, riskConfig[riskLevel].label);
+}
+
+export function riskHeadlineText(value: string): string {
+  return value.replace(/^(green|yellow|red)\s*·\s*/i, "");
+}
 
 export const statusLabel: Record<FollowUpStatus, string> = {
   pending: "Pending",

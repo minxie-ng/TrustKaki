@@ -68,6 +68,7 @@ export function ProactiveCheckInPanel(props: Props) {
   const [pauseReason, setPauseReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   const commandRef = useRef<{ fingerprint: string; id: string } | null>(null);
 
   if (!view.visible) return null;
@@ -117,18 +118,23 @@ export function ProactiveCheckInPanel(props: Props) {
   }
 
   return (
-    <details className="rounded-lg border border-gray-200 bg-white shadow-sm">
-      <summary className="cursor-pointer list-none px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
+    <details
+      className="group overflow-hidden rounded-lg border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white shadow-[0_3px_12px_rgba(23,33,29,0.04)] transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary className="cursor-pointer list-none bg-[var(--care-surface-muted)] px-4 py-3 transition-colors hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="text-sm font-bold text-[var(--care-brand)]">
               Proactive check-in
             </div>
             <div className="mt-1 font-semibold text-gray-950">
               {props.loading ? "Loading schedule..." : view.status}
             </div>
           </div>
-          <span className="text-sm font-semibold text-emerald-700">Manage</span>
+          <span className="text-sm font-semibold text-gray-700">
+            {open ? "Hide" : "Manage"}
+          </span>
         </div>
       </summary>
       <div className="border-t border-gray-200 px-4 py-3">
@@ -154,7 +160,7 @@ export function ProactiveCheckInPanel(props: Props) {
             />
           </label>
           <button type="button" disabled={busy} onClick={() => void submit("configure")}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50">
             {schedule ? "Update time" : "Set schedule"}
           </button>
           {view.canRunNow && (

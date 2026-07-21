@@ -170,7 +170,7 @@ export default function ChatSimulation({
                 >
                   {formatTime(msg.timestamp)}
                   {msg.agentId && (
-                    <span className="ml-2 bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px]">
+                    <span className="ml-2 rounded bg-teal-100 px-1.5 py-0.5 text-[9px] text-teal-700">
                       {msg.agentId}
                     </span>
                   )}

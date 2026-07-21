@@ -103,7 +103,7 @@ export function DemoControls({
     <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div className="text-xs font-semibold uppercase text-gray-500">
             Judge View
           </div>
           <h3 className="mt-1 text-xl font-bold text-gray-950">
@@ -121,7 +121,7 @@ export function DemoControls({
             type="button"
             onClick={() => runDemo("quick")}
             disabled={busyAction !== null}
-            className="rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+            className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50"
           >
             Start Quick Demo
           </button>
