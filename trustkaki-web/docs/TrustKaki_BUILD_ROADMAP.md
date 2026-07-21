@@ -1191,7 +1191,7 @@ for that later work.
   runtime coverage
 - [x] Task 4: add the bounded hackathon release runbook and current release
   documentation
-- [ ] Task 5: complete and record full local validation, production dependency
+- [x] Task 5: complete and record full local validation, production dependency
   assessment, and local production-build smoke
 - [ ] deploy the independently audited final commit and pass public plus
   authenticated judge checks
@@ -1204,18 +1204,18 @@ for that later work.
 - [ ] record the final hackathon go/no-go decision and complete approved cleanup
 
 Gate 8 is scoped to a reversible hackathon demonstration. It does not approve a
-controlled AAC pilot or enterprise operations. Tasks 1-4 are local
-implementation status only; Task 5 validation and every live checkpoint remain
-unverified until their dated evidence is completed.
+controlled AAC pilot or enterprise operations. Tasks 1-5 are local
+implementation and verification status only; every live checkpoint remains
+unverified until its dated evidence is completed.
 
 ## 16A. Best Next Step
 
-Gates 0 through 7 are complete, and Gate 8 Tasks 1-4 are implemented locally.
-The next hackathon release step is Task 5 local validation and independent audit
-before any approved deployment. Live work must then deploy the judged workflow,
-retry production WhatsApp linking, reverify Telegram as the live-demo fallback
-on the final commit, and rehearse rollback and the judge walkthrough. Do not add
-enterprise roster or scaling infrastructure without a demonstrated pilot need.
+Gates 0 through 7 are complete, and Gate 8 Tasks 1-5 are complete locally. The
+next hackathon release step is the independent local audit before any approved
+deployment. Live work must then deploy the judged workflow, retry production
+WhatsApp linking, reverify Telegram as the live-demo fallback on the final
+commit, and rehearse rollback and the judge walkthrough. Do not add enterprise
+roster or scaling infrastructure without a demonstrated pilot need.
 
 ## 16B. Multi-Senior Support Network Foundation
 

@@ -249,6 +249,45 @@ describe("release smoke CLI", () => {
     });
   });
 
+  it("rejects an empty HTML response", async () => {
+    await withServer((request, response) => {
+      if (request.url === "/api/health") {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify(health));
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html" });
+      response.end();
+    }, async (baseUrl) => {
+      const result = await runCli(baseUrl);
+
+      expectOnlyFailure(result, "/privacy", "invalid response");
+    });
+  });
+
+  it("classifies a timeout while reading an HTML body", { timeout: 12_000 }, async () => {
+    await withServer((request, response) => {
+      if (request.url === "/api/health") {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify(health));
+        return;
+      }
+      if (request.url === "/privacy") {
+        response.writeHead(200, { "content-type": "text/html" });
+        response.write("<!doctype html>");
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html" });
+      response.end("<!doctype html><title>TrustKaki</title>");
+    }, async (baseUrl) => {
+      const result = await runCli(baseUrl);
+
+      expectOnlyFailure(result, "/privacy", "timeout");
+      expect(result.stderr).not.toContain(baseUrl);
+      expect(result.stderr).not.toContain("AbortError");
+    });
+  });
+
   it("classifies a timeout while reading the health body", { timeout: 12_000 }, async () => {
     await withServer((_request, response) => {
       response.writeHead(200, { "content-type": "application/json" });

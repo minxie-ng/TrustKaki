@@ -76,7 +76,19 @@ async function checkJson(baseUrl, path, validate) {
 }
 
 async function checkHtml(baseUrl, path) {
-  await request(baseUrl, path, "text/html");
+  const response = await request(baseUrl, path, "text/html");
+  let body;
+  try {
+    body = await response.text();
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      throw new SmokeFailure(path, "timeout");
+    }
+    throw new SmokeFailure(path, "invalid response");
+  }
+  if (body.trim() === "") {
+    throw new SmokeFailure(path, "invalid response");
+  }
 }
 
 try {

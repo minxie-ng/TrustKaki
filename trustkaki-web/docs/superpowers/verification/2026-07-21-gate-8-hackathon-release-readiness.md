@@ -11,13 +11,15 @@ record deployment or approval for live release.
 The final complete `npm run validate` on 2026-07-21 is the authoritative pass:
 
 - 98 test files passed and 5 were skipped;
-- 624 tests passed and 38 were skipped;
+- 626 tests passed and 38 were skipped;
 - TypeScript passed;
 - ESLint passed with zero reported issues;
 - the Next.js 16.2.10 production build passed and generated 23 static pages.
 
 An initial health-test mock typing defect was fixed in commit `3224e4b` before
-the final complete validation. Non-blocking warnings reported that
+the final complete validation. The local audit then added coverage proving that
+empty or incomplete legal-page bodies cannot pass the release smoke. Non-blocking
+warnings reported that
 `vite-tsconfig-paths` is now redundant with native Vite support and that Next
 inferred a workspace root because the worktree and its parent each contain
 `pnpm-workspace.yaml`.
