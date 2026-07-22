@@ -150,7 +150,7 @@ function PriorityCaseCard({
           aria-expanded={detailsOpen}
           className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
         >
-          {detailsOpen ? "Hide details" : "View details"}
+          {detailsOpen ? "Hide timeline" : "View timeline"}
         </button>
       </div>
       {detailsOpen && (

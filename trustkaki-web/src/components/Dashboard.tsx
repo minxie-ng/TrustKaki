@@ -86,6 +86,12 @@ export default function Dashboard({
         <section className="min-w-0 space-y-4 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:bg-[var(--care-workspace)] xl:p-5">
           <WorkspaceLabel eyebrow="Today" title="Care workspace" />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
+          <DemoControls
+            authToken={authToken ?? ""}
+            visible={Boolean(isDemoAdmin && demoMode && authToken)}
+            onRefresh={refresh}
+            onUnauthorized={unauthorized}
+          />
           <PriorityCase
             items={queue}
             data={data}
@@ -93,12 +99,6 @@ export default function Dashboard({
             authToken={authToken ?? ""}
             disabled={interactionsDisabled}
             onSaved={refresh}
-            onUnauthorized={unauthorized}
-          />
-          <DemoControls
-            authToken={authToken ?? ""}
-            visible={Boolean(isDemoAdmin && demoMode && authToken)}
-            onRefresh={refresh}
             onUnauthorized={unauthorized}
           />
         </section>

@@ -49,6 +49,6 @@ describe("PriorityCase", () => {
     }));
 
     expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain("View details");
+    expect(html).toContain("View timeline");
   });
 });

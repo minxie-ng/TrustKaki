@@ -57,7 +57,7 @@ export function DemoControls({
       setRequestState("success");
       setStatusMessage(
         mode === "quick"
-          ? "Quick Demo ready. Open the case and follow the action steps."
+          ? "Demo ready. In the Priority case below, select View timeline."
           : "Full Agent Replay complete."
       );
       onRefresh();
@@ -115,9 +115,9 @@ export function DemoControls({
             Begin here. TrustKaki will prepare a clean case automatically.
           </p>
           <ol className="mt-4 grid gap-2 text-sm font-medium text-gray-700 sm:grid-cols-2">
-            <li><span className="mr-2 text-[var(--care-brand)]">1</span>Review the timeline</li>
-            <li><span className="mr-2 text-[var(--care-brand)]">2</span>Open the priority case</li>
-            <li><span className="mr-2 text-[var(--care-brand)]">3</span>View details</li>
+            <li><span className="mr-2 text-[var(--care-brand)]">1</span>Open the priority case</li>
+            <li><span className="mr-2 text-[var(--care-brand)]">2</span>Select View timeline</li>
+            <li><span className="mr-2 text-[var(--care-brand)]">3</span>Review the evidence</li>
             <li><span className="mr-2 text-[var(--care-brand)]">4</span>Record and resolve</li>
           </ol>
         </div>

@@ -15,5 +15,8 @@ describe("DemoControls", () => {
     expect(html).toContain("Begin here");
     expect(html).toContain("Start guided demo");
     expect(html).not.toContain("1. Reset demo");
+    expect(html.indexOf("Open the priority case")).toBeLessThan(
+      html.indexOf("Select View timeline")
+    );
   });
 });
