@@ -50,5 +50,21 @@ describe("PriorityCase", () => {
 
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain("View timeline");
+    expect(html.indexOf("View timeline")).toBeLessThan(html.indexOf("Why now"));
+  });
+
+  it("opens the timeline when the guided demo requests it", () => {
+    const html = renderToStaticMarkup(createElement(PriorityCase, {
+      items: [item],
+      data,
+      authToken: "test-token",
+      disabled: false,
+      openTimelineRequest: 1,
+      onSaved: () => undefined,
+      onUnauthorized: () => undefined,
+    }));
+
+    expect(html).toContain('aria-expanded="true"');
+    expect(html).toContain("Hide timeline");
   });
 });

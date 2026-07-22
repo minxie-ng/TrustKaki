@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { DashboardData, FollowUpQueueItem } from "@/lib/types";
 import { mainQueueCardFields } from "../dashboardViewModel";
@@ -20,6 +20,7 @@ interface PriorityCaseProps {
   briefing?: BriefingOutput | null;
   authToken: string;
   disabled: boolean;
+  openTimelineRequest?: number;
   onSaved: () => void;
   onUnauthorized: () => void;
 }
@@ -30,6 +31,7 @@ export function PriorityCase({
   briefing,
   authToken,
   disabled,
+  openTimelineRequest = 0,
   onSaved,
   onUnauthorized,
 }: PriorityCaseProps) {
@@ -58,14 +60,15 @@ export function PriorityCase({
     );
   }
 
-  return items.map((item) => (
+  return items.map((item, index) => (
     <PriorityCaseCard
-      key={item.id}
+      key={`${item.id}:${index === 0 ? openTimelineRequest : 0}`}
       item={item}
       data={data}
       briefing={briefing}
       authToken={authToken}
       disabled={disabled}
+      openTimelineRequest={index === 0 ? openTimelineRequest : 0}
       onSaved={onSaved}
       onUnauthorized={onUnauthorized}
     />
@@ -78,12 +81,23 @@ function PriorityCaseCard({
   briefing,
   authToken,
   disabled,
+  openTimelineRequest = 0,
   onSaved,
   onUnauthorized,
 }: Omit<PriorityCaseProps, "items"> & { item: FollowUpQueueItem }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(openTimelineRequest > 0);
+  const timelineRef = useRef<HTMLDivElement>(null);
   const risk = riskConfig[item.riskLevel];
   const fields = mainQueueCardFields(item);
+
+  useEffect(() => {
+    if (openTimelineRequest <= 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      timelineRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      timelineRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [openTimelineRequest]);
 
   return (
     <section className={`overflow-hidden rounded-lg border border-l-4 bg-white p-5 shadow-[0_8px_24px_rgba(23,33,29,0.06)] ${risk.border} ${
@@ -93,7 +107,7 @@ function PriorityCaseCard({
         <div className="text-xs font-bold uppercase text-[var(--care-brand-strong)]">Priority case</div>
         <div className="text-xs font-semibold text-[var(--care-brand)]">Needs attention</div>
       </div>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-xl font-extrabold text-gray-950">
             {riskHeadlineText(item.headline)}
@@ -102,9 +116,19 @@ function PriorityCaseCard({
             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${risk.bg} ${risk.text}`}>{risk.label}</span>
           </div>
         </div>
-        <span className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700">
-          {statusLabel[item.status]}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700">
+            {statusLabel[item.status]}
+          </span>
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((current) => !current)}
+            aria-expanded={detailsOpen}
+            className="min-h-10 rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
+          >
+            {detailsOpen ? "Hide timeline" : "View timeline"}
+          </button>
+        </div>
       </div>
       <div className="mt-6 grid gap-5 text-sm md:grid-cols-2">
         <div>
@@ -144,17 +168,11 @@ function PriorityCaseCard({
           onSaved={onSaved}
           onUnauthorized={onUnauthorized}
         />
-        <button
-          type="button"
-          onClick={() => setDetailsOpen((current) => !current)}
-          aria-expanded={detailsOpen}
-          className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
-        >
-          {detailsOpen ? "Hide timeline" : "View timeline"}
-        </button>
       </div>
       {detailsOpen && (
-        <CaseDetails item={item} data={data} briefing={briefing} />
+        <div ref={timelineRef} tabIndex={-1} className="scroll-mt-4 outline-none">
+          <CaseDetails item={item} data={data} briefing={briefing} />
+        </div>
       )}
     </section>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
 import type { SeniorContextReadModel } from "@/lib/api/schemas";
@@ -62,6 +63,7 @@ export default function Dashboard({
   seniorContextError = null,
   onSeniorContextChanged,
 }: DashboardProps) {
+  const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
   const selectedSenior = seniors.find((senior) => senior.id === selectedSeniorId);
@@ -90,6 +92,7 @@ export default function Dashboard({
             authToken={authToken ?? ""}
             visible={Boolean(isDemoAdmin && demoMode && authToken)}
             onRefresh={refresh}
+            onDemoReady={() => setDemoTimelineRequest((request) => request + 1)}
             onUnauthorized={unauthorized}
           />
           <PriorityCase
@@ -98,6 +101,7 @@ export default function Dashboard({
             briefing={briefing}
             authToken={authToken ?? ""}
             disabled={interactionsDisabled}
+            openTimelineRequest={demoTimelineRequest}
             onSaved={refresh}
             onUnauthorized={unauthorized}
           />

@@ -14,6 +14,7 @@ interface DemoControlsProps {
   authToken: string;
   visible: boolean;
   onRefresh: () => void;
+  onDemoReady?: () => void;
   onUnauthorized: () => void;
 }
 
@@ -21,6 +22,7 @@ export function DemoControls({
   authToken,
   visible,
   onRefresh,
+  onDemoReady,
   onUnauthorized,
 }: DemoControlsProps) {
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export function DemoControls({
           : "Full Agent Replay complete."
       );
       onRefresh();
+      if (mode === "quick") onDemoReady?.();
     } catch {
       setRequestState("error");
       setProgress(null);
