@@ -128,6 +128,9 @@ describe("/api/demo/pattern-watch/quick", () => {
       expect.objectContaining({ seniorId: DEMO_SENIOR_ID })
     );
     expect(resetDemoPersistenceMock).toHaveBeenCalledWith({ accessToken });
+    expect(resetDemoPersistenceMock.mock.invocationCallOrder[0]).toBeLessThan(
+      runTriageTimelineAgentMock.mock.invocationCallOrder[0]
+    );
     expect(readDashboardStateMock).toHaveBeenCalledWith({
       auth,
       seniorId: DEMO_SENIOR_ID,

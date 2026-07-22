@@ -17,21 +17,6 @@ interface DemoControlsProps {
   onUnauthorized: () => void;
 }
 
-type DemoPost = (endpoint: string) => Promise<Response>;
-
-class DemoRequestError extends Error {
-  constructor(readonly status: number) {
-    super("demo_request_failed");
-  }
-}
-
-export async function runGuidedDemoSequence(post: DemoPost): Promise<void> {
-  for (const endpoint of ["/api/demo/reset", demoEndpoint("quick")]) {
-    const response = await post(endpoint);
-    if (!response.ok) throw new DemoRequestError(response.status);
-  }
-}
-
 export function DemoControls({
   authToken,
   visible,
@@ -50,33 +35,6 @@ export function DemoControls({
     method: "POST",
     headers: authHeader(authToken),
   });
-
-  async function startGuidedDemo() {
-    if (!canSubmit(busyAction)) return;
-    setLastMode("quick");
-    setBusyAction("demo:guided");
-    setRequestState("pending");
-    setStatusMessage("Preparing a clean demo case...");
-    setProgress("Resetting demo state");
-    try {
-      await runGuidedDemoSequence(async (endpoint) => {
-        if (endpoint !== "/api/demo/reset") setProgress("Building the four-day timeline");
-        return postDemo(endpoint);
-      });
-      setProgress("Ready");
-      setRequestState("success");
-      setStatusMessage("Demo ready. Review the timeline, then open the priority case.");
-      onRefresh();
-    } catch (error) {
-      if (error instanceof DemoRequestError && error.status === 401) onUnauthorized();
-      setRequestState("error");
-      setProgress(null);
-      setStatusMessage("Demo could not be prepared. Please retry.");
-    } finally {
-      setBusyAction(null);
-      window.setTimeout(() => setProgress(null), 1800);
-    }
-  }
 
   async function runDemo(mode: DemoMode) {
     if (!canSubmit(busyAction)) return;
@@ -166,7 +124,7 @@ export function DemoControls({
         <div className="flex flex-col gap-2 lg:min-w-64">
           <button
             type="button"
-            onClick={startGuidedDemo}
+            onClick={() => runDemo("quick")}
             disabled={busyAction !== null}
             className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50"
           >
@@ -194,7 +152,7 @@ export function DemoControls({
           {requestState === "error" && (
             <button
               type="button"
-              onClick={() => lastMode === "quick" ? startGuidedDemo() : runDemo(lastMode)}
+              onClick={() => runDemo(lastMode)}
               disabled={busyAction !== null}
               className="rounded-md border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
             >
