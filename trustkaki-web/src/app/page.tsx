@@ -5,6 +5,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import AppShell, { type AppView } from "@/components/AppShell";
 import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
+import { CareActivity } from "@/components/dashboard/CareActivity";
 import AgentTracePanel from "@/components/AgentTracePanel";
 import OperationalState from "@/components/OperationalState";
 import SignInForm from "@/components/SignInForm";
@@ -17,6 +18,7 @@ import {
   dashboardStateEndpoint,
   dashboardSyncIntervalMs,
   fireAndForgetDashboardRefresh,
+  followUpQueueForSenior,
   optimisticDashboardForSenior,
   refreshDashboardAuthoritatively,
   shouldPollDashboard,
@@ -45,6 +47,7 @@ export default function Home() {
   const [authBusy, setAuthBusy] = useState(false);
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("green");
   const [activeView, setActiveView] = useState<AppView>("workspace");
+  const [careSetupOpen, setCareSetupOpen] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
   const [reasoningVisible, setReasoningVisible] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
@@ -241,6 +244,7 @@ export default function Home() {
 
   const selectSenior = useCallback(
     (seniorId: string) => {
+      setCareSetupOpen(false);
       selectedSeniorIdRef.current = seniorId;
       setLoadingSeniorId(seniorId);
       setContactPlan(null);
@@ -372,6 +376,7 @@ export default function Home() {
     setUser(null);
     setDemoMode(false);
     setActiveView("workspace");
+    setCareSetupOpen(false);
     setReasoningVisible(false);
     setLiveDashboardData(null);
     setLiveTraces([]);
@@ -401,8 +406,14 @@ export default function Home() {
       activeView={activeView}
       isDemoAdmin={isDemoAdmin}
       riskLevel={riskLevel}
-      onViewChange={setActiveView}
-      onOpenSetup={() => setActiveView("workspace")}
+      onViewChange={(view) => {
+        setCareSetupOpen(false);
+        setActiveView(view);
+      }}
+      onOpenSetup={() => {
+        setActiveView("workspace");
+        setCareSetupOpen(true);
+      }}
       onSignOut={signOut}
       demoMode={demoMode}
       onDemoModeChange={(enabled) => {
@@ -436,7 +447,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="min-w-0 flex-1">
+        <div className="relative min-w-0 flex-1">
           {liveDashboardData ? (
             <OperationalState
               kind={dashboardError ? "refresh-error" : "ready"}
@@ -444,29 +455,47 @@ export default function Home() {
               actionLabel={dashboardError ? "Retry" : undefined}
               onAction={dashboardError ? requestDashboardRefresh : undefined}
             >
-              <Dashboard
-                data={liveDashboardData}
-                traces={liveTraces}
-                briefing={liveBriefing}
-                onRefresh={refreshDashboardForConsumer}
-                authToken={authToken}
-                isDemoAdmin={isDemoAdmin}
-                demoMode={surface.showDemoControls}
-                onUnauthorized={handleUnauthorized}
-                onSelectSenior={selectSenior}
-                contactPlan={contactPlan}
-                contactPlanLoading={contactPlanLoading}
-                contactPlanError={contactPlanError}
-                onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
-                checkInSchedule={checkInSchedule}
-                checkInScheduleLoading={checkInScheduleLoading}
-                checkInScheduleError={checkInScheduleError}
-                onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
-                seniorContext={seniorContext}
-                seniorContextLoading={seniorContextLoading}
-                seniorContextError={seniorContextError}
-                onSeniorContextChanged={setSeniorContext}
-              />
+              <>
+                <div className={activeView === "workspace" ? "h-full" : "hidden"}>
+                  <Dashboard
+                    data={liveDashboardData}
+                    traces={liveTraces}
+                    briefing={liveBriefing}
+                    onRefresh={refreshDashboardForConsumer}
+                    authToken={authToken}
+                    isDemoAdmin={isDemoAdmin}
+                    demoMode={surface.showDemoControls}
+                    onUnauthorized={handleUnauthorized}
+                    onSelectSenior={selectSenior}
+                    contactPlan={contactPlan}
+                    contactPlanLoading={contactPlanLoading}
+                    contactPlanError={contactPlanError}
+                    onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
+                    checkInSchedule={checkInSchedule}
+                    checkInScheduleLoading={checkInScheduleLoading}
+                    checkInScheduleError={checkInScheduleError}
+                    onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
+                    seniorContext={seniorContext}
+                    seniorContextLoading={seniorContextLoading}
+                    seniorContextError={seniorContextError}
+                    onSeniorContextChanged={setSeniorContext}
+                    careSetupOpen={careSetupOpen}
+                    onCloseCareSetup={() => setCareSetupOpen(false)}
+                    onViewActivity={() => setActiveView("activity")}
+                  />
+                </div>
+                {activeView === "activity" && (
+                  <CareActivity
+                    activity={liveDashboardData.activity ?? []}
+                    queue={followUpQueueForSenior(
+                      liveDashboardData.followUpQueue,
+                      selectedSeniorId
+                    )}
+                    seniorName={liveDashboardData.senior.name}
+                    onReturnToWorkspace={() => setActiveView("workspace")}
+                  />
+                )}
+              </>
             </OperationalState>
           ) : dashboardError ? (
             <OperationalState

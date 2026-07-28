@@ -14,12 +14,7 @@ import { DemoControls } from "./dashboard/DemoControls";
 import { PriorityCase } from "./dashboard/PriorityCase";
 import { SelectedSeniorSummary } from "./dashboard/SelectedSeniorSummary";
 import { SeniorCoverage } from "./dashboard/SeniorCoverage";
-import {
-  ContactPlanPanel,
-  contactPlanInstanceKey,
-} from "./dashboard/ContactPlanPanel";
-import { ProactiveCheckInPanel } from "./dashboard/ProactiveCheckInPanel";
-import { SeniorContextPanel } from "./dashboard/SeniorContextPanel";
+import { CareSetupDrawer } from "./dashboard/CareSetupDrawer";
 import {
   mobileTabsActiveForDesktopMatch,
   mobileCareWorkspaceViews,
@@ -49,6 +44,9 @@ interface DashboardProps {
   seniorContextLoading?: boolean;
   seniorContextError?: string | null;
   onSeniorContextChanged?: (context: SeniorContextReadModel) => void;
+  careSetupOpen?: boolean;
+  onCloseCareSetup?: () => void;
+  onViewActivity?: () => void;
 }
 
 export default function Dashboard({
@@ -72,6 +70,9 @@ export default function Dashboard({
   seniorContextLoading = false,
   seniorContextError = null,
   onSeniorContextChanged,
+  careSetupOpen = false,
+  onCloseCareSetup,
+  onViewActivity,
 }: DashboardProps) {
   const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
   const [mobileView, setMobileView] =
@@ -104,9 +105,10 @@ export default function Dashboard({
   }, []);
 
   return (
-    <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] lg:overflow-hidden">
-      <MobileWorkspaceTabs selected={mobileView} onSelect={setMobileView} />
-      <div className="mx-auto grid min-h-0 w-full max-w-[1760px] flex-1 lg:grid-cols-[210px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[210px_minmax(0,1fr)_245px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
+    <>
+      <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] lg:overflow-hidden">
+        <MobileWorkspaceTabs selected={mobileView} onSelect={setMobileView} />
+        <div className="mx-auto grid min-h-0 w-full max-w-[1760px] flex-1 lg:grid-cols-[210px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[210px_minmax(0,1fr)_245px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
         <aside
           id="care-workspace-people-panel"
           role={mobileTabsActive ? "tabpanel" : undefined}
@@ -151,6 +153,7 @@ export default function Dashboard({
             onSaved={refreshAfterCaseSave}
             onConflictRefresh={refreshAfterCaseConflict}
             onUnauthorized={unauthorized}
+            onViewRecentActivity={onViewActivity}
           />
         </section>
         <aside
@@ -162,42 +165,44 @@ export default function Dashboard({
           className={`${mobileView === "context" ? "block" : "hidden"} min-w-0 space-y-3 bg-[var(--care-surface-muted)] p-3 sm:p-4 lg:col-start-2 lg:row-start-2 lg:block lg:border-t lg:border-[var(--care-line)] xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:p-5`}
         >
           <WorkspaceLabel eyebrow="Selected senior" title="Supporting care" />
-          <SeniorContextPanel
-            key={`senior-context:${selectedSeniorId ?? "none"}`}
-            context={seniorContext}
-            loading={seniorContextLoading}
-            error={seniorContextError}
-            isAdmin={isDemoAdmin}
-            seniorId={selectedSeniorId}
-            authToken={authToken ?? ""}
-            onChanged={(context) => onSeniorContextChanged?.(context)}
-            onUnauthorized={unauthorized}
-          />
-          <ProactiveCheckInPanel
-            key={`proactive-check-in:${selectedSeniorId ?? "none"}`}
-            overview={checkInSchedule}
-            loading={checkInScheduleLoading}
-            error={checkInScheduleError}
-            isAdmin={isDemoAdmin}
-            seniorId={selectedSeniorId}
-            authToken={authToken ?? ""}
-            onSaved={() => onRefreshCheckInSchedule?.()}
-            onUnauthorized={unauthorized}
-          />
-          <ContactPlanPanel
-            key={contactPlanInstanceKey(selectedSeniorId)}
-            plan={contactPlan}
-            loading={contactPlanLoading}
-            error={contactPlanError}
-            isAdmin={isDemoAdmin}
-            seniorId={selectedSeniorId}
-            authToken={authToken ?? ""}
-            onSaved={() => onRefreshContactPlan?.()}
-            onUnauthorized={unauthorized}
-          />
+          <dl className="divide-y divide-[var(--care-line)] border-y border-[var(--care-line)] text-sm">
+            <ContextRow label="Living situation" value={selectedSenior?.livingSituation ?? data.senior.livingSituation} />
+            <ContextRow label="Primary caregiver" value={selectedSenior?.primaryCaregiver ?? data.senior.caregiver} />
+            <ContextRow label="AAC contact" value={selectedSenior?.aacVolunteer ?? data.senior.aacVolunteer} />
+          </dl>
         </aside>
-      </div>
-    </main>
+        </div>
+      </main>
+      <CareSetupDrawer
+        open={careSetupOpen}
+        onClose={() => onCloseCareSetup?.()}
+        selectedSeniorId={selectedSeniorId}
+        authToken={authToken ?? ""}
+        isAdmin={isDemoAdmin}
+        seniorContext={seniorContext}
+        seniorContextLoading={seniorContextLoading}
+        seniorContextError={seniorContextError}
+        onSeniorContextChanged={(context) => onSeniorContextChanged?.(context)}
+        contactPlan={contactPlan}
+        contactPlanLoading={contactPlanLoading}
+        contactPlanError={contactPlanError}
+        onRefreshContactPlan={() => onRefreshContactPlan?.()}
+        checkInSchedule={checkInSchedule}
+        checkInScheduleLoading={checkInScheduleLoading}
+        checkInScheduleError={checkInScheduleError}
+        onRefreshCheckInSchedule={() => onRefreshCheckInSchedule?.()}
+        onUnauthorized={unauthorized}
+      />
+    </>
+  );
+}
+
+function ContextRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 py-3">
+      <dt className="text-xs font-semibold text-gray-500">{label}</dt>
+      <dd className="text-gray-900">{value}</dd>
+    </div>
   );
 }
 

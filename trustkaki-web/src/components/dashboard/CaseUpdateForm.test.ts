@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { act, createElement, useState } from "react";
+// @ts-expect-error jsdom intentionally ships without TypeScript declarations.
+import { JSDOM } from "jsdom";
+import { describe, expect, it, vi } from "vitest";
+import type { FollowUpQueueItem } from "@/lib/types";
 import {
+  CaseUpdateForm,
   actionTypeForCaseAction,
   availableCaseActions,
   canSaveCaseAction,
@@ -15,6 +20,23 @@ import {
   notificationCategoryForEscalation,
   resolveConflictRefresh,
 } from "./CaseUpdateForm";
+
+const pendingItem: FollowUpQueueItem = {
+  id: "queue-1",
+  seniorId: "senior-1",
+  seniorName: "Uncle Tan",
+  riskLevel: "yellow",
+  headline: "Follow up",
+  reason: "Missed lunch.",
+  changeFromUsual: "Usually eats by noon.",
+  lastResponseAt: "2026-07-28T06:00:00.000Z",
+  recommendedAction: "Call today.",
+  status: "pending",
+  assignedTo: null,
+  lastUpdatedAt: "2026-07-28T07:00:00.000Z",
+  priority: 1,
+  relatedPatterns: [],
+};
 
 describe("case update semantics", () => {
   it("rejects a snooze after authoritative state becomes escalated", () => {
@@ -171,5 +193,124 @@ describe("case update semantics", () => {
       .toBe("urgent_safety");
     expect(notificationCategoryForEscalation("family_guardian", "health_safety"))
       .toBe("health_safety");
+  });
+});
+
+describe("mounted case conflict recovery", () => {
+  it("reconciles a stale snooze after 409 and never sends it against escalated state", async () => {
+    const dom = new JSDOM("<!doctype html><html><body></body></html>");
+    vi.stubGlobal("window", dom.window);
+    vi.stubGlobal("document", dom.window.document);
+    vi.stubGlobal("navigator", dom.window.navigator);
+    vi.stubGlobal("HTMLElement", dom.window.HTMLElement);
+    vi.stubGlobal("Event", dom.window.Event);
+    (globalThis as typeof globalThis & {
+      IS_REACT_ACT_ENVIRONMENT: boolean;
+    }).IS_REACT_ACT_ENVIRONMENT = true;
+    const container = document.createElement("div");
+    document.body.append(container);
+    const { createRoot } = await import("react-dom/client");
+    const root = createRoot(container);
+    const escalatedItem = {
+      ...pendingItem,
+      status: "escalated" as const,
+      lastUpdatedAt: "2026-07-28T07:05:00.000Z",
+    };
+    const responses = [
+      new Response(null, { status: 409 }),
+      Response.json({
+        persistence: { persisted: true },
+        resultingStatus: "followed_up",
+      }),
+    ];
+    const fetchMock = vi.fn(async (
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      void input;
+      void init;
+      return responses.shift()!;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    function ConflictHarness() {
+      const [item, setItem] = useState<FollowUpQueueItem>(pendingItem);
+      return createElement(CaseUpdateForm, {
+        item,
+        caregiverOptions: [],
+        authToken: "token",
+        disabled: false,
+        onSaved: vi.fn(),
+        onConflictRefresh: async () => {
+          setItem(escalatedItem);
+        },
+        onUnauthorized: vi.fn(),
+      });
+    }
+
+    await act(async () => root.render(createElement(ConflictHarness)));
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("button")!.click();
+    });
+    const actionSelect = container.querySelector<HTMLSelectElement>("select")!;
+    await act(async () => {
+      actionSelect.value = "snooze";
+      actionSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const note = container.querySelector<HTMLTextAreaElement>("textarea")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        dom.window.HTMLTextAreaElement.prototype,
+        "value"
+      )!.set!.call(
+        note,
+        "Rachel will call again after the urgent case is handled."
+      );
+      note.dispatchEvent(new Event("input", { bubbles: true }));
+      note.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Save")!
+        .disabled
+    ).toBe(false);
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Save")!
+        .click();
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    const refreshedAction = container.querySelector<HTMLSelectElement>("select")!;
+    expect(refreshedAction.value).toBe("record_outcome");
+    expect(
+      Array.from(refreshedAction.options).map((option) => option.value)
+    ).not.toContain("snooze");
+
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Review latest state")!
+        .click();
+    });
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Save")!
+        .click();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const submittedBodies = fetchMock.mock.calls.map(([, init]) =>
+      JSON.parse(String((init as RequestInit).body))
+    );
+    expect(submittedBodies[0].actionType).toBe("snooze");
+    expect(submittedBodies[1]).toMatchObject({
+      actionType: "record_outcome",
+      expectedUpdatedAt: escalatedItem.lastUpdatedAt,
+    });
+
+    act(() => root.unmount());
+    container.remove();
+    dom.window.close();
+    vi.unstubAllGlobals();
   });
 });
