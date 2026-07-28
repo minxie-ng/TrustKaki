@@ -14,6 +14,24 @@ export const mobileCareWorkspaceViews: ReadonlyArray<{
   { id: "context", label: "Context" },
 ];
 
+export function nextMobileCareWorkspaceView(
+  current: MobileCareWorkspaceView,
+  key: string
+): MobileCareWorkspaceView | null {
+  if (key === "Home") return mobileCareWorkspaceViews[0].id;
+  if (key === "End") return mobileCareWorkspaceViews.at(-1)?.id ?? current;
+  if (key !== "ArrowLeft" && key !== "ArrowRight") return null;
+
+  const currentIndex = mobileCareWorkspaceViews.findIndex(
+    (view) => view.id === current
+  );
+  const direction = key === "ArrowRight" ? 1 : -1;
+  const nextIndex =
+    (currentIndex + direction + mobileCareWorkspaceViews.length) %
+    mobileCareWorkspaceViews.length;
+  return mobileCareWorkspaceViews[nextIndex].id;
+}
+
 export const careUrgencyTone: Record<CareUrgency, StatusTone> = {
   urgent: "urgent",
   today: "attention",

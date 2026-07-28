@@ -91,6 +91,12 @@ describe("SeniorCoverage", () => {
     expect(html).toMatch(
       /id="care-workspace-context-panel"[^>]*class="hidden [^"]*lg:block/
     );
+    expect(html).not.toMatch(
+      /id="care-workspace-(?:queue|people|context)-panel"[^>]*role="tabpanel"/
+    );
+    expect(html).not.toMatch(
+      /id="care-workspace-(?:queue|people|context)-panel"[^>]*aria-labelledby=/
+    );
   });
 
   it("keeps every mobile workspace tab in the keyboard tab order", () => {
@@ -129,7 +135,7 @@ describe("SeniorCoverage", () => {
     expect(html).not.toContain("active follow-up item");
   });
 
-  it("does not render the monitoring separator when every senior has active work", () => {
+  it("renders useful coverage for one senior without a monitoring separator", () => {
     const html = renderToStaticMarkup(createElement(SeniorCoverage, {
       seniors: [senior("senior-red", "Mdm Siti Fatimah", "red")],
       queue: [item("senior-red", "red")],
@@ -138,6 +144,11 @@ describe("SeniorCoverage", () => {
       onSelect: () => undefined,
     }));
 
+    expect(html).toContain('aria-label="Senior priority coverage"');
+    expect(html).toContain("Mdm Siti Fatimah");
+    expect(html).toContain("Urgent");
+    expect(html).toContain("1 senior");
+    expect(html).toContain('data-status-dot="true"');
     expect(html).not.toContain("Monitoring");
   });
 });

@@ -28,7 +28,7 @@ export function SeniorCoverage({
   disabled,
   onSelect,
 }: SeniorCoverageProps) {
-  if (seniors.length <= 1) return null;
+  if (seniors.length === 0) return null;
 
   const coverage = buildSeniorCoverage(seniors, queue ?? []);
   const monitoringIndex = coverage.findIndex((item) => !item.activeItem);
@@ -37,7 +37,9 @@ export function SeniorCoverage({
     <nav aria-label="Senior priority coverage" className="min-w-0">
       <div className="mb-2 flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold text-[var(--care-ink)]">Priority coverage</h3>
-        <span className="text-xs text-gray-500">{seniors.length} seniors</span>
+        <span className="text-xs text-gray-500">
+          {seniors.length} {seniors.length === 1 ? "senior" : "seniors"}
+        </span>
       </div>
       <div className="min-w-0 border-y border-[var(--care-line)] bg-[var(--care-surface-muted)]">
         {coverage.map((item, index) => {

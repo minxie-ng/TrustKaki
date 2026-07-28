@@ -6,6 +6,7 @@ import {
   compactCoverageReason,
   initialsForSenior,
   mobileCareWorkspaceViews,
+  nextMobileCareWorkspaceView,
   portraitForSenior,
 } from "./careWorkspacePresentation";
 import {
@@ -77,6 +78,17 @@ describe("care workspace presentation", () => {
       { id: "people", label: "People" },
       { id: "context", label: "Context" },
     ]);
+  });
+
+  it("navigates mobile workspace tabs with arrows, Home, and End", () => {
+    expect(nextMobileCareWorkspaceView("queue", "ArrowRight")).toBe("people");
+    expect(nextMobileCareWorkspaceView("people", "ArrowRight")).toBe("context");
+    expect(nextMobileCareWorkspaceView("context", "ArrowRight")).toBe("queue");
+    expect(nextMobileCareWorkspaceView("queue", "ArrowLeft")).toBe("context");
+    expect(nextMobileCareWorkspaceView("context", "ArrowLeft")).toBe("people");
+    expect(nextMobileCareWorkspaceView("people", "Home")).toBe("queue");
+    expect(nextMobileCareWorkspaceView("people", "End")).toBe("context");
+    expect(nextMobileCareWorkspaceView("people", "Tab")).toBeNull();
   });
 
   it("orders active work by queue priority before policy risk", () => {

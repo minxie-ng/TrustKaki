@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
 import type { SeniorContextReadModel } from "@/lib/api/schemas";
@@ -22,6 +22,7 @@ import { ProactiveCheckInPanel } from "./dashboard/ProactiveCheckInPanel";
 import { SeniorContextPanel } from "./dashboard/SeniorContextPanel";
 import {
   mobileCareWorkspaceViews,
+  nextMobileCareWorkspaceView,
   type MobileCareWorkspaceView,
 } from "./dashboard/careWorkspacePresentation";
 
@@ -90,8 +91,6 @@ export default function Dashboard({
       <div className="mx-auto grid min-h-0 w-full max-w-[1760px] flex-1 lg:grid-cols-[210px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[210px_minmax(0,1fr)_245px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
         <aside
           id="care-workspace-people-panel"
-          role="tabpanel"
-          aria-labelledby="care-workspace-people-tab"
           className={`${mobileView === "people" ? "block" : "hidden"} min-w-0 bg-[var(--care-surface-muted)] p-3 lg:row-span-2 lg:block lg:border-r lg:border-[var(--care-line)] lg:p-4 xl:row-span-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain`}
         >
           <WorkspaceLabel eyebrow="Coverage" title="Senior roster" />
@@ -105,8 +104,6 @@ export default function Dashboard({
         </aside>
         <section
           id="care-workspace-queue-panel"
-          role="tabpanel"
-          aria-labelledby="care-workspace-queue-tab"
           className={`${mobileView === "queue" ? "block" : "hidden"} min-w-0 space-y-4 bg-white p-3 sm:p-4 lg:col-start-2 lg:row-start-1 lg:block xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:p-5`}
         >
           <WorkspaceLabel eyebrow="Today" title="Care workspace" />
@@ -131,8 +128,6 @@ export default function Dashboard({
         </section>
         <aside
           id="care-workspace-context-panel"
-          role="tabpanel"
-          aria-labelledby="care-workspace-context-tab"
           className={`${mobileView === "context" ? "block" : "hidden"} min-w-0 space-y-3 bg-[var(--care-surface-muted)] p-3 sm:p-4 lg:col-start-2 lg:row-start-2 lg:block lg:border-t lg:border-[var(--care-line)] xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:p-5`}
         >
           <WorkspaceLabel eyebrow="Selected senior" title="Supporting care" />
@@ -200,6 +195,9 @@ function MobileWorkspaceTabs({
             aria-selected={active}
             aria-controls={`care-workspace-${view.id}-panel`}
             onClick={() => onSelect(view.id)}
+            onKeyDown={(event) =>
+              handleMobileWorkspaceTabKeyDown(event, view.id, onSelect)
+            }
             className={`min-h-11 border-b-2 px-3 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
               active
                 ? "border-b-[var(--care-coral)] text-[var(--care-ink)]"
@@ -212,6 +210,21 @@ function MobileWorkspaceTabs({
       })}
     </div>
   );
+}
+
+function handleMobileWorkspaceTabKeyDown(
+  event: KeyboardEvent<HTMLButtonElement>,
+  current: MobileCareWorkspaceView,
+  onSelect: (view: MobileCareWorkspaceView) => void
+) {
+  const next = nextMobileCareWorkspaceView(current, event.key);
+  if (!next) return;
+
+  event.preventDefault();
+  onSelect(next);
+  event.currentTarget.ownerDocument
+    .getElementById(`care-workspace-${next}-tab`)
+    ?.focus();
 }
 
 function WorkspaceLabel({ eyebrow, title }: { eyebrow: string; title: string }) {
