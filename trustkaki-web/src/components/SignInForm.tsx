@@ -22,19 +22,19 @@ export default function SignInForm({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--care-paper)] p-4">
+    <main className="flex min-h-screen items-center justify-center bg-[var(--care-mist)] p-6">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm rounded-lg border border-gray-200 border-t-4 border-t-[var(--care-brand)] bg-white p-6 shadow-sm"
+        className="w-full max-w-sm border-t-4 border-t-[var(--care-evergreen)] bg-[var(--care-paper)] px-6 py-8"
       >
-        <div className="text-sm font-bold text-[var(--care-brand)]">
+        <div className="font-display text-xl font-semibold text-[var(--care-evergreen)]">
           TrustKaki
         </div>
-        <h1 className="mt-1 text-xl font-bold text-gray-900">
-          Sign in to continue
+        <h1 className="font-display mt-6 text-2xl font-semibold text-[var(--care-ink)]">
+          Authorized caregivers and AAC staff
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Use the caregiver or judge credentials provided privately.
+        <p className="mt-2 text-sm text-gray-600">
+          Sign in to access the care desk.
         </p>
 
         <label className="block mt-4 text-sm font-semibold text-gray-700">
@@ -46,7 +46,7 @@ export default function SignInForm({
             disabled={disabled}
             autoComplete="email"
             required
-            className="mt-1 min-h-11 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
+            className="mt-1 min-h-11 w-full border border-gray-300 px-3 py-2 text-sm"
           />
         </label>
 
@@ -59,12 +59,12 @@ export default function SignInForm({
             disabled={disabled}
             autoComplete="current-password"
             required
-            className="mt-1 min-h-11 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
+            className="mt-1 min-h-11 w-full border border-gray-300 px-3 py-2 text-sm"
           />
         </label>
 
         {error && (
-          <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div role="alert" className="mt-3 border-l-4 border-l-[var(--status-red)] px-3 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -72,11 +72,11 @@ export default function SignInForm({
         <button
           type="submit"
           disabled={disabled}
-          className="mt-4 min-h-11 w-full rounded-md bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)] disabled:opacity-50"
+          className="mt-4 min-h-11 w-full bg-[var(--care-coral)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--care-coral-hover)] disabled:opacity-50"
         >
           {disabled ? "Signing in..." : "Sign in"}
         </button>
       </form>
-    </div>
+    </main>
   );
 }

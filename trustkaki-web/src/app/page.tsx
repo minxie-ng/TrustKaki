@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import NavBar from "@/components/NavBar";
+import AppShell, { type AppView } from "@/components/AppShell";
 import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
 import AgentTracePanel from "@/components/AgentTracePanel";
+import OperationalState from "@/components/OperationalState";
 import SignInForm from "@/components/SignInForm";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
@@ -41,6 +42,7 @@ export default function Home() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("green");
+  const [activeView, setActiveView] = useState<AppView>("workspace");
   const [demoMode, setDemoMode] = useState(false);
   const [reasoningVisible, setReasoningVisible] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
@@ -89,46 +91,51 @@ export default function Home() {
     setAuthError("Please sign in again to continue.");
   }, []);
 
-  const refreshDashboardState = useCallback((nextSeniorId?: string | null) => {
-    if (!authToken) return;
-    const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
+  const refreshDashboardState = useCallback(async (
+    nextSeniorId?: string | null
+  ): Promise<DashboardData | null> => {
+    if (!authToken) return null;
     const requestId = dashboardRequestSeq.current + 1;
     dashboardRequestSeq.current = requestId;
     setDashboardError(null);
-    const url = dashboardStateEndpoint(seniorId);
-    void fetch(url, {
-      cache: "no-store",
-      headers: authHeader(authToken),
-    })
-      .then(async (response) => {
-        if (response.status === 401) {
-          handleUnauthorized();
-          return null;
+    try {
+      const response = await fetch(
+        dashboardStateEndpoint(nextSeniorId ?? selectedSeniorIdRef.current),
+        {
+          cache: "no-store",
+          headers: authHeader(authToken),
         }
-        if (!response.ok) throw new Error("dashboard_request_failed");
-        return (await response.json()) as DashboardStateResponse;
-      })
-      .then((state) => {
-        if (requestId !== dashboardRequestSeq.current) return;
-        if (!state) return;
-        setLiveDashboardData(state.data);
-        setLiveTraces(state.traces);
-        setLiveBriefing(state.briefing ?? null);
-        setRiskLevel(state.data.senior.riskLevel);
-        const nextSelectedSeniorId = state.data.selectedSeniorId ?? null;
-        selectedSeniorIdRef.current = nextSelectedSeniorId;
-        setLoadedSeniorId(nextSelectedSeniorId);
-        setLoadingSeniorId((current) =>
-          current === nextSelectedSeniorId ? null : current
-        );
-      })
-      .catch((error) => {
-        console.error("Failed to hydrate dashboard state:", error);
-        if (requestId === dashboardRequestSeq.current) {
-          setDashboardError("TrustKaki could not load the caregiver dashboard. Please retry.");
-        }
-      });
+      );
+      if (response.status === 401) {
+        handleUnauthorized();
+        return null;
+      }
+      if (!response.ok) throw new Error("dashboard_request_failed");
+      const state = (await response.json()) as DashboardStateResponse;
+      if (requestId !== dashboardRequestSeq.current) return null;
+      setLiveDashboardData(state.data);
+      setLiveTraces(state.traces);
+      setLiveBriefing(state.briefing ?? null);
+      setRiskLevel(state.data.senior.riskLevel);
+      const nextSelectedSeniorId = state.data.selectedSeniorId ?? null;
+      selectedSeniorIdRef.current = nextSelectedSeniorId;
+      setLoadedSeniorId(nextSelectedSeniorId);
+      setLoadingSeniorId((current) =>
+        current === nextSelectedSeniorId ? null : current
+      );
+      return state.data;
+    } catch (error) {
+      console.error("Failed to hydrate dashboard state:", error);
+      if (requestId === dashboardRequestSeq.current) {
+        setDashboardError("TrustKaki could not load the caregiver dashboard. Please retry.");
+      }
+      throw error;
+    }
   }, [authToken, handleUnauthorized]);
+
+  const requestDashboardRefresh = useCallback((nextSeniorId?: string | null) => {
+    void refreshDashboardState(nextSeniorId).catch(() => undefined);
+  }, [refreshDashboardState]);
 
   const refreshContactPlan = useCallback((nextSeniorId?: string | null) => {
     if (!authToken) return;
@@ -237,9 +244,9 @@ export default function Home() {
       setLiveDashboardData((current) =>
         current ? optimisticDashboardForSenior(current, seniorId) : current
       );
-      refreshDashboardState(seniorId);
+      requestDashboardRefresh(seniorId);
     },
-    [isDemoAdmin, refreshDashboardState]
+    [isDemoAdmin, requestDashboardRefresh]
   );
 
   useEffect(() => {
@@ -277,7 +284,7 @@ export default function Home() {
           visibilityState: document.visibilityState,
         })
       ) {
-        refreshDashboardState();
+        requestDashboardRefresh();
       }
     };
 
@@ -294,13 +301,13 @@ export default function Home() {
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshIfVisible);
     };
-  }, [authToken, refreshDashboardState]);
+  }, [authToken, requestDashboardRefresh]);
 
   useEffect(() => {
     if (!authToken) return;
     const subscription = subscribeToDashboardChanges({
       onChange: () => {
-        refreshDashboardState();
+        requestDashboardRefresh();
         refreshContactPlan();
         refreshCheckInSchedule();
         refreshSeniorContext();
@@ -311,7 +318,7 @@ export default function Home() {
     authToken,
     refreshCheckInSchedule,
     refreshContactPlan,
-    refreshDashboardState,
+    requestDashboardRefresh,
     refreshSeniorContext,
   ]);
 
@@ -356,6 +363,7 @@ export default function Home() {
     setSession(null);
     setUser(null);
     setDemoMode(false);
+    setActiveView("workspace");
     setReasoningVisible(false);
     setLiveDashboardData(null);
     setLiveTraces([]);
@@ -368,8 +376,8 @@ export default function Home() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center text-sm text-gray-600">
-        Loading TrustKaki...
+      <div className="min-h-screen">
+        <OperationalState kind="loading" message="Loading TrustKaki..." />
       </div>
     );
   }
@@ -381,19 +389,20 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <NavBar
-        riskLevel={riskLevel}
-        onSignOut={signOut}
-        canShowDemoMode={isDemoAdmin}
-        demoMode={demoMode}
-        onDemoModeChange={(enabled) => {
-          setDemoMode(enabled);
-          if (!enabled) setReasoningVisible(false);
-        }}
-      />
-
-      <div className="flex-1 flex overflow-hidden">
+    <AppShell
+      activeView={activeView}
+      isDemoAdmin={isDemoAdmin}
+      riskLevel={riskLevel}
+      onViewChange={setActiveView}
+      onOpenSetup={() => setActiveView("workspace")}
+      onSignOut={signOut}
+      demoMode={demoMode}
+      onDemoModeChange={(enabled) => {
+        setDemoMode(enabled);
+        if (!enabled) setReasoningVisible(false);
+      }}
+    >
+      <div className="flex h-full overflow-hidden">
         {surface.showChatSimulator && (
           <div className="hidden flex-1 flex-col border-r border-[var(--care-line)] md:flex md:max-w-md">
             <div className="min-h-0 flex-1">
@@ -402,7 +411,7 @@ export default function Home() {
                 messages={chatMessages}
                 seniorId={chatState.submissionSeniorId}
                 isSeniorLoading={!chatState.canSubmit && Boolean(selectedSeniorId)}
-                onComplete={refreshDashboardState}
+                onComplete={requestDashboardRefresh}
                 authToken={authToken}
                 onUnauthorized={handleUnauthorized}
               />
@@ -419,54 +428,76 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex flex-col flex-1">
+        <div className="min-w-0 flex-1">
           {liveDashboardData ? (
-            <Dashboard
-              data={liveDashboardData}
-              traces={liveTraces}
-              briefing={liveBriefing}
-              onRefresh={refreshDashboardState}
-              authToken={authToken}
-              isDemoAdmin={isDemoAdmin}
-              demoMode={surface.showDemoControls}
-              onUnauthorized={handleUnauthorized}
-              onSelectSenior={selectSenior}
-              contactPlan={contactPlan}
-              contactPlanLoading={contactPlanLoading}
-              contactPlanError={contactPlanError}
-              onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
-              checkInSchedule={checkInSchedule}
-              checkInScheduleLoading={checkInScheduleLoading}
-              checkInScheduleError={checkInScheduleError}
-              onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
-              seniorContext={seniorContext}
-              seniorContextLoading={seniorContextLoading}
-              seniorContextError={seniorContextError}
-              onSeniorContextChanged={setSeniorContext}
+            dashboardError ? (
+              <OperationalState
+                kind="refresh-error"
+                message={dashboardError}
+                actionLabel="Retry"
+                onAction={requestDashboardRefresh}
+              >
+                <Dashboard
+                  data={liveDashboardData}
+                  traces={liveTraces}
+                  briefing={liveBriefing}
+                  onRefresh={requestDashboardRefresh}
+                  authToken={authToken}
+                  isDemoAdmin={isDemoAdmin}
+                  demoMode={surface.showDemoControls}
+                  onUnauthorized={handleUnauthorized}
+                  onSelectSenior={selectSenior}
+                  contactPlan={contactPlan}
+                  contactPlanLoading={contactPlanLoading}
+                  contactPlanError={contactPlanError}
+                  onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
+                  checkInSchedule={checkInSchedule}
+                  checkInScheduleLoading={checkInScheduleLoading}
+                  checkInScheduleError={checkInScheduleError}
+                  onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
+                  seniorContext={seniorContext}
+                  seniorContextLoading={seniorContextLoading}
+                  seniorContextError={seniorContextError}
+                  onSeniorContextChanged={setSeniorContext}
+                />
+              </OperationalState>
+            ) : (
+              <Dashboard
+                data={liveDashboardData}
+                traces={liveTraces}
+                briefing={liveBriefing}
+                onRefresh={requestDashboardRefresh}
+                authToken={authToken}
+                isDemoAdmin={isDemoAdmin}
+                demoMode={surface.showDemoControls}
+                onUnauthorized={handleUnauthorized}
+                onSelectSenior={selectSenior}
+                contactPlan={contactPlan}
+                contactPlanLoading={contactPlanLoading}
+                contactPlanError={contactPlanError}
+                onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
+                checkInSchedule={checkInSchedule}
+                checkInScheduleLoading={checkInScheduleLoading}
+                checkInScheduleError={checkInScheduleError}
+                onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
+                seniorContext={seniorContext}
+                seniorContextLoading={seniorContextLoading}
+                seniorContextError={seniorContextError}
+                onSeniorContextChanged={setSeniorContext}
+              />
+            )
+          ) : dashboardError ? (
+            <OperationalState
+              kind="error"
+              message={dashboardError}
+              actionLabel="Retry"
+              onAction={requestDashboardRefresh}
             />
           ) : (
-            <main className="flex h-full items-center justify-center bg-gray-50 p-6">
-              <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
-                <div className="text-base font-semibold text-gray-950">
-                  {dashboardError ? "Dashboard unavailable" : "Loading your seniors..."}
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  {dashboardError ?? "Retrieving your authorised caregiver queue."}
-                </p>
-                {dashboardError && (
-                  <button
-                    type="button"
-                    onClick={() => refreshDashboardState()}
-                    className="mt-4 rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)]"
-                  >
-                    Retry
-                  </button>
-                )}
-              </div>
-            </main>
+            <OperationalState kind="loading" message="Loading your seniors..." />
           )}
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

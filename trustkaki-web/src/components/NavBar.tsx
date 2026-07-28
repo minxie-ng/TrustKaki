@@ -1,66 +1,92 @@
 "use client";
 
+import type { AppView } from "./AppShell";
+import { StatusIndicator, type StatusTone } from "./ui/StatusIndicator";
+
 interface NavProps {
+  activeView: AppView;
   riskLevel: "green" | "yellow" | "red";
-  onSignOut?: () => void;
+  onViewChange: (view: AppView) => void;
+  onOpenSetup: () => void;
+  onSignOut: () => void;
   canShowDemoMode?: boolean;
   demoMode?: boolean;
   onDemoModeChange?: (enabled: boolean) => void;
 }
 
 export default function NavBar({
+  activeView,
   riskLevel,
+  onViewChange,
+  onOpenSetup,
   onSignOut,
   canShowDemoMode = false,
   demoMode = false,
   onDemoModeChange,
 }: NavProps) {
-  const riskLabel = {
-    green: "Low",
-    yellow: "Medium",
-    red: "High",
+  const riskStatus: Record<typeof riskLevel, { label: string; tone: StatusTone }> = {
+    green: { label: "Stable", tone: "stable" },
+    yellow: { label: "Needs attention", tone: "attention" },
+    red: { label: "Urgent", tone: "urgent" },
   };
+  const status = riskStatus[riskLevel];
+  const navigationClass =
+    "min-h-11 border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-white/80 hover:text-white";
+  const activeNavigationClass =
+    "min-h-11 border-b-2 border-white px-3 py-2 text-sm font-semibold text-white";
 
   return (
-    <nav className="relative z-10 flex shrink-0 flex-col gap-2 border-b border-emerald-950/20 bg-[#183d35] px-4 py-2.5 shadow-[0_2px_12px_rgba(23,33,29,0.16)] sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-md border border-white/15 bg-white/10 text-xs font-black text-white shadow-sm" aria-hidden="true">TK</span>
-          <span className="text-[17px] font-extrabold text-white">TrustKaki</span>
-        </div>
-        <span className="hidden border-l border-white/20 pl-3 text-xs font-medium text-emerald-50/75 sm:inline">
-          AI Last-Mile Engagement for Seniors
-        </span>
+    <header className="relative z-10 flex shrink-0 flex-wrap items-center gap-x-6 border-b border-emerald-950/30 bg-[var(--care-evergreen)] px-4 sm:px-5">
+      <div className="flex min-h-16 min-w-0 items-center">
+        <span className="font-display text-xl font-semibold text-white">TrustKaki</span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1 sm:justify-end">
+      <nav aria-label="Primary" className="hidden min-h-16 items-stretch md:flex">
+        <button
+          type="button"
+          aria-current={activeView === "workspace" ? "page" : undefined}
+          onClick={() => onViewChange("workspace")}
+          className={activeView === "workspace" ? activeNavigationClass : navigationClass}
+        >
+          Care workspace
+        </button>
+        <button
+          type="button"
+          aria-current={activeView === "activity" ? "page" : undefined}
+          onClick={() => onViewChange("activity")}
+          className={activeView === "activity" ? activeNavigationClass : navigationClass}
+        >
+          Activity
+        </button>
+        <button type="button" onClick={onOpenSetup} className={navigationClass}>
+          Care setup
+        </button>
         {canShowDemoMode && (
           <button
             onClick={() => onDemoModeChange?.(!demoMode)}
             type="button"
             aria-pressed={demoMode}
-            className={`min-h-11 rounded-md border px-3 py-1.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-              demoMode
-                ? "border-white/50 bg-white text-[var(--care-brand-strong)]"
-                : "border-white/35 bg-white/10 text-white hover:border-white/55 hover:bg-white/15"
-            }`}
+            className={demoMode ? activeNavigationClass : navigationClass}
           >
-            {demoMode ? "Exit demo mode" : "Demo mode"}
+            {demoMode ? "Exit demo tools" : "Demo tools"}
           </button>
         )}
-        <div className={`ml-2 rounded-full px-2 py-1 text-xs font-semibold ${riskLevel === "red" ? "bg-red-50 text-red-700" : riskLevel === "yellow" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`} aria-label={`Current risk: ${riskLabel[riskLevel]}`}>
-          {riskLabel[riskLevel]}
-        </div>
-        {onSignOut && (
-          <button
-            onClick={onSignOut}
-            type="button"
-            className="ml-1 min-h-11 rounded-md border border-white/35 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-white/55 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            Sign out
-          </button>
-        )}
+      </nav>
+
+      <div className="ml-auto flex min-h-16 items-center gap-3">
+        <StatusIndicator
+          tone={status.tone}
+          label={status.label}
+          className="text-white"
+        />
+        <button
+          onClick={onSignOut}
+          type="button"
+          className="min-h-11 border border-white/40 px-3 py-2 text-sm font-semibold text-white hover:border-white"
+        >
+          Sign out
+        </button>
       </div>
-    </nav>
+    </header>
   );
 }
