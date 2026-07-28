@@ -41,6 +41,22 @@ describe("agent trace caregiver formatting", () => {
     }
   });
 
+  it("preserves benign risk-based caregiver summaries", () => {
+    expect(
+      formatAgentInputForCaregiver({
+        inputSummary: "Risk-based follow-up suggested",
+      })
+    ).toBe("Risk-based follow-up suggested");
+  });
+
+  it("preserves benign authorization caregiver summaries", () => {
+    expect(
+      formatAgentInputForCaregiver({
+        inputSummary: "Medication authorization pending",
+      })
+    ).toBe("Medication authorization pending");
+  });
+
   it("uses the output summary when present", () => {
     expect(
       formatAgentOutputForCaregiver({
