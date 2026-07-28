@@ -5,9 +5,17 @@ export const coverageRiskStyle: Record<
   RiskLevel,
   { edge: string; tint: string; tone: StatusTone }
 > = {
-  green: { edge: "border-l-[var(--status-green)]", tint: "", tone: "stable" },
-  yellow: { edge: "border-l-[var(--status-amber)]", tint: "", tone: "attention" },
-  red: { edge: "border-l-[var(--status-red)]", tint: "", tone: "urgent" },
+  green: {
+    edge: "border-l-emerald-400",
+    tint: "bg-emerald-50",
+    tone: "stable",
+  },
+  yellow: {
+    edge: "border-l-amber-400",
+    tint: "bg-amber-50",
+    tone: "attention",
+  },
+  red: { edge: "border-l-red-500", tint: "bg-red-50", tone: "urgent" },
 };
 
 export const riskConfig: Record<
@@ -15,23 +23,23 @@ export const riskConfig: Record<
   { bg: string; text: string; border: string; label: string; tone: StatusTone }
 > = {
   green: {
-    bg: "",
-    text: "",
-    border: "border-l-[var(--status-green)]",
+    bg: "bg-emerald-100",
+    text: "text-emerald-800",
+    border: "border-l-emerald-400",
     label: "Low",
     tone: "stable",
   },
   yellow: {
-    bg: "",
-    text: "",
-    border: "border-l-[var(--status-amber)]",
+    bg: "bg-yellow-100",
+    text: "text-yellow-800",
+    border: "border-l-yellow-400",
     label: "Medium",
     tone: "attention",
   },
   red: {
-    bg: "",
-    text: "",
-    border: "border-l-[var(--status-red)]",
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-l-red-500",
     label: "High",
     tone: "urgent",
   },

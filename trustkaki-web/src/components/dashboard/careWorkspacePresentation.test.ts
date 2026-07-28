@@ -145,13 +145,31 @@ describe("care workspace presentation", () => {
     );
   });
 
-  it("maps care states to semantic status tones without background fills", () => {
-    expect(coverageRiskStyle.green).toMatchObject({ tone: "stable", tint: "" });
-    expect(coverageRiskStyle.yellow).toMatchObject({ tone: "attention", tint: "" });
-    expect(coverageRiskStyle.red).toMatchObject({ tone: "urgent", tint: "" });
-    expect(riskConfig.green).toMatchObject({ tone: "stable", bg: "", text: "" });
-    expect(riskConfig.yellow).toMatchObject({ tone: "attention", bg: "", text: "" });
-    expect(riskConfig.red).toMatchObject({ tone: "urgent", bg: "", text: "" });
+  it("maps care states to semantic tones while preserving compatibility styles", () => {
+    expect(coverageRiskStyle.green).toMatchObject({
+      tone: "stable",
+      tint: "bg-emerald-50",
+    });
+    expect(coverageRiskStyle.yellow).toMatchObject({
+      tone: "attention",
+      tint: "bg-amber-50",
+    });
+    expect(coverageRiskStyle.red).toMatchObject({ tone: "urgent", tint: "bg-red-50" });
+    expect(riskConfig.green).toMatchObject({
+      tone: "stable",
+      bg: "bg-emerald-100",
+      text: "text-emerald-800",
+    });
+    expect(riskConfig.yellow).toMatchObject({
+      tone: "attention",
+      bg: "bg-yellow-100",
+      text: "text-yellow-800",
+    });
+    expect(riskConfig.red).toMatchObject({
+      tone: "urgent",
+      bg: "bg-red-100",
+      text: "text-red-800",
+    });
     expect(careUrgencyTone).toEqual({
       urgent: "urgent",
       today: "attention",

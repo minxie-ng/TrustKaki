@@ -13,4 +13,19 @@ describe("StatusIndicator", () => {
     expect(html).toContain("h-2 w-2");
     expect(html).not.toMatch(/rounded-full[^"]*(bg-.*50|px-2|px-3)/);
   });
+
+  it.each([
+    ["stable", "bg-[var(--status-green)]"],
+    ["attention", "bg-[var(--status-amber)]"],
+    ["urgent", "bg-[var(--status-red)]"],
+    ["neutral", "bg-[var(--care-hairline)]"],
+  ] as const)("renders the %s tone with a decorative dot", (tone, dotClass) => {
+    const html = renderToStaticMarkup(
+      createElement(StatusIndicator, { tone, label: `${tone} status` })
+    );
+
+    expect(html).toContain(`${tone} status`);
+    expect(html).toContain(dotClass);
+    expect(html).toContain('aria-hidden="true"');
+  });
 });

@@ -19,10 +19,29 @@
   --status-red: #b9463d;
   --font-sans: var(--font-source-sans), system-ui, sans-serif;
   --font-serif: var(--font-source-serif), Georgia, serif;
+
+  /* Temporary aliases for components migrated in later UI revamp tasks. */
+  --care-surface: var(--care-paper);
+  --care-surface-muted: var(--care-mist);
+  --care-rail: var(--care-mist);
+  --care-rail-deep: var(--care-evergreen);
+  --care-workspace: var(--care-paper);
+  --care-line: var(--care-hairline);
+  --care-green: var(--status-green);
+  --care-soft-green: var(--care-mist);
+  --care-amber: var(--status-amber);
+  --care-red: var(--status-red);
+  --care-brand: var(--care-evergreen);
+  --care-brand-strong: var(--care-evergreen);
+  --care-brand-hover: var(--care-ink);
+  --care-soft-teal: var(--care-mist);
+  --care-teal-line: var(--care-hairline);
 }
 
-* {
-  border-color: var(--care-hairline);
+@layer base {
+  * {
+    border-color: var(--care-hairline);
+  }
 }
 
 body {
