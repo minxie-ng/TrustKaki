@@ -109,6 +109,13 @@ describe("CaseDetails staff presentation", () => {
     }));
 
     expect(html).toContain("Chronological evidence");
+    expect(html).toContain("AI-generated caregiver summary");
+    expect(html).toContain('data-care-thread="true"');
+    expect((html.match(/data-care-thread="true"/g) ?? [])).toHaveLength(1);
+    expect(html).toContain("Observed signal");
+    expect(html).toContain("Senior message");
+    expect(html).toContain("Caregiver record");
+    expect(html).toContain("Why this case was surfaced");
     expect(html).toContain("Medium severity");
     expect(html).toContain("Why TrustKaki suggested this");
     expect(html).toContain("Recorded actions");
@@ -116,6 +123,7 @@ describe("CaseDetails staff presentation", () => {
     expect(html).not.toContain("Agent runs completed");
     expect(html).not.toContain("Advanced technical trace");
     expect(html).not.toMatch(/model|provider response|duration ms/i);
+    expect(html).not.toMatch(/shadow-|rounded-lg|bg-\[var\(--care-soft-teal\)\]/);
   });
 
   it("uses one clear empty evidence state and structured action history", () => {

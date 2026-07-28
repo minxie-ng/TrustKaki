@@ -38,6 +38,21 @@ const data = {
 } satisfies DashboardData;
 
 describe("PriorityCase", () => {
+  it("treats an empty queue as successful and preserves activity navigation", () => {
+    const html = renderToStaticMarkup(createElement(PriorityCase, {
+      items: [],
+      data: { ...data, followUpQueue: [] },
+      authToken: "test-token",
+      disabled: false,
+      onSaved: () => undefined,
+      onUnauthorized: () => undefined,
+    }));
+
+    expect(html).toContain("No active follow-ups");
+    expect(html).toContain("View recent activity");
+    expect(html).toContain('data-status-dot="true"');
+  });
+
   it("exposes the collapsed case-details disclosure state", () => {
     const html = renderToStaticMarkup(createElement(PriorityCase, {
       items: [item],
@@ -66,5 +81,35 @@ describe("PriorityCase", () => {
 
     expect(html).toContain('aria-expanded="true"');
     expect(html).toContain("Hide timeline");
+  });
+
+  it("suppresses competing case commands while the guide owns the workflow", () => {
+    const html = renderToStaticMarkup(createElement(PriorityCase, {
+      items: [item],
+      data,
+      authToken: "test-token",
+      disabled: false,
+      guideLocked: true,
+      onSaved: () => undefined,
+      onUnauthorized: () => undefined,
+    }));
+
+    expect(html).not.toContain("Update case");
+    expect(html).not.toContain("Save update");
+  });
+
+  it("uses a flat surface with status dots instead of filled pills", () => {
+    const html = renderToStaticMarkup(createElement(PriorityCase, {
+      items: [item],
+      data,
+      authToken: "test-token",
+      disabled: false,
+      onSaved: () => undefined,
+      onUnauthorized: () => undefined,
+    }));
+
+    expect(html).toContain('data-status-dot="true"');
+    expect(html).toContain("font-display");
+    expect(html).not.toMatch(/shadow-|rounded-lg|bg-(?:amber|yellow|red|emerald)-(?:50|100)/);
   });
 });

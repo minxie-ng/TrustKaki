@@ -3,12 +3,20 @@ import {
   actionTypeForCaseAction,
   availableCaseActions,
   canSaveCaseAction,
+  caseMutationMessage,
   initialCaseAction,
   outcomeForCaseAction,
   notificationCategoryForEscalation,
 } from "./CaseUpdateForm";
 
 describe("case update semantics", () => {
+  it("maps a stale write to the required shared-case conflict", () => {
+    expect(caseMutationMessage(409)).toEqual({
+      kind: "conflict",
+      message: "Another caregiver changed this case. Review the latest state before saving again.",
+    });
+  });
+
   it("always records a close action as resolved", () => {
     expect(outcomeForCaseAction("resolve", "needs_follow_up")).toBe("resolved");
   });
