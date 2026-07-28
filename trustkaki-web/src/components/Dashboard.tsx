@@ -20,6 +20,10 @@ import {
 } from "./dashboard/ContactPlanPanel";
 import { ProactiveCheckInPanel } from "./dashboard/ProactiveCheckInPanel";
 import { SeniorContextPanel } from "./dashboard/SeniorContextPanel";
+import {
+  mobileCareWorkspaceViews,
+  type MobileCareWorkspaceView,
+} from "./dashboard/careWorkspacePresentation";
 
 interface DashboardProps {
   data: DashboardData;
@@ -68,6 +72,8 @@ export default function Dashboard({
   onSeniorContextChanged,
 }: DashboardProps) {
   const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
+  const [mobileView, setMobileView] =
+    useState<MobileCareWorkspaceView>("queue");
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
   const selectedSenior = seniors.find((senior) => senior.id === selectedSeniorId);
@@ -79,9 +85,15 @@ export default function Dashboard({
   const interactionsDisabled = !authToken;
 
   return (
-    <main className="h-full overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] xl:overflow-hidden">
-      <div className="mx-auto grid min-h-full w-full max-w-[1760px] gap-4 p-3 sm:p-4 lg:grid-cols-[17rem_minmax(0,1fr)] xl:h-full xl:min-h-0 xl:grid-cols-[17rem_minmax(0,1fr)_19rem] xl:gap-0 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white xl:p-0">
-        <aside className="min-w-0 lg:row-span-2 xl:row-span-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-r xl:border-[var(--care-line)] xl:bg-[var(--care-surface-muted)] xl:p-5">
+    <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] lg:overflow-hidden">
+      <MobileWorkspaceTabs selected={mobileView} onSelect={setMobileView} />
+      <div className="mx-auto grid min-h-0 w-full max-w-[1760px] flex-1 lg:grid-cols-[210px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[210px_minmax(0,1fr)_245px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
+        <aside
+          id="care-workspace-people-panel"
+          role="tabpanel"
+          aria-labelledby="care-workspace-people-tab"
+          className={`${mobileView === "people" ? "block" : "hidden"} min-w-0 bg-[var(--care-surface-muted)] p-3 lg:row-span-2 lg:block lg:border-r lg:border-[var(--care-line)] lg:p-4 xl:row-span-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain`}
+        >
           <WorkspaceLabel eyebrow="Coverage" title="Senior roster" />
           <SeniorCoverage
             seniors={seniors}
@@ -91,7 +103,12 @@ export default function Dashboard({
             onSelect={(seniorId) => onSelectSenior?.(seniorId)}
           />
         </aside>
-        <section className="min-w-0 space-y-4 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:bg-[var(--care-workspace)] xl:p-5">
+        <section
+          id="care-workspace-queue-panel"
+          role="tabpanel"
+          aria-labelledby="care-workspace-queue-tab"
+          className={`${mobileView === "queue" ? "block" : "hidden"} min-w-0 space-y-4 bg-white p-3 sm:p-4 lg:col-start-2 lg:row-start-1 lg:block xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:p-5`}
+        >
           <WorkspaceLabel eyebrow="Today" title="Care workspace" />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
           <DemoControls
@@ -112,7 +129,12 @@ export default function Dashboard({
             onUnauthorized={unauthorized}
           />
         </section>
-        <aside className="min-w-0 space-y-3 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-[var(--care-line)] xl:bg-[var(--care-surface-muted)] xl:p-5">
+        <aside
+          id="care-workspace-context-panel"
+          role="tabpanel"
+          aria-labelledby="care-workspace-context-tab"
+          className={`${mobileView === "context" ? "block" : "hidden"} min-w-0 space-y-3 bg-[var(--care-surface-muted)] p-3 sm:p-4 lg:col-start-2 lg:row-start-2 lg:block lg:border-t lg:border-[var(--care-line)] xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:p-5`}
+        >
           <WorkspaceLabel eyebrow="Selected senior" title="Supporting care" />
           <SeniorContextPanel
             key={`senior-context:${selectedSeniorId ?? "none"}`}
@@ -150,6 +172,46 @@ export default function Dashboard({
         </aside>
       </div>
     </main>
+  );
+}
+
+function MobileWorkspaceTabs({
+  selected,
+  onSelect,
+}: {
+  selected: MobileCareWorkspaceView;
+  onSelect: (view: MobileCareWorkspaceView) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Care workspace views"
+      className="grid shrink-0 grid-cols-3 border-b border-[var(--care-line)] bg-white lg:hidden"
+    >
+      {mobileCareWorkspaceViews.map((view) => {
+        const active = selected === view.id;
+
+        return (
+          <button
+            key={view.id}
+            id={`care-workspace-${view.id}-tab`}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-controls={`care-workspace-${view.id}-panel`}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onSelect(view.id)}
+            className={`min-h-11 border-b-2 px-3 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
+              active
+                ? "border-b-[var(--care-coral)] text-[var(--care-ink)]"
+                : "border-b-transparent text-gray-600"
+            }`}
+          >
+            {view.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

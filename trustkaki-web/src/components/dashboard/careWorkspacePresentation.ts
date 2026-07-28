@@ -3,6 +3,16 @@ import type { StatusTone } from "@/components/ui/StatusIndicator";
 import { riskHeadlineLabel } from "./presentation";
 
 export type CareUrgency = "urgent" | "today" | "monitoring" | "stable";
+export type MobileCareWorkspaceView = "queue" | "people" | "context";
+
+export const mobileCareWorkspaceViews: ReadonlyArray<{
+  id: MobileCareWorkspaceView;
+  label: string;
+}> = [
+  { id: "queue", label: "Queue" },
+  { id: "people", label: "People" },
+  { id: "context", label: "Context" },
+];
 
 export const careUrgencyTone: Record<CareUrgency, StatusTone> = {
   urgent: "urgent",

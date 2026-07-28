@@ -1,7 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { FollowUpQueueItem, SeniorListItem } from "@/lib/types";
+import type { DashboardData, FollowUpQueueItem, SeniorListItem } from "@/lib/types";
+import Dashboard from "../Dashboard";
 import { SeniorCoverage } from "./SeniorCoverage";
 
 function senior(id: string, name: string, riskLevel: SeniorListItem["riskLevel"]): SeniorListItem {
@@ -40,7 +41,58 @@ function item(seniorId: string, riskLevel: FollowUpQueueItem["riskLevel"], statu
   };
 }
 
+function renderDashboard(): string {
+  const selected = senior("senior-yellow", "Mr Tan Ah Hock", "yellow");
+  const data = {
+    selectedSeniorId: selected.id,
+    seniors: [
+      selected,
+      senior("senior-green", "Mdm Lim Siew Lan", "green"),
+    ],
+    senior: {
+      name: selected.name,
+      age: selected.age ?? 78,
+      gender: selected.gender,
+      address: selected.address,
+      livingSituation: selected.livingSituation ?? "Lives alone",
+      caregiver: "Rachel Tan",
+      aacVolunteer: "Mei Ling",
+      riskLevel: selected.riskLevel,
+      lastCheckIn: selected.lastCheckIn,
+    },
+    activeSessions: [],
+    recentAlerts: [],
+    followUpQueue: [item(selected.id, "yellow")],
+  } satisfies DashboardData;
+
+  return renderToStaticMarkup(createElement(Dashboard, {
+    data,
+    authToken: null,
+  }));
+}
+
 describe("SeniorCoverage", () => {
+  it("uses explicit mobile Queue People Context views and stable desktop regions", () => {
+    const html = renderDashboard();
+
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain(">Queue<");
+    expect(html).toContain(">People<");
+    expect(html).toContain(">Context<");
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain("lg:grid-cols-[210px_minmax(0,1fr)]");
+    expect(html).toContain("xl:grid-cols-[210px_minmax(0,1fr)_245px]");
+    expect(html).toMatch(
+      /id="care-workspace-queue-panel"[^>]*class="block [^"]*lg:block/
+    );
+    expect(html).toMatch(
+      /id="care-workspace-people-panel"[^>]*class="hidden [^"]*lg:block/
+    );
+    expect(html).toMatch(
+      /id="care-workspace-context-panel"[^>]*class="hidden [^"]*lg:block/
+    );
+  });
+
   it("renders ranked, compact, accessible coverage navigation", () => {
     const html = renderToStaticMarkup(createElement(SeniorCoverage, {
       seniors: [
@@ -59,9 +111,13 @@ describe("SeniorCoverage", () => {
     expect(html).toContain("Today");
     expect(html).toContain("Stable");
     expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain('aria-current="true"');
+    expect(html).toContain('data-status-dot="true"');
     expect(html).toContain("Select Mr Tan");
-    expect(html).toContain('title="Selected senior"');
     expect(html).not.toContain("ring-2");
+    expect(html).not.toContain("shadow");
+    expect(html).not.toContain("translate");
+    expect(html).not.toContain("rounded-lg");
     expect(html).toContain("Monitoring");
     expect(html).not.toContain("years old");
     expect(html).not.toContain("active follow-up item");

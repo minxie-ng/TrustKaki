@@ -5,6 +5,7 @@ import {
   careUrgencyTone,
   compactCoverageReason,
   initialsForSenior,
+  mobileCareWorkspaceViews,
   portraitForSenior,
 } from "./careWorkspacePresentation";
 import {
@@ -70,6 +71,14 @@ const redEscalated = queueItem({ seniorId: "red-active", priority: 0, status: "e
 const yellowPending = queueItem({ seniorId: "yellow-active", priority: 10 });
 
 describe("care workspace presentation", () => {
+  it("defines the explicit mobile workspace views with Queue first", () => {
+    expect(mobileCareWorkspaceViews).toEqual([
+      { id: "queue", label: "Queue" },
+      { id: "people", label: "People" },
+      { id: "context", label: "Context" },
+    ]);
+  });
+
   it("orders active work by queue priority before policy risk", () => {
     const view = buildSeniorCoverage(seniors, [yellowPriorityZero, redPriorityTen]);
     expect(view.map((item) => item.senior.id)).toEqual([

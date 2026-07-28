@@ -11,23 +11,23 @@ interface SelectedSeniorSummaryProps {
 
 export function SelectedSeniorSummary({ senior, selectedSenior }: SelectedSeniorSummaryProps) {
   return (
-    <section className="rounded-lg border border-[var(--care-line)] border-t-[3px] border-t-[var(--care-brand)] bg-white p-4 shadow-[0_5px_18px_rgba(23,33,29,0.05)]">
-      <div className="mb-4 border-b border-[var(--care-teal-line)] pb-3 text-sm font-bold text-[var(--care-brand)]">
+    <section className="pb-3">
+      <div className="mb-2 text-xs font-bold uppercase text-[var(--care-brand)]">
         Selected senior
       </div>
-      <div className="flex min-w-0 items-start gap-3">
-        <SeniorAvatar name={senior.name} src={portraitForSenior(senior.name)} size="lg" />
+      <div className="flex min-w-0 items-center gap-3">
+        <SeniorAvatar name={senior.name} src={portraitForSenior(senior.name)} size="md" />
         <div className="min-w-0">
-          <h3 className="mt-1 truncate text-xl font-bold text-[var(--care-ink)]">{senior.name}</h3>
-          <div className="mt-1 text-sm text-gray-700">
+          <h3 className="truncate text-lg font-bold text-[var(--care-ink)]">{senior.name}</h3>
+          <div className="text-sm text-gray-700">
             {[senior.gender, `${senior.age} years old`, senior.livingSituation].filter(Boolean).join(" · ")}
           </div>
-          <div className="mt-1 break-words text-sm text-gray-700">
+          <div className="break-words text-xs text-gray-600">
             {senior.address ?? selectedSenior?.address ?? "Address not recorded"}
           </div>
         </div>
       </div>
-      <div className="mt-4 grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 border-t border-[var(--care-line)] pt-3 text-sm text-gray-700 sm:grid-cols-4">
+      <div className="mt-3 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 border-t border-[var(--care-line)] pt-3 text-sm text-gray-700 sm:grid-cols-4">
         <SummaryField
           label="Primary caregiver"
           value={formatCaregiverLabel(
