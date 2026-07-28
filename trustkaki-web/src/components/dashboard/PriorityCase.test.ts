@@ -110,7 +110,7 @@ describe("PriorityCase", () => {
     }));
 
     expect(html).not.toContain("Update case");
-    expect(html).not.toContain("Save update");
+    expect(html).not.toContain(">Save<");
   });
 
   it("uses a flat surface with status dots instead of filled pills", () => {
@@ -126,6 +126,8 @@ describe("PriorityCase", () => {
 
     expect(html).toContain('data-status-dot="true"');
     expect(html).toContain("font-display");
+    expect(html).toContain("text-[var(--care-coral-hover)]");
+    expect(html).not.toContain("text-[var(--care-coral)]");
     expect(html).not.toMatch(/shadow-|rounded-lg|bg-(?:amber|yellow|red|emerald)-(?:50|100)/);
   });
 });

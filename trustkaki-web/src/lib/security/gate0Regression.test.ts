@@ -26,9 +26,10 @@ describe("Gate 0 structural regression", () => {
   it("keeps the dashboard coordinator small and delegates bounded workflows", () => {
     const dashboard = read("src/components/Dashboard.tsx");
     expect(dashboard.split("\n").length).toBeLessThan(350);
-    expect(read("src/components/dashboard/CaseUpdateForm.tsx")).toContain(
-      "Save update"
-    );
+    const caseUpdateForm = read("src/components/dashboard/CaseUpdateForm.tsx");
+    expect(caseUpdateForm).toContain('"Save"');
+    expect(caseUpdateForm).toContain("bg-[var(--care-coral-hover)]");
+    expect(caseUpdateForm).not.toContain("bg-[var(--care-coral)]");
     expect(read("src/components/dashboard/CaseDetails.tsx")).toContain(
       "Chronological evidence timeline"
     );

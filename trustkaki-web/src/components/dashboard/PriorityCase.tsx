@@ -76,7 +76,7 @@ export function PriorityCase({
         <button
           type="button"
           onClick={() => invokeViewRecentActivity(onViewRecentActivity)}
-          className="mt-6 min-h-10 border-b border-[var(--care-coral)] text-sm font-semibold text-[var(--care-coral)] hover:text-[var(--care-coral-hover)]"
+          className="mt-6 min-h-10 border-b border-[var(--care-coral)] text-sm font-semibold text-[var(--care-coral-hover)] hover:text-[var(--care-evergreen)]"
         >
           View recent activity
         </button>
@@ -181,7 +181,7 @@ function PriorityCaseCard({
         </div>
       </div>
       <div className="mt-5 border-y border-l-[3px] border-[var(--care-line)] border-l-[var(--care-coral)] px-4 py-4">
-        <div className="text-xs font-bold uppercase text-[var(--care-coral)]">Recommended next step</div>
+        <div className="text-xs font-bold uppercase text-[var(--care-coral-hover)]">Recommended next step</div>
         <div className="mt-1 text-base font-semibold text-gray-950">{fields.recommendedAction}</div>
       </div>
       {item.relatedPatterns.length > 0 && (

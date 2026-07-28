@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { authHeader } from "@/lib/auth/client";
 import type { NotificationCategory } from "@/lib/contacts/contracts";
 import type {
@@ -190,6 +190,15 @@ export function availableCaseActions(
   return [...allCaseActions];
 }
 
+export function caseActionSubmissionIssue(
+  status: FollowUpQueueItem["status"],
+  action: CaseUpdateAction
+): string | null {
+  return availableCaseActions(status).includes(action)
+    ? null
+    : "This action is no longer available for the latest case state. Choose another action.";
+}
+
 export function initialCaseAction(
   status: FollowUpQueueItem["status"]
 ): CaseUpdateAction {
@@ -197,6 +206,25 @@ export function initialCaseAction(
     return "record_outcome";
   }
   return availableCaseActions(status)[0] ?? "record_outcome";
+}
+
+export function reconcileCaseAction(
+  status: FollowUpQueueItem["status"],
+  action: CaseUpdateAction
+): CaseUpdateAction {
+  return caseActionSubmissionIssue(status, action)
+    ? initialCaseAction(status)
+    : action;
+}
+
+export function feedbackAriaForRequestState(state: RequestState): {
+  role: "alert" | "status";
+  ariaLive: "assertive" | "polite";
+  ariaAtomic: true;
+} {
+  return state === "error"
+    ? { role: "alert", ariaLive: "assertive", ariaAtomic: true }
+    : { role: "status", ariaLive: "polite", ariaAtomic: true };
 }
 
 const escalationOptions: Array<{
@@ -248,9 +276,10 @@ export function CaseUpdateForm({
   onUnauthorized,
 }: CaseUpdateFormProps) {
   const [open, setOpen] = useState(false);
-  const [action, setAction] = useState<CaseUpdateAction>(() =>
-    initialCaseAction(item.status)
-  );
+  const [actionSelection, setActionSelection] = useState(() => ({
+    status: item.status,
+    action: initialCaseAction(item.status),
+  }));
   const [outcome, setOutcome] = useState<ContactOutcome>("needs_follow_up");
   const [note, setNote] = useState("");
   const [snoozeHours, setSnoozeHours] = useState("4");
@@ -267,9 +296,25 @@ export function CaseUpdateForm({
     useState<ConflictRecoveryState>("none");
   const commandIdRef = useRef<string | null>(null);
 
+  if (actionSelection.status !== item.status) {
+    setActionSelection({
+      status: item.status,
+      action: reconcileCaseAction(item.status, actionSelection.action),
+    });
+  }
+
+  const action =
+    actionSelection.status === item.status
+      ? actionSelection.action
+      : reconcileCaseAction(item.status, actionSelection.action);
   const pending = requestState === "pending";
   const availableActions = availableCaseActions(item.status);
   const conflictControls = conflictRecoveryControls(conflictRecovery);
+  const feedbackAria = feedbackAriaForRequestState(requestState);
+
+  useEffect(() => {
+    commandIdRef.current = null;
+  }, [item.status]);
 
   function changeCommandInput(update: () => void) {
     commandIdRef.current = null;
@@ -277,7 +322,10 @@ export function CaseUpdateForm({
   }
 
   function reset() {
-    setAction(initialCaseAction(item.status));
+    setActionSelection({
+      status: item.status,
+      action: initialCaseAction(item.status),
+    });
     setOutcome("needs_follow_up");
     setNote("");
     setSnoozeHours("4");
@@ -301,6 +349,13 @@ export function CaseUpdateForm({
   async function submit() {
     if (!canSubmit(pending ? "pending" : null)) return;
     if (conflictControls.saveBlocked) return;
+    const actionIssue = caseActionSubmissionIssue(item.status, action);
+    if (actionIssue) {
+      setRequestState("error");
+      setStatusMessage(actionIssue);
+      commandIdRef.current = null;
+      return;
+    }
     const cleanNote = note.trim();
     if (!canSaveCaseAction(action, cleanNote, assignedCaregiverId)) {
       setRequestState("error");
@@ -402,11 +457,16 @@ export function CaseUpdateForm({
         {open ? "Close update" : "Update case"}
       </button>
       {!open && statusMessage && (
-        <div className={`mt-3 border-l-2 px-3 py-2 text-sm ${
+        <div
+          role={feedbackAria.role}
+          aria-live={feedbackAria.ariaLive}
+          aria-atomic={feedbackAria.ariaAtomic}
+          className={`mt-3 border-l-2 px-3 py-2 text-sm ${
           requestState === "error"
             ? "border-[var(--status-red)] text-red-700"
             : "border-[var(--status-green)] text-emerald-800"
-        }`}>
+          }`}
+        >
           {statusMessage}
         </div>
       )}
@@ -424,7 +484,10 @@ export function CaseUpdateForm({
                 value={action}
                 onChange={(event) =>
                   changeCommandInput(() =>
-                    setAction(event.target.value as CaseUpdateAction)
+                    setActionSelection({
+                      status: item.status,
+                      action: event.target.value as CaseUpdateAction,
+                    })
                   )
                 }
                 className="mt-1 min-h-11 w-full rounded-[2px] border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
@@ -596,13 +659,18 @@ export function CaseUpdateForm({
                 : "Add at least 10 characters so the record is useful later."}
           </div>
           {statusMessage && (
-            <div className={`mt-3 border-l-2 px-3 py-2 text-sm ${
-              requestState === "error"
-                ? "border-[var(--status-red)] text-red-700"
-                : requestState === "success"
-                  ? "border-[var(--status-green)] text-emerald-800"
-                  : "border-[var(--care-hairline)] text-gray-700"
-            }`}>
+            <div
+              role={feedbackAria.role}
+              aria-live={feedbackAria.ariaLive}
+              aria-atomic={feedbackAria.ariaAtomic}
+              className={`mt-3 border-l-2 px-3 py-2 text-sm ${
+                requestState === "error"
+                  ? "border-[var(--status-red)] text-red-700"
+                  : requestState === "success"
+                    ? "border-[var(--status-green)] text-emerald-800"
+                    : "border-[var(--care-hairline)] text-gray-700"
+              }`}
+            >
               {statusMessage}
               {conflictControls.detail && (
                 <p className="mt-1">{conflictControls.detail}</p>
@@ -642,7 +710,7 @@ export function CaseUpdateForm({
                 conflictControls.saveBlocked ||
                 !canSaveCaseAction(action, note, assignedCaregiverId)
               }
-              className="min-h-11 rounded-[2px] bg-[var(--care-coral)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--care-coral-hover)] disabled:opacity-50"
+              className="min-h-11 rounded-[2px] bg-[var(--care-coral-hover)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--care-evergreen)] disabled:opacity-50"
             >
               {pending ? "Saving..." : "Save"}
             </button>

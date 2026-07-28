@@ -3,9 +3,12 @@ import {
   actionTypeForCaseAction,
   availableCaseActions,
   canSaveCaseAction,
+  caseActionSubmissionIssue,
   caseMutationMessage,
   conflictRecoveryControls,
+  feedbackAriaForRequestState,
   initialCaseAction,
+  reconcileCaseAction,
   nextConflictRecoveryState,
   notifyCaseSaved,
   outcomeForCaseAction,
@@ -14,6 +17,31 @@ import {
 } from "./CaseUpdateForm";
 
 describe("case update semantics", () => {
+  it("rejects a snooze after authoritative state becomes escalated", () => {
+    expect(caseActionSubmissionIssue("escalated", "snooze")).toBe(
+      "This action is no longer available for the latest case state. Choose another action."
+    );
+    expect(reconcileCaseAction("escalated", "snooze")).toBe("record_outcome");
+  });
+
+  it("keeps an action selected when it remains valid after refresh", () => {
+    expect(caseActionSubmissionIssue("escalated", "resolve")).toBeNull();
+    expect(reconcileCaseAction("escalated", "resolve")).toBe("resolve");
+  });
+
+  it("defines bounded live-region semantics for async feedback", () => {
+    expect(feedbackAriaForRequestState("error")).toEqual({
+      role: "alert",
+      ariaLive: "assertive",
+      ariaAtomic: true,
+    });
+    expect(feedbackAriaForRequestState("success")).toEqual({
+      role: "status",
+      ariaLive: "polite",
+      ariaAtomic: true,
+    });
+  });
+
   it("maps a stale write to the required shared-case conflict", () => {
     expect(caseMutationMessage(409)).toEqual({
       kind: "conflict",
