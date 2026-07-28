@@ -340,9 +340,9 @@ function AddMethodForm(props: {
           aria-label="WhatsApp number"
           aria-invalid={Boolean(error)}
           aria-describedby={helpId}
-          className="rounded border px-2 py-1"
+          className="rounded-[2px] border px-2 py-1"
         />
-        <button type="button" disabled={busy} onClick={submit} className="rounded bg-[var(--care-brand-strong)] px-3 py-1 text-xs font-semibold text-white hover:bg-[var(--care-brand-hover)]">Save</button>
+        <button type="button" disabled={busy} onClick={submit} className="rounded-[2px] bg-[var(--care-brand-strong)] px-3 py-1 text-xs font-semibold text-white hover:bg-[var(--care-brand-hover)]">Save</button>
       </div>
       <p id={helpId} className="mt-1 text-xs text-gray-500">
         Use international format, for example +6581234567.

@@ -49,6 +49,28 @@ function fixture(filePath: string, content: string): SourceFile {
   return { path: filePath, content, lines: content.split("\n") };
 }
 
+function controlRadiusViolations(input: SourceFile[]): string[] {
+  return input.flatMap((source) =>
+    source.lines.flatMap((line, index) =>
+      [
+        ...line.matchAll(
+          /(?<![\w-])(?:[\w-]+:)*rounded(?:-[^\s"'`}>;,]+)?(?![\w-])/g
+        ),
+      ].flatMap((match) => {
+        const token = match[0];
+        const utility = token.slice(token.lastIndexOf(":") + 1);
+        return utility === "rounded-none" ||
+          utility === "rounded-[2px]" ||
+          utility === "rounded-full"
+          ? []
+          : [
+              `${source.path}:${index + 1} contains ${JSON.stringify(token)}`,
+            ];
+      })
+    )
+  );
+}
+
 interface ClassNameOccurrence {
   value: string;
   element: string;
@@ -102,22 +124,47 @@ function circleTokenOccurrences(source: SourceFile): CircleTokenOccurrence[] {
 const semanticCircleAllowlist = [
   {
     path: "src/components/ui/StatusIndicator.tsx",
-    value: "h-2 w-2 shrink-0 rounded-full ${dotClass[tone]}",
-    elementToken: 'data-status-dot="true"',
+    requiredClassTokens: ["h-2", "w-2", "shrink-0", "rounded-full"],
+    requiredClassTokenPatterns: [/^\$\{dotClass\[tone\]\}$/],
+    elementTokens: ['data-status-dot="true"'],
     label: "StatusIndicator status dot",
+    maxOccurrences: 1,
   },
   {
     path: "src/components/dashboard/SeniorAvatar.tsx",
-    value:
-      "relative grid aspect-square shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--care-line)] bg-[var(--care-soft-teal)] font-bold text-[var(--care-brand)]",
-    elementToken: "style={{ width: pixels, height: pixels }}",
+    requiredClassTokens: [
+      "relative",
+      "grid",
+      "aspect-square",
+      "shrink-0",
+      "place-items-center",
+      "overflow-hidden",
+      "rounded-full",
+      "border",
+      "border-[var(--care-line)]",
+      "bg-[var(--care-soft-teal)]",
+      "font-bold",
+      "text-[var(--care-brand)]",
+    ],
+    requiredClassTokenPatterns: [],
+    elementTokens: ["style={{ width: pixels, height: pixels }}"],
     label: "SeniorAvatar image frame",
+    maxOccurrences: 1,
   },
   {
     path: "src/components/dashboard/CaseDetails.tsx",
-    value: "absolute -left-1 top-1 h-2 w-2 rounded-full ${markerClass}",
-    elementToken: 'aria-hidden="true"',
+    requiredClassTokens: [
+      "absolute",
+      "-left-1",
+      "top-1",
+      "h-2",
+      "w-2",
+      "rounded-full",
+    ],
+    requiredClassTokenPatterns: [/^\$\{markerClass\}$/],
+    elementTokens: ['aria-hidden="true"'],
     label: "care-thread evidence or timeline marker",
+    maxOccurrences: 1,
   },
 ] as const;
 
@@ -129,11 +176,19 @@ function semanticCircleViolations(input: SourceFile[]): string[] {
       const occurrence = classNames.find(
         (candidate) => token.index >= candidate.start && token.index < candidate.end
       );
+      const classTokens = new Set(occurrence?.value.split(/\s+/));
       const rule = semanticCircleAllowlist.find(
         (candidate) =>
           candidate.path === source.path &&
-          candidate.value === occurrence?.value &&
-          occurrence.element.includes(candidate.elementToken)
+          candidate.requiredClassTokens.every((required) =>
+            classTokens.has(required)
+          ) &&
+          candidate.requiredClassTokenPatterns.every((pattern) =>
+            [...classTokens].some((classToken) => pattern.test(classToken))
+          ) &&
+          candidate.elementTokens.every((elementToken) =>
+            occurrence?.element.includes(elementToken)
+          )
       );
       if (!rule) {
         const context = occurrence
@@ -146,7 +201,7 @@ function semanticCircleViolations(input: SourceFile[]): string[] {
       const key = `${rule.path}:${rule.label}`;
       const count = (allowedCounts.get(key) ?? 0) + 1;
       allowedCounts.set(key, count);
-      return count === 1
+      return count <= rule.maxOccurrences
         ? []
         : [`${source.path}:${token.line} duplicates the allowed ${rule.label}`];
     });
@@ -170,6 +225,35 @@ function paddedCircleViolations(input: SourceFile[]): string[] {
 }
 
 describe("circle guard regressions", () => {
+  test.each([
+    "rounded",
+    "rounded-sm",
+    "rounded-[3px]",
+    "sm:rounded",
+    "hover:rounded-sm",
+    "md:focus:rounded-[4px]",
+  ])("rejects non-2px control radius token %s", (radius) => {
+    const source = fixture(
+      "src/components/Control.tsx",
+      `<button className="${radius}">Save</button>`
+    );
+
+    expect(controlRadiusViolations([source])).toHaveLength(1);
+  });
+
+  test.each([
+    "rounded-[2px]",
+    "sm:rounded-[2px]",
+    "hover:rounded-[2px]",
+  ])("allows exact 2px control radius token %s", (radius) => {
+    const source = fixture(
+      "src/components/Control.tsx",
+      `<button className="${radius}">Save</button>`
+    );
+
+    expect(controlRadiusViolations([source])).toEqual([]);
+  });
+
   test("rejects rounded-full inside conditional helper className expressions", () => {
     const conditionalClass = fixture(
       "src/components/ConditionalCircle.tsx",
@@ -244,6 +328,53 @@ describe("circle guard regressions", () => {
     }
   );
 
+  test.each([
+    {
+      filePath: "src/components/ui/StatusIndicator.tsx",
+      semanticCircle: `<span
+  className={\`\${dotClass[tone]} rounded-full w-2 shrink-0 h-2\`}
+  data-status-dot="true"
+/>`,
+    },
+    {
+      filePath: "src/components/dashboard/SeniorAvatar.tsx",
+      semanticCircle: `<span
+  style={{ width: pixels, height: pixels }}
+  className="font-bold rounded-full grid aspect-square border shrink-0 text-[var(--care-brand)] relative overflow-hidden bg-[var(--care-soft-teal)] place-items-center border-[var(--care-line)]"
+/>`,
+    },
+    {
+      filePath: "src/components/dashboard/CaseDetails.tsx",
+      semanticCircle: `<span
+  aria-hidden="true"
+  className={\`h-2 \${markerClass} absolute rounded-full top-1 w-2 -left-1\`}
+/>`,
+    },
+  ])(
+    "allows harmless semantic-circle class reordering in $filePath",
+    ({ filePath, semanticCircle }) => {
+      expect(
+        semanticCircleViolations([fixture(filePath, semanticCircle)])
+      ).toEqual([]);
+    }
+  );
+
+  test("still rejects a duplicate approved semantic circle", () => {
+    const semanticCircle = `<span
+  data-status-dot="true"
+  className={\`h-2 w-2 shrink-0 rounded-full \${dotClass[tone]}\`}
+/>`;
+    const source = fixture(
+      "src/components/ui/StatusIndicator.tsx",
+      `${semanticCircle}\n${semanticCircle}`
+    );
+
+    const findings = semanticCircleViolations([source]);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toContain("duplicates the allowed StatusIndicator status dot");
+  });
+
   test("rejects every padded rounded-full geometry without requiring fill", () => {
     const paddingUtilities = ["p-2", "pl-2", "pr-2", "pt-2", "pb-2", "px-2", "py-2"];
     const fixtures = paddingUtilities.map((padding) =>
@@ -290,8 +421,8 @@ describe("care desk visual system", () => {
 
   test("uses only square or 2px control geometry", () => {
     expectNoViolations(
-      "Replace rounded-md/lg/xl/2xl/3xl with rounded-[2px] or no radius.",
-      violations(/(?<![\w-])(?:[\w-]+:)*rounded-(?:md|lg|xl|2xl|3xl)(?![\w-])/g)
+      "Use rounded-[2px] or no radius for controls.",
+      controlRadiusViolations(sources)
     );
   });
 
