@@ -203,17 +203,23 @@ describe("dashboard view model", () => {
   });
 
   it("keeps technical surfaces closed except for enabled demo admins", () => {
-    expect(appShellSurface({ isDemoAdmin: false, demoMode: true })).toEqual({
+    expect(appShellSurface({ isDemoAdmin: false, demoMode: true, guideActive: true })).toEqual({
       showChatSimulator: false,
       showReasoningRail: false,
       showDemoControls: false,
       proofPlacement: "plain_language_case",
     });
-    expect(appShellSurface({ isDemoAdmin: true, demoMode: true })).toEqual({
+    expect(appShellSurface({ isDemoAdmin: true, demoMode: true, guideActive: false })).toEqual({
       showChatSimulator: true,
       showReasoningRail: true,
       showDemoControls: true,
       proofPlacement: "demo_only",
+    });
+    expect(appShellSurface({ isDemoAdmin: true, demoMode: true, guideActive: true })).toEqual({
+      showChatSimulator: false,
+      showReasoningRail: false,
+      showDemoControls: false,
+      proofPlacement: "plain_language_case",
     });
   });
 

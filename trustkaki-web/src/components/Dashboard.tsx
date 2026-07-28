@@ -90,7 +90,7 @@ export default function Dashboard({
     if (!refreshed) throw new Error("dashboard_conflict_refresh_failed");
   };
   const unauthorized = () => onUnauthorized?.();
-  const interactionsDisabled = !authToken;
+  const interactionsDisabled = !authToken || guideLocked;
 
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 1024px)");
@@ -168,7 +168,7 @@ export default function Dashboard({
         </div>
       </main>
       <CareSetupDrawer
-        open={careSetupOpen}
+        open={careSetupOpen && !guideLocked}
         onClose={() => onCloseCareSetup?.()}
         selectedSeniorId={selectedSeniorId}
         authToken={authToken ?? ""}

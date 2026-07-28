@@ -7,7 +7,10 @@ import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
 import { CareActivity } from "@/components/dashboard/CareActivity";
 import { DemoGuide } from "@/components/dashboard/DemoGuide";
-import type { DemoPhase } from "@/components/dashboard/demoGuideState";
+import {
+  demoGuideComposition,
+  type DemoPhase,
+} from "@/components/dashboard/demoGuideState";
 import AgentTracePanel from "@/components/AgentTracePanel";
 import OperationalState from "@/components/OperationalState";
 import SignInForm from "@/components/SignInForm";
@@ -81,7 +84,15 @@ export default function Home() {
   const authToken = session?.access_token ?? null;
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
-  const surface = appShellSurface({ isDemoAdmin, demoMode });
+  const guideActive = Boolean(
+    isDemoAdmin && demoMode && demoPhase !== "exited"
+  );
+  const guideComposition = demoGuideComposition({
+    activeView,
+    enabled: guideActive,
+    phase: demoPhase,
+  });
+  const surface = appShellSurface({ isDemoAdmin, demoMode, guideActive });
   const latestSession = liveDashboardData?.activeSessions[0];
   const chatMessages = latestSession?.messages ?? [];
   const selectedSeniorId = liveDashboardData?.selectedSeniorId ?? null;
@@ -425,6 +436,7 @@ export default function Home() {
       }}
       onSignOut={signOut}
       demoMode={demoMode}
+      guidedDemoPhase={guideActive ? demoPhase : undefined}
       onDemoModeChange={(enabled) => {
         setDemoMode(enabled);
         setDemoPhase(enabled ? "orientation" : "exited");
@@ -495,7 +507,11 @@ export default function Home() {
                 }}
               >
                 <>
-                  <div className={activeView === "workspace" ? "h-full" : "hidden"}>
+                  <div
+                    className={
+                      guideComposition.showWorkspace ? "h-full" : "hidden"
+                    }
+                  >
                     <Dashboard
                       data={liveDashboardData}
                       traces={liveTraces}
@@ -503,13 +519,7 @@ export default function Home() {
                       onRefresh={refreshDashboardForConsumer}
                       authToken={authToken}
                       isDemoAdmin={isDemoAdmin}
-                      guideLocked={Boolean(
-                        isDemoAdmin &&
-                          demoMode &&
-                          ["prepare", "review", "respond", "resolve"].includes(
-                            demoPhase
-                          )
-                      )}
+                      guideLocked={guideComposition.lockWorkspaceMutations}
                       openTimelineRequest={demoTimelineRequest}
                       onUnauthorized={handleUnauthorized}
                       onSelectSenior={selectSenior}
@@ -530,7 +540,7 @@ export default function Home() {
                       onViewActivity={() => setActiveView("activity")}
                     />
                   </div>
-                  {activeView === "activity" && (
+                  {guideComposition.showActivity && (
                     <CareActivity
                       activity={liveDashboardData.activity ?? []}
                       queue={followUpQueueForSenior(

@@ -70,19 +70,49 @@ describe("AppShell", () => {
     expect(html).toContain("Stable");
   });
 
-  it("labels the active guided demo exit without adding another navigation item", () => {
+  it.each(["orientation", "prepare", "complete"] as const)(
+    "suppresses workflow navigation while the guided demo is %s",
+    (guidedDemoPhase) => {
+      const html = renderToStaticMarkup(createElement(
+        AppShell,
+        {
+          activeView: "workspace",
+          isDemoAdmin: true,
+          riskLevel: "yellow",
+          demoMode: true,
+          guidedDemoPhase,
+          onViewChange: () => undefined,
+          onOpenSetup: () => undefined,
+          onDemoModeChange: () => undefined,
+          onSignOut: () => undefined,
+        },
+        createElement("div", null, "Start guided demo")
+      ));
+
+      expect(html).not.toContain('aria-label="Primary"');
+      expect(html).not.toContain("Care workspace");
+      expect(html).not.toContain("Activity");
+      expect(html).not.toContain("Care setup");
+      expect(html).not.toContain("Exit guided demo");
+      expect(html).toContain("Start guided demo");
+    }
+  );
+
+  it("keeps the authenticated identity shell while workflow navigation is suppressed", () => {
     const html = renderToStaticMarkup(createElement(AppShell, {
       activeView: "workspace",
       isDemoAdmin: true,
       riskLevel: "yellow",
       demoMode: true,
+      guidedDemoPhase: "respond",
       onViewChange: () => undefined,
       onOpenSetup: () => undefined,
       onDemoModeChange: () => undefined,
       onSignOut: () => undefined,
     }));
 
-    expect(html).toContain("Exit guided demo");
-    expect((html.match(/Exit guided demo/g) ?? [])).toHaveLength(1);
+    expect(html).toContain("TrustKaki");
+    expect(html).toContain("Sign out");
+    expect(html).not.toContain('aria-label="Primary"');
   });
 });

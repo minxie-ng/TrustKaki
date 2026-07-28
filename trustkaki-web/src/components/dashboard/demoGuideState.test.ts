@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DashboardData, FollowUpQueueItem } from "@/lib/types";
 import {
   advanceDemo,
+  demoGuideComposition,
   isPrepared,
   isResolveVerified,
   isResponseRecorded,
@@ -69,6 +70,36 @@ function dashboardData(
 }
 
 describe("demo guide", () => {
+  it("renders retained Activity evidence after completion without restoring workflow navigation", () => {
+    expect(
+      demoGuideComposition({
+        activeView: "activity",
+        enabled: true,
+        phase: "complete",
+      })
+    ).toEqual({
+      showWorkspace: false,
+      showActivity: true,
+      lockWorkspaceMutations: false,
+      suppressWorkflowNavigation: true,
+    });
+  });
+
+  it("locks active phases to the workspace and suppresses competing Activity", () => {
+    expect(
+      demoGuideComposition({
+        activeView: "activity",
+        enabled: true,
+        phase: "respond",
+      })
+    ).toEqual({
+      showWorkspace: true,
+      showActivity: false,
+      lockWorkspaceMutations: true,
+      suppressWorkflowNavigation: true,
+    });
+  });
+
   it("does not advance when refresh is stale", () => {
     expect(
       advanceDemo("prepare", { commandOk: true, stateVerified: false })
@@ -105,7 +136,7 @@ describe("demo guide", () => {
               actionType: "record_outcome",
               outcomeType: "needs_follow_up",
               previousStatus: "pending",
-              resultingStatus: "followed_up",
+              resultingStatus: "acknowledged",
               note: "Follow-up recorded.",
               caregiver: "Rachel",
               createdAt: "2026-07-11T09:00:00.000Z",
@@ -115,6 +146,27 @@ describe("demo guide", () => {
         "queue-1"
       )
     ).toBe(true);
+    expect(
+      isResponseRecorded(
+        dashboardData({
+          activity: [
+            {
+              id: "activity-wrong-outcome",
+              queueItemId: "queue-1",
+              seniorId: "senior-1",
+              actionType: "record_outcome",
+              outcomeType: "reached_and_okay",
+              previousStatus: "pending",
+              resultingStatus: "followed_up",
+              note: "Reached and okay.",
+              caregiver: "Rachel",
+              createdAt: "2026-07-11T09:00:00.000Z",
+            },
+          ],
+        }),
+        "queue-1"
+      )
+    ).toBe(false);
   });
 
   it("requires retained resolved history before completion", () => {

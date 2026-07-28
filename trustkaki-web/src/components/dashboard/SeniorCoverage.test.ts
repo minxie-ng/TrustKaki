@@ -41,7 +41,11 @@ function item(seniorId: string, riskLevel: FollowUpQueueItem["riskLevel"], statu
   };
 }
 
-function renderDashboard(): string {
+function renderDashboard(props: {
+  guideLocked?: boolean;
+  authToken?: string | null;
+  careSetupOpen?: boolean;
+} = {}): string {
   const selected = senior("senior-yellow", "Mr Tan Ah Hock", "yellow");
   const data = {
     selectedSeniorId: selected.id,
@@ -67,7 +71,9 @@ function renderDashboard(): string {
 
   return renderToStaticMarkup(createElement(Dashboard, {
     data,
-    authToken: null,
+    authToken: props.authToken ?? null,
+    guideLocked: props.guideLocked,
+    careSetupOpen: props.careSetupOpen,
   }));
 }
 
@@ -107,6 +113,21 @@ describe("SeniorCoverage", () => {
 
     expect(html.match(/tabindex="0"/g)).toHaveLength(1);
     expect(html.match(/tabindex="-1"/g)).toHaveLength(2);
+  });
+
+  it("suppresses senior selection and setup mutations while the guide is active", () => {
+    const html = renderDashboard({
+      guideLocked: true,
+      authToken: "test-token",
+      careSetupOpen: true,
+    });
+
+    expect(html).toContain('aria-label="Senior priority coverage"');
+    expect(html).toMatch(
+      /aria-label="Select Mr Tan Ah Hock \(selected\)"[^>]*disabled/
+    );
+    expect(html).toMatch(/aria-label="Select Mdm Lim Siew Lan"[^>]*disabled/);
+    expect(html).not.toContain('role="dialog"');
   });
 
   it("renders ranked, compact, accessible coverage navigation", () => {

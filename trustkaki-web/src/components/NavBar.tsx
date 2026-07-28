@@ -12,6 +12,7 @@ interface NavProps {
   canShowDemoMode?: boolean;
   demoMode?: boolean;
   onDemoModeChange?: (enabled: boolean) => void;
+  suppressWorkflowNavigation?: boolean;
 }
 
 export default function NavBar({
@@ -23,6 +24,7 @@ export default function NavBar({
   canShowDemoMode = false,
   demoMode = false,
   onDemoModeChange,
+  suppressWorkflowNavigation = false,
 }: NavProps) {
   const riskStatus: Record<typeof riskLevel, { label: string; tone: StatusTone }> = {
     green: { label: "Stable", tone: "stable" },
@@ -41,10 +43,11 @@ export default function NavBar({
         <span className="font-display text-xl font-semibold text-white">TrustKaki</span>
       </div>
 
-      <nav
-        aria-label="Primary"
-        className="order-3 flex w-full items-stretch overflow-x-auto border-t border-white/20 md:order-none md:min-h-16 md:w-auto md:overflow-visible md:border-t-0"
-      >
+      {!suppressWorkflowNavigation && (
+        <nav
+          aria-label="Primary"
+          className="order-3 flex w-full items-stretch overflow-x-auto border-t border-white/20 md:order-none md:min-h-16 md:w-auto md:overflow-visible md:border-t-0"
+        >
         <button
           type="button"
           aria-current={activeView === "workspace" ? "page" : undefined}
@@ -74,7 +77,8 @@ export default function NavBar({
             {demoMode ? "Exit guided demo" : "Guided demo"}
           </button>
         )}
-      </nav>
+        </nav>
+      )}
 
       <div className="ml-auto flex min-h-16 items-center gap-3">
         <StatusIndicator

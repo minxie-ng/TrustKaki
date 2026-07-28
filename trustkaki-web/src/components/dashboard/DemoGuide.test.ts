@@ -164,38 +164,54 @@ async function renderInteractiveGuide({
   phase,
   refreshedData,
   fetchMock,
+  initialData = data(),
   onPhaseChange = vi.fn<(phase: DemoPhase) => void>(),
+  onErrorChange = vi.fn<(error: string | null) => void>(),
   onRefresh = vi.fn(async () => refreshedData),
+  onUnauthorized = vi.fn(),
 }: {
   phase: DemoPhase;
   refreshedData: DashboardData;
   fetchMock: ReturnType<typeof vi.fn>;
+  initialData?: DashboardData;
   onPhaseChange?: (phase: DemoPhase) => void;
+  onErrorChange?: (error: string | null) => void;
   onRefresh?: (seniorId?: string | null) => Promise<DashboardData | null>;
+  onUnauthorized?: () => void;
 }) {
   vi.stubGlobal("fetch", fetchMock);
-  await act(async () => {
+  const render = async (
+    nextPhase: DemoPhase,
+    nextData: DashboardData = initialData
+  ) => act(async () => {
     root.render(
       createElement(
         DemoGuide,
         {
           enabled: true,
-          phase,
+          phase: nextPhase,
           error: null,
-          data: data(),
+          data: nextData,
           authToken: "test-token",
           onPhaseChange,
-          onErrorChange: vi.fn(),
+          onErrorChange,
           onRefresh,
           onOpenTimeline: vi.fn(),
-          onUnauthorized: vi.fn(),
+          onUnauthorized,
           onExit: vi.fn(),
         },
         createElement("div", null, "Care workspace")
       )
     );
   });
-  return { onPhaseChange };
+  await render(phase);
+  return {
+    onPhaseChange,
+    onErrorChange,
+    onRefresh,
+    onUnauthorized,
+    rerender: render,
+  };
 }
 
 describe("DemoGuide route wiring", () => {
@@ -248,7 +264,7 @@ describe("DemoGuide route wiring", () => {
     const { onPhaseChange } = await renderInteractiveGuide({
       phase: "respond",
       refreshedData: data({
-        followUpQueue: [{ ...queueItem, status: "followed_up" }],
+        followUpQueue: [{ ...queueItem, status: "acknowledged" }],
         activity: [
           {
             id: "activity-1",
@@ -257,7 +273,7 @@ describe("DemoGuide route wiring", () => {
             actionType: "record_outcome",
             outcomeType: "needs_follow_up",
             previousStatus: "pending",
-            resultingStatus: "followed_up",
+            resultingStatus: "acknowledged",
             note: "Rachel spoke with Mr Tan and will check again this evening.",
             caregiver: "Rachel",
             createdAt: "2026-07-11T09:00:00.000Z",
@@ -283,4 +299,223 @@ describe("DemoGuide route wiring", () => {
     });
     expect(onPhaseChange).toHaveBeenCalledWith("resolve");
   });
+
+  it("calls the existing unauthorized handler for a 401 response", async () => {
+    const onUnauthorized = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
+    const { onPhaseChange } = await renderInteractiveGuide({
+      phase: "respond",
+      refreshedData: data(),
+      fetchMock,
+      onUnauthorized,
+    });
+
+    await clickPrimary();
+
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+    expect(onPhaseChange).not.toHaveBeenCalled();
+  });
+
+  it("retains the phase and refreshes authoritative state after a 409", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 409 }));
+    const onErrorChange = vi.fn();
+    const onRefresh = vi.fn(async () =>
+      data({
+        followUpQueue: [
+          { ...queueItem, lastUpdatedAt: "2026-07-11T08:30:00.000Z" },
+        ],
+      })
+    );
+    const { onPhaseChange } = await renderInteractiveGuide({
+      phase: "respond",
+      refreshedData: data(),
+      fetchMock,
+      onErrorChange,
+      onRefresh,
+    });
+
+    await clickPrimary();
+
+    expect(onPhaseChange).not.toHaveBeenCalled();
+    expect(onRefresh).toHaveBeenCalledOnce();
+    expect(onErrorChange).toHaveBeenLastCalledWith(
+      "The case changed while you were reviewing it. Retry this step with the latest state."
+    );
+  });
+
+  it("reuses a command ID for an ordinary retry", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 500 }));
+    await renderInteractiveGuide({
+      phase: "respond",
+      refreshedData: data(),
+      fetchMock,
+    });
+
+    await clickPrimary();
+    await clickPrimary();
+
+    const first = requestBody(fetchMock, 0);
+    const second = requestBody(fetchMock, 1);
+    expect(second.commandId).toBe(first.commandId);
+  });
+
+  it("creates a new command ID after a 409 and retries against refreshed state", async () => {
+    const latestUpdatedAt = "2026-07-11T08:30:00.000Z";
+    const refreshedPending = data({
+      followUpQueue: [{ ...queueItem, lastUpdatedAt: latestUpdatedAt }],
+    });
+    const refreshedAcknowledged = data({
+      followUpQueue: [
+        {
+          ...queueItem,
+          status: "acknowledged",
+          lastUpdatedAt: "2026-07-11T09:00:00.000Z",
+        },
+      ],
+      activity: [responseActivity()],
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 409 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    const onRefresh = vi
+      .fn()
+      .mockResolvedValueOnce(refreshedPending)
+      .mockResolvedValueOnce(refreshedAcknowledged);
+    const { onPhaseChange } = await renderInteractiveGuide({
+      phase: "respond",
+      refreshedData: refreshedAcknowledged,
+      fetchMock,
+      onRefresh,
+    });
+
+    await clickPrimary();
+    await clickPrimary();
+
+    const first = requestBody(fetchMock, 0);
+    const second = requestBody(fetchMock, 1);
+    expect(second.commandId).not.toBe(first.commandId);
+    expect(second.expectedUpdatedAt).toBe(latestUpdatedAt);
+    expect(onPhaseChange).toHaveBeenCalledWith("resolve");
+  });
+
+  it("uses the authoritative post-response version when resolving", async () => {
+    const postResponseUpdatedAt = "2026-07-11T09:00:00.000Z";
+    const acknowledged = data({
+      followUpQueue: [
+        {
+          ...queueItem,
+          status: "acknowledged",
+          lastUpdatedAt: postResponseUpdatedAt,
+        },
+      ],
+      activity: [responseActivity()],
+    });
+    const resolved = data({
+      followUpQueue: [],
+      activity: [responseActivity(), resolvedActivity()],
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    const onRefresh = vi
+      .fn()
+      .mockResolvedValueOnce(acknowledged)
+      .mockResolvedValueOnce(resolved);
+    const guide = await renderInteractiveGuide({
+      phase: "respond",
+      refreshedData: acknowledged,
+      fetchMock,
+      onRefresh,
+    });
+
+    await clickPrimary();
+    await guide.rerender("resolve");
+    await clickPrimary();
+
+    expect(requestBody(fetchMock, 1).expectedUpdatedAt).toBe(
+      postResponseUpdatedAt
+    );
+  });
+
+  it("completes Resolve only after queue removal and retained resolved activity", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    const incomplete = data({ followUpQueue: [], activity: [] });
+    const first = await renderInteractiveGuide({
+      phase: "resolve",
+      refreshedData: incomplete,
+      fetchMock,
+      initialData: data({
+        followUpQueue: [{ ...queueItem, status: "acknowledged" }],
+      }),
+    });
+
+    await clickPrimary();
+    expect(first.onPhaseChange).not.toHaveBeenCalled();
+
+    const verified = data({
+      followUpQueue: [],
+      activity: [resolvedActivity()],
+    });
+    const secondFetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    const second = await renderInteractiveGuide({
+      phase: "resolve",
+      refreshedData: verified,
+      fetchMock: secondFetch,
+      initialData: data({
+        followUpQueue: [{ ...queueItem, status: "acknowledged" }],
+      }),
+    });
+
+    await clickPrimary();
+    expect(second.onPhaseChange).toHaveBeenCalledWith("complete");
+  });
 });
+
+async function clickPrimary() {
+  await act(async () => {
+    container
+      .querySelector<HTMLButtonElement>('[data-demo-primary="true"]')!
+      .click();
+  });
+}
+
+function requestBody(fetchMock: ReturnType<typeof vi.fn>, index: number) {
+  return JSON.parse(String(fetchMock.mock.calls[index][1].body)) as {
+    commandId: string;
+    expectedUpdatedAt: string;
+  };
+}
+
+function responseActivity() {
+  return {
+    id: "activity-response",
+    queueItemId: "queue-1",
+    seniorId: "senior-1",
+    actionType: "record_outcome" as const,
+    outcomeType: "needs_follow_up" as const,
+    previousStatus: "pending" as const,
+    resultingStatus: "acknowledged" as const,
+    note: "Rachel spoke with Mr Tan and will check again this evening.",
+    caregiver: "Rachel",
+    createdAt: "2026-07-11T09:00:00.000Z",
+  };
+}
+
+function resolvedActivity() {
+  return {
+    id: "activity-resolved",
+    queueItemId: "queue-1",
+    seniorId: "senior-1",
+    actionType: "resolve" as const,
+    outcomeType: "resolved" as const,
+    previousStatus: "acknowledged" as const,
+    resultingStatus: "resolved" as const,
+    note: "Rachel confirmed Mr Tan is safe and the follow-up is complete.",
+    caregiver: "Rachel",
+    createdAt: "2026-07-11T09:05:00.000Z",
+  };
+}

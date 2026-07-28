@@ -9,6 +9,38 @@ export type DemoPhase =
   | "complete"
   | "exited";
 
+type DemoAppView = "workspace" | "activity";
+
+export function demoGuideComposition(args: {
+  activeView: DemoAppView;
+  enabled: boolean;
+  phase: DemoPhase;
+}) {
+  const suppressWorkflowNavigation =
+    args.enabled && args.phase !== "exited";
+  const lockWorkspaceMutations =
+    args.enabled &&
+    ["prepare", "review", "respond", "resolve"].includes(args.phase);
+
+  if (args.enabled && args.phase === "orientation") {
+    return {
+      showWorkspace: false,
+      showActivity: false,
+      lockWorkspaceMutations,
+      suppressWorkflowNavigation,
+    };
+  }
+
+  return {
+    showWorkspace:
+      args.activeView === "workspace" || lockWorkspaceMutations,
+    showActivity:
+      args.activeView === "activity" && !lockWorkspaceMutations,
+    lockWorkspaceMutations,
+    suppressWorkflowNavigation,
+  };
+}
+
 interface DemoVerification {
   commandOk: boolean;
   stateVerified: boolean;
@@ -80,7 +112,8 @@ export function isResponseRecorded(
       (item) =>
         item.queueItemId === queueItemId &&
         item.actionType === "record_outcome" &&
-        item.resultingStatus === "followed_up"
+        item.outcomeType === "needs_follow_up" &&
+        item.resultingStatus === "acknowledged"
     ) ?? false
   );
 }

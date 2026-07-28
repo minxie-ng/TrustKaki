@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { authHeader } from "@/lib/auth/client";
 import type { DashboardData, FollowUpQueueItem } from "@/lib/types";
 import {
@@ -81,6 +81,11 @@ export function DemoGuide({
   const commandIds = useRef<Partial<Record<DemoPhase, string>>>({});
   const guidedQueueItemId = useRef<string | null>(null);
   const guidedSeniorId = useRef<string | null>(null);
+  const authoritativeData = useRef(data);
+
+  useEffect(() => {
+    authoritativeData.current = data;
+  }, [data]);
 
   if (!enabled || phase === "exited") return <>{children}</>;
 
@@ -180,6 +185,7 @@ export function DemoGuide({
         const refreshed = response.ok
           ? await onRefresh(guidedSeniorId.current)
           : null;
+        if (refreshed) authoritativeData.current = refreshed;
         applyTransition(
           activePhase,
           response.ok,
@@ -194,6 +200,7 @@ export function DemoGuide({
 
       if (activePhase === "review") {
         const refreshed = await onRefresh(guidedSeniorId.current);
+        if (refreshed) authoritativeData.current = refreshed;
         const verified = Boolean(
           refreshed &&
             (guidedQueueItemId.current
@@ -205,7 +212,10 @@ export function DemoGuide({
         return;
       }
 
-      const item = guidedQueueItem(data, guidedQueueItemId.current);
+      const item = guidedQueueItem(
+        authoritativeData.current,
+        guidedQueueItemId.current
+      );
       if (!item) {
         applyTransition(activePhase, false, false);
         return;
@@ -232,7 +242,10 @@ export function DemoGuide({
       if (handleUnauthorized(response, onUnauthorized)) return;
       if (response.status === 409) {
         commandIds.current[activePhase] = undefined;
-        await onRefresh(guidedSeniorId.current).catch(() => null);
+        const refreshed = await onRefresh(guidedSeniorId.current).catch(
+          () => null
+        );
+        if (refreshed) authoritativeData.current = refreshed;
         onErrorChange(
           "The case changed while you were reviewing it. Retry this step with the latest state."
         );
@@ -241,6 +254,7 @@ export function DemoGuide({
       const refreshed = response.ok
         ? await onRefresh(guidedSeniorId.current)
         : null;
+      if (refreshed) authoritativeData.current = refreshed;
       const verified = Boolean(
         refreshed &&
           (isResponse

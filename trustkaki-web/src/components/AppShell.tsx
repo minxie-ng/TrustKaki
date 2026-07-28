@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { RiskLevel } from "@/lib/types";
+import type { DemoPhase } from "./dashboard/demoGuideState";
 import NavBar from "./NavBar";
 
 export type AppView = "workspace" | "activity";
@@ -11,6 +12,7 @@ interface AppShellProps {
   isDemoAdmin: boolean;
   riskLevel: RiskLevel;
   demoMode?: boolean;
+  guidedDemoPhase?: DemoPhase;
   onViewChange: (view: AppView) => void;
   onOpenSetup: () => void;
   onDemoModeChange?: (enabled: boolean) => void;
@@ -23,6 +25,7 @@ export default function AppShell({
   isDemoAdmin,
   riskLevel,
   demoMode = false,
+  guidedDemoPhase,
   onViewChange,
   onOpenSetup,
   onDemoModeChange,
@@ -45,6 +48,9 @@ export default function AppShell({
         onSignOut={onSignOut}
         canShowDemoMode={isDemoAdmin}
         demoMode={demoMode}
+        suppressWorkflowNavigation={Boolean(
+          demoMode && guidedDemoPhase && guidedDemoPhase !== "exited"
+        )}
         onDemoModeChange={onDemoModeChange}
       />
       <div id="main-content" tabIndex={-1} className="min-h-0 flex-1">

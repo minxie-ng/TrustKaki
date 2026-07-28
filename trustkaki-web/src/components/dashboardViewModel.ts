@@ -49,8 +49,13 @@ export function shouldPollDashboard(args: {
   return args.hasAuthToken && args.visibilityState !== "hidden";
 }
 
-export function appShellSurface(args: { isDemoAdmin: boolean; demoMode: boolean }) {
-  const enabled = args.isDemoAdmin && args.demoMode;
+export function appShellSurface(args: {
+  isDemoAdmin: boolean;
+  demoMode: boolean;
+  guideActive?: boolean;
+}) {
+  const enabled =
+    args.isDemoAdmin && args.demoMode && !Boolean(args.guideActive);
   return {
     showChatSimulator: enabled,
     showReasoningRail: enabled,
