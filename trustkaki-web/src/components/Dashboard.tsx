@@ -6,6 +6,7 @@ import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts"
 import type { SeniorContextReadModel } from "@/lib/api/schemas";
 import type { AgentTrace, DashboardData, MaskedContactPlan } from "@/lib/types";
 import {
+  dashboardRefreshForVoidConsumer,
   followUpQueueForSenior,
   type DashboardRefresh,
 } from "./dashboardViewModel";
@@ -73,6 +74,7 @@ export default function Dashboard({
   const queue = followUpQueueForSenior(data.followUpQueue, selectedSeniorId);
   const refresh: DashboardRefresh = (seniorId) =>
     onRefresh?.(seniorId) ?? Promise.resolve(null);
+  const refreshAfterCaseSave = dashboardRefreshForVoidConsumer(refresh);
   const unauthorized = () => onUnauthorized?.();
   const interactionsDisabled = !authToken;
 
@@ -106,7 +108,7 @@ export default function Dashboard({
             authToken={authToken ?? ""}
             disabled={interactionsDisabled}
             openTimelineRequest={demoTimelineRequest}
-            onSaved={refresh}
+            onSaved={refreshAfterCaseSave}
             onUnauthorized={unauthorized}
           />
         </section>

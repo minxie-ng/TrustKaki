@@ -36,6 +36,12 @@ export function fireAndForgetDashboardRefresh(
   void refresh(seniorId).catch(() => undefined);
 }
 
+export function dashboardRefreshForVoidConsumer(
+  refresh: DashboardRefresh
+): () => void {
+  return () => fireAndForgetDashboardRefresh(refresh);
+}
+
 export function shouldPollDashboard(args: {
   hasAuthToken: boolean;
   visibilityState?: DocumentVisibilityState;

@@ -9,6 +9,7 @@ import {
   containsSensitiveText,
   dashboardStateEndpoint,
   dashboardSyncIntervalMs,
+  dashboardRefreshForVoidConsumer,
   demoEndpoint,
   fireAndForgetDashboardRefresh,
   followUpQueueForSenior,
@@ -183,6 +184,22 @@ describe("dashboard view model", () => {
     await Promise.resolve();
 
     expect(rejected).toBe(true);
+  });
+
+  it("adapts rejecting refreshes to safe void callbacks for ordinary components", async () => {
+    const failure = new Error("case_save_refresh_failed");
+    let attempted = false;
+    const failedRefresh = async (): Promise<DashboardData | null> => {
+      attempted = true;
+      throw failure;
+    };
+
+    const afterCaseSave = dashboardRefreshForVoidConsumer(failedRefresh);
+    expect(afterCaseSave()).toBeUndefined();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(attempted).toBe(true);
   });
 
   it("keeps technical surfaces closed except for enabled demo admins", () => {
