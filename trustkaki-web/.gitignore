@@ -40,6 +40,9 @@ yarn-error.log*
 # isolated Codex implementation worktrees
 .worktrees/
 
+# local visual-design companion artifacts
+.superpowers/
+
 # supabase local cli state
 supabase/.temp/
 
