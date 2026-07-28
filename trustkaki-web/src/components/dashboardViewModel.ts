@@ -206,7 +206,7 @@ export function systemProof(args: {
 }
 
 export function containsSensitiveText(value: string): boolean {
-  return /(sk-|whatsapp_access_token|service_role|supabase_service_role_key|authorization:\s*bearer)/i.test(
+  return /(sk-|whatsapp_access_token|service_role|supabase_service_role_key|authorization|bearer)/i.test(
     value
   );
 }

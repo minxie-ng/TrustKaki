@@ -203,6 +203,11 @@ describe("dashboard view model", () => {
   });
 
   it("keeps technical surfaces closed except for enabled demo admins", () => {
+    expect(appShellSurface({ isDemoAdmin: false, demoMode: true })).toMatchObject({
+      showChatSimulator: false,
+      showReasoningRail: false,
+      showDemoControls: false,
+    });
     expect(appShellSurface({ isDemoAdmin: false, demoMode: true, guideActive: true })).toEqual({
       showChatSimulator: false,
       showReasoningRail: false,

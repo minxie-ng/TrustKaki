@@ -112,84 +112,64 @@ export default function ChatSimulation({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="bg-emerald-600 text-white px-4 py-3 flex items-center gap-3 shrink-0">
-        <div className="w-10 h-10 rounded-full bg-emerald-300 flex items-center justify-center text-lg font-bold text-emerald-800">
-          👴
-        </div>
+    <div className="flex h-full flex-col bg-[var(--care-paper)] text-[var(--care-ink)]">
+      <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--care-line)] px-4 py-3">
         <div>
-          <div className="font-semibold">Selected senior</div>
-          <div className="text-xs text-emerald-200">TrustKaki check-in</div>
+          <div className="text-sm font-bold">Fictional demo conversation</div>
+          <div className="mt-0.5 text-xs text-gray-500">Selected senior check-in</div>
         </div>
-        <div className="ml-auto text-xs bg-emerald-500 px-2 py-1 rounded-full">
-          {isComplete ? "Complete ✅" : isRunning ? "Live 🔴" : "Ready"}
+        <div className="pt-0.5 text-xs font-semibold text-gray-600" aria-live="polite">
+          {isComplete ? "Complete" : isRunning ? "Running" : "Ready"}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[#e5ddd5]">
+      <div className="flex-1 overflow-y-auto">
         {!isRunning && visibleMessages.length === 0 && (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex h-full items-center justify-center px-4">
             <button
+              type="button"
               onClick={handleStart}
               disabled={!seniorId || isSeniorLoading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl text-lg font-semibold shadow-lg transition-all hover:scale-105 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:scale-100"
+              className="min-h-11 border border-[var(--care-evergreen)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)] hover:bg-[var(--care-mist)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)] disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400"
             >
               {isSeniorLoading
                 ? "Loading senior..."
                 : seniorId
-                  ? "▶ Run Morning Check-in"
+                  ? "Run morning check-in"
                   : "Select a senior first"}
             </button>
           </div>
         )}
 
+        <div className="divide-y divide-[var(--care-line)]">
         {visibleMessages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.sender === "senior" ? "justify-end" : "justify-start"}`}
+            className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 px-4 py-3 text-sm"
           >
-            {msg.sender === "system" ? (
-              <div className="w-full flex justify-center">
-                <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 text-xs px-4 py-2 rounded-full font-medium">
-                  {msg.text}
-                </div>
+            <div className="text-xs font-semibold text-gray-500">
+              {msg.sender === "senior"
+                ? "Senior"
+                : msg.sender === "system"
+                  ? "Demo note"
+                  : "TrustKaki"}
+            </div>
+            <div className="min-w-0">
+              <div className="leading-relaxed text-gray-800">{msg.text}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-gray-500">
+                <span>{formatTime(msg.timestamp)}</span>
+                {msg.agentId && (
+                  <code className="font-mono text-[10px] text-[var(--care-brand)]">
+                    {msg.agentId}
+                  </code>
+                )}
               </div>
-            ) : (
-              <div
-                className={`max-w-[80%] px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                  msg.sender === "senior"
-                    ? "bg-[#dcf8c6] rounded-tr-sm"
-                    : "bg-white rounded-tl-sm"
-                }`}
-              >
-                <div>{msg.text}</div>
-                <div
-                  className={`text-[10px] mt-1 ${
-                    msg.sender === "senior" ? "text-emerald-700 text-right" : "text-gray-400"
-                  }`}
-                >
-                  {formatTime(msg.timestamp)}
-                  {msg.agentId && (
-                    <span className="ml-2 rounded bg-teal-100 px-1.5 py-0.5 text-[9px] text-teal-700">
-                      {msg.agentId}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         ))}
+        </div>
         <div ref={bottomRef} />
       </div>
-
-      {isRunning && currentIndex > 0 && (
-        <div className="bg-gray-900 text-green-400 text-xs px-4 py-2 font-mono flex items-center gap-2 shrink-0">
-          <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          <span>
-            Running Orchestrator → Triage → conditional specialist agents → policy → Pattern Watch
-          </span>
-        </div>
-      )}
     </div>
   );
 }

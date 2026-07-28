@@ -18,6 +18,24 @@ describe("agent trace caregiver formatting", () => {
     expect(formatted).not.toContain("quick_pattern_demo_day_1");
   });
 
+  it("never exposes raw secret-like values in caregiver input text", () => {
+    const formattedInputs = [
+      formatAgentInputForCaregiver({
+        inputSummary: "Authorization: Bearer demo-token",
+      }),
+      formatAgentInputForCaregiver({
+        inputSummary: "service_role=demo-secret",
+      }),
+      formatAgentInputForCaregiver({
+        input: '{"signals":[{"description":"sk-demo-secret"}]}',
+      }),
+    ];
+
+    for (const formatted of formattedInputs) {
+      expect(formatted).not.toMatch(/service_role|authorization|bearer|sk-/i);
+    }
+  });
+
   it("uses the output summary when present", () => {
     expect(
       formatAgentOutputForCaregiver({

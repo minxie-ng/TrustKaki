@@ -5,6 +5,8 @@ interface AgentOutputFormatInput {
   output?: string | null;
 }
 
+const secretLikeText = /service_role|authorization|bearer|sk-/i;
+
 function textList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -63,10 +65,13 @@ function riskText(value: unknown): string | null {
 
 export function formatAgentInputForCaregiver(input: AgentOutputFormatInput): string {
   const summary = input.inputSummary?.trim();
-  if (summary && !looksTechnical(summary)) return summary;
+  if (summary && !looksTechnical(summary) && !secretLikeText.test(summary)) return summary;
 
   const rawInput = input.input?.trim();
   if (!rawInput) return "Relevant senior context and recent messages.";
+  if (secretLikeText.test(rawInput)) {
+    return "Relevant senior context and recent messages.";
+  }
   if (!looksTechnical(rawInput)) return rawInput;
 
   try {
