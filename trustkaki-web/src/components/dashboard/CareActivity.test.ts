@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { CareActivityItem, FollowUpQueueItem } from "@/lib/types";
 import { CareActivity } from "./CareActivity";
-import "./CareSetupDrawer.test.tsx";
 
 const activity: CareActivityItem = {
   id: "activity-1",

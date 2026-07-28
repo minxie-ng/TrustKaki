@@ -66,6 +66,16 @@ function renderDrawer(onClose = vi.fn()) {
 }
 
 describe("care setup drawer", () => {
+  it("uses the overlay and border without a drawer shadow", () => {
+    renderDrawer();
+    const overlay = container.firstElementChild as HTMLElement;
+    const dialog = container.querySelector<HTMLElement>('[role="dialog"]')!;
+
+    expect(overlay.className).toContain("bg-black/25");
+    expect(dialog.className).toContain("border-l");
+    expect(dialog.className).not.toContain("shadow-");
+  });
+
   it("moves focus into the drawer and restores it on Escape", () => {
     const opener = document.createElement("button");
     opener.textContent = "Care setup";

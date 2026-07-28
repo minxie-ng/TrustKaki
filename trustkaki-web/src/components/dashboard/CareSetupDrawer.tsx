@@ -121,7 +121,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
         aria-modal="true"
         aria-labelledby="care-setup-title"
         onKeyDown={trapFocus}
-        className="relative z-10 flex h-full w-full max-w-2xl flex-col border-l border-[var(--care-line)] bg-[var(--care-paper)] shadow-[-8px_0_24px_rgba(23,33,29,0.14)]"
+        className="relative z-10 flex h-full w-full max-w-2xl flex-col border-l border-[var(--care-line)] bg-[var(--care-paper)]"
       >
         <div className="flex min-h-16 items-center justify-between border-b border-[var(--care-line)] px-4 sm:px-6">
           <h2 id="care-setup-title" className="font-display text-xl font-semibold text-gray-950">
