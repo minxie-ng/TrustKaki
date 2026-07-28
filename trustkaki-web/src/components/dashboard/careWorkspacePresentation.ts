@@ -14,6 +14,12 @@ export const mobileCareWorkspaceViews: ReadonlyArray<{
   { id: "context", label: "Context" },
 ];
 
+export function mobileTabsActiveForDesktopMatch(
+  desktopMatches: boolean
+): boolean {
+  return !desktopMatches;
+}
+
 export function nextMobileCareWorkspaceView(
   current: MobileCareWorkspaceView,
   key: string

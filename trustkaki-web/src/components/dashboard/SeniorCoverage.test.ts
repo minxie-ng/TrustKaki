@@ -91,18 +91,22 @@ describe("SeniorCoverage", () => {
     expect(html).toMatch(
       /id="care-workspace-context-panel"[^>]*class="hidden [^"]*lg:block/
     );
-    expect(html).not.toMatch(
-      /id="care-workspace-(?:queue|people|context)-panel"[^>]*role="tabpanel"/
+    expect(html).toMatch(
+      /id="care-workspace-queue-panel"[^>]*role="tabpanel"[^>]*aria-labelledby="care-workspace-queue-tab"/
     );
-    expect(html).not.toMatch(
-      /id="care-workspace-(?:queue|people|context)-panel"[^>]*aria-labelledby=/
+    expect(html).toMatch(
+      /id="care-workspace-people-panel"[^>]*role="tabpanel"[^>]*aria-labelledby="care-workspace-people-tab"/
+    );
+    expect(html).toMatch(
+      /id="care-workspace-context-panel"[^>]*role="tabpanel"[^>]*aria-labelledby="care-workspace-context-tab"/
     );
   });
 
-  it("keeps every mobile workspace tab in the keyboard tab order", () => {
+  it("uses roving tabindex for the active mobile workspace tab", () => {
     const html = renderDashboard();
 
-    expect(html).not.toContain('tabindex="-1"');
+    expect(html.match(/tabindex="0"/g)).toHaveLength(1);
+    expect(html.match(/tabindex="-1"/g)).toHaveLength(2);
   });
 
   it("renders ranked, compact, accessible coverage navigation", () => {

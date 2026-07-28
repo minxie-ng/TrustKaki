@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
 import type { SeniorContextReadModel } from "@/lib/api/schemas";
@@ -21,6 +21,7 @@ import {
 import { ProactiveCheckInPanel } from "./dashboard/ProactiveCheckInPanel";
 import { SeniorContextPanel } from "./dashboard/SeniorContextPanel";
 import {
+  mobileTabsActiveForDesktopMatch,
   mobileCareWorkspaceViews,
   nextMobileCareWorkspaceView,
   type MobileCareWorkspaceView,
@@ -75,6 +76,7 @@ export default function Dashboard({
   const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
   const [mobileView, setMobileView] =
     useState<MobileCareWorkspaceView>("queue");
+  const [mobileTabsActive, setMobileTabsActive] = useState(true);
   const seniors = data.seniors ?? [];
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
   const selectedSenior = seniors.find((senior) => senior.id === selectedSeniorId);
@@ -85,12 +87,28 @@ export default function Dashboard({
   const unauthorized = () => onUnauthorized?.();
   const interactionsDisabled = !authToken;
 
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 1024px)");
+    const syncMobileTabs = () =>
+      setMobileTabsActive(
+        mobileTabsActiveForDesktopMatch(desktopQuery.matches)
+      );
+
+    syncMobileTabs();
+    desktopQuery.addEventListener("change", syncMobileTabs);
+    return () => desktopQuery.removeEventListener("change", syncMobileTabs);
+  }, []);
+
   return (
     <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] lg:overflow-hidden">
       <MobileWorkspaceTabs selected={mobileView} onSelect={setMobileView} />
       <div className="mx-auto grid min-h-0 w-full max-w-[1760px] flex-1 lg:grid-cols-[210px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[210px_minmax(0,1fr)_245px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
         <aside
           id="care-workspace-people-panel"
+          role={mobileTabsActive ? "tabpanel" : undefined}
+          aria-labelledby={
+            mobileTabsActive ? "care-workspace-people-tab" : undefined
+          }
           className={`${mobileView === "people" ? "block" : "hidden"} min-w-0 bg-[var(--care-surface-muted)] p-3 lg:row-span-2 lg:block lg:border-r lg:border-[var(--care-line)] lg:p-4 xl:row-span-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain`}
         >
           <WorkspaceLabel eyebrow="Coverage" title="Senior roster" />
@@ -104,6 +122,10 @@ export default function Dashboard({
         </aside>
         <section
           id="care-workspace-queue-panel"
+          role={mobileTabsActive ? "tabpanel" : undefined}
+          aria-labelledby={
+            mobileTabsActive ? "care-workspace-queue-tab" : undefined
+          }
           className={`${mobileView === "queue" ? "block" : "hidden"} min-w-0 space-y-4 bg-white p-3 sm:p-4 lg:col-start-2 lg:row-start-1 lg:block xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:p-5`}
         >
           <WorkspaceLabel eyebrow="Today" title="Care workspace" />
@@ -128,6 +150,10 @@ export default function Dashboard({
         </section>
         <aside
           id="care-workspace-context-panel"
+          role={mobileTabsActive ? "tabpanel" : undefined}
+          aria-labelledby={
+            mobileTabsActive ? "care-workspace-context-tab" : undefined
+          }
           className={`${mobileView === "context" ? "block" : "hidden"} min-w-0 space-y-3 bg-[var(--care-surface-muted)] p-3 sm:p-4 lg:col-start-2 lg:row-start-2 lg:block lg:border-t lg:border-[var(--care-line)] xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:p-5`}
         >
           <WorkspaceLabel eyebrow="Selected senior" title="Supporting care" />
@@ -194,6 +220,7 @@ function MobileWorkspaceTabs({
             role="tab"
             aria-selected={active}
             aria-controls={`care-workspace-${view.id}-panel`}
+            tabIndex={active ? 0 : -1}
             onClick={() => onSelect(view.id)}
             onKeyDown={(event) =>
               handleMobileWorkspaceTabKeyDown(event, view.id, onSelect)

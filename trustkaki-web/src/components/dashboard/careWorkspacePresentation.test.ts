@@ -5,6 +5,7 @@ import {
   careUrgencyTone,
   compactCoverageReason,
   initialsForSenior,
+  mobileTabsActiveForDesktopMatch,
   mobileCareWorkspaceViews,
   nextMobileCareWorkspaceView,
   portraitForSenior,
@@ -89,6 +90,11 @@ describe("care workspace presentation", () => {
     expect(nextMobileCareWorkspaceView("people", "Home")).toBe("queue");
     expect(nextMobileCareWorkspaceView("people", "End")).toBe("context");
     expect(nextMobileCareWorkspaceView("people", "Tab")).toBeNull();
+  });
+
+  it("enables tabpanel semantics only below the desktop breakpoint", () => {
+    expect(mobileTabsActiveForDesktopMatch(false)).toBe(true);
+    expect(mobileTabsActiveForDesktopMatch(true)).toBe(false);
   });
 
   it("orders active work by queue priority before policy risk", () => {
