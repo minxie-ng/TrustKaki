@@ -93,6 +93,12 @@ describe("SeniorCoverage", () => {
     );
   });
 
+  it("keeps every mobile workspace tab in the keyboard tab order", () => {
+    const html = renderDashboard();
+
+    expect(html).not.toContain('tabindex="-1"');
+  });
+
   it("renders ranked, compact, accessible coverage navigation", () => {
     const html = renderToStaticMarkup(createElement(SeniorCoverage, {
       seniors: [

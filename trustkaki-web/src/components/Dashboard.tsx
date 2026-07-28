@@ -199,7 +199,6 @@ function MobileWorkspaceTabs({
             role="tab"
             aria-selected={active}
             aria-controls={`care-workspace-${view.id}-panel`}
-            tabIndex={active ? 0 : -1}
             onClick={() => onSelect(view.id)}
             className={`min-h-11 border-b-2 px-3 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
               active
