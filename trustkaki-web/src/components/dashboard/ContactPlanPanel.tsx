@@ -193,7 +193,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
   }
 
   return (
-    <section className="rounded-lg border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white p-4 shadow-[0_3px_12px_rgba(23,33,29,0.04)] transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]">
+    <section className="rounded-[2px] border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white p-4 transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]">
       <div className="-mx-4 -mt-4 mb-4 border-b border-[var(--care-line)] bg-[var(--care-surface-muted)] px-4 py-3 text-sm font-bold text-[var(--care-brand)]">
         Contact plan
       </div>
@@ -207,7 +207,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
         </div>
         {props.isAdmin && (
           <button type="button" onClick={() => setShowAdmin((value) => !value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800">
+            className="rounded-[2px] border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800">
             {showAdmin ? "Hide contact settings" : "Manage contact plan"}
           </button>
         )}
@@ -217,7 +217,7 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
         <summary className="cursor-pointer font-semibold text-gray-700">View contact order</summary>
         <div className="mt-3 space-y-3">
           {(props.plan?.contacts ?? []).map((contact) => (
-            <div key={contact.id} className="rounded-lg bg-gray-50 p-3">
+            <div key={contact.id} className="rounded-[2px] bg-gray-50 p-3">
               <div className="font-semibold text-gray-900">
                 {contact.escalationPriority}. {contact.displayName} · {contact.relationship}
               </div>
@@ -255,19 +255,19 @@ export function ContactPlanPanel(props: ContactPlanPanelProps) {
         <div className="mt-5 border-t border-gray-200 pt-4">
           <h4 className="font-semibold text-gray-900">Add contact</h4>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <input value={name} onChange={(event) => { commandRef.current = null; setName(event.target.value); }} placeholder="Contact name" className="rounded-lg border px-3 py-2" />
-            <input value={relationship} onChange={(event) => { commandRef.current = null; setRelationship(event.target.value); }} placeholder="Relationship" className="rounded-lg border px-3 py-2" />
-            <select value={kind} onChange={(event) => { commandRef.current = null; setKind(event.target.value as MaskedContactPlan["contacts"][number]["contactKind"]); }} className="rounded-lg border px-3 py-2">
+            <input value={name} onChange={(event) => { commandRef.current = null; setName(event.target.value); }} placeholder="Contact name" className="rounded-[2px] border px-3 py-2" />
+            <input value={relationship} onChange={(event) => { commandRef.current = null; setRelationship(event.target.value); }} placeholder="Relationship" className="rounded-[2px] border px-3 py-2" />
+            <select value={kind} onChange={(event) => { commandRef.current = null; setKind(event.target.value as MaskedContactPlan["contacts"][number]["contactKind"]); }} className="rounded-[2px] border px-3 py-2">
               <option value="family_guardian">Family or guardian</option>
               <option value="aac_staff">AAC staff</option>
               <option value="healthcare_contact">Healthcare contact</option>
             </select>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={createContact} disabled={busy || !name.trim() || !relationship.trim()} className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50">
+            <button type="button" onClick={createContact} disabled={busy || !name.trim() || !relationship.trim()} className="rounded-[2px] bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50">
               {busy ? "Saving..." : "Add contact"}
             </button>
-            <button type="button" onClick={previewRecipient} disabled={busy || !props.plan?.contacts.length} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold disabled:opacity-50">
+            <button type="button" onClick={previewRecipient} disabled={busy || !props.plan?.contacts.length} className="rounded-[2px] border border-gray-300 px-4 py-2 text-sm font-semibold disabled:opacity-50">
               Preview family alert
             </button>
           </div>

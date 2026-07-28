@@ -199,7 +199,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
             role="tabpanel"
             aria-labelledby="care-setup-context-tab"
             hidden={activeTab !== "context"}
-            className="h-full overflow-y-auto p-4 sm:p-6 [&>details]:rounded-none [&>details]:border-x-0 [&>details]:shadow-none [&>section]:rounded-none [&>section]:border-x-0 [&>section]:shadow-none"
+            className="h-full overflow-y-auto p-4 sm:p-6"
           >
             <SeniorContextPanel
               key={`senior-context:${props.selectedSeniorId ?? "none"}`}
@@ -218,7 +218,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
             role="tabpanel"
             aria-labelledby="care-setup-check-ins-tab"
             hidden={activeTab !== "check-ins"}
-            className="h-full overflow-y-auto p-4 sm:p-6 [&>details]:rounded-none [&>details]:border-x-0 [&>details]:shadow-none [&>section]:rounded-none [&>section]:border-x-0 [&>section]:shadow-none"
+            className="h-full overflow-y-auto p-4 sm:p-6"
           >
             <ProactiveCheckInPanel
               key={`proactive-check-in:${props.selectedSeniorId ?? "none"}`}
@@ -237,7 +237,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
             role="tabpanel"
             aria-labelledby="care-setup-contacts-tab"
             hidden={activeTab !== "contacts"}
-            className="h-full overflow-y-auto p-4 sm:p-6 [&>details]:rounded-none [&>details]:border-x-0 [&>details]:shadow-none [&>section]:rounded-none [&>section]:border-x-0 [&>section]:shadow-none"
+            className="h-full overflow-y-auto p-4 sm:p-6"
           >
             <ContactPlanPanel
               key={contactPlanInstanceKey(props.selectedSeniorId)}

@@ -233,7 +233,7 @@ export function SeniorContextPanel(props: Props) {
 
   return (
     <details
-      className="group overflow-hidden rounded-lg border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white shadow-[0_3px_12px_rgba(23,33,29,0.04)] transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
+      className="group overflow-hidden rounded-[2px] border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="cursor-pointer list-none bg-[var(--care-surface-muted)] px-4 py-3 transition-colors hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]">
@@ -320,7 +320,7 @@ export function SeniorContextPanel(props: Props) {
                                   disabled={busy}
                                   onChange={(event) => setContent(event.target.value)}
                                   rows={2}
-                                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                  className="mt-1 block w-full rounded-[2px] border border-gray-300 px-3 py-2 text-sm"
                                 />
                               </label>
                             )}
@@ -330,7 +330,7 @@ export function SeniorContextPanel(props: Props) {
                                 value={reason}
                                 disabled={busy}
                                 onChange={(event) => setReason(event.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                className="mt-1 block w-full rounded-[2px] border border-gray-300 px-3 py-2 text-sm"
                               />
                             </label>
                             <div className="flex flex-wrap gap-2">
@@ -339,7 +339,7 @@ export function SeniorContextPanel(props: Props) {
                                   type="button"
                                   disabled={busy || content.trim().length === 0 || reason.trim().length < 10}
                                   onClick={() => void submit(item, "correct")}
-                                  className="rounded-md bg-[var(--care-brand-strong)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--care-brand-hover)] disabled:opacity-50"
+                                  className="rounded-[2px] bg-[var(--care-brand-strong)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--care-brand-hover)] disabled:opacity-50"
                                 >
                                   Save correction
                                 </button>
@@ -348,7 +348,7 @@ export function SeniorContextPanel(props: Props) {
                                   type="button"
                                   disabled={busy || reason.trim().length < 10}
                                   onClick={() => void submit(item, "archive")}
-                                  className="rounded-md border border-red-300 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50"
+                                  className="rounded-[2px] border border-red-300 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50"
                                 >
                                   Archive context
                                 </button>

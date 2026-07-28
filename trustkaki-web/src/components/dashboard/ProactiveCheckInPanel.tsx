@@ -119,7 +119,7 @@ export function ProactiveCheckInPanel(props: Props) {
 
   return (
     <details
-      className="group overflow-hidden rounded-lg border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white shadow-[0_3px_12px_rgba(23,33,29,0.04)] transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
+      className="group overflow-hidden rounded-[2px] border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="cursor-pointer list-none bg-[var(--care-surface-muted)] px-4 py-3 transition-colors hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]">
@@ -156,22 +156,22 @@ export function ProactiveCheckInPanel(props: Props) {
               value={localSendTime}
               disabled={busy}
               onChange={(event) => setLocalSendTime(event.target.value)}
-              className="mt-1 block rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 block rounded-[2px] border border-gray-300 px-3 py-2"
             />
           </label>
           <button type="button" disabled={busy} onClick={() => void submit("configure")}
-            className="rounded-lg bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50">
+            className="rounded-[2px] bg-[var(--care-brand-strong)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--care-brand-hover)] disabled:opacity-50">
             {schedule ? "Update time" : "Set schedule"}
           </button>
           {view.canRunNow && (
             <button type="button" disabled={busy} onClick={() => void submit("manual_run")}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:opacity-50">
+              className="rounded-[2px] border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:opacity-50">
               Run now
             </button>
           )}
           {view.canResume && (
             <button type="button" disabled={busy} onClick={() => void submit("resume")}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:opacity-50">
+              className="rounded-[2px] border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:opacity-50">
               Resume
             </button>
           )}
@@ -186,12 +186,12 @@ export function ProactiveCheckInPanel(props: Props) {
                 disabled={busy}
                 onChange={(event) => setPauseReason(event.target.value)}
                 placeholder="Example: Senior is away with family"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="mt-1 w-full rounded-[2px] border border-gray-300 px-3 py-2"
               />
             </label>
             <button type="button" disabled={busy || pauseReason.trim().length < 10}
               onClick={() => void submit("pause")}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:opacity-50">
+              className="rounded-[2px] border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:opacity-50">
               Pause
             </button>
           </div>
