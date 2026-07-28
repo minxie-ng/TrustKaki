@@ -84,6 +84,10 @@ export default function Dashboard({
   const refresh: DashboardRefresh = (seniorId) =>
     onRefresh?.(seniorId) ?? Promise.resolve(null);
   const refreshAfterCaseSave = dashboardRefreshForVoidConsumer(refresh);
+  const refreshAfterCaseConflict = async () => {
+    const refreshed = await refresh(selectedSeniorId);
+    if (!refreshed) throw new Error("dashboard_conflict_refresh_failed");
+  };
   const unauthorized = () => onUnauthorized?.();
   const interactionsDisabled = !authToken;
 
@@ -145,6 +149,7 @@ export default function Dashboard({
             disabled={interactionsDisabled}
             openTimelineRequest={demoTimelineRequest}
             onSaved={refreshAfterCaseSave}
+            onConflictRefresh={refreshAfterCaseConflict}
             onUnauthorized={unauthorized}
           />
         </section>

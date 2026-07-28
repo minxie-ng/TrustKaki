@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { DashboardData, FollowUpQueueItem } from "@/lib/types";
-import { PriorityCase } from "./PriorityCase";
+import { invokeViewRecentActivity, PriorityCase } from "./PriorityCase";
 
 const item = {
   id: "queue-1",
@@ -38,6 +38,17 @@ const data = {
 } satisfies DashboardData;
 
 describe("PriorityCase", () => {
+  it("invokes the optional recent-activity callback", () => {
+    let calls = 0;
+
+    invokeViewRecentActivity(() => {
+      calls += 1;
+    });
+    invokeViewRecentActivity(undefined);
+
+    expect(calls).toBe(1);
+  });
+
   it("treats an empty queue as successful and preserves activity navigation", () => {
     const html = renderToStaticMarkup(createElement(PriorityCase, {
       items: [],
@@ -45,6 +56,7 @@ describe("PriorityCase", () => {
       authToken: "test-token",
       disabled: false,
       onSaved: () => undefined,
+      onConflictRefresh: async () => undefined,
       onUnauthorized: () => undefined,
     }));
 
@@ -60,6 +72,7 @@ describe("PriorityCase", () => {
       authToken: "test-token",
       disabled: false,
       onSaved: () => undefined,
+      onConflictRefresh: async () => undefined,
       onUnauthorized: () => undefined,
     }));
 
@@ -76,6 +89,7 @@ describe("PriorityCase", () => {
       disabled: false,
       openTimelineRequest: 1,
       onSaved: () => undefined,
+      onConflictRefresh: async () => undefined,
       onUnauthorized: () => undefined,
     }));
 
@@ -91,6 +105,7 @@ describe("PriorityCase", () => {
       disabled: false,
       guideLocked: true,
       onSaved: () => undefined,
+      onConflictRefresh: async () => undefined,
       onUnauthorized: () => undefined,
     }));
 
@@ -105,6 +120,7 @@ describe("PriorityCase", () => {
       authToken: "test-token",
       disabled: false,
       onSaved: () => undefined,
+      onConflictRefresh: async () => undefined,
       onUnauthorized: () => undefined,
     }));
 

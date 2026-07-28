@@ -60,6 +60,96 @@ export function caseMutationMessage(status: number): {
   };
 }
 
+export type ConflictRecoveryState =
+  | "none"
+  | "refreshing"
+  | "ready_for_review"
+  | "refresh_failed";
+
+type ConflictRecoveryEvent =
+  | "conflict_detected"
+  | "refresh_succeeded"
+  | "refresh_failed"
+  | "retry_refresh"
+  | "review_completed";
+
+export function nextConflictRecoveryState(
+  state: ConflictRecoveryState,
+  event: ConflictRecoveryEvent
+): ConflictRecoveryState {
+  if (event === "conflict_detected" || event === "retry_refresh") {
+    return "refreshing";
+  }
+  if (event === "refresh_succeeded" && state === "refreshing") {
+    return "ready_for_review";
+  }
+  if (event === "refresh_failed" && state === "refreshing") {
+    return "refresh_failed";
+  }
+  if (event === "review_completed" && state === "ready_for_review") {
+    return "none";
+  }
+  return state;
+}
+
+export function conflictRecoveryControls(state: ConflictRecoveryState): {
+  saveBlocked: boolean;
+  showReview: boolean;
+  showRetryRefresh: boolean;
+  detail: string | null;
+} {
+  if (state === "refreshing") {
+    return {
+      saveBlocked: true,
+      showReview: false,
+      showRetryRefresh: false,
+      detail: "Refreshing the latest case state before review.",
+    };
+  }
+  if (state === "ready_for_review") {
+    return {
+      saveBlocked: true,
+      showReview: true,
+      showRetryRefresh: false,
+      detail: "Latest case state loaded. Review it before saving again.",
+    };
+  }
+  if (state === "refresh_failed") {
+    return {
+      saveBlocked: true,
+      showReview: false,
+      showRetryRefresh: true,
+      detail:
+        "Could not refresh the latest case state. Retry refresh before reviewing or saving.",
+    };
+  }
+  return {
+    saveBlocked: false,
+    showReview: false,
+    showRetryRefresh: false,
+    detail: null,
+  };
+}
+
+export async function resolveConflictRefresh(
+  onConflictRefresh: () => Promise<unknown>
+): Promise<ConflictRecoveryState> {
+  try {
+    await onConflictRefresh();
+    return "ready_for_review";
+  } catch {
+    return "refresh_failed";
+  }
+}
+
+export function notifyCaseSaved(onSaved: () => void): void {
+  try {
+    onSaved();
+  } catch {
+    // Persistence already succeeded; refresh failures must not relabel the save.
+  }
+}
+
 const outcomeOptions: Array<{ value: ContactOutcome; label: string }> = [
   { value: "reached_and_okay", label: "Reached and okay" },
   { value: "needs_follow_up", label: "Needs follow-up" },
@@ -142,7 +232,8 @@ interface CaseUpdateFormProps {
   authToken: string;
   disabled: boolean;
   guideLocked?: boolean;
-  onSaved: () => void | Promise<void>;
+  onSaved: () => void;
+  onConflictRefresh: () => Promise<unknown>;
   onUnauthorized: () => void;
 }
 
@@ -153,6 +244,7 @@ export function CaseUpdateForm({
   disabled,
   guideLocked = false,
   onSaved,
+  onConflictRefresh,
   onUnauthorized,
 }: CaseUpdateFormProps) {
   const [open, setOpen] = useState(false);
@@ -171,11 +263,13 @@ export function CaseUpdateForm({
   );
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [reviewRequired, setReviewRequired] = useState(false);
+  const [conflictRecovery, setConflictRecovery] =
+    useState<ConflictRecoveryState>("none");
   const commandIdRef = useRef<string | null>(null);
 
   const pending = requestState === "pending";
   const availableActions = availableCaseActions(item.status);
+  const conflictControls = conflictRecoveryControls(conflictRecovery);
 
   function changeCommandInput(update: () => void) {
     commandIdRef.current = null;
@@ -190,13 +284,23 @@ export function CaseUpdateForm({
     setEscalationDestination("family_guardian");
     setNotificationCategory("wellbeing_follow_up");
     setAssignedCaregiverId(caregiverOptions[0]?.id ?? null);
-    setReviewRequired(false);
     commandIdRef.current = null;
+  }
+
+  async function refreshAfterConflict() {
+    setConflictRecovery((state) =>
+      nextConflictRecoveryState(
+        state,
+        state === "refresh_failed" ? "retry_refresh" : "conflict_detected"
+      )
+    );
+    const nextState = await resolveConflictRefresh(onConflictRefresh);
+    setConflictRecovery(nextState);
   }
 
   async function submit() {
     if (!canSubmit(pending ? "pending" : null)) return;
-    if (reviewRequired) return;
+    if (conflictControls.saveBlocked) return;
     const cleanNote = note.trim();
     if (!canSaveCaseAction(action, cleanNote, assignedCaregiverId)) {
       setRequestState("error");
@@ -251,9 +355,8 @@ export function CaseUpdateForm({
         const conflict = caseMutationMessage(response.status);
         setRequestState("error");
         setStatusMessage(conflict.message);
-        setReviewRequired(true);
         commandIdRef.current = null;
-        await Promise.resolve(onSaved()).catch(() => undefined);
+        await refreshAfterConflict();
         return;
       }
       if (!response.ok) throw new Error("caregiver_action_failed");
@@ -276,7 +379,7 @@ export function CaseUpdateForm({
             ? "Escalation recorded. The case remains active."
             : "Caregiver action recorded."
       );
-      onSaved();
+      notifyCaseSaved(onSaved);
       setOpen(false);
       reset();
     } catch {
@@ -501,14 +604,19 @@ export function CaseUpdateForm({
                   : "border-[var(--care-hairline)] text-gray-700"
             }`}>
               {statusMessage}
+              {conflictControls.detail && (
+                <p className="mt-1">{conflictControls.detail}</p>
+              )}
             </div>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
-            {reviewRequired && (
+            {conflictControls.showReview && (
               <button
                 type="button"
                 onClick={() => {
-                  setReviewRequired(false);
+                  setConflictRecovery((state) =>
+                    nextConflictRecoveryState(state, "review_completed")
+                  );
                   setRequestState("idle");
                   setStatusMessage("Latest case state reviewed. You can save again.");
                 }}
@@ -517,12 +625,21 @@ export function CaseUpdateForm({
                 Review latest state
               </button>
             )}
+            {conflictControls.showRetryRefresh && (
+              <button
+                type="button"
+                onClick={refreshAfterConflict}
+                className="min-h-11 border border-[var(--care-evergreen)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)]"
+              >
+                Retry refresh
+              </button>
+            )}
             <button
               type="button"
               onClick={submit}
               disabled={
                 pending ||
-                reviewRequired ||
+                conflictControls.saveBlocked ||
                 !canSaveCaseAction(action, note, assignedCaregiverId)
               }
               className="min-h-11 rounded-[2px] bg-[var(--care-coral)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--care-coral-hover)] disabled:opacity-50"

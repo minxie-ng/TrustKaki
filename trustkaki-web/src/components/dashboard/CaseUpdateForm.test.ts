@@ -4,9 +4,13 @@ import {
   availableCaseActions,
   canSaveCaseAction,
   caseMutationMessage,
+  conflictRecoveryControls,
   initialCaseAction,
+  nextConflictRecoveryState,
+  notifyCaseSaved,
   outcomeForCaseAction,
   notificationCategoryForEscalation,
+  resolveConflictRefresh,
 } from "./CaseUpdateForm";
 
 describe("case update semantics", () => {
@@ -15,6 +19,60 @@ describe("case update semantics", () => {
       kind: "conflict",
       message: "Another caregiver changed this case. Review the latest state before saving again.",
     });
+  });
+
+  it("blocks saving and withholds review until authoritative refresh succeeds", () => {
+    const refreshing = nextConflictRecoveryState("none", "conflict_detected");
+    expect(refreshing).toBe("refreshing");
+    expect(conflictRecoveryControls(refreshing)).toEqual({
+      saveBlocked: true,
+      showReview: false,
+      showRetryRefresh: false,
+      detail: "Refreshing the latest case state before review.",
+    });
+
+    const ready = nextConflictRecoveryState(refreshing, "refresh_succeeded");
+    expect(conflictRecoveryControls(ready)).toEqual({
+      saveBlocked: true,
+      showReview: true,
+      showRetryRefresh: false,
+      detail: "Latest case state loaded. Review it before saving again.",
+    });
+    expect(nextConflictRecoveryState(ready, "review_completed")).toBe("none");
+  });
+
+  it("keeps saving blocked and offers retry when conflict refresh fails", () => {
+    const failed = nextConflictRecoveryState("refreshing", "refresh_failed");
+
+    expect(conflictRecoveryControls(failed)).toEqual({
+      saveBlocked: true,
+      showReview: false,
+      showRetryRefresh: true,
+      detail: "Could not refresh the latest case state. Retry refresh before reviewing or saving.",
+    });
+    expect(nextConflictRecoveryState(failed, "retry_refresh")).toBe("refreshing");
+  });
+
+  it("awaits authoritative conflict refresh and reports its outcome", async () => {
+    expect(await resolveConflictRefresh(async () => undefined)).toBe(
+      "ready_for_review"
+    );
+    expect(
+      await resolveConflictRefresh(async () => {
+        throw new Error("refresh_failed");
+      })
+    ).toBe("refresh_failed");
+  });
+
+  it("keeps ordinary post-save notification fire-and-forget safe", () => {
+    let calls = 0;
+    expect(() =>
+      notifyCaseSaved(() => {
+        calls += 1;
+        throw new Error("refresh_failed");
+      })
+    ).not.toThrow();
+    expect(calls).toBe(1);
   });
 
   it("always records a close action as resolved", () => {

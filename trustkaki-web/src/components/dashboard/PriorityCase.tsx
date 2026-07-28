@@ -24,9 +24,14 @@ interface PriorityCaseProps {
   disabled: boolean;
   guideLocked?: boolean;
   openTimelineRequest?: number;
-  onSaved: () => void | Promise<void>;
+  onSaved: () => void;
+  onConflictRefresh: () => Promise<unknown>;
   onUnauthorized: () => void;
   onViewRecentActivity?: () => void;
+}
+
+export function invokeViewRecentActivity(callback?: () => void): void {
+  callback?.();
 }
 
 export function PriorityCase({
@@ -38,6 +43,7 @@ export function PriorityCase({
   guideLocked = false,
   openTimelineRequest = 0,
   onSaved,
+  onConflictRefresh,
   onUnauthorized,
   onViewRecentActivity,
 }: PriorityCaseProps) {
@@ -69,7 +75,7 @@ export function PriorityCase({
         )}
         <button
           type="button"
-          onClick={onViewRecentActivity}
+          onClick={() => invokeViewRecentActivity(onViewRecentActivity)}
           className="mt-6 min-h-10 border-b border-[var(--care-coral)] text-sm font-semibold text-[var(--care-coral)] hover:text-[var(--care-coral-hover)]"
         >
           View recent activity
@@ -89,6 +95,7 @@ export function PriorityCase({
       guideLocked={guideLocked}
       openTimelineRequest={index === 0 ? openTimelineRequest : 0}
       onSaved={onSaved}
+      onConflictRefresh={onConflictRefresh}
       onUnauthorized={onUnauthorized}
     />
   ));
@@ -103,6 +110,7 @@ function PriorityCaseCard({
   guideLocked = false,
   openTimelineRequest = 0,
   onSaved,
+  onConflictRefresh,
   onUnauthorized,
 }: Omit<PriorityCaseProps, "items"> & { item: FollowUpQueueItem }) {
   const [detailsOpen, setDetailsOpen] = useState(openTimelineRequest > 0);
@@ -190,6 +198,7 @@ function PriorityCaseCard({
           disabled={disabled}
           guideLocked={guideLocked}
           onSaved={onSaved}
+          onConflictRefresh={onConflictRefresh}
           onUnauthorized={onUnauthorized}
         />
       </div>}
