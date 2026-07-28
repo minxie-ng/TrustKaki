@@ -95,6 +95,7 @@ export interface DashboardData {
   activeSessions: CheckInSession[];
   recentAlerts: AlertItem[];
   followUpQueue: FollowUpQueueItem[];
+  activity?: CareActivityItem[];
 }
 
 export interface MaskedContactConsent {
@@ -196,6 +197,19 @@ export interface CaregiverActionItem {
   assignedCaregiver?: string | null;
   note?: string | null;
   caregiver?: string | null;
+  createdAt: string;
+}
+
+export interface CareActivityItem {
+  id: string;
+  queueItemId: string;
+  seniorId: string;
+  actionType: CaregiverActionItem["actionType"];
+  outcomeType: ContactOutcome | null;
+  previousStatus: FollowUpStatus | null;
+  resultingStatus: FollowUpStatus | null;
+  note: string | null;
+  caregiver: string | null;
   createdAt: string;
 }
 

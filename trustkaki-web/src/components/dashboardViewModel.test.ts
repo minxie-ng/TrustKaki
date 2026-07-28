@@ -68,6 +68,20 @@ const queueItem: FollowUpQueueItem = {
 };
 
 const dashboardData: DashboardData = {
+  activity: [
+    {
+      id: "action-1",
+      queueItemId: "queue-1",
+      seniorId: "senior-1",
+      actionType: "resolve",
+      outcomeType: "resolved",
+      previousStatus: "followed_up",
+      resultingStatus: "resolved",
+      note: "Rachel confirmed Uncle Tan is safe.",
+      caregiver: "Rachel Tan",
+      createdAt: "2026-07-28T08:00:00.000Z",
+    },
+  ],
   senior: {
     name: "Mr Tan Ah Hock",
     age: 76,
@@ -198,6 +212,7 @@ describe("dashboard view model", () => {
       riskLevel: "green",
       lastCheckIn: null,
     });
+    expect(next.activity).toBe(dashboardData.activity);
   });
 
   it("standardises caregiver names with their senior-specific relationship", () => {

@@ -6,6 +6,7 @@ import type { AuthenticatedCaregiver } from "@/lib/auth/session";
 import { getPersistenceStatus, type PersistenceStatus } from "@/lib/supabase/config";
 import type {
   AgentTrace,
+  CareActivityItem,
   CaregiverActionItem,
   CaregiverOption,
   DashboardData,
@@ -193,6 +194,54 @@ async function readCaregiverActions(
       createdAt: row.created_at,
     })
   );
+}
+
+export function activityItemFromRow(row: {
+  id: string;
+  queue_item_id: string;
+  senior_id: string;
+  action_type: CareActivityItem["actionType"];
+  outcome_type: CareActivityItem["outcomeType"];
+  previous_status: CareActivityItem["previousStatus"];
+  resulting_status: CareActivityItem["resultingStatus"];
+  note: string | null;
+  created_at: string;
+  actor_caregiver?:
+    | { display_name?: string | null }
+    | Array<{ display_name?: string | null }>
+    | null;
+}): CareActivityItem {
+  return {
+    id: row.id,
+    queueItemId: row.queue_item_id,
+    seniorId: row.senior_id,
+    actionType: row.action_type,
+    outcomeType: row.outcome_type,
+    previousStatus: row.previous_status,
+    resultingStatus: row.resulting_status,
+    note: row.note,
+    caregiver: Array.isArray(row.actor_caregiver)
+      ? row.actor_caregiver[0]?.display_name ?? null
+      : row.actor_caregiver?.display_name ?? null,
+    createdAt: row.created_at,
+  };
+}
+
+async function readCareActivity(
+  client: TrustKakiClient,
+  selectedSeniorId: string
+): Promise<CareActivityItem[]> {
+  const { data, error } = await client
+    .from("caregiver_actions")
+    .select(
+      "id, queue_item_id, senior_id, action_type, outcome_type, previous_status, resulting_status, note, created_at, actor_caregiver:caregivers!caregiver_actions_caregiver_id_fkey(display_name)"
+    )
+    .eq("senior_id", selectedSeniorId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  throwIfError(error, "select caregiver activity");
+
+  return (data ?? []).map(activityItemFromRow);
 }
 
 async function readPatternsByIds(
@@ -443,7 +492,12 @@ export async function readDashboardState(options: {
     const mapped = dashboardSnapshotToData(emptyDemoDashboardSnapshot());
     return {
       persistence: { ...getPersistenceStatus(), persisted: false },
-      ...mapped,
+      data: {
+        ...mapped.data,
+        activity: [],
+      },
+      briefing: mapped.briefing,
+      traces: mapped.traces,
     };
   }
 
@@ -517,7 +571,13 @@ export async function readDashboardState(options: {
     orderedSeniors.map((seniorRow) => seniorRow.id)
   );
 
-  const [{ data: messages }, { data: traces }, { data: alerts }, { data: brief }] =
+  const [
+    { data: messages },
+    { data: traces },
+    { data: alerts },
+    { data: brief },
+    activity,
+  ] =
     await Promise.all([
       checkInId
         ? client
@@ -547,6 +607,7 @@ export async function readDashboardState(options: {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      readCareActivity(client, selectedSeniorId),
     ]);
 
   const selectedNames = caregiverNames.get(selectedSeniorId);
@@ -623,6 +684,7 @@ export async function readDashboardState(options: {
         };
       }),
       followUpQueue: allFollowUpQueue,
+      activity,
     },
     briefing: mapped.briefing,
     traces: mapped.traces,

@@ -94,6 +94,7 @@ export function optimisticDashboardForSenior(
   return {
     ...data,
     selectedSeniorId: seniorId,
+    activity: data.activity,
     senior: {
       name: senior.name,
       age: senior.age ?? data.senior.age,
