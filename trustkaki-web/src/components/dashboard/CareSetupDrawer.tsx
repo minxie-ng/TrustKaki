@@ -93,7 +93,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
     if (event.key !== "Tab") return;
     const focusable = Array.from(
       dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? []
-    );
+    ).filter((element) => !element.closest("[hidden]"));
     if (focusable.length === 0) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -104,6 +104,32 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
       event.preventDefault();
       first.focus();
     }
+  }
+
+  function selectTab(tab: CareSetupTab) {
+    setActiveTab(tab);
+    tabRefs.current[tab]?.focus();
+  }
+
+  function handleTabKeyDown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    currentTab: CareSetupTab
+  ) {
+    const currentIndex = tabs.findIndex((tab) => tab.id === currentTab);
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % tabs.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = tabs.length - 1;
+    }
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    selectTab(tabs[nextIndex].id);
   }
 
   return (
@@ -155,6 +181,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
                 aria-controls={`care-setup-${tab.id}-panel`}
                 tabIndex={selected ? 0 : -1}
                 onClick={() => setActiveTab(tab.id)}
+                onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
                 className={`min-h-11 border-b-2 px-3 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
                   selected
                     ? "border-[var(--care-coral)] text-gray-950"
@@ -166,13 +193,14 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
             );
           })}
         </div>
-        <div
-          id={`care-setup-${activeTab}-panel`}
-          role="tabpanel"
-          aria-labelledby={`care-setup-${activeTab}-tab`}
-          className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 [&>details]:rounded-none [&>details]:border-x-0 [&>details]:shadow-none [&>section]:rounded-none [&>section]:border-x-0 [&>section]:shadow-none"
-        >
-          {activeTab === "context" && (
+        <div className="min-h-0 flex-1">
+          <div
+            id="care-setup-context-panel"
+            role="tabpanel"
+            aria-labelledby="care-setup-context-tab"
+            hidden={activeTab !== "context"}
+            className="h-full overflow-y-auto p-4 sm:p-6 [&>details]:rounded-none [&>details]:border-x-0 [&>details]:shadow-none [&>section]:rounded-none [&>section]:border-x-0 [&>section]:shadow-none"
+          >
             <SeniorContextPanel
               key={`senior-context:${props.selectedSeniorId ?? "none"}`}
               context={props.seniorContext}
@@ -184,8 +212,14 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
               onChanged={props.onSeniorContextChanged}
               onUnauthorized={props.onUnauthorized}
             />
-          )}
-          {activeTab === "check-ins" && (
+          </div>
+          <div
+            id="care-setup-check-ins-panel"
+            role="tabpanel"
+            aria-labelledby="care-setup-check-ins-tab"
+            hidden={activeTab !== "check-ins"}
+            className="h-full overflow-y-auto p-4 sm:p-6 [&>details]:rounded-none [&>details]:border-x-0 [&>details]:shadow-none [&>section]:rounded-none [&>section]:border-x-0 [&>section]:shadow-none"
+          >
             <ProactiveCheckInPanel
               key={`proactive-check-in:${props.selectedSeniorId ?? "none"}`}
               overview={props.checkInSchedule}
@@ -197,8 +231,14 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
               onSaved={props.onRefreshCheckInSchedule}
               onUnauthorized={props.onUnauthorized}
             />
-          )}
-          {activeTab === "contacts" && (
+          </div>
+          <div
+            id="care-setup-contacts-panel"
+            role="tabpanel"
+            aria-labelledby="care-setup-contacts-tab"
+            hidden={activeTab !== "contacts"}
+            className="h-full overflow-y-auto p-4 sm:p-6 [&>details]:rounded-none [&>details]:border-x-0 [&>details]:shadow-none [&>section]:rounded-none [&>section]:border-x-0 [&>section]:shadow-none"
+          >
             <ContactPlanPanel
               key={contactPlanInstanceKey(props.selectedSeniorId)}
               plan={props.contactPlan}
@@ -210,7 +250,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
               onSaved={props.onRefreshContactPlan}
               onUnauthorized={props.onUnauthorized}
             />
-          )}
+          </div>
         </div>
       </section>
     </div>

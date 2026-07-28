@@ -117,7 +117,7 @@ export function optimisticDashboardForSenior(
   return {
     ...data,
     selectedSeniorId: seniorId,
-    activity: data.activity,
+    activity: data.activity?.filter((item) => item.seniorId === seniorId),
     senior: {
       name: senior.name,
       age: senior.age ?? data.senior.age,

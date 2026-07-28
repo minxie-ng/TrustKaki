@@ -261,7 +261,11 @@ describe("dashboard view model", () => {
       riskLevel: "green",
       lastCheckIn: null,
     });
-    expect(next.activity).toBe(dashboardData.activity);
+    expect(next.activity).toEqual([]);
+    expect(next.activity).not.toContainEqual(
+      expect.objectContaining({ seniorId: "senior-1" })
+    );
+    expect(dashboardData.activity).toHaveLength(1);
   });
 
   it("standardises caregiver names with their senior-specific relationship", () => {

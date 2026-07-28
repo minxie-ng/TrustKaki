@@ -31,9 +31,9 @@ export default function NavBar({
   };
   const status = riskStatus[riskLevel];
   const navigationClass =
-    "min-h-11 border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-white/80 hover:text-white";
+    "flex min-h-11 flex-1 shrink-0 items-center justify-center border-b-2 border-transparent px-3 py-2 text-center text-sm font-semibold text-white/80 hover:text-white md:flex-none";
   const activeNavigationClass =
-    "min-h-11 border-b-2 border-white px-3 py-2 text-sm font-semibold text-white";
+    "flex min-h-11 flex-1 shrink-0 items-center justify-center border-b-2 border-white px-3 py-2 text-center text-sm font-semibold text-white md:flex-none";
 
   return (
     <header className="relative z-10 flex shrink-0 flex-wrap items-center gap-x-6 border-b border-emerald-950/30 bg-[var(--care-evergreen)] px-4 sm:px-5">
@@ -41,7 +41,10 @@ export default function NavBar({
         <span className="font-display text-xl font-semibold text-white">TrustKaki</span>
       </div>
 
-      <nav aria-label="Primary" className="hidden min-h-16 items-stretch md:flex">
+      <nav
+        aria-label="Primary"
+        className="order-3 flex w-full items-stretch overflow-x-auto border-t border-white/20 md:order-none md:min-h-16 md:w-auto md:overflow-visible md:border-t-0"
+      >
         <button
           type="button"
           aria-current={activeView === "workspace" ? "page" : undefined}

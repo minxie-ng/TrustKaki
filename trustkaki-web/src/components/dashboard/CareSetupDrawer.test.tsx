@@ -54,10 +54,14 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function renderDrawer(onClose = vi.fn()) {
+function renderDrawer(
+  onClose = vi.fn(),
+  overrides: Partial<typeof props> = {}
+) {
   act(() => {
     root.render(createElement(CareSetupDrawer, {
       ...props,
+      ...overrides,
       open: true,
       onClose,
     }));
@@ -109,9 +113,83 @@ describe("care setup drawer", () => {
     act(() => tabs[2].click());
 
     expect(tabs[2].getAttribute("aria-selected")).toBe("true");
-    expect(container.querySelector('[role="tabpanel"]')?.textContent).toContain(
+    expect(
+      container.querySelector('[role="tabpanel"]:not([hidden])')?.textContent
+    ).toContain(
       "No contact plan configured"
     );
+  });
+
+  it("selects and focuses tabs with ArrowLeft, ArrowRight, Home, and End", () => {
+    renderDrawer();
+    const tabs = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    );
+
+    const press = (tab: HTMLButtonElement, key: string) => {
+      act(() => {
+        tab.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+      });
+    };
+
+    press(tabs[0], "ArrowRight");
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[1]);
+
+    press(tabs[1], "ArrowLeft");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[0]);
+
+    press(tabs[0], "ArrowLeft");
+    expect(tabs[2].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[2]);
+
+    press(tabs[2], "ArrowRight");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[0]);
+
+    press(tabs[0], "End");
+    expect(tabs[2].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[2]);
+
+    press(tabs[2], "Home");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[0]);
+  });
+
+  it("keeps contact drafts mounted while switching setup tabs", () => {
+    renderDrawer(vi.fn(), { isAdmin: true });
+    const tabs = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    );
+
+    act(() => tabs[2].click());
+    act(() => {
+      Array.from(container.querySelectorAll<HTMLButtonElement>("button"))
+        .find((button) => button.textContent === "Manage contact plan")!
+        .click();
+    });
+    const nameInput =
+      container.querySelector<HTMLInputElement>('input[placeholder="Contact name"]')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(
+        dom.window.HTMLInputElement.prototype,
+        "value"
+      )!.set!.call(nameInput, "Daniel Lim");
+      nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(nameInput.value).toBe("Daniel Lim");
+
+    act(() => tabs[0].click());
+    expect(
+      container.querySelector<HTMLElement>("#care-setup-contacts-panel")?.hidden
+    ).toBe(true);
+    act(() => tabs[2].click());
+
+    expect(
+      container.querySelector<HTMLInputElement>('input[placeholder="Contact name"]')
+        ?.value
+    ).toBe("Daniel Lim");
   });
 
   it("restores the original opener after changing setup tabs", () => {

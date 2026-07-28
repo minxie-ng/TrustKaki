@@ -4,6 +4,27 @@ import { describe, expect, it } from "vitest";
 import AppShell from "./AppShell";
 
 describe("AppShell", () => {
+  it("exposes one compact primary navigation at mobile and desktop sizes", () => {
+    const html = renderToStaticMarkup(createElement(AppShell, {
+      activeView: "workspace",
+      isDemoAdmin: false,
+      riskLevel: "green",
+      onViewChange: () => undefined,
+      onOpenSetup: () => undefined,
+      onSignOut: () => undefined,
+    }));
+    const primaryNavigation = html.match(
+      /<nav[^>]*aria-label="Primary"[^>]*>/
+    )?.[0];
+
+    expect(primaryNavigation).toBeDefined();
+    expect(primaryNavigation).not.toContain("hidden");
+    expect((html.match(/aria-label="Primary"/g) ?? [])).toHaveLength(1);
+    expect((html.match(/>Care workspace</g) ?? [])).toHaveLength(1);
+    expect((html.match(/>Activity</g) ?? [])).toHaveLength(1);
+    expect((html.match(/>Care setup</g) ?? [])).toHaveLength(1);
+  });
+
   it("hides demo tools from a normal caregiver", () => {
     const html = renderToStaticMarkup(createElement(
       AppShell,
