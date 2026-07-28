@@ -6,6 +6,8 @@ import AppShell, { type AppView } from "@/components/AppShell";
 import ChatSimulation from "@/components/ChatSimulation";
 import Dashboard from "@/components/Dashboard";
 import { CareActivity } from "@/components/dashboard/CareActivity";
+import { DemoGuide } from "@/components/dashboard/DemoGuide";
+import type { DemoPhase } from "@/components/dashboard/demoGuideState";
 import AgentTracePanel from "@/components/AgentTracePanel";
 import OperationalState from "@/components/OperationalState";
 import SignInForm from "@/components/SignInForm";
@@ -49,6 +51,9 @@ export default function Home() {
   const [activeView, setActiveView] = useState<AppView>("workspace");
   const [careSetupOpen, setCareSetupOpen] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [demoPhase, setDemoPhase] = useState<DemoPhase>("orientation");
+  const [demoError, setDemoError] = useState<string | null>(null);
+  const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
   const [reasoningVisible, setReasoningVisible] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
     useState<DashboardData | null>(null);
@@ -92,6 +97,8 @@ export default function Home() {
     setSession(null);
     setUser(null);
     setDemoMode(false);
+    setDemoPhase("exited");
+    setDemoError(null);
     setReasoningVisible(false);
     setAuthError("Please sign in again to continue.");
   }, []);
@@ -375,6 +382,8 @@ export default function Home() {
     setSession(null);
     setUser(null);
     setDemoMode(false);
+    setDemoPhase("exited");
+    setDemoError(null);
     setActiveView("workspace");
     setCareSetupOpen(false);
     setReasoningVisible(false);
@@ -418,6 +427,10 @@ export default function Home() {
       demoMode={demoMode}
       onDemoModeChange={(enabled) => {
         setDemoMode(enabled);
+        setDemoPhase(enabled ? "orientation" : "exited");
+        setDemoError(null);
+        setActiveView("workspace");
+        setCareSetupOpen(false);
         if (!enabled) setReasoningVisible(false);
       }}
     >
@@ -455,47 +468,81 @@ export default function Home() {
               actionLabel={dashboardError ? "Retry" : undefined}
               onAction={dashboardError ? requestDashboardRefresh : undefined}
             >
-              <>
-                <div className={activeView === "workspace" ? "h-full" : "hidden"}>
-                  <Dashboard
-                    data={liveDashboardData}
-                    traces={liveTraces}
-                    briefing={liveBriefing}
-                    onRefresh={refreshDashboardForConsumer}
-                    authToken={authToken}
-                    isDemoAdmin={isDemoAdmin}
-                    demoMode={surface.showDemoControls}
-                    onUnauthorized={handleUnauthorized}
-                    onSelectSenior={selectSenior}
-                    contactPlan={contactPlan}
-                    contactPlanLoading={contactPlanLoading}
-                    contactPlanError={contactPlanError}
-                    onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
-                    checkInSchedule={checkInSchedule}
-                    checkInScheduleLoading={checkInScheduleLoading}
-                    checkInScheduleError={checkInScheduleError}
-                    onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
-                    seniorContext={seniorContext}
-                    seniorContextLoading={seniorContextLoading}
-                    seniorContextError={seniorContextError}
-                    onSeniorContextChanged={setSeniorContext}
-                    careSetupOpen={careSetupOpen}
-                    onCloseCareSetup={() => setCareSetupOpen(false)}
-                    onViewActivity={() => setActiveView("activity")}
-                  />
-                </div>
-                {activeView === "activity" && (
-                  <CareActivity
-                    activity={liveDashboardData.activity ?? []}
-                    queue={followUpQueueForSenior(
-                      liveDashboardData.followUpQueue,
-                      selectedSeniorId
-                    )}
-                    seniorName={liveDashboardData.senior.name}
-                    onReturnToWorkspace={() => setActiveView("workspace")}
-                  />
-                )}
-              </>
+              <DemoGuide
+                enabled={Boolean(isDemoAdmin && demoMode)}
+                phase={demoPhase}
+                error={demoError}
+                data={liveDashboardData}
+                authToken={authToken}
+                onPhaseChange={(phase) => {
+                  setDemoPhase(phase);
+                  if (phase === "complete") setActiveView("activity");
+                }}
+                onErrorChange={setDemoError}
+                onRefresh={(seniorId) =>
+                  refreshDashboardForConsumer(seniorId)
+                }
+                onOpenTimeline={() => {
+                  setActiveView("workspace");
+                  setDemoTimelineRequest((request) => request + 1);
+                }}
+                onUnauthorized={handleUnauthorized}
+                onExit={() => {
+                  setDemoMode(false);
+                  setDemoPhase("exited");
+                  setDemoError(null);
+                  setActiveView("workspace");
+                }}
+              >
+                <>
+                  <div className={activeView === "workspace" ? "h-full" : "hidden"}>
+                    <Dashboard
+                      data={liveDashboardData}
+                      traces={liveTraces}
+                      briefing={liveBriefing}
+                      onRefresh={refreshDashboardForConsumer}
+                      authToken={authToken}
+                      isDemoAdmin={isDemoAdmin}
+                      guideLocked={Boolean(
+                        isDemoAdmin &&
+                          demoMode &&
+                          ["prepare", "review", "respond", "resolve"].includes(
+                            demoPhase
+                          )
+                      )}
+                      openTimelineRequest={demoTimelineRequest}
+                      onUnauthorized={handleUnauthorized}
+                      onSelectSenior={selectSenior}
+                      contactPlan={contactPlan}
+                      contactPlanLoading={contactPlanLoading}
+                      contactPlanError={contactPlanError}
+                      onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
+                      checkInSchedule={checkInSchedule}
+                      checkInScheduleLoading={checkInScheduleLoading}
+                      checkInScheduleError={checkInScheduleError}
+                      onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
+                      seniorContext={seniorContext}
+                      seniorContextLoading={seniorContextLoading}
+                      seniorContextError={seniorContextError}
+                      onSeniorContextChanged={setSeniorContext}
+                      careSetupOpen={careSetupOpen}
+                      onCloseCareSetup={() => setCareSetupOpen(false)}
+                      onViewActivity={() => setActiveView("activity")}
+                    />
+                  </div>
+                  {activeView === "activity" && (
+                    <CareActivity
+                      activity={liveDashboardData.activity ?? []}
+                      queue={followUpQueueForSenior(
+                        liveDashboardData.followUpQueue,
+                        selectedSeniorId
+                      )}
+                      seniorName={liveDashboardData.senior.name}
+                      onReturnToWorkspace={() => setActiveView("workspace")}
+                    />
+                  )}
+                </>
+              </DemoGuide>
             </OperationalState>
           ) : dashboardError ? (
             <OperationalState

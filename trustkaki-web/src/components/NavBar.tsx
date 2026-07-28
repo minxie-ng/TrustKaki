@@ -71,7 +71,7 @@ export default function NavBar({
             aria-pressed={demoMode}
             className={demoMode ? activeNavigationClass : navigationClass}
           >
-            {demoMode ? "Exit demo tools" : "Demo tools"}
+            {demoMode ? "Exit guided demo" : "Guided demo"}
           </button>
         )}
       </nav>

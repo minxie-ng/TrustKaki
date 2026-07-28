@@ -48,7 +48,7 @@ describe("AppShell", () => {
     expect(html).toContain("Needs attention");
   });
 
-  it("shows demo tools only to an authorized demo administrator", () => {
+  it("shows guided demo entry only to an authorized demo administrator", () => {
     const html = renderToStaticMarkup(createElement(
       AppShell,
       {
@@ -64,8 +64,25 @@ describe("AppShell", () => {
       createElement("div", null, "Activity view")
     ));
 
-    expect(html).toContain("Demo tools");
+    expect(html).toContain("Guided demo");
+    expect(html).not.toContain("Demo tools");
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("Stable");
+  });
+
+  it("labels the active guided demo exit without adding another navigation item", () => {
+    const html = renderToStaticMarkup(createElement(AppShell, {
+      activeView: "workspace",
+      isDemoAdmin: true,
+      riskLevel: "yellow",
+      demoMode: true,
+      onViewChange: () => undefined,
+      onOpenSetup: () => undefined,
+      onDemoModeChange: () => undefined,
+      onSignOut: () => undefined,
+    }));
+
+    expect(html).toContain("Exit guided demo");
+    expect((html.match(/Exit guided demo/g) ?? [])).toHaveLength(1);
   });
 });

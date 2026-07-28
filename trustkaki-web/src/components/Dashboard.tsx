@@ -10,7 +10,6 @@ import {
   followUpQueueForSenior,
   type DashboardRefresh,
 } from "./dashboardViewModel";
-import { DemoControls } from "./dashboard/DemoControls";
 import { PriorityCase } from "./dashboard/PriorityCase";
 import { SelectedSeniorSummary } from "./dashboard/SelectedSeniorSummary";
 import { SeniorCoverage } from "./dashboard/SeniorCoverage";
@@ -29,7 +28,8 @@ interface DashboardProps {
   onRefresh?: DashboardRefresh;
   authToken: string | null;
   isDemoAdmin?: boolean;
-  demoMode?: boolean;
+  guideLocked?: boolean;
+  openTimelineRequest?: number;
   onUnauthorized?: () => void;
   onSelectSenior?: (seniorId: string) => void;
   contactPlan?: MaskedContactPlan | null;
@@ -55,7 +55,8 @@ export default function Dashboard({
   onRefresh,
   authToken,
   isDemoAdmin = false,
-  demoMode = false,
+  guideLocked = false,
+  openTimelineRequest = 0,
   onUnauthorized,
   onSelectSenior,
   contactPlan = null,
@@ -74,7 +75,6 @@ export default function Dashboard({
   onCloseCareSetup,
   onViewActivity,
 }: DashboardProps) {
-  const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
   const [mobileView, setMobileView] =
     useState<MobileCareWorkspaceView>("queue");
   const [mobileTabsActive, setMobileTabsActive] = useState(true);
@@ -136,20 +136,14 @@ export default function Dashboard({
         >
           <WorkspaceLabel eyebrow="Today" title="Care workspace" />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
-          <DemoControls
-            authToken={authToken ?? ""}
-            visible={Boolean(isDemoAdmin && demoMode && authToken)}
-            onRefresh={refresh}
-            onDemoReady={() => setDemoTimelineRequest((request) => request + 1)}
-            onUnauthorized={unauthorized}
-          />
           <PriorityCase
             items={queue}
             data={data}
             briefing={briefing}
             authToken={authToken ?? ""}
             disabled={interactionsDisabled}
-            openTimelineRequest={demoTimelineRequest}
+            guideLocked={guideLocked}
+            openTimelineRequest={openTimelineRequest}
             onSaved={refreshAfterCaseSave}
             onConflictRefresh={refreshAfterCaseConflict}
             onUnauthorized={unauthorized}
