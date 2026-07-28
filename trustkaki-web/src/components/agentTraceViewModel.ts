@@ -1,11 +1,11 @@
+import { containsSensitiveText } from "./dashboardViewModel";
+
 interface AgentOutputFormatInput {
   inputSummary?: string | null;
   input?: string | null;
   outputSummary?: string | null;
   output?: string | null;
 }
-
-const secretLikeText = /service_role|authorization|bearer|sk-/i;
 
 function textList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -65,11 +65,11 @@ function riskText(value: unknown): string | null {
 
 export function formatAgentInputForCaregiver(input: AgentOutputFormatInput): string {
   const summary = input.inputSummary?.trim();
-  if (summary && !looksTechnical(summary) && !secretLikeText.test(summary)) return summary;
+  if (summary && !looksTechnical(summary) && !containsSensitiveText(summary)) return summary;
 
   const rawInput = input.input?.trim();
   if (!rawInput) return "Relevant senior context and recent messages.";
-  if (secretLikeText.test(rawInput)) {
+  if (containsSensitiveText(rawInput)) {
     return "Relevant senior context and recent messages.";
   }
   if (!looksTechnical(rawInput)) return rawInput;

@@ -27,12 +27,17 @@ describe("agent trace caregiver formatting", () => {
         inputSummary: "service_role=demo-secret",
       }),
       formatAgentInputForCaregiver({
+        inputSummary: "WHATSAPP_ACCESS_TOKEN=demo-secret",
+      }),
+      formatAgentInputForCaregiver({
         input: '{"signals":[{"description":"sk-demo-secret"}]}',
       }),
     ];
 
     for (const formatted of formattedInputs) {
-      expect(formatted).not.toMatch(/service_role|authorization|bearer|sk-/i);
+      expect(formatted).not.toMatch(
+        /whatsapp_access_token|service_role|authorization|bearer|sk-/i
+      );
     }
   });
 
