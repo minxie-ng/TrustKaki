@@ -7,6 +7,9 @@ import type {
 
 export type DemoMode = "quick" | "full";
 export type RequestState = "idle" | "pending" | "success" | "error";
+export type DashboardRefresh = (
+  seniorId?: string | null
+) => Promise<DashboardData | null>;
 
 export const demoProgressSteps = [
   "Preparing history",
@@ -18,6 +21,20 @@ export const demoProgressSteps = [
 
 export const advancedTraceDefaultOpen = false;
 export const dashboardSyncIntervalMs = 20_000;
+
+export function refreshDashboardAuthoritatively(
+  refresh: DashboardRefresh,
+  seniorId?: string | null
+): Promise<DashboardData | null> {
+  return refresh(seniorId);
+}
+
+export function fireAndForgetDashboardRefresh(
+  refresh: DashboardRefresh,
+  seniorId?: string | null
+): void {
+  void refresh(seniorId).catch(() => undefined);
+}
 
 export function shouldPollDashboard(args: {
   hasAuthToken: boolean;

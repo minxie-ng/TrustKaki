@@ -8,7 +8,7 @@ describe("DemoControls", () => {
     const html = renderToStaticMarkup(createElement(DemoControls, {
       authToken: "test-token",
       visible: true,
-      onRefresh: () => undefined,
+      onRefresh: async () => null,
       onUnauthorized: () => undefined,
     }));
 

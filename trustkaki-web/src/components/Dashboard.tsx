@@ -5,7 +5,10 @@ import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
 import type { SeniorContextReadModel } from "@/lib/api/schemas";
 import type { AgentTrace, DashboardData, MaskedContactPlan } from "@/lib/types";
-import { followUpQueueForSenior } from "./dashboardViewModel";
+import {
+  followUpQueueForSenior,
+  type DashboardRefresh,
+} from "./dashboardViewModel";
 import { DemoControls } from "./dashboard/DemoControls";
 import { PriorityCase } from "./dashboard/PriorityCase";
 import { SelectedSeniorSummary } from "./dashboard/SelectedSeniorSummary";
@@ -21,7 +24,7 @@ interface DashboardProps {
   data: DashboardData;
   traces?: AgentTrace[];
   briefing?: BriefingOutput | null;
-  onRefresh?: () => void;
+  onRefresh?: DashboardRefresh;
   authToken: string | null;
   isDemoAdmin?: boolean;
   demoMode?: boolean;
@@ -68,7 +71,8 @@ export default function Dashboard({
   const selectedSeniorId = data.selectedSeniorId ?? seniors[0]?.id ?? null;
   const selectedSenior = seniors.find((senior) => senior.id === selectedSeniorId);
   const queue = followUpQueueForSenior(data.followUpQueue, selectedSeniorId);
-  const refresh = () => onRefresh?.();
+  const refresh: DashboardRefresh = (seniorId) =>
+    onRefresh?.(seniorId) ?? Promise.resolve(null);
   const unauthorized = () => onUnauthorized?.();
   const interactionsDisabled = !authToken;
 

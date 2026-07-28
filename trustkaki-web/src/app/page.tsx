@@ -16,7 +16,9 @@ import {
   chatSimulationState,
   dashboardStateEndpoint,
   dashboardSyncIntervalMs,
+  fireAndForgetDashboardRefresh,
   optimisticDashboardForSenior,
+  refreshDashboardAuthoritatively,
   shouldPollDashboard,
 } from "@/components/dashboardViewModel";
 import type { BriefingOutput } from "@/lib/agents/contracts";
@@ -134,8 +136,14 @@ export default function Home() {
   }, [authToken, handleUnauthorized]);
 
   const requestDashboardRefresh = useCallback((nextSeniorId?: string | null) => {
-    void refreshDashboardState(nextSeniorId).catch(() => undefined);
+    fireAndForgetDashboardRefresh(refreshDashboardState, nextSeniorId);
   }, [refreshDashboardState]);
+
+  const refreshDashboardForConsumer = useCallback(
+    (nextSeniorId?: string | null) =>
+      refreshDashboardAuthoritatively(refreshDashboardState, nextSeniorId),
+    [refreshDashboardState]
+  );
 
   const refreshContactPlan = useCallback((nextSeniorId?: string | null) => {
     if (!authToken) return;
@@ -430,43 +438,17 @@ export default function Home() {
 
         <div className="min-w-0 flex-1">
           {liveDashboardData ? (
-            dashboardError ? (
-              <OperationalState
-                kind="refresh-error"
-                message={dashboardError}
-                actionLabel="Retry"
-                onAction={requestDashboardRefresh}
-              >
-                <Dashboard
-                  data={liveDashboardData}
-                  traces={liveTraces}
-                  briefing={liveBriefing}
-                  onRefresh={requestDashboardRefresh}
-                  authToken={authToken}
-                  isDemoAdmin={isDemoAdmin}
-                  demoMode={surface.showDemoControls}
-                  onUnauthorized={handleUnauthorized}
-                  onSelectSenior={selectSenior}
-                  contactPlan={contactPlan}
-                  contactPlanLoading={contactPlanLoading}
-                  contactPlanError={contactPlanError}
-                  onRefreshContactPlan={() => refreshContactPlan(selectedSeniorId)}
-                  checkInSchedule={checkInSchedule}
-                  checkInScheduleLoading={checkInScheduleLoading}
-                  checkInScheduleError={checkInScheduleError}
-                  onRefreshCheckInSchedule={() => refreshCheckInSchedule(selectedSeniorId)}
-                  seniorContext={seniorContext}
-                  seniorContextLoading={seniorContextLoading}
-                  seniorContextError={seniorContextError}
-                  onSeniorContextChanged={setSeniorContext}
-                />
-              </OperationalState>
-            ) : (
+            <OperationalState
+              kind={dashboardError ? "refresh-error" : "ready"}
+              message={dashboardError ?? ""}
+              actionLabel={dashboardError ? "Retry" : undefined}
+              onAction={dashboardError ? requestDashboardRefresh : undefined}
+            >
               <Dashboard
                 data={liveDashboardData}
                 traces={liveTraces}
                 briefing={liveBriefing}
-                onRefresh={requestDashboardRefresh}
+                onRefresh={refreshDashboardForConsumer}
                 authToken={authToken}
                 isDemoAdmin={isDemoAdmin}
                 demoMode={surface.showDemoControls}
@@ -485,7 +467,7 @@ export default function Home() {
                 seniorContextError={seniorContextError}
                 onSeniorContextChanged={setSeniorContext}
               />
-            )
+            </OperationalState>
           ) : dashboardError ? (
             <OperationalState
               kind="error"

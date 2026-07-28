@@ -10,11 +10,13 @@ import {
   dashboardStateEndpoint,
   dashboardSyncIntervalMs,
   demoEndpoint,
+  fireAndForgetDashboardRefresh,
   followUpQueueForSenior,
   formatCaregiverLabel,
   mainQueueCardFields,
   optimisticDashboardForSenior,
   recentSeniorMessages,
+  refreshDashboardAuthoritatively,
   selectedQueueItem,
   shouldPollDashboard,
   systemProof,
@@ -153,6 +155,36 @@ const dashboardData: DashboardData = {
 };
 
 describe("dashboard view model", () => {
+  it("preserves authoritative dashboard refresh values and rejections", async () => {
+    const failure = new Error("refresh_failed");
+    const successfulRefresh = async () => dashboardData;
+    const failedRefresh = async (): Promise<DashboardData | null> => {
+      throw failure;
+    };
+
+    await expect(
+      refreshDashboardAuthoritatively(successfulRefresh)
+    ).resolves.toBe(dashboardData);
+    await expect(
+      refreshDashboardAuthoritatively(failedRefresh)
+    ).rejects.toBe(failure);
+  });
+
+  it("catches dashboard refresh failures only for explicit background callers", async () => {
+    const failure = new Error("background_refresh_failed");
+    let rejected = false;
+    const failedRefresh = async (): Promise<DashboardData | null> => {
+      rejected = true;
+      throw failure;
+    };
+
+    fireAndForgetDashboardRefresh(failedRefresh);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(rejected).toBe(true);
+  });
+
   it("keeps technical surfaces closed except for enabled demo admins", () => {
     expect(appShellSurface({ isDemoAdmin: false, demoMode: true })).toEqual({
       showChatSimulator: false,

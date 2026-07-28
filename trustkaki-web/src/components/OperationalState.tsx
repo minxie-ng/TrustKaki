@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 
-type OperationalStateKind = "loading" | "error" | "refresh-error" | "success";
+type OperationalStateKind =
+  | "loading"
+  | "error"
+  | "ready"
+  | "refresh-error"
+  | "success";
 
 interface OperationalStateProps {
   kind: OperationalStateKind;
@@ -37,14 +42,25 @@ export default function OperationalState({
     );
   }
 
-  if (kind === "refresh-error" || kind === "success") {
+  if (kind === "ready" || kind === "refresh-error" || kind === "success") {
+    const hasMessage = kind !== "ready";
     return (
       <div className="flex h-full min-h-0 flex-col">
         <div
-          role={kind === "refresh-error" ? "alert" : "status"}
+          data-operational-message-slot="true"
+          role={
+            kind === "refresh-error"
+              ? "alert"
+              : kind === "success"
+                ? "status"
+                : undefined
+          }
           aria-live={kind === "success" ? "polite" : undefined}
           aria-atomic={kind === "success" ? "true" : undefined}
-          className={`flex shrink-0 items-center justify-between gap-4 border-b px-4 py-3 text-sm ${
+          hidden={!hasMessage}
+          className={`shrink-0 items-center justify-between gap-4 border-b px-4 py-3 text-sm ${
+            hasMessage ? "flex" : "hidden"
+          } ${
             kind === "refresh-error"
               ? "border-l-4 border-l-[var(--status-red)] bg-[var(--care-paper)]"
               : "border-l-4 border-l-[var(--status-green)] bg-[var(--care-paper)]"
@@ -61,7 +77,7 @@ export default function OperationalState({
             </button>
           )}
         </div>
-        <div className="min-h-0 flex-1">{children}</div>
+        <div key="content" className="min-h-0 flex-1">{children}</div>
       </div>
     );
   }

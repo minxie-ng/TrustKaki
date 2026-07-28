@@ -4,6 +4,7 @@ import { useState } from "react";
 import { authHeader } from "@/lib/auth/client";
 import {
   canSubmit,
+  type DashboardRefresh,
   demoEndpoint,
   demoProgressSteps,
   type DemoMode,
@@ -13,7 +14,7 @@ import {
 interface DemoControlsProps {
   authToken: string;
   visible: boolean;
-  onRefresh: () => void;
+  onRefresh: DashboardRefresh;
   onDemoReady?: () => void;
   onUnauthorized: () => void;
 }
@@ -62,7 +63,7 @@ export function DemoControls({
           ? "Demo ready. In the Priority case below, select View timeline."
           : "Full Agent Replay complete."
       );
-      onRefresh();
+      await onRefresh();
       if (mode === "quick") onDemoReady?.();
     } catch {
       setRequestState("error");
@@ -95,7 +96,7 @@ export function DemoControls({
       if (!response.ok) throw new Error("reset_failed");
       setRequestState("success");
       setStatusMessage("Demo reset. Run Quick Demo to rebuild the case.");
-      onRefresh();
+      await onRefresh();
     } catch {
       setRequestState("error");
       setStatusMessage("Demo reset failed. Please retry.");
