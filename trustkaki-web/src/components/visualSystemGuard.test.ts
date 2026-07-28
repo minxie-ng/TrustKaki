@@ -53,6 +53,13 @@ interface ClassNameOccurrence {
   value: string;
   element: string;
   line: number;
+  start: number;
+  end: number;
+}
+
+interface CircleTokenOccurrence {
+  index: number;
+  line: number;
 }
 
 const classNamePattern =
@@ -77,8 +84,19 @@ function classNameOccurrences(source: SourceFile): ClassNameOccurrence[] {
         .slice(elementStart, elementEnd === -1 ? start + match[0].length : elementEnd + 1)
         .replace(/\s+/g, " "),
       line: source.content.slice(0, start).split("\n").length,
+      start,
+      end: start + match[0].length,
     };
   });
+}
+
+function circleTokenOccurrences(source: SourceFile): CircleTokenOccurrence[] {
+  return [...source.content.matchAll(/(?<![\w-])rounded-full(?![\w-])/g)].map(
+    (match) => ({
+      index: match.index,
+      line: source.content.slice(0, match.index).split("\n").length,
+    })
+  );
 }
 
 const semanticCircleAllowlist = [
@@ -105,18 +123,24 @@ const semanticCircleAllowlist = [
 
 function semanticCircleViolations(input: SourceFile[]): string[] {
   const allowedCounts = new Map<string, number>();
-  return input.flatMap((source) =>
-    classNameOccurrences(source).flatMap((occurrence) => {
-      if (!occurrence.value.includes("rounded-full")) return [];
+  return input.flatMap((source) => {
+    const classNames = classNameOccurrences(source);
+    return circleTokenOccurrences(source).flatMap((token) => {
+      const occurrence = classNames.find(
+        (candidate) => token.index >= candidate.start && token.index < candidate.end
+      );
       const rule = semanticCircleAllowlist.find(
         (candidate) =>
           candidate.path === source.path &&
-          candidate.value === occurrence.value &&
+          candidate.value === occurrence?.value &&
           occurrence.element.includes(candidate.elementToken)
       );
       if (!rule) {
+        const context = occurrence
+          ? ` in className ${JSON.stringify(occurrence.value)}`
+          : "";
         return [
-          `${source.path}:${occurrence.line} uses unapproved rounded-full geometry ${JSON.stringify(occurrence.value)}`,
+          `${source.path}:${token.line} uses unapproved "rounded-full" token${context}`,
         ];
       }
       const key = `${rule.path}:${rule.label}`;
@@ -124,9 +148,9 @@ function semanticCircleViolations(input: SourceFile[]): string[] {
       allowedCounts.set(key, count);
       return count === 1
         ? []
-        : [`${source.path}:${occurrence.line} duplicates the allowed ${rule.label}`];
-    })
-  );
+        : [`${source.path}:${token.line} duplicates the allowed ${rule.label}`];
+    });
+  });
 }
 
 function paddedCircleViolations(input: SourceFile[]): string[] {
@@ -146,6 +170,37 @@ function paddedCircleViolations(input: SourceFile[]): string[] {
 }
 
 describe("circle guard regressions", () => {
+  test("rejects rounded-full inside conditional helper className expressions", () => {
+    const conditionalClass = fixture(
+      "src/components/ConditionalCircle.tsx",
+      `<span
+  className={classes(
+    "h-4 w-4",
+    active && "rounded-full"
+  )}
+/>`
+    );
+
+    const findings = semanticCircleViolations([conditionalClass]);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toContain("src/components/ConditionalCircle.tsx:4");
+  });
+
+  test("rejects rounded-full inside CSS apply rules", () => {
+    const cssApply = fixture(
+      "src/components/circle.css",
+      `.status-marker {
+  @apply h-4 w-4 rounded-full;
+}`
+    );
+
+    const findings = semanticCircleViolations([cssApply]);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toContain("src/components/circle.css:2");
+  });
+
   test.each([
     {
       filePath: "src/components/ui/StatusIndicator.tsx",
