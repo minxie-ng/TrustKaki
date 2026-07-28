@@ -2,11 +2,18 @@ import { describe, expect, it } from "vitest";
 import type { FollowUpQueueItem, SeniorListItem } from "@/lib/types";
 import {
   buildSeniorCoverage,
+  careUrgencyTone,
   compactCoverageReason,
   initialsForSenior,
   portraitForSenior,
 } from "./careWorkspacePresentation";
-import { riskConfig, riskHeadlineLabel, riskHeadlineText } from "./presentation";
+import {
+  coverageRiskStyle,
+  riskConfig,
+  riskHeadlineLabel,
+  riskHeadlineText,
+  statusTone,
+} from "./presentation";
 
 function senior(
   id: string,
@@ -136,5 +143,28 @@ describe("care workspace presentation", () => {
     expect(riskHeadlineText("Red · Follow-up suggested")).toBe(
       "Follow-up suggested"
     );
+  });
+
+  it("maps care states to semantic status tones without background fills", () => {
+    expect(coverageRiskStyle.green).toMatchObject({ tone: "stable", tint: "" });
+    expect(coverageRiskStyle.yellow).toMatchObject({ tone: "attention", tint: "" });
+    expect(coverageRiskStyle.red).toMatchObject({ tone: "urgent", tint: "" });
+    expect(riskConfig.green).toMatchObject({ tone: "stable", bg: "", text: "" });
+    expect(riskConfig.yellow).toMatchObject({ tone: "attention", bg: "", text: "" });
+    expect(riskConfig.red).toMatchObject({ tone: "urgent", bg: "", text: "" });
+    expect(careUrgencyTone).toEqual({
+      urgent: "urgent",
+      today: "attention",
+      monitoring: "neutral",
+      stable: "stable",
+    });
+    expect(statusTone).toEqual({
+      pending: "attention",
+      acknowledged: "attention",
+      followed_up: "stable",
+      snoozed: "neutral",
+      escalated: "urgent",
+      resolved: "stable",
+    });
   });
 });

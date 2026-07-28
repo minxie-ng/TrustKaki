@@ -1,32 +1,39 @@
 import type { FollowUpStatus, RiskLevel } from "@/lib/types";
+import type { StatusTone } from "@/components/ui/StatusIndicator";
 
-export const coverageRiskStyle: Record<RiskLevel, { edge: string; tint: string }> = {
-  green: { edge: "border-l-emerald-400", tint: "bg-emerald-50" },
-  yellow: { edge: "border-l-amber-400", tint: "bg-amber-50" },
-  red: { edge: "border-l-red-500", tint: "bg-red-50" },
+export const coverageRiskStyle: Record<
+  RiskLevel,
+  { edge: string; tint: string; tone: StatusTone }
+> = {
+  green: { edge: "border-l-[var(--status-green)]", tint: "", tone: "stable" },
+  yellow: { edge: "border-l-[var(--status-amber)]", tint: "", tone: "attention" },
+  red: { edge: "border-l-[var(--status-red)]", tint: "", tone: "urgent" },
 };
 
 export const riskConfig: Record<
   RiskLevel,
-  { bg: string; text: string; border: string; label: string }
+  { bg: string; text: string; border: string; label: string; tone: StatusTone }
 > = {
   green: {
-    bg: "bg-emerald-100",
-    text: "text-emerald-800",
-    border: "border-l-emerald-400",
+    bg: "",
+    text: "",
+    border: "border-l-[var(--status-green)]",
     label: "Low",
+    tone: "stable",
   },
   yellow: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-800",
-    border: "border-l-yellow-400",
+    bg: "",
+    text: "",
+    border: "border-l-[var(--status-amber)]",
     label: "Medium",
+    tone: "attention",
   },
   red: {
-    bg: "bg-red-100",
-    text: "text-red-800",
-    border: "border-l-red-500",
+    bg: "",
+    text: "",
+    border: "border-l-[var(--status-red)]",
     label: "High",
+    tone: "urgent",
   },
 };
 
@@ -45,6 +52,15 @@ export const statusLabel: Record<FollowUpStatus, string> = {
   snoozed: "Snoozed",
   escalated: "Escalated",
   resolved: "Resolved",
+};
+
+export const statusTone: Record<FollowUpStatus, StatusTone> = {
+  pending: "attention",
+  acknowledged: "attention",
+  followed_up: "stable",
+  snoozed: "neutral",
+  escalated: "urgent",
+  resolved: "stable",
 };
 
 export const escalationDestinationLabel = {

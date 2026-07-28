@@ -1,7 +1,15 @@
 import type { FollowUpQueueItem, RiskLevel, SeniorListItem } from "@/lib/types";
+import type { StatusTone } from "@/components/ui/StatusIndicator";
 import { riskHeadlineLabel } from "./presentation";
 
 export type CareUrgency = "urgent" | "today" | "monitoring" | "stable";
+
+export const careUrgencyTone: Record<CareUrgency, StatusTone> = {
+  urgent: "urgent",
+  today: "attention",
+  monitoring: "neutral",
+  stable: "stable",
+};
 
 export interface SeniorCoverageView {
   senior: SeniorListItem;

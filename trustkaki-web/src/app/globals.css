@@ -1,36 +1,53 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-source-sans), system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root {
-  --care-ink: #17211d;
-  --care-paper: #f4f7f5;
-  --care-surface: #ffffff;
-  --care-surface-muted: #f8faf9;
-  --care-rail: #edf3f0;
-  --care-rail-deep: #183d35;
-  --care-workspace: #fbfcfb;
-  --care-line: #dce3df;
-  --care-green: #187652;
-  --care-soft-green: #e1f3e9;
-  --care-amber: #c27a20;
-  --care-red: #b53a37;
-  --care-brand: #2f6f61;
-  --care-brand-strong: #24584d;
-  --care-brand-hover: #1d463e;
-  --care-soft-teal: #eaf4f1;
-  --care-teal-line: #c8ded8;
+  --care-ink: #18231e;
+  --care-evergreen: #1d3c35;
+  --care-mist: #f2f4f3;
+  --care-paper: #ffffff;
+  --care-coral: #cb5545;
+  --care-coral-hover: #ad4639;
+  --care-hairline: #b8c1bd;
+  --status-green: #347a59;
+  --status-amber: #c57b1d;
+  --status-red: #b9463d;
+  --font-sans: var(--font-source-sans), system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+}
+
+* {
+  border-color: var(--care-hairline);
 }
 
 body {
   font-family: var(--font-sans);
-  background: var(--care-paper);
+  background: var(--care-mist);
   color: var(--care-ink);
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  border-radius: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--care-coral);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-serif);
 }
 
 /* Custom scrollbar */
