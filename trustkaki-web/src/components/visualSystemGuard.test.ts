@@ -50,8 +50,8 @@ function fixture(filePath: string, content: string): SourceFile {
 }
 
 function controlRadiusViolations(input: SourceFile[]): string[] {
-  return input.flatMap((source) =>
-    source.lines.flatMap((line, index) =>
+  return input.flatMap((source) => {
+    const utilityFindings = source.lines.flatMap((line, index) =>
       [
         ...line.matchAll(
           /(?<![\w-])(?:[\w-]+:)*rounded(?:-[^\s"'`}>;,]+)?(?![\w-])/g
@@ -67,8 +67,39 @@ function controlRadiusViolations(input: SourceFile[]): string[] {
               `${source.path}:${index + 1} contains ${JSON.stringify(token)}`,
             ];
       })
-    )
-  );
+    );
+    const fixedRadiusPattern = source.path.endsWith(".css")
+      ? /\bborder-radius\s*:\s*([^;}\n]+)/g
+      : source.path.endsWith(".tsx")
+        ? /\bborderRadius\s*:\s*([^,}\n]+)/g
+        : null;
+    if (!fixedRadiusPattern) return utilityFindings;
+
+    const fixedRadiusFindings = [
+      ...source.content.matchAll(fixedRadiusPattern),
+    ].flatMap((match) => {
+      const rawValue = match[1].trim();
+      const quote = rawValue[0];
+      const isStaticString =
+        source.path.endsWith(".tsx") &&
+        (quote === '"' || quote === "'" || quote === "`") &&
+        rawValue.at(-1) === quote;
+      const value = isStaticString ? rawValue.slice(1, -1) : rawValue;
+      const isAllowed = source.path.endsWith(".css")
+        ? value === "0" || value === "0px" || value === "2px"
+        : isStaticString
+          ? value === "0" || value === "0px" || value === "2px"
+          : value === "0" || value === "2";
+      if (isAllowed) return [];
+
+      const line = source.content.slice(0, match.index).split("\n").length;
+      return [
+        `${source.path}:${line} contains unapproved fixed radius ${JSON.stringify(rawValue)}`,
+      ];
+    });
+
+    return [...utilityFindings, ...fixedRadiusFindings];
+  });
 }
 
 interface ClassNameOccurrence {
@@ -147,7 +178,7 @@ const semanticCircleAllowlist = [
       "text-[var(--care-brand)]",
     ],
     requiredClassTokenPatterns: [],
-    elementTokens: ["style={{ width: pixels, height: pixels }}"],
+    elementTokens: ["width: pixels", "height: pixels"],
     label: "SeniorAvatar image frame",
     maxOccurrences: 1,
   },
@@ -254,6 +285,106 @@ describe("circle guard regressions", () => {
     expect(controlRadiusViolations([source])).toEqual([]);
   });
 
+  test.each([
+    {
+      label: "CSS unitless zero",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: 0; }",
+    },
+    {
+      label: "CSS zero pixels",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: 0px; }",
+    },
+    {
+      label: "CSS exact two pixels",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: 2px; }",
+    },
+    {
+      label: "JSX numeric zero",
+      filePath: "src/components/Control.tsx",
+      content: "<button style={{ borderRadius: 0 }}>Save</button>",
+    },
+    {
+      label: "JSX zero pixels",
+      filePath: "src/components/Control.tsx",
+      content: '<button style={{ borderRadius: "0px" }}>Save</button>',
+    },
+    {
+      label: "JSX numeric two pixels",
+      filePath: "src/components/Control.tsx",
+      content: "<button style={{ borderRadius: 2 }}>Save</button>",
+    },
+    {
+      label: "JSX exact two pixels",
+      filePath: "src/components/Control.tsx",
+      content: '<button style={{ borderRadius: "2px" }}>Save</button>',
+    },
+  ])("allows $label control radius", ({ filePath, content }) => {
+    expect(controlRadiusViolations([fixture(filePath, content)])).toEqual([]);
+  });
+
+  test.each([
+    {
+      label: "CSS three pixels",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: 3px; }",
+    },
+    {
+      label: "CSS percentage",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: 50%; }",
+    },
+    {
+      label: "CSS rem value",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: 0.25rem; }",
+    },
+    {
+      label: "CSS multiple corners",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: 2px 2px; }",
+    },
+    {
+      label: "CSS dynamic custom property",
+      filePath: "src/components/control.css",
+      content: ".control { border-radius: var(--control-radius); }",
+    },
+    {
+      label: "JSX four pixels",
+      filePath: "src/components/Control.tsx",
+      content: '<button style={{ borderRadius: "4px" }}>Save</button>',
+    },
+    {
+      label: "JSX percentage",
+      filePath: "src/components/Control.tsx",
+      content: '<button style={{ borderRadius: "50%" }}>Save</button>',
+    },
+    {
+      label: "JSX rem value",
+      filePath: "src/components/Control.tsx",
+      content: '<button style={{ borderRadius: "0.25rem" }}>Save</button>',
+    },
+    {
+      label: "JSX multiple corners",
+      filePath: "src/components/Control.tsx",
+      content: '<button style={{ borderRadius: "2px 2px" }}>Save</button>',
+    },
+    {
+      label: "JSX dynamic identifier",
+      filePath: "src/components/Control.tsx",
+      content: "<button style={{ borderRadius: radius }}>Save</button>",
+    },
+    {
+      label: "JSX dynamic function",
+      filePath: "src/components/Control.tsx",
+      content: "<button style={{ borderRadius: getRadius() }}>Save</button>",
+    },
+  ])("rejects $label control radius", ({ filePath, content }) => {
+    expect(controlRadiusViolations([fixture(filePath, content)])).toHaveLength(1);
+  });
+
   test("rejects rounded-full inside conditional helper className expressions", () => {
     const conditionalClass = fixture(
       "src/components/ConditionalCircle.tsx",
@@ -358,6 +489,18 @@ describe("circle guard regressions", () => {
       ).toEqual([]);
     }
   );
+
+  test("allows harmless SeniorAvatar style property reordering", () => {
+    const source = fixture(
+      "src/components/dashboard/SeniorAvatar.tsx",
+      `<span
+  className="relative grid aspect-square shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--care-line)] bg-[var(--care-soft-teal)] font-bold text-[var(--care-brand)]"
+  style={{ height: pixels, width: pixels }}
+/>`
+    );
+
+    expect(semanticCircleViolations([source])).toEqual([]);
+  });
 
   test("still rejects a duplicate approved semantic circle", () => {
     const semanticCircle = `<span
