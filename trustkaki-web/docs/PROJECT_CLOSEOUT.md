@@ -78,7 +78,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 
 | Order | Status | Workstream | Completion evidence |
 | --- | --- | --- | --- |
-| 1 | TODO | Verify WhatsApp and Telegram on the final Vercel commit | One approved fictional inbound event per channel; webhook, policy-controlled reply, persistence, deduplication, and dashboard refresh verified |
+| 1 | BLOCKED | Verify WhatsApp and Telegram on the final Vercel commit | Telegram passed on 29 July; WhatsApp is blocked by Meta OAuth error 200; exact Vercel authenticated UI capture remains pending |
 | 2 | TODO | Build one-click public demo mode | Anonymous visitor reaches isolated synthetic workspace; reset works; real outbound messaging is disabled; visitors cannot affect each other or production records |
 | 3 | TODO | Make channel origin visible in care evidence | Relevant timeline items show WhatsApp or Telegram source, event time, and bounded delivery/processing state without exposing identifiers |
 | 4 | TODO | Complete final product QA | Authentication, guided demo, queue, history, errors, loading states, refresh persistence, keyboard use, desktop, and mobile pass |
@@ -95,10 +95,18 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 
 ## Immediate Next Workstream
 
-Start with the final-commit channel verification on Vercel. Follow the approval
-and evidence boundaries in `docs/operations/HACKATHON_RELEASE_RUNBOOK.md`.
+Telegram final-commit verification passed on 29 July. The bounded evidence is
+recorded in
+`docs/superpowers/verification/2026-07-29-final-channel-verification.md`.
+WhatsApp remains blocked by Meta account access and must not hold up independent
+closeout work.
 
-For each channel, verify only an approved fictional test flow:
+Start checklist item 2: build the isolated one-click public demo. Keep the
+WhatsApp restoration attempt as a separate blocked task and follow the approval
+boundaries in `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` before accessing or
+changing Meta state.
+
+When WhatsApp access is restored, verify only one approved fictional test flow:
 
 1. Receive one inbound message through the real provider webhook.
 2. Confirm one policy-controlled response.
