@@ -13,6 +13,7 @@ interface NavProps {
   demoMode?: boolean;
   onDemoModeChange?: (enabled: boolean) => void;
   suppressWorkflowNavigation?: boolean;
+  publicDemo?: boolean;
 }
 
 export default function NavBar({
@@ -25,6 +26,7 @@ export default function NavBar({
   demoMode = false,
   onDemoModeChange,
   suppressWorkflowNavigation = false,
+  publicDemo = false,
 }: NavProps) {
   const riskStatus: Record<typeof riskLevel, { label: string; tone: StatusTone }> = {
     green: { label: "Stable", tone: "stable" },
@@ -73,6 +75,7 @@ export default function NavBar({
       )}
 
       <div className="ml-auto flex min-h-16 items-center gap-3">
+        {publicDemo && <span className="border border-white/50 px-2 py-1 text-xs font-bold uppercase text-white">Demo data</span>}
         <StatusIndicator
           tone={status.tone}
           label={status.label}
@@ -83,7 +86,7 @@ export default function NavBar({
           type="button"
           className="min-h-11 border border-white/40 px-3 py-2 text-sm font-semibold text-white hover:border-white"
         >
-          Sign out
+          {publicDemo ? "Exit demo" : "Sign out"}
         </button>
       </div>
     </header>

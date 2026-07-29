@@ -4,12 +4,14 @@ import { useState } from "react";
 
 interface SignInFormProps {
   onSignIn: (email: string, password: string) => Promise<void>;
+  onExploreDemo: () => void;
   disabled?: boolean;
   error?: string | null;
 }
 
 export default function SignInForm({
   onSignIn,
+  onExploreDemo,
   disabled = false,
   error = null,
 }: SignInFormProps) {
@@ -76,6 +78,17 @@ export default function SignInForm({
         >
           {disabled ? "Signing in..." : "Sign in"}
         </button>
+        <button
+          type="button"
+          onClick={onExploreDemo}
+          disabled={disabled}
+          className="mt-3 min-h-11 w-full border border-[var(--care-evergreen)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)] hover:bg-[var(--care-mist)] disabled:opacity-50"
+        >
+          Explore demo
+        </button>
+        <p className="mt-3 text-center text-xs text-gray-500">
+          Uses fictional data. No messages are sent.
+        </p>
       </form>
     </main>
   );

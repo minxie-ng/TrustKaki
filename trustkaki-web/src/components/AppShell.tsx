@@ -12,6 +12,7 @@ interface AppShellProps {
   isDemoAdmin: boolean;
   riskLevel: RiskLevel;
   demoMode?: boolean;
+  publicDemo?: boolean;
   guidedDemoPhase?: DemoPhase;
   onViewChange: (view: AppView) => void;
   onOpenSetup: () => void;
@@ -25,6 +26,7 @@ export default function AppShell({
   isDemoAdmin,
   riskLevel,
   demoMode = false,
+  publicDemo = false,
   guidedDemoPhase,
   onViewChange,
   onOpenSetup,
@@ -49,9 +51,10 @@ export default function AppShell({
         canShowDemoMode={isDemoAdmin}
         demoMode={demoMode}
         suppressWorkflowNavigation={Boolean(
-          demoMode && guidedDemoPhase && guidedDemoPhase !== "exited"
+          publicDemo || (demoMode && guidedDemoPhase && guidedDemoPhase !== "exited")
         )}
         onDemoModeChange={onDemoModeChange}
+        publicDemo={publicDemo}
       />
       <div id="main-content" tabIndex={-1} className="min-h-0 flex-1">
         {children}

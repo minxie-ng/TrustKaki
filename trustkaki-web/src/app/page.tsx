@@ -14,6 +14,8 @@ import {
 import AgentTracePanel from "@/components/AgentTracePanel";
 import OperationalState from "@/components/OperationalState";
 import SignInForm from "@/components/SignInForm";
+import PublicDemoWorkspace from "@/components/PublicDemoWorkspace";
+import { restorePublicDemo, PUBLIC_DEMO_STORAGE_KEY } from "@/lib/publicDemoState";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
 import { subscribeToDashboardChanges } from "@/lib/supabase/dashboardRealtime";
@@ -54,6 +56,8 @@ export default function Home() {
   const [activeView, setActiveView] = useState<AppView>("workspace");
   const [careSetupOpen, setCareSetupOpen] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [publicDemo, setPublicDemo] = useState(false);
+  const [publicDemoDocument, setPublicDemoDocument] = useState<ReturnType<typeof restorePublicDemo>>(null);
   const [demoPhase, setDemoPhase] = useState<DemoPhase>("orientation");
   const [demoError, setDemoError] = useState<string | null>(null);
   const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
@@ -293,6 +297,12 @@ export default function Home() {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setAuthLoading(false);
+      if (!data.session) {
+        try {
+          const restored = restorePublicDemo(window.sessionStorage.getItem(PUBLIC_DEMO_STORAGE_KEY));
+          if (restored) { setPublicDemoDocument(restored); setPublicDemo(true); }
+        } catch { /* public demo can start clean if storage is unavailable */ }
+      }
     });
 
     const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
@@ -303,6 +313,11 @@ export default function Home() {
 
     return () => data.subscription.unsubscribe();
   }, []);
+
+  function enterPublicDemo() {
+    setPublicDemo(true);
+    setPublicDemoDocument(restorePublicDemo(typeof window === "undefined" ? null : window.sessionStorage.getItem(PUBLIC_DEMO_STORAGE_KEY)));
+  }
 
   useEffect(() => {
     if (!authToken) return;
@@ -416,8 +431,9 @@ export default function Home() {
   }
 
   if (!authToken) {
+    if (publicDemo) return <PublicDemoWorkspace initialDocument={publicDemoDocument ?? undefined} onExit={() => { try { window.sessionStorage.removeItem(PUBLIC_DEMO_STORAGE_KEY); } catch {} setPublicDemo(false); setPublicDemoDocument(null); }} />;
     return (
-      <SignInForm onSignIn={signIn} disabled={authBusy} error={authError} />
+      <SignInForm onSignIn={signIn} onExploreDemo={enterPublicDemo} disabled={authBusy} error={authError} />
     );
   }
 

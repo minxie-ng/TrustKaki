@@ -20,10 +20,25 @@ interface DemoGuideProps {
   onPhaseChange: (phase: DemoPhase) => void;
   onErrorChange: (error: string | null) => void;
   onRefresh: (seniorId?: string | null) => Promise<DashboardData | null>;
+  onDataChange?: (data: DashboardData) => void;
+  commands?: DemoGuideCommands;
   onOpenTimeline: () => void;
   onUnauthorized: () => void;
   onExit: () => void;
   children?: ReactNode;
+}
+
+export interface DemoGuideCommandResult {
+  data: DashboardData;
+  queueItemId: string | null;
+  seniorId: string;
+}
+
+export interface DemoGuideCommands {
+  prepare: () => Promise<DemoGuideCommandResult>;
+  refresh: () => Promise<DemoGuideCommandResult>;
+  recordResponse: (queueItemId: string) => Promise<DemoGuideCommandResult>;
+  resolve: (queueItemId: string) => Promise<DemoGuideCommandResult>;
 }
 
 const activePhases: DemoPhase[] = ["prepare", "review", "respond", "resolve"];
@@ -72,6 +87,8 @@ export function DemoGuide({
   onPhaseChange,
   onErrorChange,
   onRefresh,
+  onDataChange,
+  commands,
   onOpenTimeline,
   onUnauthorized,
   onExit,
@@ -172,6 +189,27 @@ export function DemoGuide({
     setPending(true);
     onErrorChange(null);
     try {
+      if (commands) {
+        const result = activePhase === "prepare"
+          ? await commands.prepare()
+          : activePhase === "review"
+            ? await commands.refresh()
+            : activePhase === "respond"
+              ? await commands.recordResponse(guidedQueueItemId.current ?? queueItemFor(data))
+              : await commands.resolve(guidedQueueItemId.current ?? queueItemFor(data));
+        guidedQueueItemId.current = result.queueItemId ?? guidedQueueItemId.current;
+        guidedSeniorId.current = result.seniorId;
+        authoritativeData.current = result.data;
+        onDataChange?.(result.data);
+        const verified = activePhase === "prepare" || activePhase === "review"
+          ? preparedQueueItem(result.data, result.queueItemId ?? queueItemFor(result.data))
+          : activePhase === "respond"
+            ? isResponseRecorded(result.data, result.queueItemId ?? queueItemFor(result.data))
+            : isResolveVerified(result.data, result.queueItemId ?? queueItemFor(result.data));
+        if (activePhase === "review" && verified) onOpenTimeline();
+        applyTransition(activePhase, true, verified);
+        return;
+      }
       if (activePhase === "prepare") {
         const response = await fetch("/api/demo/pattern-watch/quick", {
           method: "POST",
@@ -399,6 +437,10 @@ function guidedQueueItem(
         Boolean(item.pattern?.evidence.length)
     ) ?? null
   );
+}
+
+function queueItemFor(data: DashboardData): string {
+  return data.followUpQueue.find((item) => Boolean(item.pattern?.evidence.length))?.id ?? "public-demo-case";
 }
 
 function preparedQueueItem(
