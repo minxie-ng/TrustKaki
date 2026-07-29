@@ -13,7 +13,7 @@ payloads, API keys, or other secrets to this document.
 ## Current Verified State
 
 - Branch: `main`
-- Verified commit: `03331c9` (`fix: patch production dependency vulnerabilities`)
+- Verified commit: `05b893e` (`feat: add isolated public demo`)
 - Repository: `https://github.com/minxie-ng/TrustKaki`
 - Vercel production: `https://trustkaki.vercel.app`
 - EdgeOne production: `https://trustkaki.edgeone.dev`
@@ -23,6 +23,11 @@ payloads, API keys, or other secrets to this document.
 - Resolution clears the active queue and retains both the recorded follow-up
   and resolution history after refresh.
 - `View recent activity` expands inline without opening another browser tab.
+- The public `Explore demo` flow passed on Vercel and EdgeOne: all four steps,
+  refresh persistence after Step 2, reset, and exit were manually accepted.
+- The public demo uses fictional browser-only state, expires after two hours,
+  and cannot call Supabase, LLM, messaging, webhook, scheduler, or processor
+  routes.
 - Production dependency audit: zero known vulnerabilities.
 - Local quality evidence: 756 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
@@ -79,10 +84,10 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | Order | Status | Workstream | Completion evidence |
 | --- | --- | --- | --- |
 | 1 | BLOCKED | Verify WhatsApp and Telegram on the final Vercel commit | Telegram passed on 29 July; WhatsApp is blocked by Meta OAuth error 200; exact Vercel authenticated UI capture remains pending |
-| 2 | TODO | Build one-click public demo mode | Anonymous visitor reaches isolated synthetic workspace; reset works; real outbound messaging is disabled; visitors cannot affect each other or production records |
+| 2 | DONE | Build one-click public demo mode | Commit `05b893e` is deployed on Vercel and EdgeOne; anonymous acceptance check passed for all four steps, refresh persistence, reset, and exit |
 | 3 | TODO | Make channel origin visible in care evidence | Relevant timeline items show WhatsApp or Telegram source, event time, and bounded delivery/processing state without exposing identifiers |
 | 4 | TODO | Complete final product QA | Authentication, guided demo, queue, history, errors, loading states, refresh persistence, keyboard use, desktop, and mobile pass |
-| 5 | TODO | Deploy the final application release | Exact commit is Running/Ready on Vercel and EdgeOne; both release smoke checks and authenticated demo verification pass |
+| 5 | DONE | Deploy the current public-demo release | Commit `05b893e` is Ready on Vercel and the matching EdgeOne revision is serving; public acceptance check passed on both hosts |
 | 6 | TODO | Capture channel proof | Short real-flow recordings or screenshots exist for WhatsApp and Telegram with identifiers and credentials removed |
 | 7 | TODO | Produce architecture and technical evidence | Diagram and concise evidence explain channels, webhooks, agents, deterministic policy, Supabase, dashboard, Vercel, and EdgeOne |
 | 8 | TODO | Build the hackathon slide deck | Final deck covers problem, user, workflow, demonstration, architecture, AI design, safety, impact, deployment, limitations, and roadmap |
@@ -101,10 +106,11 @@ recorded in
 WhatsApp remains blocked by Meta account access and must not hold up independent
 closeout work.
 
-Start checklist item 2: build the isolated one-click public demo. Keep the
-WhatsApp restoration attempt as a separate blocked task and follow the approval
-boundaries in `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` before accessing or
-changing Meta state.
+Start checklist item 7: produce the architecture and technical evidence, then
+item 8: build the hackathon slide deck. Keep the WhatsApp restoration attempt
+as a separate blocked task and follow the approval boundaries in
+`docs/operations/HACKATHON_RELEASE_RUNBOOK.md` before accessing or changing
+Meta state.
 
 When WhatsApp access is restored, verify only one approved fictional test flow:
 
@@ -124,10 +130,11 @@ the repository.
 - `Explore demo` creates or opens a per-visitor synthetic demo session.
 - No public visitor can read or mutate another visitor's state.
 - No public visitor can read or mutate authenticated production care records.
-- Demo mutations exercise the real product workflow where practical.
+- Demo mutations are deterministic browser-only transitions; they reuse the
+  real dashboard presentation but do not exercise production APIs.
 - Real provider sends, webhooks, schedules, and paid external side effects are
   disabled in demo mode.
-- AI use is bounded by rate limits and a defined fallback.
+- Public demo mode makes no AI request and has no external side effect.
 - `Reset demo` restores a known fictional starting state.
 - Demo state expires or is cleaned up automatically.
 - The interface clearly distinguishes simulated channel content from live
@@ -138,7 +145,7 @@ the repository.
 
 Target a short, evidence-led sequence:
 
-1. Show a brief real WhatsApp or Telegram exchange recording.
+1. Show the verified Telegram exchange recording.
 2. Open the live care workspace.
 3. Prepare the four-day history and show the consolidated priority case.
 4. Explain observed facts, usual-context comparison, deterministic Pattern
@@ -148,8 +155,9 @@ Target a short, evidence-led sequence:
 7. Show the architecture slide and identify what runs on Vercel, EdgeOne,
    Supabase, and the LLM provider.
 
-Use one channel as the primary recorded proof and show bounded evidence for the
-second channel. Do not depend on a live provider send as the only judge path.
+Use Telegram as the primary recorded proof. Describe WhatsApp as implemented
+but not final-verified because Meta account access was blocked; do not depend
+on a live provider send as the only judge path.
 
 ## Slide Deck Outline
 
