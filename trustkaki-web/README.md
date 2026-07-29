@@ -80,14 +80,16 @@ and removes temporary Auth users and database rows.
 ## Project Documentation
 
 - `docs/TrustKaki_BUILD_ROADMAP.md` is the current product direction and gate status.
+- `docs/PROJECT_CLOSEOUT.md` is the live checklist from the verified build through
+  hackathon submission and public portfolio release.
 - `docs/superpowers/specs/` records approved security and feature designs.
 - `docs/superpowers/verification/` records completed gate evidence.
 - `docs/superpowers/plans/` preserves historical implementation plans.
 - `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` is the bounded hackathon release,
   rollback, incident, and go/no-go checklist.
 
-There is no separate handoff document. The README, roadmap, current code, and
-dated verification records are the maintained sources of truth.
+The README and roadmap describe the product, while the closeout checklist tracks
+remaining work and dated verification records preserve completed evidence.
 
 ## Environment Variables
 
