@@ -56,14 +56,6 @@ export default function NavBar({
         >
           Care workspace
         </button>
-        <button
-          type="button"
-          aria-current={activeView === "activity" ? "page" : undefined}
-          onClick={() => onViewChange("activity")}
-          className={activeView === "activity" ? activeNavigationClass : navigationClass}
-        >
-          Activity
-        </button>
         <button type="button" onClick={onOpenSetup} className={navigationClass}>
           Care setup
         </button>

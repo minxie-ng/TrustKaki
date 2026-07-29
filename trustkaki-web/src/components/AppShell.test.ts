@@ -21,7 +21,7 @@ describe("AppShell", () => {
     expect(primaryNavigation).not.toContain("hidden");
     expect((html.match(/aria-label="Primary"/g) ?? [])).toHaveLength(1);
     expect((html.match(/>Care workspace</g) ?? [])).toHaveLength(1);
-    expect((html.match(/>Activity</g) ?? [])).toHaveLength(1);
+    expect((html.match(/>Activity</g) ?? [])).toHaveLength(0);
     expect((html.match(/>Care setup</g) ?? [])).toHaveLength(1);
   });
 
@@ -40,7 +40,7 @@ describe("AppShell", () => {
     ));
 
     expect(html).toContain("Care workspace");
-    expect(html).toContain("Activity");
+    expect(html).not.toContain(">Activity<");
     expect(html).toContain("Care setup");
     expect(html).not.toContain("Demo tools");
     expect(html).toContain('href="#main-content"');
@@ -66,7 +66,7 @@ describe("AppShell", () => {
 
     expect(html).toContain("Guided demo");
     expect(html).not.toContain("Demo tools");
-    expect(html).toContain('aria-current="page"');
+    expect(html).not.toContain('aria-current="page"');
     expect(html).toContain("Stable");
   });
 

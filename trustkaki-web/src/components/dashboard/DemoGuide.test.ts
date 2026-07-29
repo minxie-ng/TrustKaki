@@ -94,6 +94,7 @@ describe("DemoGuide rendering", () => {
     const html = renderGuide("orientation");
 
     expect(html).toContain("Start guided demo");
+    expect(html).toContain("Back to care workspace");
     expect(html).toContain("About 90 seconds");
     expect(html).not.toContain("Care workspace");
   });
@@ -257,6 +258,31 @@ describe("DemoGuide route wiring", () => {
     });
 
     expect(onRefresh).toHaveBeenCalledWith("senior-1");
+  });
+
+  it("retries preparation verification when a realtime refresh supersedes it", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({ queue: [queueItem] })
+    );
+    const onRefresh = vi
+      .fn<() => Promise<DashboardData | null>>()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(data());
+
+    const { onPhaseChange } = await renderInteractiveGuide({
+      phase: "prepare",
+      refreshedData: data(),
+      fetchMock,
+      onRefresh,
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-demo-primary="true"]')!
+        .click();
+    });
+
+    expect(onRefresh).toHaveBeenCalledTimes(2);
+    expect(onPhaseChange).toHaveBeenCalledWith("review");
   });
 
   it("posts the controlled response through the existing queue route", async () => {

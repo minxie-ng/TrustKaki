@@ -108,7 +108,7 @@ export default function Dashboard({
     <>
       <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] lg:overflow-hidden">
         <MobileWorkspaceTabs selected={mobileView} onSelect={setMobileView} />
-        <div className="mx-auto grid min-h-0 w-full max-w-[1760px] flex-1 lg:grid-cols-[210px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[210px_minmax(0,1fr)_245px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
+        <div className="mx-auto grid min-h-0 w-full flex-1 lg:grid-cols-[320px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[320px_minmax(0,1fr)_294px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
         <aside
           id="care-workspace-people-panel"
           role={mobileTabsActive ? "tabpanel" : undefined}
@@ -134,7 +134,12 @@ export default function Dashboard({
           }
           className={`${mobileView === "queue" ? "block" : "hidden"} min-w-0 space-y-4 bg-white p-3 sm:p-4 lg:col-start-2 lg:row-start-1 lg:block xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:p-5`}
         >
-          <WorkspaceLabel eyebrow="Today" title="Care workspace" />
+          <WorkspaceLabel
+            eyebrow="Today"
+            title="Care workspace"
+            actionLabel="Activity"
+            onAction={onViewActivity}
+          />
           <SelectedSeniorSummary senior={data.senior} selectedSenior={selectedSenior} />
           <PriorityCase
             items={queue}
@@ -147,7 +152,6 @@ export default function Dashboard({
             onSaved={refreshAfterCaseSave}
             onConflictRefresh={refreshAfterCaseConflict}
             onUnauthorized={unauthorized}
-            onViewRecentActivity={onViewActivity}
           />
         </section>
         <aside
@@ -258,13 +262,34 @@ function handleMobileWorkspaceTabKeyDown(
     ?.focus();
 }
 
-function WorkspaceLabel({ eyebrow, title }: { eyebrow: string; title: string }) {
+function WorkspaceLabel({
+  eyebrow,
+  title,
+  actionLabel,
+  onAction,
+}: {
+  eyebrow: string;
+  title: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
   return (
-    <div className="mb-3 hidden border-b border-[var(--care-line)] pb-3 xl:block">
-      <div className="text-[10px] font-bold uppercase text-[var(--care-brand)]">
-        {eyebrow}
+    <div className="mb-3 flex items-end justify-between gap-3 border-b border-[var(--care-line)] pb-3">
+      <div>
+        <div className="text-[10px] font-bold uppercase text-[var(--care-brand)]">
+          {eyebrow}
+        </div>
+        <h2 className="mt-1 text-sm font-extrabold text-[var(--care-ink)]">{title}</h2>
       </div>
-      <h2 className="mt-1 text-sm font-extrabold text-[var(--care-ink)]">{title}</h2>
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="text-xs font-bold text-[var(--care-coral-hover)] hover:text-[var(--care-evergreen)]"
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }

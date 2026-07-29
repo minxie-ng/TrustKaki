@@ -7,6 +7,7 @@ import { mainQueueCardFields } from "../dashboardViewModel";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import { CaseDetails } from "./CaseDetails";
 import { CaseUpdateForm } from "./CaseUpdateForm";
+import { CareActivity } from "./CareActivity";
 import {
   formatDate,
   labelPattern,
@@ -27,7 +28,6 @@ interface PriorityCaseProps {
   onSaved: () => void;
   onConflictRefresh: () => Promise<unknown>;
   onUnauthorized: () => void;
-  onViewRecentActivity?: () => void;
 }
 
 export function invokeViewRecentActivity(callback?: () => void): void {
@@ -45,8 +45,9 @@ export function PriorityCase({
   onSaved,
   onConflictRefresh,
   onUnauthorized,
-  onViewRecentActivity,
 }: PriorityCaseProps) {
+  const [recentActivityOpen, setRecentActivityOpen] = useState(false);
+
   if (items.length === 0) {
     const risk = riskConfig[data.senior.riskLevel];
     return (
@@ -75,11 +76,20 @@ export function PriorityCase({
         )}
         <button
           type="button"
-          onClick={() => invokeViewRecentActivity(onViewRecentActivity)}
+          onClick={() => setRecentActivityOpen((current) => !current)}
           className="mt-6 min-h-10 border-b border-[var(--care-coral)] text-sm font-semibold text-[var(--care-coral-hover)] hover:text-[var(--care-evergreen)]"
         >
-          View recent activity
+          {recentActivityOpen ? "Hide recent activity" : "View recent activity"}
         </button>
+        {recentActivityOpen && (
+          <CareActivity
+            activity={data.activity ?? []}
+            queue={items}
+            seniorName={data.senior.name}
+            inline
+            onReturnToWorkspace={() => setRecentActivityOpen(false)}
+          />
+        )}
       </section>
     );
   }

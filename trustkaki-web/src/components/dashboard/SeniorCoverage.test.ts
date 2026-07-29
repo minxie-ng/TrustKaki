@@ -86,8 +86,8 @@ describe("SeniorCoverage", () => {
     expect(html).toContain(">People<");
     expect(html).toContain(">Context<");
     expect(html).toContain('aria-selected="true"');
-    expect(html).toContain("lg:grid-cols-[210px_minmax(0,1fr)]");
-    expect(html).toContain("xl:grid-cols-[210px_minmax(0,1fr)_245px]");
+    expect(html).toContain("lg:grid-cols-[320px_minmax(0,1fr)]");
+    expect(html).toContain("xl:grid-cols-[320px_minmax(0,1fr)_294px]");
     expect(html).toMatch(
       /id="care-workspace-queue-panel"[^>]*class="block [^"]*lg:block/
     );
@@ -151,6 +151,8 @@ describe("SeniorCoverage", () => {
     expect(html).toContain('aria-current="true"');
     expect(html).toContain('data-status-dot="true"');
     expect(html).toContain("Select Mr Tan");
+    expect(html).toContain('class="text-sm font-bold leading-5');
+    expect(html).not.toContain('class="truncate text-sm font-bold');
     expect(html).not.toContain("ring-2");
     expect(html).not.toContain("shadow");
     expect(html).not.toContain("translate");

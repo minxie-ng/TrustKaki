@@ -1,8 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const DEMO_SENIOR_ID = "00000000-0000-4000-8000-000000000001";
 
-const runTriageTimelineAgentMock = vi.fn();
 const persistQuickDemoTimelineResultMock = vi.fn();
 const readDashboardStateMock = vi.fn();
 const resetDemoPersistenceMock = vi.fn();
@@ -18,10 +17,6 @@ const auth = {
 };
 const accessToken = "verified-access-token";
 
-vi.mock("@/lib/agents/orchestrator", () => ({
-  runTriageTimelineAgent: runTriageTimelineAgentMock,
-}));
-
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
   persistQuickDemoTimelineResult: persistQuickDemoTimelineResultMock,
   readDashboardState: readDashboardStateMock,
@@ -36,46 +31,9 @@ vi.mock("@/lib/auth/session", () => ({
     Response.json({ error: result.error }, { status: result.status }),
 }));
 
-function timelineResult(signalCount: number) {
-  return {
-    agentId: "triage",
-    agentName: "Triage Agent",
-    traceId: `trace-${Math.random()}`,
-    timestamp: "2026-07-11T00:00:00.000Z",
-    input: "input",
-    reasoning: "structured output",
-    output: "output",
-    tags: [],
-    durationMs: 10,
-    modelUsed: "test-model",
-    fallback: false,
-    inputSummary: "Senior message",
-    outputSummary: "Signals extracted",
-    stateChanges: [],
-    data: {
-      messages: [
-        {
-          messageId: "quick_pattern_demo_day_1",
-          signals: Array.from({ length: signalCount }, (_, index) => ({
-            type: index % 2 === 0 ? "health" : "daily_living",
-            description: `Signal ${index + 1}`,
-            severity: "medium",
-          })),
-          riskLevel: "yellow",
-          summary: "summary",
-          humanFollowUpRequired: true,
-        },
-      ],
-      overallRiskLevel: "yellow",
-      summary: "timeline summary",
-    },
-  };
-}
-
 describe("/api/demo/pattern-watch/quick", () => {
   beforeEach(() => {
     vi.resetModules();
-    runTriageTimelineAgentMock.mockReset();
     persistQuickDemoTimelineResultMock.mockReset();
     readDashboardStateMock.mockReset();
     resetDemoPersistenceMock.mockReset();
@@ -100,6 +58,10 @@ describe("/api/demo/pattern-watch/quick", () => {
     });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("requires demo_admin authorization", async () => {
     requireDemoAdminMock.mockResolvedValue({
       ok: false,
@@ -111,44 +73,63 @@ describe("/api/demo/pattern-watch/quick", () => {
     const response = await POST(new Request("http://localhost/api/demo/pattern-watch/quick"));
 
     expect(response.status).toBe(403);
-    expect(runTriageTimelineAgentMock).not.toHaveBeenCalled();
   });
 
   it("does not hardcode a final pattern or queue result", async () => {
-    runTriageTimelineAgentMock.mockResolvedValue(timelineResult(0));
     const { POST } = await import("./route");
 
     const response = await POST(new Request("http://localhost/api/demo/pattern-watch/quick"));
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json.signalsDetected).toBe(0);
+    expect(json.signalsDetected).toBe(4);
     expect(json.queueCount).toBe(0);
     expect(persistQuickDemoTimelineResultMock).toHaveBeenCalledWith(
       expect.objectContaining({ seniorId: DEMO_SENIOR_ID })
     );
     expect(resetDemoPersistenceMock).toHaveBeenCalledWith({ accessToken });
-    expect(resetDemoPersistenceMock.mock.invocationCallOrder[0]).toBeLessThan(
-      runTriageTimelineAgentMock.mock.invocationCallOrder[0]
-    );
     expect(readDashboardStateMock).toHaveBeenCalledWith({
       auth,
       seniorId: DEMO_SENIOR_ID,
     });
   });
 
-  it("uses one timeline extraction call for faster quick demo timing", async () => {
-    runTriageTimelineAgentMock.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve(timelineResult(1)), 40))
-    );
+  it("uses a deterministic timeline fixture for fast judge preparation", async () => {
     const { POST } = await import("./route");
 
     const startedAt = Date.now();
     const response = await POST(new Request("http://localhost/api/demo/pattern-watch/quick"));
     const elapsed = Date.now() - startedAt;
+    const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(runTriageTimelineAgentMock).toHaveBeenCalledTimes(1);
+    expect(json.signalsDetected).toBe(4);
     expect(elapsed).toBeLessThan(100);
+  });
+
+  it("keeps the four-day scenario newer than preserved audit history", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T08:00:00.000Z"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/demo/pattern-watch/quick")
+    );
+
+    expect(response.status).toBe(200);
+    expect(persistQuickDemoTimelineResultMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            id: "quick_pattern_demo_day_1",
+            timestamp: "2026-07-26T08:00:00.000Z",
+          }),
+          expect.objectContaining({
+            id: "quick_pattern_demo_day_4",
+            timestamp: "2026-07-29T08:00:00.000Z",
+          }),
+        ]),
+      })
+    );
   });
 });

@@ -109,6 +109,6 @@ describe("care activity", () => {
     const html = renderCareActivity({ retainedActivity: [], queue: [] });
 
     expect(html).toContain("No care activity recorded");
-    expect(html).toContain("Return to care workspace");
+    expect(html).toContain("Active cases");
   });
 });

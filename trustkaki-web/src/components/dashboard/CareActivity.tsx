@@ -29,6 +29,7 @@ interface CareActivityProps {
   activity: CareActivityItem[];
   queue: FollowUpQueueItem[];
   seniorName: string;
+  inline?: boolean;
   onReturnToWorkspace: () => void;
 }
 
@@ -112,14 +113,20 @@ export function CareActivity({
   activity,
   queue,
   seniorName,
+  inline = false,
   onReturnToWorkspace,
 }: CareActivityProps) {
   const entries = activityEntries(activity, queue);
+  const Root = inline ? "section" : "main";
 
   return (
-    <main
+    <Root
       data-care-thread="true"
-      className="h-full overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)]"
+      className={
+        inline
+          ? "mt-6 border-y border-[var(--care-line)] bg-[var(--care-paper)] text-[var(--care-ink)]"
+          : "h-full overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)]"
+      }
     >
       <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--care-line)] pb-5">
@@ -131,13 +138,15 @@ export function CareActivity({
               {seniorName} activity
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={onReturnToWorkspace}
-            className="min-h-11 border border-[var(--care-evergreen)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)] hover:bg-[var(--care-mist)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
-          >
-            Return to care workspace
-          </button>
+          {!inline && (
+            <button
+              type="button"
+              onClick={onReturnToWorkspace}
+              className="min-h-11 border border-[var(--care-evergreen)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)] hover:bg-[var(--care-mist)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]"
+            >
+              Active cases
+            </button>
+          )}
         </div>
 
         {entries.length === 0 ? (
@@ -198,6 +207,6 @@ export function CareActivity({
           </ol>
         )}
       </div>
-    </main>
+    </Root>
   );
 }

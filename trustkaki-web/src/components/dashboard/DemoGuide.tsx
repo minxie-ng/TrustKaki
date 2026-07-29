@@ -132,6 +132,13 @@ export function DemoGuide({
           >
             Start guided demo
           </button>
+          <button
+            type="button"
+            onClick={onExit}
+            className="mt-3 min-h-11 border-b border-[var(--care-line)] px-1 py-2 text-sm font-semibold text-gray-600 hover:text-[var(--care-ink)]"
+          >
+            Back to care workspace
+          </button>
         </section>
       </main>
     );
@@ -182,18 +189,26 @@ export function DemoGuide({
           ) ?? null;
         guidedQueueItemId.current = preparedItem?.id ?? null;
         guidedSeniorId.current = preparedItem?.seniorId ?? null;
-        const refreshed = response.ok
+        let refreshed = response.ok
           ? await onRefresh(guidedSeniorId.current)
           : null;
         if (refreshed) authoritativeData.current = refreshed;
+        let verified = Boolean(
+          refreshed &&
+            preparedItem &&
+            preparedQueueItem(refreshed, preparedItem.id)
+        );
+        if (response.ok && preparedItem && !verified) {
+          refreshed = await onRefresh(guidedSeniorId.current);
+          if (refreshed) authoritativeData.current = refreshed;
+          verified = Boolean(
+            refreshed && preparedQueueItem(refreshed, preparedItem.id)
+          );
+        }
         applyTransition(
           activePhase,
           response.ok,
-          Boolean(
-            refreshed &&
-              preparedItem &&
-              preparedQueueItem(refreshed, preparedItem.id)
-          )
+          verified
         );
         return;
       }
@@ -251,16 +266,26 @@ export function DemoGuide({
         );
         return;
       }
-      const refreshed = response.ok
+      let refreshed = response.ok
         ? await onRefresh(guidedSeniorId.current)
         : null;
       if (refreshed) authoritativeData.current = refreshed;
-      const verified = Boolean(
+      let verified = Boolean(
         refreshed &&
           (isResponse
             ? isResponseRecorded(refreshed, item.id)
             : isResolveVerified(refreshed, item.id))
       );
+      if (response.ok && !verified) {
+        refreshed = await onRefresh(guidedSeniorId.current);
+        if (refreshed) authoritativeData.current = refreshed;
+        verified = Boolean(
+          refreshed &&
+            (isResponse
+              ? isResponseRecorded(refreshed, item.id)
+              : isResolveVerified(refreshed, item.id))
+        );
+      }
       applyTransition(activePhase, response.ok, verified);
     } catch {
       applyTransition(activePhase, false, false);
