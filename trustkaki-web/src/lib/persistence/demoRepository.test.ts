@@ -44,6 +44,33 @@ describe("demo repository", () => {
     ).rejects.toThrow("reset TrustKaki demo failed");
   });
 
+  it("prepares the live demo through one authenticated transaction", async () => {
+    const fixture = {
+      senior_id: "00000000-0000-4000-8000-000000000001",
+      check_in_id: "00000000-0000-4000-8000-000000000010",
+      queue_item_id: "00000000-0000-4000-8000-000000000030",
+      pattern_id: "00000000-0000-4000-8000-000000000020",
+      queue_updated_at: "2026-07-30T06:00:00.000Z",
+      prepared_at: "2026-07-30T06:00:00.000Z",
+    };
+    const rpc = vi.fn().mockResolvedValue({ data: fixture, error: null });
+    createTrustKakiUserClientMock.mockReturnValue({ rpc });
+    const { prepareLiveDemoPersistence } = await import("./demoRepository");
+
+    await expect(
+      prepareLiveDemoPersistence({ accessToken: "verified-token" })
+    ).resolves.toMatchObject({
+      fixture: {
+        seniorId: fixture.senior_id,
+        queueItemId: fixture.queue_item_id,
+        patternId: fixture.pattern_id,
+      },
+      persistence: { persisted: true },
+    });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("prepare_trustkaki_live_demo");
+  });
+
   it("binds Quick Demo senior upserts to the stable demo organisation", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/lib/persistence/demoRepository.ts"),

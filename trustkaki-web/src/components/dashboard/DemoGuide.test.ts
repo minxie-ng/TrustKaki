@@ -393,6 +393,34 @@ describe("DemoGuide route wiring", () => {
     expect(onPhaseChange).toHaveBeenCalledWith("resolve");
   });
 
+  it("applies persisted action metadata without rebuilding the dashboard", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      previousStatus: "pending",
+      resultingStatus: "acknowledged",
+      queueUpdatedAt: "2026-07-11T09:00:00.000Z",
+      commandId: "00000000-0000-4000-8000-000000000101",
+    }));
+    const onRefresh = vi.fn(async () => null);
+    const { onDataChange, onPhaseChange } = await renderInteractiveGuide({
+      phase: "respond",
+      refreshedData: data(),
+      fetchMock,
+      onRefresh,
+    });
+
+    await clickPrimary();
+
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(onDataChange).toHaveBeenCalledWith(expect.objectContaining({
+      followUpQueue: [expect.objectContaining({ status: "acknowledged" })],
+      activity: [expect.objectContaining({
+        actionType: "record_outcome",
+        resultingStatus: "acknowledged",
+      })],
+    }));
+    expect(onPhaseChange).toHaveBeenCalledWith("resolve");
+  });
+
   it("calls the existing unauthorized handler for a 401 response", async () => {
     const onUnauthorized = vi.fn();
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));

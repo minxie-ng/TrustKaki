@@ -2,9 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const DEMO_SENIOR_ID = "00000000-0000-4000-8000-000000000001";
 
-const persistQuickDemoTimelineResultMock = vi.fn();
 const readDashboardStateMock = vi.fn();
-const resetDemoPersistenceMock = vi.fn();
+const prepareLiveDemoPersistenceMock = vi.fn();
 const requireDemoAdminMock = vi.fn();
 
 const auth = {
@@ -18,11 +17,10 @@ const auth = {
 const accessToken = "verified-access-token";
 
 vi.mock("@/lib/persistence/trustkakiRepository", () => ({
-  persistQuickDemoTimelineResult: persistQuickDemoTimelineResultMock,
   readDashboardState: readDashboardStateMock,
 }));
 vi.mock("@/lib/persistence/demoRepository", () => ({
-  resetDemoPersistence: resetDemoPersistenceMock,
+  prepareLiveDemoPersistence: prepareLiveDemoPersistenceMock,
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -34,21 +32,21 @@ vi.mock("@/lib/auth/session", () => ({
 describe("/api/demo/pattern-watch/quick", () => {
   beforeEach(() => {
     vi.resetModules();
-    persistQuickDemoTimelineResultMock.mockReset();
     readDashboardStateMock.mockReset();
-    resetDemoPersistenceMock.mockReset();
+    prepareLiveDemoPersistenceMock.mockReset();
     requireDemoAdminMock.mockReset();
     requireDemoAdminMock.mockResolvedValue({ ok: true, auth, accessToken });
 
-    resetDemoPersistenceMock.mockResolvedValue({
-      mode: "supabase",
-      configured: true,
-      persisted: true,
-    });
-    persistQuickDemoTimelineResultMock.mockResolvedValue({
-      mode: "supabase",
-      configured: true,
-      persisted: true,
+    prepareLiveDemoPersistenceMock.mockResolvedValue({
+      fixture: {
+        seniorId: DEMO_SENIOR_ID,
+        checkInId: "check-in-1",
+        patternId: "pattern-1",
+        queueItemId: "queue-1",
+        preparedAt: "2026-07-29T08:00:00.000Z",
+        queueUpdatedAt: "2026-07-29T08:00:00.000Z",
+      },
+      persistence: { mode: "supabase", configured: true, persisted: true },
     });
     readDashboardStateMock.mockResolvedValue({
       persistence: { mode: "supabase", configured: true, persisted: true },
@@ -75,7 +73,7 @@ describe("/api/demo/pattern-watch/quick", () => {
     expect(response.status).toBe(403);
   });
 
-  it("does not hardcode a final pattern or queue result", async () => {
+  it("prepares the bounded fixture in one transaction and reads it back", async () => {
     const { POST } = await import("./route");
 
     const response = await POST(new Request("http://localhost/api/demo/pattern-watch/quick"));
@@ -84,10 +82,8 @@ describe("/api/demo/pattern-watch/quick", () => {
     expect(response.status).toBe(200);
     expect(json.signalsDetected).toBe(4);
     expect(json.queueCount).toBe(0);
-    expect(persistQuickDemoTimelineResultMock).toHaveBeenCalledWith(
-      expect.objectContaining({ seniorId: DEMO_SENIOR_ID })
-    );
-    expect(resetDemoPersistenceMock).toHaveBeenCalledWith({ accessToken });
+    expect(prepareLiveDemoPersistenceMock).toHaveBeenCalledOnce();
+    expect(prepareLiveDemoPersistenceMock).toHaveBeenCalledWith({ accessToken });
     expect(readDashboardStateMock).toHaveBeenCalledWith({
       auth,
       seniorId: DEMO_SENIOR_ID,
@@ -108,7 +104,7 @@ describe("/api/demo/pattern-watch/quick", () => {
     expect(elapsed).toBeLessThan(100);
   });
 
-  it("keeps the four-day scenario newer than preserved audit history", async () => {
+  it("returns the transaction fixture used for the authoritative read", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-29T08:00:00.000Z"));
     const { POST } = await import("./route");
@@ -118,19 +114,11 @@ describe("/api/demo/pattern-watch/quick", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(persistQuickDemoTimelineResultMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            id: "quick_pattern_demo_day_1",
-            timestamp: "2026-07-26T08:00:00.000Z",
-          }),
-          expect.objectContaining({
-            id: "quick_pattern_demo_day_4",
-            timestamp: "2026-07-29T08:00:00.000Z",
-          }),
-        ]),
-      })
-    );
+    await expect(response.json()).resolves.toMatchObject({
+      fixture: {
+        seniorId: DEMO_SENIOR_ID,
+        queueItemId: "queue-1",
+      },
+    });
   });
 });

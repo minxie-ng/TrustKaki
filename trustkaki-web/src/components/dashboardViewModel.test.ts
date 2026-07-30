@@ -243,6 +243,11 @@ describe("dashboard view model", () => {
   it("uses lightweight polling for shared caregiver dashboard sync", () => {
     expect(dashboardSyncIntervalMs).toBe(20_000);
     expect(shouldPollDashboard({ hasAuthToken: true, visibilityState: "visible" })).toBe(true);
+    expect(shouldPollDashboard({
+      hasAuthToken: true,
+      visibilityState: "visible",
+      guideActive: true,
+    })).toBe(false);
     expect(shouldPollDashboard({ hasAuthToken: true, visibilityState: "hidden" })).toBe(false);
     expect(shouldPollDashboard({ hasAuthToken: false, visibilityState: "visible" })).toBe(false);
   });

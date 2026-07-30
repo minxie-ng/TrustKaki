@@ -37,7 +37,8 @@ export async function POST(request: Request) {
       escalationDestination: body.escalationDestination ?? null,
       notificationCategory: body.notificationCategory ?? null,
     });
-    const state = persistence.seniorId
+    const includeState = new URL(request.url).searchParams.get("includeState") !== "false";
+    const state = includeState && persistence.seniorId
       ? await readDashboardState({
           auth: authResult.auth,
           seniorId: persistence.seniorId,

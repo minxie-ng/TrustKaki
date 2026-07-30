@@ -1,5 +1,6 @@
 import "server-only";
 
+import { z } from "zod";
 import { uncleTan } from "@/data/demo";
 import type {
   AgentRunContext,
@@ -29,6 +30,45 @@ import {
 } from "./persistenceSupport";
 
 const DEMO_ORGANISATION_ID = "00000000-0000-4000-8000-000000000006";
+
+const liveDemoFixtureSchema = z.object({
+  senior_id: z.string().uuid(),
+  check_in_id: z.string().uuid(),
+  pattern_id: z.string().uuid(),
+  queue_item_id: z.string().uuid(),
+  prepared_at: z.string(),
+  queue_updated_at: z.string(),
+});
+
+export async function prepareLiveDemoPersistence(args: {
+  accessToken: string;
+}) {
+  const client = createTrustKakiUserClient(args.accessToken);
+  if (!client) throw new Error("Live demo persistence is unavailable");
+
+  const rpcClient = client as unknown as {
+    rpc: (name: "prepare_trustkaki_live_demo") => Promise<{
+      data: unknown;
+      error: { message: string } | null;
+    }>;
+  };
+  const { data, error } = await rpcClient.rpc("prepare_trustkaki_live_demo");
+  if (error) throw new Error("prepare TrustKaki live demo failed");
+  const fixture = liveDemoFixtureSchema.safeParse(data);
+  if (!fixture.success) throw new Error("prepare TrustKaki live demo failed");
+
+  return {
+    fixture: {
+      seniorId: fixture.data.senior_id,
+      checkInId: fixture.data.check_in_id,
+      patternId: fixture.data.pattern_id,
+      queueItemId: fixture.data.queue_item_id,
+      preparedAt: fixture.data.prepared_at,
+      queueUpdatedAt: fixture.data.queue_updated_at,
+    },
+    persistence: supabaseMeta(),
+  };
+}
 
 export async function resetDemoPersistence(args: {
   accessToken: string;

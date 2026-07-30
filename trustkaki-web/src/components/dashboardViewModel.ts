@@ -45,8 +45,13 @@ export function dashboardRefreshForVoidConsumer(
 export function shouldPollDashboard(args: {
   hasAuthToken: boolean;
   visibilityState?: DocumentVisibilityState;
+  guideActive?: boolean;
 }): boolean {
-  return args.hasAuthToken && args.visibilityState !== "hidden";
+  return (
+    args.hasAuthToken &&
+    !args.guideActive &&
+    args.visibilityState !== "hidden"
+  );
 }
 
 export function appShellSurface(args: {

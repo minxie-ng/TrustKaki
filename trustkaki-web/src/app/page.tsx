@@ -327,6 +327,7 @@ export default function Home() {
         shouldPollDashboard({
           hasAuthToken: Boolean(authToken),
           visibilityState: document.visibilityState,
+          guideActive,
         })
       ) {
         requestDashboardRefresh();
@@ -346,10 +347,10 @@ export default function Home() {
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshIfVisible);
     };
-  }, [authToken, requestDashboardRefresh]);
+  }, [authToken, guideActive, requestDashboardRefresh]);
 
   useEffect(() => {
-    if (!authToken) return;
+    if (!authToken || guideActive) return;
     const subscription = subscribeToDashboardChanges({
       onChange: () => {
         requestDashboardRefresh();
@@ -361,6 +362,7 @@ export default function Home() {
     return () => subscription?.unsubscribe();
   }, [
     authToken,
+    guideActive,
     refreshCheckInSchedule,
     refreshContactPlan,
     requestDashboardRefresh,

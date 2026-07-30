@@ -5,6 +5,7 @@ import { authHeader } from "@/lib/auth/client";
 import type { DashboardData, FollowUpQueueItem } from "@/lib/types";
 import {
   advanceDemo,
+  applyPersistedDemoAction,
   isPrepared,
   isResolveVerified,
   isResponseRecorded,
@@ -297,7 +298,7 @@ export function DemoGuide({
         commandIds.current[activePhase] ?? crypto.randomUUID();
       commandIds.current[activePhase] = commandId;
       const isResponse = activePhase === "respond";
-      const response = await fetch("/api/caregiver/queue-action", {
+      const response = await fetch("/api/caregiver/queue-action?includeState=false", {
         method: "POST",
         headers: {
           ...authHeader(authToken),
@@ -325,11 +326,32 @@ export function DemoGuide({
         return;
       }
       const payload = response.ok
-        ? ((await response.json().catch(() => null)) as {
+          ? ((await response.json().catch(() => null)) as {
             data?: DashboardData | null;
+            commandId?: string | null;
+            previousStatus?: FollowUpQueueItem["status"] | null;
+            resultingStatus?: FollowUpQueueItem["status"] | null;
+            queueUpdatedAt?: string | null;
           } | null)
         : null;
-      let refreshed = payload?.data ?? (response.ok
+      const reconciled =
+        payload?.commandId &&
+        payload.previousStatus &&
+        payload.resultingStatus &&
+        payload.queueUpdatedAt
+          ? applyPersistedDemoAction({
+              data: authoritativeData.current,
+              queueItemId: item.id,
+              commandId: payload.commandId,
+              actionType: isResponse ? "record_outcome" : "resolve",
+              outcomeType: isResponse ? "needs_follow_up" : "resolved",
+              note: isResponse ? RESPONSE_NOTE : RESOLUTION_NOTE,
+              previousStatus: payload.previousStatus,
+              resultingStatus: payload.resultingStatus,
+              queueUpdatedAt: payload.queueUpdatedAt,
+            })
+          : null;
+      let refreshed = payload?.data ?? reconciled ?? (response.ok
         ? await onRefresh(guidedSeniorId.current)
         : null);
       if (refreshed) {

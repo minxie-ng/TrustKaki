@@ -1,4 +1,8 @@
-import type { DashboardData } from "@/lib/types";
+import type {
+  CareActivityItem,
+  DashboardData,
+  FollowUpStatus,
+} from "@/lib/types";
 
 export type DemoPhase =
   | "orientation"
@@ -132,4 +136,81 @@ export function isResolveVerified(
       )
     )
   );
+}
+
+export function applyPersistedDemoAction(args: {
+  data: DashboardData;
+  queueItemId: string;
+  commandId: string;
+  actionType: "record_outcome" | "resolve";
+  outcomeType: "needs_follow_up" | "resolved";
+  note: string;
+  previousStatus: FollowUpStatus;
+  resultingStatus: FollowUpStatus;
+  queueUpdatedAt: string;
+}): DashboardData {
+  const queueItem = args.data.followUpQueue.find(
+    (item) => item.id === args.queueItemId
+  );
+  if (!queueItem) return args.data;
+
+  const action = {
+    id: args.commandId,
+    actionType: args.actionType,
+    outcomeType: args.outcomeType,
+    note: args.note,
+    caregiver: args.data.senior.caregiver,
+    createdAt: args.queueUpdatedAt,
+  };
+  const activity: CareActivityItem = {
+    ...action,
+    queueItemId: args.queueItemId,
+    seniorId: queueItem.seniorId,
+    previousStatus: args.previousStatus,
+    resultingStatus: args.resultingStatus,
+  };
+  const followUpQueue = args.actionType === "resolve"
+    ? args.data.followUpQueue.filter((item) => item.id !== args.queueItemId)
+    : args.data.followUpQueue.map((item) =>
+        item.id === args.queueItemId
+          ? {
+              ...item,
+              status: args.resultingStatus,
+              lastUpdatedAt: args.queueUpdatedAt,
+              pattern: item.pattern
+                ? {
+                    ...item.pattern,
+                    previousActions: [
+                      action,
+                      ...item.pattern.previousActions.filter(
+                        (previous) => previous.id !== args.commandId
+                      ),
+                    ],
+                  }
+                : item.pattern,
+            }
+          : item
+      );
+  const seniors = args.data.seniors?.map((senior) =>
+    senior.id === queueItem.seniorId
+      ? {
+          ...senior,
+          followUpCount: followUpQueue.filter(
+            (item) => item.seniorId === senior.id
+          ).length,
+        }
+      : senior
+  );
+
+  return {
+    ...args.data,
+    followUpQueue,
+    seniors,
+    activity: [
+      activity,
+      ...(args.data.activity ?? []).filter(
+        (item) => item.id !== args.commandId
+      ),
+    ],
+  };
 }

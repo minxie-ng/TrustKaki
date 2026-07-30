@@ -112,6 +112,32 @@ describe("/api/caregiver/queue-action", () => {
     expect(json.data).toEqual({ followUpQueue: [] });
   });
 
+  it("skips the expensive dashboard rebuild when the caller requests mutation metadata", async () => {
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/caregiver/queue-action?includeState=false", {
+        method: "POST",
+        body: JSON.stringify({
+          queueItemId: "queue_1",
+          commandId,
+          expectedUpdatedAt,
+          actionType: "record_outcome",
+          outcomeType: "needs_follow_up",
+          note: "Daughter will call today.",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(readDashboardStateMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({
+      status: "ok",
+      data: null,
+      seniorId: "senior-1",
+    });
+  });
+
   it("passes an explicit escalation destination and audit reason", async () => {
     const { POST } = await import("./route");
 
