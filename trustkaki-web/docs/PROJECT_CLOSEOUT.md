@@ -59,6 +59,11 @@ payloads, API keys, or other secrets to this document.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
+- The agent-evidence branch contains a reproducible 42-case fictional benchmark
+  across care, social, digital-safety, durable-context, benign, and
+  protected-data scenarios. Its deterministic offline run measured 100.0%
+  durable-context precision, 100.0% schema validity, 0.0% fallback, and no
+  failed case IDs. Routing metrics are explicitly not measured offline.
 
 ## Deployment Responsibilities
 
@@ -137,8 +142,8 @@ The approved design is recorded in
 | Order | Status | Scoring workstream | Completion evidence |
 | --- | --- | --- | --- |
 | A | IN PROGRESS | Correct conditional multi-agent evidence | Slide 9 states that the coordinator selects relevant specialists; the appetite-and-knee-pain example does not claim Digital Safety or Context Memory ran without their triggers |
-| B | TODO | Build the synthetic AI benchmark | A committed 40-60 case fictional dataset measures routing, safety recall, memory gating, schema validity, fallback behavior, and latency in deterministic and bounded live modes |
-| C | TODO | Publish reproducible AI evidence | A sanitized benchmark report is reproducible, failed cases remain visible, and deck metrics match the report exactly |
+| B | DONE | Build the synthetic AI benchmark | The committed 42-case fictional dataset, strict validation, scoring tests, real fallback tests, and bounded CLI cover six categories; the offline report is reproducible with `npm run benchmark:agents` |
+| C | IN PROGRESS | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline result and failed IDs; the pending bounded live run and exact deck metric update remain |
 | D | TODO | Run bounded target-user validation | Three to five participants complete the fictional review tasks; role category, task success, timing, and non-personal usability findings are recorded |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
 | F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
@@ -152,10 +157,11 @@ recorded in
 WhatsApp remains blocked by Meta account access and must not hold up independent
 closeout work.
 
-Run items 11 and 12 for submission and public-release readiness. Keep the
-WhatsApp restoration attempt as a separate blocked task and follow the approval
-boundaries in `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` before accessing or
-changing Meta state.
+After explicit usage approval, run the 18-case live agent benchmark next, using
+three fictional cases from each category and no Supabase or messaging calls.
+Review its failed IDs before accepting any metric for the deck. Then correct
+Slide 9's conditional-routing wording and add at most three live metrics to
+Slide 10. Keep the WhatsApp restoration attempt as a separate blocked task.
 
 For item 11, keep the credential-bearing native Google Slides source private
 and upload its current PPTX export to the submission portal. The public event
