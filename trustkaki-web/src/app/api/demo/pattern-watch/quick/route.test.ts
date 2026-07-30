@@ -92,6 +92,7 @@ describe("/api/demo/pattern-watch/quick", () => {
       auth,
       seniorId: DEMO_SENIOR_ID,
     });
+    expect(json.data).toEqual({ followUpQueue: [] });
   });
 
   it("uses a deterministic timeline fixture for fast judge preparation", async () => {

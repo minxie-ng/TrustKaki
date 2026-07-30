@@ -186,6 +186,7 @@ export async function POST(request: Request) {
       ),
       queueCount: state.data.followUpQueue.length,
       queue: state.data.followUpQueue,
+      data: state.data,
       durationMs: Date.now() - startedAt,
       persistence: state.persistence,
     });

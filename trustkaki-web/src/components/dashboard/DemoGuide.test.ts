@@ -170,6 +170,7 @@ async function renderInteractiveGuide({
   initialData = data(),
   onPhaseChange = vi.fn<(phase: DemoPhase) => void>(),
   onErrorChange = vi.fn<(error: string | null) => void>(),
+  onDataChange = vi.fn<(data: DashboardData) => void>(),
   onRefresh = vi.fn(async () => refreshedData),
   onUnauthorized = vi.fn(),
 }: {
@@ -179,6 +180,7 @@ async function renderInteractiveGuide({
   initialData?: DashboardData;
   onPhaseChange?: (phase: DemoPhase) => void;
   onErrorChange?: (error: string | null) => void;
+  onDataChange?: (data: DashboardData) => void;
   onRefresh?: (seniorId?: string | null) => Promise<DashboardData | null>;
   onUnauthorized?: () => void;
 }) {
@@ -199,6 +201,7 @@ async function renderInteractiveGuide({
           authToken: "test-token",
           onPhaseChange,
           onErrorChange,
+          onDataChange,
           onRefresh,
           onOpenTimeline: vi.fn(),
           onUnauthorized,
@@ -212,6 +215,7 @@ async function renderInteractiveGuide({
   return {
     onPhaseChange,
     onErrorChange,
+    onDataChange,
     onRefresh,
     onUnauthorized,
     rerender: render,
@@ -263,6 +267,27 @@ describe("DemoGuide route wiring", () => {
     expect(onRefresh).toHaveBeenCalledWith("senior-1");
   });
 
+  it("uses authoritative preparation state without another dashboard refresh", async () => {
+    const prepared = data();
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({ data: prepared, queue: prepared.followUpQueue })
+    );
+    const onRefresh = vi.fn(async () => prepared);
+    const { onDataChange, onPhaseChange } = await renderInteractiveGuide({
+      phase: "prepare",
+      refreshedData: prepared,
+      initialData: data({ followUpQueue: [] }),
+      fetchMock,
+      onRefresh,
+    });
+
+    await clickPrimary();
+
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(onDataChange).toHaveBeenCalledWith(prepared);
+    expect(onPhaseChange).toHaveBeenCalledWith("review");
+  });
+
   it("retries preparation verification when a realtime refresh supersedes it", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json({ queue: [queueItem] })
@@ -288,7 +313,7 @@ describe("DemoGuide route wiring", () => {
     expect(onPhaseChange).toHaveBeenCalledWith("review");
   });
 
-  it("reviews the prepared case when an automatic refresh supersedes Step 2", async () => {
+  it("reviews the prepared case without reloading the dashboard", async () => {
     const onRefresh = vi.fn(async () => null);
     const onErrorChange = vi.fn();
     const { onPhaseChange } = await renderInteractiveGuide({
@@ -302,7 +327,7 @@ describe("DemoGuide route wiring", () => {
 
     await clickPrimary();
 
-    expect(onRefresh).toHaveBeenCalledOnce();
+    expect(onRefresh).not.toHaveBeenCalled();
     expect(onPhaseChange).toHaveBeenCalledWith("respond");
     expect(onErrorChange).toHaveBeenLastCalledWith(null);
   });
@@ -345,6 +370,26 @@ describe("DemoGuide route wiring", () => {
       actionType: "record_outcome",
       outcomeType: "needs_follow_up",
     });
+    expect(onPhaseChange).toHaveBeenCalledWith("resolve");
+  });
+
+  it("uses authoritative caregiver action state without another dashboard refresh", async () => {
+    const acknowledged = data({
+      followUpQueue: [{ ...queueItem, status: "acknowledged" }],
+      activity: [responseActivity()],
+    });
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ data: acknowledged }));
+    const onRefresh = vi.fn(async () => acknowledged);
+    const { onPhaseChange } = await renderInteractiveGuide({
+      phase: "respond",
+      refreshedData: acknowledged,
+      fetchMock,
+      onRefresh,
+    });
+
+    await clickPrimary();
+
+    expect(onRefresh).not.toHaveBeenCalled();
     expect(onPhaseChange).toHaveBeenCalledWith("resolve");
   });
 

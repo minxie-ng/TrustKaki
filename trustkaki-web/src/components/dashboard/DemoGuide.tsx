@@ -220,20 +220,27 @@ export function DemoGuide({
         });
         if (handleUnauthorized(response, onUnauthorized)) return;
         const payload = response.ok
-          ? ((await response.json()) as { queue?: FollowUpQueueItem[] })
+          ? ((await response.json()) as {
+              queue?: FollowUpQueueItem[];
+              data?: DashboardData;
+            })
           : null;
+        const responseData = payload?.data ?? null;
         const preparedItem =
-          payload?.queue?.find(
+          (responseData?.followUpQueue ?? payload?.queue)?.find(
             (item) =>
               item.status === "pending" &&
               Boolean(item.pattern?.evidence.length)
           ) ?? null;
         guidedQueueItemId.current = preparedItem?.id ?? null;
         guidedSeniorId.current = preparedItem?.seniorId ?? null;
-        let refreshed = response.ok
+        let refreshed = responseData ?? (response.ok
           ? await onRefresh(guidedSeniorId.current)
-          : null;
-        if (refreshed) authoritativeData.current = refreshed;
+          : null);
+        if (refreshed) {
+          authoritativeData.current = refreshed;
+          onDataChange?.(refreshed);
+        }
         let verified = Boolean(
           refreshed &&
             preparedItem &&
@@ -255,6 +262,15 @@ export function DemoGuide({
       }
 
       if (activePhase === "review") {
+        const current = authoritativeData.current;
+        const currentVerified = guidedQueueItemId.current
+          ? preparedQueueItem(current, guidedQueueItemId.current)
+          : isPrepared(current);
+        if (currentVerified) {
+          onOpenTimeline();
+          applyTransition(activePhase, true, true);
+          return;
+        }
         const refreshed = await onRefresh(guidedSeniorId.current);
         if (refreshed) authoritativeData.current = refreshed;
         const reviewData = refreshed ?? authoritativeData.current;
@@ -308,10 +324,18 @@ export function DemoGuide({
         );
         return;
       }
-      let refreshed = response.ok
-        ? await onRefresh(guidedSeniorId.current)
+      const payload = response.ok
+        ? ((await response.json().catch(() => null)) as {
+            data?: DashboardData | null;
+          } | null)
         : null;
-      if (refreshed) authoritativeData.current = refreshed;
+      let refreshed = payload?.data ?? (response.ok
+        ? await onRefresh(guidedSeniorId.current)
+        : null);
+      if (refreshed) {
+        authoritativeData.current = refreshed;
+        onDataChange?.(refreshed);
+      }
       let verified = Boolean(
         refreshed &&
           (isResponse

@@ -508,6 +508,13 @@ export default function Home() {
                   if (phase === "complete") setActiveView("activity");
                 }}
                 onErrorChange={setDemoError}
+                onDataChange={(nextData) => {
+                  setLiveDashboardData(nextData);
+                  setRiskLevel(nextData.senior.riskLevel);
+                  const nextSeniorId = nextData.selectedSeniorId ?? null;
+                  selectedSeniorIdRef.current = nextSeniorId;
+                  setLoadedSeniorId(nextSeniorId);
+                }}
                 onRefresh={(seniorId) =>
                   refreshDashboardForConsumer(seniorId)
                 }

@@ -9,6 +9,7 @@ import {
   CaregiverCaseConflictError,
   recordCaregiverQueueAction,
 } from "@/lib/persistence/caregiverCaseRepository";
+import { readDashboardState } from "@/lib/persistence/trustkakiRepository";
 
 export const runtime = "nodejs";
 
@@ -36,8 +37,18 @@ export async function POST(request: Request) {
       escalationDestination: body.escalationDestination ?? null,
       notificationCategory: body.notificationCategory ?? null,
     });
+    const state = persistence.seniorId
+      ? await readDashboardState({
+          auth: authResult.auth,
+          seniorId: persistence.seniorId,
+        })
+      : null;
 
-    return NextResponse.json({ status: "ok", ...persistence });
+    return NextResponse.json({
+      status: "ok",
+      ...persistence,
+      data: state?.data ?? null,
+    });
   } catch (error) {
     if (error instanceof CaregiverCaseConflictError) {
       return NextResponse.json(

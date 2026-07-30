@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const recordCaregiverQueueActionMock = vi.fn();
+const readDashboardStateMock = vi.fn();
 const requireAuthenticatedCaregiverMock = vi.fn();
 
 const auth = {
@@ -20,6 +21,9 @@ vi.mock("@/lib/persistence/caregiverCaseRepository", () => ({
   recordCaregiverQueueAction: recordCaregiverQueueActionMock,
   CaregiverCaseConflictError: MockCaregiverCaseConflictError,
 }));
+vi.mock("@/lib/persistence/trustkakiRepository", () => ({
+  readDashboardState: readDashboardStateMock,
+}));
 
 vi.mock("@/lib/auth/session", () => ({
   requireAuthenticatedCaregiver: requireAuthenticatedCaregiverMock,
@@ -31,10 +35,18 @@ describe("/api/caregiver/queue-action", () => {
   beforeEach(() => {
     vi.resetModules();
     recordCaregiverQueueActionMock.mockReset();
+    readDashboardStateMock.mockReset();
     requireAuthenticatedCaregiverMock.mockReset();
     requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth, accessToken });
     recordCaregiverQueueActionMock.mockResolvedValue({
+      seniorId: "senior-1",
       actorCaregiverId: "caregiver-1",
+      persistence: { mode: "supabase", configured: true, persisted: true },
+    });
+    readDashboardStateMock.mockResolvedValue({
+      data: { followUpQueue: [] },
+      traces: [],
+      briefing: null,
       persistence: { mode: "supabase", configured: true, persisted: true },
     });
   });
@@ -93,6 +105,11 @@ describe("/api/caregiver/queue-action", () => {
         outcomeType: "needs_follow_up",
       })
     );
+    expect(readDashboardStateMock).toHaveBeenCalledWith({
+      auth,
+      seniorId: "senior-1",
+    });
+    expect(json.data).toEqual({ followUpQueue: [] });
   });
 
   it("passes an explicit escalation destination and audit reason", async () => {
