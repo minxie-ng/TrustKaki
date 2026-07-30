@@ -52,7 +52,9 @@ payloads, API keys, or other secrets to this document.
   deterministic policy, Pattern Watch, briefing, and the persisted care case.
   Slide 10 includes the accepted 18-case live metrics and the strict 9/18
   all-expectations limitation alongside release evidence. Slide 7 contains
-  retained-timeline proof; Slide 13 provides the
+  retained-timeline proof. Slide 12 contains the bounded three-person AAC
+  usability results and explicitly labels the small sample as non-clinical;
+  Slide 13 provides the
   no-login and restricted live judge paths. Slide 1 identifies Team SandSeed
   and Ng Min Xie as required by the submission brief. A full tone audit removed
   internal judging and presentation language and made Slide 1 a direct product
@@ -72,6 +74,12 @@ payloads, API keys, or other secrets to this document.
   avoidance, 100.0% Digital Safety recall, 100.0% durable-context precision,
   100.0% schema validity, and 0.0% fallback. Nine strict failed case IDs remain
   disclosed in the evidence report.
+- A bounded fictional-demo usability check with three AAC participants recorded
+  6/9 tasks completed without coaching, 3/3 completing the response,
+  resolution, and retained-history task, a seven-minute median completion time,
+  4.5/5 median ease, and 4/5 median confidence. The small convenience sample
+  identified first-time discoverability of the case rationale and recommended
+  action as the main improvement area; it is not clinical validation.
 
 ## Deployment Responsibilities
 
@@ -152,7 +160,7 @@ The approved design is recorded in
 | A | DONE | Correct conditional multi-agent evidence | Slide 9 states that Triage always runs; AAC Nudge, Digital Safety, and Context Memory are available only for their stated triggers; deterministic safety policy remains authoritative |
 | B | DONE | Build the synthetic AI benchmark | The committed 42-case fictional dataset, strict validation, scoring tests, real fallback tests, and bounded CLI cover six categories; the offline report is reproducible with `npm run benchmark:agents` |
 | C | DONE | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline and approved 18-case live results with failed IDs; Slide 10 matches the live sample and headline metrics exactly |
-| D | IN PROGRESS | Run bounded target-user validation | The privacy-bounded five-minute script, success rules, anonymized result table, summary calculations, and Slide 12 update rule are prepared in `docs/evidence/2026-07-30-target-user-validation.md`; three to five participant sessions remain |
+| D | DONE | Run bounded target-user validation | Three AAC participants completed the fictional-demo check; raw outcomes, calculations, and limitations are recorded in `docs/evidence/2026-07-30-target-user-validation.md`; Slide 12 contains the bounded evidence and passed a fresh 1600x900 visual review |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
 | F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
 | G | TODO | Complete top-one submission controls | Mobile and keyboard QA pass; the PPTX uses the required filename; participant-only form fields and cutoff are confirmed; submission is accepted by 7 August |
@@ -165,13 +173,12 @@ recorded in
 WhatsApp remains blocked by Meta account access and must not hold up independent
 closeout work.
 
-Run the prepared bounded target-user validation next with three to five
-participants using only the fictional public demo. Follow
-`docs/evidence/2026-07-30-target-user-validation.md` exactly so timing, task
-success, ratings, and non-personal observations are comparable. After at least
-three sessions, summarize the evidence on Slide 12 and update this document;
-do not record names, contact details, or care stories. Keep the WhatsApp
-restoration attempt as a separate blocked task.
+Use the validation finding to review first-time discoverability of the case
+rationale and recommended action before recording the final video. Keep the
+change narrowly scoped and re-check it with one or two additional AAC users
+when available. Then produce the credential-free 90-120 second demonstration
+and qualifying social post. Keep the WhatsApp restoration attempt as a
+separate blocked task.
 
 For item 11, keep the credential-bearing native Google Slides source private
 and upload its current PPTX export to the submission portal. The public event

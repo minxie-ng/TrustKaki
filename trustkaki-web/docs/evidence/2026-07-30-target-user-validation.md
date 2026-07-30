@@ -73,9 +73,9 @@ After the tasks, ask:
 
 | Code | Role category | T1 | T2 | T3 | Time | Ease /5 | Confidence /5 | Bounded observation |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P1 |  |  |  |  |  |  |  |  |
-| P2 |  |  |  |  |  |  |  |  |
-| P3 |  |  |  |  |  |  |  |  |
+| P1 | AAC staff | COACHED | PASS | PASS | 7 min | 4 | 4 | Described the workflow as useful. |
+| P2 | AAC staff | COACHED | COACHED | PASS | 8 min | 4.5 | 4 | No observation provided. |
+| P3 | AAC staff | PASS | PASS | PASS | 4 min | 4.5 | 4.5 | Valued the concept of multiple AAC staff coordinating care for many seniors. |
 | P4 |  |  |  |  |  |  |  |  |
 | P5 |  |  |  |  |  |  |  |  |
 
@@ -83,22 +83,38 @@ Use only `PASS`, `COACHED`, `FAIL`, or `TECHNICAL FAILURE` for task results.
 
 ## Summary Calculations
 
-Complete only after the sessions:
+Completed summary:
 
-- Participants: `__/5`
-- Relevant or adjacent experience: `__/__`
-- Unassisted task completion: `__ successful tasks / __ attempted tasks`
-- Participants completing all three tasks unassisted: `__/__`
-- Median completion time: `__`
-- Median ease rating: `__/5`
-- Median confidence rating: `__/5`
-- Most common usability finding: `__`
-- Validation limitations: `__`
+- Participants: `3`
+- Relevant or adjacent experience: `3/3 AAC staff`
+- Unassisted task completion: `6 successful tasks / 9 attempted tasks`
+- Participants completing all three tasks unassisted: `1/3`
+- Response, resolution, and retained-history task completion: `3/3`
+- Median completion time: `7 minutes`
+- Median ease rating: `4.5/5`
+- Median confidence rating: `4/5`
+- Most important usability finding: the core response and resolution workflow
+  was completed by all participants, but the case rationale and recommended
+  action need clearer first-time discoverability.
+- Validation limitations: this was a three-person convenience sample using a
+  fictional public demo. Two sessions exceeded the planned five-minute cap,
+  two participants required coaching, and the check did not measure clinical
+  outcomes or longitudinal use.
 
 Do not convert this small convenience sample into population-level percentages
 or claim clinical validation.
 
 ## Deck And Closeout Update
+
+Completed on 30 July 2026:
+
+- Slide 12 contains participant count, task outcomes, median time, ratings, the
+  main discoverability finding, and the small-sample boundary.
+- A fresh 1600x900 thumbnail confirmed that the editable evidence block is
+  readable without clipping or overlap.
+- `docs/PROJECT_CLOSEOUT.md` records the results and limitations.
+
+The update followed these controls:
 
 After at least three completed sessions:
 
@@ -108,4 +124,3 @@ After at least three completed sessions:
 3. Do not add participant names, unsupported percentages, or clinical claims.
 4. Update item D and the Current Verified State in `docs/PROJECT_CLOSEOUT.md`.
 5. Re-export the private deck and visually inspect Slide 12 before submission.
-
