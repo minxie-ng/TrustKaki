@@ -64,6 +64,12 @@ payloads, API keys, or other secrets to this document.
   protected-data scenarios. Its deterministic offline run measured 100.0%
   durable-context precision, 100.0% schema validity, 0.0% fallback, and no
   failed case IDs. Routing metrics are explicitly not measured offline.
+- The approved bounded live run evaluated 18 fictional cases, three per
+  category, with no persistence or messaging. It measured 88.9% route exact
+  match, 100.0% required-specialist recall, 95.2% forbidden-specialist
+  avoidance, 100.0% Digital Safety recall, 100.0% durable-context precision,
+  100.0% schema validity, and 0.0% fallback. Nine strict failed case IDs remain
+  disclosed in the evidence report.
 
 ## Deployment Responsibilities
 
@@ -143,7 +149,7 @@ The approved design is recorded in
 | --- | --- | --- | --- |
 | A | IN PROGRESS | Correct conditional multi-agent evidence | Slide 9 states that the coordinator selects relevant specialists; the appetite-and-knee-pain example does not claim Digital Safety or Context Memory ran without their triggers |
 | B | DONE | Build the synthetic AI benchmark | The committed 42-case fictional dataset, strict validation, scoring tests, real fallback tests, and bounded CLI cover six categories; the offline report is reproducible with `npm run benchmark:agents` |
-| C | IN PROGRESS | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline result and failed IDs; the pending bounded live run and exact deck metric update remain |
+| C | IN PROGRESS | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline result and approved 18-case live result with failed IDs; the exact deck metric update remains |
 | D | TODO | Run bounded target-user validation | Three to five participants complete the fictional review tasks; role category, task success, timing, and non-personal usability findings are recorded |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
 | F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
@@ -157,11 +163,11 @@ recorded in
 WhatsApp remains blocked by Meta account access and must not hold up independent
 closeout work.
 
-After explicit usage approval, run the 18-case live agent benchmark next, using
-three fictional cases from each category and no Supabase or messaging calls.
-Review its failed IDs before accepting any metric for the deck. Then correct
-Slide 9's conditional-routing wording and add at most three live metrics to
-Slide 10. Keep the WhatsApp restoration attempt as a separate blocked task.
+Correct Slide 9's conditional-routing wording next and add at most three
+headline metrics from the accepted live report to Slide 10. The deck must keep
+the 18-case sample size visible and must not hide the report's strict failed
+case IDs or limitations. Keep the WhatsApp restoration attempt as a separate
+blocked task.
 
 For item 11, keep the credential-bearing native Google Slides source private
 and upload its current PPTX export to the submission portal. The public event
