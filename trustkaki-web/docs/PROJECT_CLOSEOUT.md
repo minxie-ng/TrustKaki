@@ -123,6 +123,27 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 13 | TODO | Publish portfolio material | Public demo, repository, video, LinkedIn copy, screenshots, and technical summary are ready and comply with hackathon publicity rules |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
 
+## Top-One Scoring Sprint
+
+The official preliminary rubric weights Impact and Relevance at 30 points, Use
+of AI Tools at 40 points, and Project Quality at 30 points, with a five-point
+social-reach bonus. The strict current evidence-based baseline is 82/100 plus
+0/5 bonus. The target is a credible 91-95/100 base score plus the bonus; this is
+a planning target, not a promised judging result.
+
+The approved design is recorded in
+`docs/superpowers/specs/2026-07-30-top-one-submission-sprint-design.md`.
+
+| Order | Status | Scoring workstream | Completion evidence |
+| --- | --- | --- | --- |
+| A | IN PROGRESS | Correct conditional multi-agent evidence | Slide 9 states that the coordinator selects relevant specialists; the appetite-and-knee-pain example does not claim Digital Safety or Context Memory ran without their triggers |
+| B | TODO | Build the synthetic AI benchmark | A committed 40-60 case fictional dataset measures routing, safety recall, memory gating, schema validity, fallback behavior, and latency in deterministic and bounded live modes |
+| C | TODO | Publish reproducible AI evidence | A sanitized benchmark report is reproducible, failed cases remain visible, and deck metrics match the report exactly |
+| D | TODO | Run bounded target-user validation | Three to five participants complete the fictional review tasks; role category, task success, timing, and non-personal usability findings are recorded |
+| E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
+| F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
+| G | TODO | Complete top-one submission controls | Mobile and keyboard QA pass; the PPTX uses the required filename; participant-only form fields and cutoff are confirmed; submission is accepted by 7 August |
+
 ## Immediate Next Workstream
 
 Telegram final-commit verification passed on 29 July. The bounded evidence is
