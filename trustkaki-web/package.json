@@ -6,6 +6,8 @@
     "dev": "./node_modules/.bin/next dev",
     "build": "./node_modules/.bin/next build",
     "start": "./node_modules/.bin/next start",
+    "benchmark:agents": "./node_modules/.bin/tsx scripts/agent-benchmark.ts --mode deterministic",
+    "benchmark:agents:live": "./node_modules/.bin/tsx scripts/agent-benchmark.ts --mode live --confirm-live",
     "release:smoke": "node scripts/release-smoke.mjs",
     "lint": "./node_modules/.bin/eslint",
     "test": "./node_modules/.bin/vitest run",
@@ -29,6 +31,7 @@
     "eslint-config-next": "16.2.12",
     "jsdom": "^26.1.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.1",
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.10"
