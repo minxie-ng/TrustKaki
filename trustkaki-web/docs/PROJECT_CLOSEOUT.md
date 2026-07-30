@@ -33,6 +33,11 @@ payloads, API keys, or other secrets to this document.
   Password sign-in, senior scope, and the live-demo transaction were verified;
   credentials are intentionally kept out of Git and belong only in the
   submitted deck.
+- A fresh Vercel UI acceptance check on 30 July confirmed that the judge
+  credentials sign in successfully, expose exactly one fictional senior,
+  complete all four live-demo steps, retain the recorded response and resolved
+  case after refresh, and produce no browser console errors. The verification
+  session was signed out after completion.
 - Production dependency audit: zero known vulnerabilities.
 - Local quality evidence: 774 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
@@ -111,9 +116,9 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
-| 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; the temporary judge account, senior scope, sign-in, live transaction, and Slide 13 instructions are verified |
+| 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions |
 | 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
-| 11 | TODO | Run the submission audit | Brief, required fields, technologies, links, permissions, credentials delivery, file formats, and deadlines are checked |
+| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the official event page confirms the AI Agent track and 9 August deadline; exact portal fields and cutoff time remain to be checked in the participant-only submission flow |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
 | 13 | TODO | Publish portfolio material | Public demo, repository, video, LinkedIn copy, screenshots, and technical summary are ready and comply with hackathon publicity rules |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
@@ -130,6 +135,14 @@ Run items 11 and 12 for submission and public-release readiness. Keep the
 WhatsApp restoration attempt as a separate blocked task and follow the approval
 boundaries in `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` before accessing or
 changing Meta state.
+
+For item 11, keep the credential-bearing native Google Slides source private
+and upload its current PPTX export to the submission portal. The public event
+page confirms the AI Agent track, identifies WorkBuddy as a recommended rather
+than mandatory tool, and gives 9 August as the deadline. It does not expose the
+participant-only submission fields or exact cutoff time, so those must be
+checked directly in the organiser-provided portal or announcement before item
+11 can be marked done.
 
 When WhatsApp access is restored, verify only one approved fictional test flow:
 
