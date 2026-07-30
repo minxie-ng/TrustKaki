@@ -39,7 +39,7 @@ payloads, API keys, or other secrets to this document.
   case after refresh, and produce no browser console errors. The verification
   session was signed out after completion.
 - Production dependency audit: zero known vulnerabilities.
-- Local quality evidence: 774 tests passed, 38 skipped; TypeScript, ESLint, and
+- Local quality evidence: 798 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
 - Vercel reports commit `ae9c0d497f86` healthy. Live-demo preparation now uses
   one bounded Supabase transaction measured at 29 ms in a rolled-back database
