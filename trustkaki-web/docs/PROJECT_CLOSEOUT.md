@@ -47,10 +47,12 @@ payloads, API keys, or other secrets to this document.
   and caregiver action steps reconcile from persisted RPC metadata. Signed-in
   browser acceptance passed with Step 1 completing in approximately 5-6 seconds.
 - The native Google Slides submission deck now contains 13 editable slides.
-  Slide 9 uses a concrete senior-message example to show four specialist-agent
-  contributions, safety control, pattern detection, the caregiver briefing,
-  and the persisted care case; Slide 10 provides engineering evidence. Slide 7
-  contains retained-timeline proof; Slide 13 provides the
+  Slide 9 now shows Triage as always-on and AAC Nudge, Digital Safety, and
+  Context Memory as trigger-selected specialists, followed by authoritative
+  deterministic policy, Pattern Watch, briefing, and the persisted care case.
+  Slide 10 includes the accepted 18-case live metrics and the strict 9/18
+  all-expectations limitation alongside release evidence. Slide 7 contains
+  retained-timeline proof; Slide 13 provides the
   no-login and restricted live judge paths. Slide 1 identifies Team SandSeed
   and Ng Min Xie as required by the submission brief. A full tone audit removed
   internal judging and presentation language and made Slide 1 a direct product
@@ -147,9 +149,9 @@ The approved design is recorded in
 
 | Order | Status | Scoring workstream | Completion evidence |
 | --- | --- | --- | --- |
-| A | IN PROGRESS | Correct conditional multi-agent evidence | Slide 9 states that the coordinator selects relevant specialists; the appetite-and-knee-pain example does not claim Digital Safety or Context Memory ran without their triggers |
+| A | DONE | Correct conditional multi-agent evidence | Slide 9 states that Triage always runs; AAC Nudge, Digital Safety, and Context Memory are available only for their stated triggers; deterministic safety policy remains authoritative |
 | B | DONE | Build the synthetic AI benchmark | The committed 42-case fictional dataset, strict validation, scoring tests, real fallback tests, and bounded CLI cover six categories; the offline report is reproducible with `npm run benchmark:agents` |
-| C | IN PROGRESS | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline result and approved 18-case live result with failed IDs; the exact deck metric update remains |
+| C | DONE | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline and approved 18-case live results with failed IDs; Slide 10 matches the live sample and headline metrics exactly |
 | D | TODO | Run bounded target-user validation | Three to five participants complete the fictional review tasks; role category, task success, timing, and non-personal usability findings are recorded |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
 | F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
@@ -163,10 +165,10 @@ recorded in
 WhatsApp remains blocked by Meta account access and must not hold up independent
 closeout work.
 
-Correct Slide 9's conditional-routing wording next and add at most three
-headline metrics from the accepted live report to Slide 10. The deck must keep
-the 18-case sample size visible and must not hide the report's strict failed
-case IDs or limitations. Keep the WhatsApp restoration attempt as a separate
+Run bounded target-user validation next with three to five participants using
+only the fictional public demo. Record role category, task success, completion
+time, and one non-personal usability observation; do not record names, contact
+details, or care stories. Keep the WhatsApp restoration attempt as a separate
 blocked task.
 
 For item 11, keep the credential-bearing native Google Slides source private
