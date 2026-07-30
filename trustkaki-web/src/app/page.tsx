@@ -498,6 +498,7 @@ export default function Home() {
             >
               <DemoGuide
                 enabled={Boolean(isDemoAdmin && demoMode)}
+                variant="live"
                 phase={demoPhase}
                 error={demoError}
                 data={liveDashboardData}

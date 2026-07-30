@@ -73,6 +73,7 @@ function renderGuide(phase: DemoPhase, error: string | null = null) {
       DemoGuide,
       {
         enabled: true,
+        variant: "live",
         phase,
         error,
         data: data(),
@@ -93,7 +94,8 @@ describe("DemoGuide rendering", () => {
   it("never renders orientation and workspace together", () => {
     const html = renderGuide("orientation");
 
-    expect(html).toContain("Start guided demo");
+    expect(html).toContain("Live system demo");
+    expect(html).toContain("Start live demo");
     expect(html).toContain("Back to care workspace");
     expect(html).toContain("About 90 seconds");
     expect(html).not.toContain("Care workspace");
@@ -106,7 +108,7 @@ describe("DemoGuide rendering", () => {
 
       expect((html.match(/data-demo-primary="true"/g) ?? [])).toHaveLength(1);
       expect(html).toContain("Care workspace");
-      expect(html).toContain("Exit guided demo");
+      expect(html).toContain("Exit live demo");
     }
   );
 
@@ -190,6 +192,7 @@ async function renderInteractiveGuide({
         DemoGuide,
         {
           enabled: true,
+          variant: "live",
           phase: nextPhase,
           error: null,
           data: nextData,
@@ -283,6 +286,25 @@ describe("DemoGuide route wiring", () => {
 
     expect(onRefresh).toHaveBeenCalledTimes(2);
     expect(onPhaseChange).toHaveBeenCalledWith("review");
+  });
+
+  it("reviews the prepared case when an automatic refresh supersedes Step 2", async () => {
+    const onRefresh = vi.fn(async () => null);
+    const onErrorChange = vi.fn();
+    const { onPhaseChange } = await renderInteractiveGuide({
+      phase: "review",
+      refreshedData: data(),
+      initialData: data(),
+      fetchMock: vi.fn(),
+      onRefresh,
+      onErrorChange,
+    });
+
+    await clickPrimary();
+
+    expect(onRefresh).toHaveBeenCalledOnce();
+    expect(onPhaseChange).toHaveBeenCalledWith("respond");
+    expect(onErrorChange).toHaveBeenLastCalledWith(null);
   });
 
   it("posts the controlled response through the existing queue route", async () => {

@@ -82,6 +82,7 @@ export default function PublicDemoWorkspace({
         <div className="relative min-w-0 flex-1">
           <DemoGuide
             enabled
+            variant="public"
             phase={phase}
             error={demoError}
             data={data}

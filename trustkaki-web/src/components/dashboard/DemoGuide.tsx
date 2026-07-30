@@ -13,6 +13,7 @@ import {
 
 interface DemoGuideProps {
   enabled: boolean;
+  variant?: "public" | "live";
   phase: DemoPhase;
   error: string | null;
   data: DashboardData;
@@ -80,6 +81,7 @@ const RESOLUTION_NOTE =
 
 export function DemoGuide({
   enabled,
+  variant = "live",
   phase,
   error,
   data,
@@ -111,7 +113,7 @@ export function DemoGuide({
       <main className="h-full overflow-y-auto bg-[var(--care-mist)] px-4 py-10 sm:px-8">
         <section className="mx-auto max-w-3xl border-y border-[var(--care-line)] bg-white px-5 py-8 sm:px-8">
           <div className="text-xs font-bold uppercase text-[var(--care-coral-hover)]">
-            Guided judge demo
+            {variant === "live" ? "Live system demo" : "Guided judge demo"}
           </div>
           <h1 className="font-display mt-2 text-3xl font-semibold text-[var(--care-ink)]">
             Quiet changes become clear human action
@@ -147,7 +149,7 @@ export function DemoGuide({
             }}
             className="mt-7 min-h-11 border border-[var(--care-coral-hover)] bg-[var(--care-coral)] px-5 py-3 text-sm font-bold text-white hover:bg-[var(--care-coral-hover)]"
           >
-            Start guided demo
+            {variant === "live" ? "Start live demo" : "Start guided demo"}
           </button>
           <button
             type="button"
@@ -173,6 +175,7 @@ export function DemoGuide({
           primaryLabel={null}
           onPrimary={() => undefined}
           onExit={onExit}
+          exitLabel={variant === "live" ? "Exit live demo" : "Exit guided demo"}
         />
         <div className="min-h-0 flex-1">{children}</div>
       </div>
@@ -254,14 +257,15 @@ export function DemoGuide({
       if (activePhase === "review") {
         const refreshed = await onRefresh(guidedSeniorId.current);
         if (refreshed) authoritativeData.current = refreshed;
+        const reviewData = refreshed ?? authoritativeData.current;
         const verified = Boolean(
-          refreshed &&
+          reviewData &&
             (guidedQueueItemId.current
-              ? preparedQueueItem(refreshed, guidedQueueItemId.current)
-              : isPrepared(refreshed))
+              ? preparedQueueItem(reviewData, guidedQueueItemId.current)
+              : isPrepared(reviewData))
         );
         if (verified) onOpenTimeline();
-        applyTransition(activePhase, Boolean(refreshed), verified);
+        applyTransition(activePhase, Boolean(refreshed) || verified, verified);
         return;
       }
 
@@ -353,6 +357,7 @@ export function DemoGuide({
         primaryLabel={error ? copy.retry : copy.action}
         onPrimary={runCurrentPhase}
         onExit={onExit}
+        exitLabel={variant === "live" ? "Exit live demo" : "Exit guided demo"}
       />
       <div className="min-h-0 flex-1">{children}</div>
     </div>
@@ -368,6 +373,7 @@ function GuideBar({
   primaryLabel,
   onPrimary,
   onExit,
+  exitLabel,
 }: {
   eyebrow: string;
   progress: string;
@@ -377,6 +383,7 @@ function GuideBar({
   primaryLabel: string | null;
   onPrimary: () => void;
   onExit: () => void;
+  exitLabel: string;
 }) {
   return (
     <section
@@ -404,7 +411,7 @@ function GuideBar({
             onClick={onExit}
             className="min-h-10 border-b border-[var(--care-line)] text-sm font-semibold text-gray-600 hover:text-[var(--care-ink)]"
           >
-            Exit guided demo
+            {exitLabel}
           </button>
           {primaryLabel && (
             <button

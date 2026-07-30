@@ -64,7 +64,7 @@ describe("AppShell", () => {
       createElement("div", null, "Activity view")
     ));
 
-    expect(html).toContain("Guided demo");
+    expect(html).toContain("Live system demo");
     expect(html).not.toContain("Demo tools");
     expect(html).not.toContain('aria-current="page"');
     expect(html).toContain("Stable");
