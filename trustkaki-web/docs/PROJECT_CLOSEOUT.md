@@ -49,7 +49,8 @@ payloads, API keys, or other secrets to this document.
   no-login and restricted live judge paths. Slide 1 identifies Team SandSeed
   and Ng Min Xie as required by the submission brief. A full tone audit removed
   internal judging and presentation language and made Slide 1 a direct product
-  definition.
+  definition with its senior, family-caregiver, and Active Ageing Centre staff
+  audiences stated explicitly.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
