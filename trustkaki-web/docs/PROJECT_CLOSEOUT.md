@@ -13,7 +13,7 @@ payloads, API keys, or other secrets to this document.
 ## Current Verified State
 
 - Branch: `main`
-- Verified commit: `492da9b` (`perf: make live demo interactions immediate`)
+- Verified commit: `ae9c0d4` (`feat: clarify asynchronous judge demo access`)
 - Repository: `https://github.com/minxie-ng/TrustKaki`
 - Vercel production: `https://trustkaki.vercel.app`
 - EdgeOne production: `https://trustkaki.edgeone.dev`
@@ -36,7 +36,7 @@ payloads, API keys, or other secrets to this document.
 - Production dependency audit: zero known vulnerabilities.
 - Local quality evidence: 774 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
-- Vercel reports commit `492da9bcf5c6` healthy. Live-demo preparation now uses
+- Vercel reports commit `ae9c0d497f86` healthy. Live-demo preparation now uses
   one bounded Supabase transaction measured at 29 ms in a rolled-back database
   check; duplicate guide-time polling and Realtime refreshes are suppressed,
   and caregiver action steps reconcile from persisted RPC metadata. Signed-in
@@ -97,11 +97,11 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 2 | DONE | Build one-click public demo mode | Commit `05b893e` is deployed on Vercel and EdgeOne; anonymous acceptance check passed for all four steps, refresh persistence, reset, and exit |
 | 3 | TODO | Make channel origin visible in care evidence | Relevant timeline items show WhatsApp or Telegram source, event time, and bounded delivery/processing state without exposing identifiers |
 | 4 | IN PROGRESS | Complete final product QA | Transactional live-demo preparation and immediate persisted action reconciliation are deployed; signed-in timing acceptance passed at approximately 5-6 seconds for Step 1; keyboard, desktop, and mobile checks remain |
-| 5 | DONE | Deploy the current public-demo release | Commit `492da9b` is healthy on Vercel; EdgeOne is healthy but does not expose its deployed commit ID through `/api/health` |
+| 5 | DONE | Deploy the current public-demo release | Commit `ae9c0d4` is healthy on Vercel; EdgeOne serves the updated judge entry but does not expose its deployed commit ID through `/api/health` |
 | 6 | TODO | Capture channel proof | Short real-flow recordings or screenshots exist for WhatsApp and Telegram with identifiers and credentials removed |
 | 7 | TODO | Produce architecture and technical evidence | Diagram and concise evidence explain channels, webhooks, agents, deterministic policy, Supabase, dashboard, Vercel, and EdgeOne |
-| 8 | IN PROGRESS | Build the hackathon slide deck | Native editable 14-slide deck covers the care gap, shared care context, workflow, verified Telegram evidence, Pattern Watch, human follow-up, public-demo isolation, architecture, Vercel and EdgeOne deployment, impact, limits, and next steps; final screenshot and asynchronous judge-path review remain |
-| 9 | IN PROGRESS | Prepare the asynchronous judge path | Website clearly separates no-login Explore demo from restricted Live backend access; final submitted slide still needs the URL, temporary credentials, and exact click path |
+| 8 | IN PROGRESS | Build the hackathon slide deck | Native editable 11-slide Google deck covers the care gap, shared care context, workflow, verified Telegram evidence, Pattern Watch, human follow-up, public-demo isolation, architecture, Vercel and EdgeOne deployment, impact, limits, and next steps; editable Slide 12 with asynchronous judge instructions is generated and awaiting import |
+| 9 | IN PROGRESS | Prepare the asynchronous judge path | Both production hosts clearly separate no-login Explore demo from restricted Live backend access; the temporary judge account, senior scope, sign-in, and live transaction are verified; import and review Slide 12 before submission |
 | 10 | TODO | Confirm final submission requirements | Verify whether any video or written fields are required beyond the website link and slide deck before producing additional assets |
 | 11 | TODO | Run the submission audit | Brief, required fields, technologies, links, permissions, credentials delivery, file formats, and deadlines are checked |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
