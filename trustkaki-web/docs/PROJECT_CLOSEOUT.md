@@ -41,6 +41,11 @@ payloads, API keys, or other secrets to this document.
   check; duplicate guide-time polling and Realtime refreshes are suppressed,
   and caregiver action steps reconcile from persisted RPC metadata. Signed-in
   browser acceptance passed with Step 1 completing in approximately 5-6 seconds.
+- The native Google Slides submission deck now contains 13 editable slides.
+  Slides 9 and 10 provide reviewed multi-agent control-flow and engineering
+  evidence; Slide 7 contains retained-timeline proof; Slide 13 provides the
+  no-login and restricted live judge paths. Slide 1 identifies Team SandSeed
+  and Ng Min Xie as required by the submission brief.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
@@ -98,11 +103,11 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 3 | TODO | Make channel origin visible in care evidence | Relevant timeline items show WhatsApp or Telegram source, event time, and bounded delivery/processing state without exposing identifiers |
 | 4 | IN PROGRESS | Complete final product QA | Transactional live-demo preparation and immediate persisted action reconciliation are deployed; signed-in timing acceptance passed at approximately 5-6 seconds for Step 1; keyboard, desktop, and mobile checks remain |
 | 5 | DONE | Deploy the current public-demo release | Commit `ae9c0d4` is healthy on Vercel; EdgeOne serves the updated judge entry but does not expose its deployed commit ID through `/api/health` |
-| 6 | TODO | Capture channel proof | Short real-flow recordings or screenshots exist for WhatsApp and Telegram with identifiers and credentials removed |
-| 7 | TODO | Produce architecture and technical evidence | Diagram and concise evidence explain channels, webhooks, agents, deterministic policy, Supabase, dashboard, Vercel, and EdgeOne |
-| 8 | IN PROGRESS | Build the hackathon slide deck | Native editable 11-slide Google deck covers the care gap, shared care context, workflow, verified Telegram evidence, Pattern Watch, human follow-up, public-demo isolation, architecture, Vercel and EdgeOne deployment, impact, limits, and next steps; editable Slide 12 with asynchronous judge instructions is generated and awaiting import |
-| 9 | IN PROGRESS | Prepare the asynchronous judge path | Both production hosts clearly separate no-login Explore demo from restricted Live backend access; the temporary judge account, senior scope, sign-in, and live transaction are verified; import and review Slide 12 before submission |
-| 10 | TODO | Confirm final submission requirements | Verify whether any video or written fields are required beyond the website link and slide deck before producing additional assets |
+| 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
+| 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
+| 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed a visual sweep; retained-timeline and multi-agent layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
+| 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; the temporary judge account, senior scope, sign-in, live transaction, and Slide 13 instructions are verified |
+| 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
 | 11 | TODO | Run the submission audit | Brief, required fields, technologies, links, permissions, credentials delivery, file formats, and deadlines are checked |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
 | 13 | TODO | Publish portfolio material | Public demo, repository, video, LinkedIn copy, screenshots, and technical summary are ready and comply with hackathon publicity rules |
@@ -116,11 +121,10 @@ recorded in
 WhatsApp remains blocked by Meta account access and must not hold up independent
 closeout work.
 
-Start checklist item 7: produce the architecture and technical evidence, then
-item 8: build the hackathon slide deck. Keep the WhatsApp restoration attempt
-as a separate blocked task and follow the approval boundaries in
-`docs/operations/HACKATHON_RELEASE_RUNBOOK.md` before accessing or changing
-Meta state.
+Run items 11 and 12 for submission and public-release readiness. Keep the
+WhatsApp restoration attempt as a separate blocked task and follow the approval
+boundaries in `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` before accessing or
+changing Meta state.
 
 When WhatsApp access is restored, verify only one approved fictional test flow:
 
@@ -171,18 +175,19 @@ on a live provider send as the only judge path.
 
 ## Slide Deck Outline
 
-1. TrustKaki and the last-mile ageing problem
-2. Target users: seniors, caregivers, and AAC staff
-3. Why ordinary chatbots and isolated alerts are insufficient
-4. End-to-end senior-to-human workflow
-5. Live product demonstration
-6. Multi-agent and deterministic-policy architecture
-7. Pattern Watch and explainable evidence over time
-8. WhatsApp and Telegram integration proof
-9. Data boundaries, human oversight, privacy, and safety
-10. Supabase persistence and operational backend evidence
-11. Vercel and Tencent EdgeOne deployment
-12. Expected social impact, limitations, and next steps
+1. TrustKaki introduction
+2. The care gap
+3. Shared care context
+4. Message-to-action workflow
+5. Telegram production proof
+6. Pattern Watch and explainable triage
+7. Accountable human follow-up
+8. Public-demo isolation
+9. Multi-agent control flow
+10. Engineering proof
+11. Vercel and Tencent EdgeOne deployment responsibilities
+12. Impact, boundaries, and next steps
+13. Judge access and temporary live credentials
 
 ## Public Release Checklist
 
@@ -209,7 +214,7 @@ TrustKaki is closed for the hackathon when:
 - WhatsApp and Telegram claims are supported by bounded evidence;
 - the public demo cannot expose data or trigger real messaging;
 - the repository contains no secrets or private credentials;
-- slides, video, architecture, and technical evidence match the deployed build;
+- slides, architecture, and technical evidence match the deployed build;
 - temporary judge access and demo data have an explicit cleanup decision; and
 - public portfolio materials accurately distinguish implemented, simulated,
   deferred, and blocked capabilities.
