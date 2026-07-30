@@ -45,7 +45,9 @@ payloads, API keys, or other secrets to this document.
   Slides 9 and 10 provide reviewed multi-agent control-flow and engineering
   evidence; Slide 7 contains retained-timeline proof; Slide 13 provides the
   no-login and restricted live judge paths. Slide 1 identifies Team SandSeed
-  and Ng Min Xie as required by the submission brief.
+  and Ng Min Xie as required by the submission brief. A full tone audit removed
+  internal judging and presentation language and made Slide 1 a direct product
+  definition.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
@@ -105,7 +107,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 5 | DONE | Deploy the current public-demo release | Commit `ae9c0d4` is healthy on Vercel; EdgeOne serves the updated judge entry but does not expose its deployed commit ID through `/api/health` |
 | 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
-| 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed a visual sweep; retained-timeline and multi-agent layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
+| 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
 | 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; the temporary judge account, senior scope, sign-in, live transaction, and Slide 13 instructions are verified |
 | 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
 | 11 | TODO | Run the submission audit | Brief, required fields, technologies, links, permissions, credentials delivery, file formats, and deadlines are checked |
