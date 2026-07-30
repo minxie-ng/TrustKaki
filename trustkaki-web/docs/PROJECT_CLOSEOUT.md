@@ -152,7 +152,7 @@ The approved design is recorded in
 | A | DONE | Correct conditional multi-agent evidence | Slide 9 states that Triage always runs; AAC Nudge, Digital Safety, and Context Memory are available only for their stated triggers; deterministic safety policy remains authoritative |
 | B | DONE | Build the synthetic AI benchmark | The committed 42-case fictional dataset, strict validation, scoring tests, real fallback tests, and bounded CLI cover six categories; the offline report is reproducible with `npm run benchmark:agents` |
 | C | DONE | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline and approved 18-case live results with failed IDs; Slide 10 matches the live sample and headline metrics exactly |
-| D | TODO | Run bounded target-user validation | Three to five participants complete the fictional review tasks; role category, task success, timing, and non-personal usability findings are recorded |
+| D | IN PROGRESS | Run bounded target-user validation | The privacy-bounded five-minute script, success rules, anonymized result table, summary calculations, and Slide 12 update rule are prepared in `docs/evidence/2026-07-30-target-user-validation.md`; three to five participant sessions remain |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
 | F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
 | G | TODO | Complete top-one submission controls | Mobile and keyboard QA pass; the PPTX uses the required filename; participant-only form fields and cutoff are confirmed; submission is accepted by 7 August |
@@ -165,11 +165,13 @@ recorded in
 WhatsApp remains blocked by Meta account access and must not hold up independent
 closeout work.
 
-Run bounded target-user validation next with three to five participants using
-only the fictional public demo. Record role category, task success, completion
-time, and one non-personal usability observation; do not record names, contact
-details, or care stories. Keep the WhatsApp restoration attempt as a separate
-blocked task.
+Run the prepared bounded target-user validation next with three to five
+participants using only the fictional public demo. Follow
+`docs/evidence/2026-07-30-target-user-validation.md` exactly so timing, task
+success, ratings, and non-personal observations are comparable. After at least
+three sessions, summarize the evidence on Slide 12 and update this document;
+do not record names, contact details, or care stories. Keep the WhatsApp
+restoration attempt as a separate blocked task.
 
 For item 11, keep the credential-bearing native Google Slides source private
 and upload its current PPTX export to the submission portal. The public event
