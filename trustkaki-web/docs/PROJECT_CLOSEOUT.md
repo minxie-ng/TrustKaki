@@ -1,6 +1,6 @@
 # TrustKaki Project Closeout
 
-Last updated: 29 July 2026
+Last updated: 30 July 2026
 
 This document is the live source of truth for taking TrustKaki from the current
 verified build through hackathon submission and public portfolio release. Update
@@ -13,7 +13,7 @@ payloads, API keys, or other secrets to this document.
 ## Current Verified State
 
 - Branch: `main`
-- Verified commit: `05b893e` (`feat: add isolated public demo`)
+- Verified commit: `492da9b` (`perf: make live demo interactions immediate`)
 - Repository: `https://github.com/minxie-ng/TrustKaki`
 - Vercel production: `https://trustkaki.vercel.app`
 - EdgeOne production: `https://trustkaki.edgeone.dev`
@@ -28,9 +28,19 @@ payloads, API keys, or other secrets to this document.
 - The public demo uses fictional browser-only state, expires after two hours,
   and cannot call Supabase, LLM, messaging, webhook, scheduler, or processor
   routes.
+- A temporary hackathon judge account is provisioned with the trusted
+  `demo_admin` claim and direct access to exactly one fictional demo senior.
+  Password sign-in, senior scope, and the live-demo transaction were verified;
+  credentials are intentionally kept out of Git and belong only in the
+  submitted deck.
 - Production dependency audit: zero known vulnerabilities.
-- Local quality evidence: 756 tests passed, 38 skipped; TypeScript, ESLint, and
+- Local quality evidence: 774 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
+- Vercel reports commit `492da9bcf5c6` healthy. Live-demo preparation now uses
+  one bounded Supabase transaction measured at 29 ms in a rolled-back database
+  check; duplicate guide-time polling and Realtime refreshes are suppressed,
+  and caregiver action steps reconcile from persisted RPC metadata. Signed-in
+  browser acceptance passed with Step 1 completing in approximately 5-6 seconds.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
@@ -86,13 +96,13 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 1 | BLOCKED | Verify WhatsApp and Telegram on the final Vercel commit | Telegram passed on 29 July; WhatsApp is blocked by Meta OAuth error 200; exact Vercel authenticated UI capture remains pending |
 | 2 | DONE | Build one-click public demo mode | Commit `05b893e` is deployed on Vercel and EdgeOne; anonymous acceptance check passed for all four steps, refresh persistence, reset, and exit |
 | 3 | TODO | Make channel origin visible in care evidence | Relevant timeline items show WhatsApp or Telegram source, event time, and bounded delivery/processing state without exposing identifiers |
-| 4 | TODO | Complete final product QA | Authentication, guided demo, queue, history, errors, loading states, refresh persistence, keyboard use, desktop, and mobile pass |
-| 5 | DONE | Deploy the current public-demo release | Commit `05b893e` is Ready on Vercel and the matching EdgeOne revision is serving; public acceptance check passed on both hosts |
+| 4 | IN PROGRESS | Complete final product QA | Transactional live-demo preparation and immediate persisted action reconciliation are deployed; signed-in timing acceptance passed at approximately 5-6 seconds for Step 1; keyboard, desktop, and mobile checks remain |
+| 5 | DONE | Deploy the current public-demo release | Commit `492da9b` is healthy on Vercel; EdgeOne is healthy but does not expose its deployed commit ID through `/api/health` |
 | 6 | TODO | Capture channel proof | Short real-flow recordings or screenshots exist for WhatsApp and Telegram with identifiers and credentials removed |
 | 7 | TODO | Produce architecture and technical evidence | Diagram and concise evidence explain channels, webhooks, agents, deterministic policy, Supabase, dashboard, Vercel, and EdgeOne |
-| 8 | TODO | Build the hackathon slide deck | Final deck covers problem, user, workflow, demonstration, architecture, AI design, safety, impact, deployment, limitations, and roadmap |
-| 9 | TODO | Prepare and rehearse the pitch | Timed primary script, backup path, speaker cues, and judge-account instructions are ready |
-| 10 | TODO | Record the submission video | Final product recording is within the allowed duration, legible, captioned, and uses the final deployment |
+| 8 | IN PROGRESS | Build the hackathon slide deck | Native editable 14-slide deck covers the care gap, shared care context, workflow, verified Telegram evidence, Pattern Watch, human follow-up, public-demo isolation, architecture, Vercel and EdgeOne deployment, impact, limits, and next steps; final screenshot and asynchronous judge-path review remain |
+| 9 | IN PROGRESS | Prepare the asynchronous judge path | Website clearly separates no-login Explore demo from restricted Live backend access; final submitted slide still needs the URL, temporary credentials, and exact click path |
+| 10 | TODO | Confirm final submission requirements | Verify whether any video or written fields are required beyond the website link and slide deck before producing additional assets |
 | 11 | TODO | Run the submission audit | Brief, required fields, technologies, links, permissions, credentials delivery, file formats, and deadlines are checked |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
 | 13 | TODO | Publish portfolio material | Public demo, repository, video, LinkedIn copy, screenshots, and technical summary are ready and comply with hackathon publicity rules |
