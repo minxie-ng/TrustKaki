@@ -1,12 +1,13 @@
-# TrustKaki Target-User Validation
+# TrustKaki General-User Usability Check
 
 Date prepared: 30 July 2026
 
 ## Purpose
 
-Test whether a first-time user can understand and complete TrustKaki's core
-fictional care workflow without coaching. This is bounded hackathon evidence,
-not formal clinical or production usability research.
+Test whether a first-time general user can understand and complete TrustKaki's
+core fictional care workflow without coaching. This is bounded hackathon
+evidence, not target-user validation or formal clinical or production usability
+research.
 
 ## Privacy Boundary
 
@@ -73,9 +74,9 @@ After the tasks, ask:
 
 | Code | Role category | T1 | T2 | T3 | Time | Ease /5 | Confidence /5 | Bounded observation |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P1 | AAC staff | COACHED | PASS | PASS | 7 min | 4 | 4 | Described the workflow as useful. |
-| P2 | AAC staff | COACHED | COACHED | PASS | 8 min | 4.5 | 4 | No observation provided. |
-| P3 | AAC staff | PASS | PASS | PASS | 4 min | 4.5 | 4.5 | Valued the concept of multiple AAC staff coordinating care for many seniors. |
+| P1 | General user | COACHED | PASS | PASS | 7 min | 4 | 4 | Described the workflow as useful. |
+| P2 | General user | COACHED | COACHED | PASS | 8 min | 4.5 | 4 | No observation provided. |
+| P3 | General user | PASS | PASS | PASS | 4 min | 4.5 | 4.5 | Valued the concept of multiple AAC staff coordinating care for many seniors. |
 | P4 |  |  |  |  |  |  |  |  |
 | P5 |  |  |  |  |  |  |  |  |
 
@@ -86,7 +87,7 @@ Use only `PASS`, `COACHED`, `FAIL`, or `TECHNICAL FAILURE` for task results.
 Completed summary:
 
 - Participants: `3`
-- Relevant or adjacent experience: `3/3 AAC staff`
+- Relevant or adjacent experience: `not established; no AAC role represented`
 - Unassisted task completion: `6 successful tasks / 9 attempted tasks`
 - Participants completing all three tasks unassisted: `1/3`
 - Response, resolution, and retained-history task completion: `3/3`
@@ -96,13 +97,14 @@ Completed summary:
 - Most important usability finding: the core response and resolution workflow
   was completed by all participants, but the case rationale and recommended
   action need clearer first-time discoverability.
-- Validation limitations: this was a three-person convenience sample using a
-  fictional public demo. Two sessions exceeded the planned five-minute cap,
-  two participants required coaching, and the check did not measure clinical
-  outcomes or longitudinal use.
+- Validation limitations: this was a three-person general-user convenience
+  sample using a fictional public demo. No AAC role was represented and
+  relevant care experience was not established. Two sessions exceeded the
+  planned five-minute cap, two participants required coaching, and the check
+  did not measure clinical outcomes or longitudinal use.
 
-Do not convert this small convenience sample into population-level percentages
-or claim clinical validation.
+Do not describe this check as target-user or AAC validation, convert the small
+sample into population-level percentages, or claim clinical validation.
 
 ## Deck And Closeout Update
 
