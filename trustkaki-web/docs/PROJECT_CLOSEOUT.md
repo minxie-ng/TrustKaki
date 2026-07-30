@@ -42,8 +42,10 @@ payloads, API keys, or other secrets to this document.
   and caregiver action steps reconcile from persisted RPC metadata. Signed-in
   browser acceptance passed with Step 1 completing in approximately 5-6 seconds.
 - The native Google Slides submission deck now contains 13 editable slides.
-  Slides 9 and 10 provide reviewed multi-agent control-flow and engineering
-  evidence; Slide 7 contains retained-timeline proof; Slide 13 provides the
+  Slide 9 uses a concrete senior-message example to show four specialist-agent
+  contributions, safety control, pattern detection, the caregiver briefing,
+  and the persisted care case; Slide 10 provides engineering evidence. Slide 7
+  contains retained-timeline proof; Slide 13 provides the
   no-login and restricted live judge paths. Slide 1 identifies Team SandSeed
   and Ng Min Xie as required by the submission brief. A full tone audit removed
   internal judging and presentation language and made Slide 1 a direct product
