@@ -51,37 +51,38 @@ async function ensureDemoPeople(client: TrustKakiClient, context?: AgentRunConte
   const senior = context?.senior;
   const demoSeniorPhone = normalizePhoneNumber(process.env.TRUSTKAKI_DEMO_SENIOR_PHONE);
 
-  const { error: seniorError } = await client.from("seniors").upsert(
-    {
-      id: DEMO_SENIOR_ID,
-      external_ref: "demo_uncle_tan",
-      display_name: senior?.name ?? uncleTan.name,
-      organisation_id: DEMO_ORGANISATION_ID,
-      age: senior?.age ?? uncleTan.age,
-      living_situation: senior?.livingSituation ?? uncleTan.livingSituation,
-      phone_e164: demoSeniorPhone,
-    },
-    { onConflict: "id" }
-  );
+  const [{ error: seniorError }, { error: caregiversError }] = await Promise.all([
+    client.from("seniors").upsert(
+      {
+        id: DEMO_SENIOR_ID,
+        external_ref: "demo_uncle_tan",
+        display_name: senior?.name ?? uncleTan.name,
+        organisation_id: DEMO_ORGANISATION_ID,
+        age: senior?.age ?? uncleTan.age,
+        living_situation: senior?.livingSituation ?? uncleTan.livingSituation,
+        phone_e164: demoSeniorPhone,
+      },
+      { onConflict: "id" }
+    ),
+    client.from("caregivers").upsert(
+      [
+        {
+          id: DEMO_CAREGIVER_ID,
+          external_ref: "demo_rachel_tan",
+          display_name: senior?.caregiver ?? uncleTan.caregiver,
+          relationship: "daughter",
+        },
+        {
+          id: DEMO_AAC_VOLUNTEER_ID,
+          external_ref: "demo_mei_ling",
+          display_name: senior?.aacVolunteer ?? uncleTan.aacVolunteer,
+          relationship: "AAC volunteer",
+        },
+      ],
+      { onConflict: "id" }
+    ),
+  ]);
   throwIfError(seniorError, "upsert demo senior");
-
-  const { error: caregiversError } = await client.from("caregivers").upsert(
-    [
-      {
-        id: DEMO_CAREGIVER_ID,
-        external_ref: "demo_rachel_tan",
-        display_name: senior?.caregiver ?? uncleTan.caregiver,
-        relationship: "daughter",
-      },
-      {
-        id: DEMO_AAC_VOLUNTEER_ID,
-        external_ref: "demo_mei_ling",
-        display_name: senior?.aacVolunteer ?? uncleTan.aacVolunteer,
-        relationship: "AAC volunteer",
-      },
-    ],
-    { onConflict: "id" }
-  );
   throwIfError(caregiversError, "upsert demo caregivers");
 
   const { error: relationshipError } = await client
@@ -201,38 +202,39 @@ export async function persistQuickDemoTimelineResult(args: {
   await ensureDemoPeople(client, args.context);
   const checkIn = await getOrCreateActiveCheckIn(client, args.seniorId, args.context);
 
-  const { error: messagesError } = await client.from("messages").upsert(
-    args.messages.map((message) => ({
-      check_in_id: checkIn.id,
-      senior_id: args.seniorId,
-      sender: "senior" as const,
-      text: message.text,
-      client_message_id: message.id,
-      created_at: message.timestamp,
-    })),
-    { onConflict: "client_message_id", ignoreDuplicates: true }
-  );
-  throwIfError(messagesError, "upsert quick demo timeline messages");
-
-  const agentRuns = await upsertAgentRuns(client, checkIn.id, [
-    {
-      agentId: args.result.agentId,
-      agentName: args.result.agentName,
-      traceId: args.result.traceId,
-      input: args.result.input,
-      reasoning: args.result.reasoning,
-      output: args.result.output,
-      outputJson: args.result.data,
-      tags: args.result.tags,
-      durationMs: args.result.durationMs,
-      modelUsed: args.result.modelUsed,
-      fallback: args.result.fallback,
-      inputSummary: args.result.inputSummary,
-      outputSummary: args.result.outputSummary,
-      stateChanges: args.result.stateChanges,
-      errorMessage: args.result.errorMessage ?? null,
-    },
+  const [{ error: messagesError }, agentRuns] = await Promise.all([
+    client.from("messages").upsert(
+      args.messages.map((message) => ({
+        check_in_id: checkIn.id,
+        senior_id: args.seniorId,
+        sender: "senior" as const,
+        text: message.text,
+        client_message_id: message.id,
+        created_at: message.timestamp,
+      })),
+      { onConflict: "client_message_id", ignoreDuplicates: true }
+    ),
+    upsertAgentRuns(client, checkIn.id, [
+      {
+        agentId: args.result.agentId,
+        agentName: args.result.agentName,
+        traceId: args.result.traceId,
+        input: args.result.input,
+        reasoning: args.result.reasoning,
+        output: args.result.output,
+        outputJson: args.result.data,
+        tags: args.result.tags,
+        durationMs: args.result.durationMs,
+        modelUsed: args.result.modelUsed,
+        fallback: args.result.fallback,
+        inputSummary: args.result.inputSummary,
+        outputSummary: args.result.outputSummary,
+        stateChanges: args.result.stateChanges,
+        errorMessage: args.result.errorMessage ?? null,
+      },
+    ]),
   ]);
+  throwIfError(messagesError, "upsert quick demo timeline messages");
 
   const messageById = new Map(args.messages.map((message) => [message.id, message]));
   const triageRunId =
@@ -250,28 +252,32 @@ export async function persistQuickDemoTimelineResult(args: {
     }));
   });
 
-  if (detectedSignals.length > 0) {
-    const { error } = await client.from("detected_signals").insert(detectedSignals);
-    throwIfError(error, "insert quick demo timeline detected signals");
-  }
-
   const latestMessage = args.messages[args.messages.length - 1];
-  const { error: checkInError } = await client
-    .from("check_ins")
-    .update({
-      risk_after: args.result.data.overallRiskLevel,
-      summary: args.result.data.summary,
-    })
-    .eq("id", checkIn.id);
+  const [
+    { error: signalsError },
+    { error: checkInError },
+    { error: seniorError },
+  ] = await Promise.all([
+    detectedSignals.length > 0
+      ? client.from("detected_signals").insert(detectedSignals)
+      : Promise.resolve({ error: null }),
+    client
+      .from("check_ins")
+      .update({
+        risk_after: args.result.data.overallRiskLevel,
+        summary: args.result.data.summary,
+      })
+      .eq("id", checkIn.id),
+    client
+      .from("seniors")
+      .update({
+        risk_level: args.result.data.overallRiskLevel,
+        last_check_in_at: latestMessage?.timestamp ?? new Date().toISOString(),
+      })
+      .eq("id", args.seniorId),
+  ]);
+  throwIfError(signalsError, "insert quick demo timeline detected signals");
   throwIfError(checkInError, "update quick demo timeline check-in");
-
-  const { error: seniorError } = await client
-    .from("seniors")
-    .update({
-      risk_level: args.result.data.overallRiskLevel,
-      last_check_in_at: latestMessage?.timestamp ?? new Date().toISOString(),
-    })
-    .eq("id", args.seniorId);
   throwIfError(seniorError, "update quick demo timeline senior");
 
   await runPatternWatchForSenior(client, args.seniorId);

@@ -531,20 +531,25 @@ export async function readDashboardState(options: {
   const senior = seniors.find((row) => row.id === selectedSeniorId);
   if (!senior) throw new Error("Forbidden");
 
-  const { data: checkIn } = await client
-    .from("check_ins")
-    .select("*")
-    .eq("senior_id", selectedSeniorId)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const checkInId = checkIn?.id;
   const exposeTechnicalTraces = options.auth?.role === "demo_admin";
-
-  const allFollowUpQueue = (
-    await Promise.all(
+  const seniorIds = orderedSeniors.map((seniorRow) => seniorRow.id);
+  const [
+    { data: checkIn },
+    queueGroups,
+    caregiverNames,
+    { data: alerts },
+    { data: brief },
+    activity,
+  ] = await Promise.all([
+    client
+      .from("check_ins")
+      .select("*")
+      .eq("senior_id", selectedSeniorId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    Promise.all(
       orderedSeniors.map((seniorRow) =>
         buildFollowUpQueue(client, {
           id: seniorRow.id,
@@ -553,8 +558,26 @@ export async function readDashboardState(options: {
           last_check_in_at: seniorRow.last_check_in_at,
         })
       )
-    )
-  )
+    ),
+    listCaregiverNamesBySenior(client, seniorIds),
+    client
+      .from("alerts")
+      .select("*")
+      .eq("senior_id", selectedSeniorId)
+      .eq("acknowledged", false)
+      .order("created_at", { ascending: false })
+      .limit(20),
+    client
+      .from("briefs")
+      .select("*")
+      .eq("senior_id", selectedSeniorId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    readCareActivity(client, selectedSeniorId),
+  ]);
+
+  const allFollowUpQueue = queueGroups
     .flat()
     .sort((a, b) => a.priority - b.priority);
 
@@ -566,19 +589,8 @@ export async function readDashboardState(options: {
     );
   }
 
-  const caregiverNames = await listCaregiverNamesBySenior(
-    client,
-    orderedSeniors.map((seniorRow) => seniorRow.id)
-  );
-
-  const [
-    { data: messages },
-    { data: traces },
-    { data: alerts },
-    { data: brief },
-    activity,
-  ] =
-    await Promise.all([
+  const checkInId = checkIn?.id;
+  const [{ data: messages }, { data: traces }] = await Promise.all([
       checkInId
         ? client
             .from("messages")
@@ -593,21 +605,6 @@ export async function readDashboardState(options: {
             .eq("check_in_id", checkInId)
             .order("created_at", { ascending: true })
         : Promise.resolve({ data: [] as TableRow<"agent_runs">[] }),
-      client
-        .from("alerts")
-        .select("*")
-        .eq("senior_id", selectedSeniorId)
-        .eq("acknowledged", false)
-        .order("created_at", { ascending: false })
-        .limit(20),
-      client
-        .from("briefs")
-        .select("*")
-        .eq("senior_id", selectedSeniorId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      readCareActivity(client, selectedSeniorId),
     ]);
 
   const selectedNames = caregiverNames.get(selectedSeniorId);
