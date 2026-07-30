@@ -39,7 +39,7 @@ payloads, API keys, or other secrets to this document.
   case after refresh, and produce no browser console errors. The verification
   session was signed out after completion.
 - Production dependency audit: zero known vulnerabilities.
-- Local quality evidence: 798 tests passed, 38 skipped; TypeScript, ESLint, and
+- Local quality evidence: 799 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
 - Vercel reports commit `8fc049c85ecc` healthy. Live-demo preparation now uses
   one bounded Supabase transaction measured at 29 ms in a rolled-back database
@@ -83,6 +83,11 @@ payloads, API keys, or other secrets to this document.
   action as the main improvement area. No AAC role was represented and relevant
   care experience was not established, so this is neither target-user nor
   clinical validation.
+- The priority case now presents `Why this case was surfaced` and `Recommended
+  human action` in the collapsed primary view. Both are semantically named
+  regions and remain visible without opening the evidence timeline. Desktop and
+  mobile browser checks passed without horizontal overflow or console errors;
+  genuine target-user re-check remains.
 
 ## Deployment Responsibilities
 
@@ -163,7 +168,7 @@ The approved design is recorded in
 | A | DONE | Correct conditional multi-agent evidence | Slide 9 states that Triage always runs; AAC Nudge, Digital Safety, and Context Memory are available only for their stated triggers; deterministic safety policy remains authoritative |
 | B | DONE | Build the synthetic AI benchmark | The committed 42-case fictional dataset, strict validation, scoring tests, real fallback tests, and bounded CLI cover six categories; the offline report is reproducible with `npm run benchmark:agents` |
 | C | DONE | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline and approved 18-case live results with failed IDs; Slide 10 matches the live sample and headline metrics exactly |
-| D | IN PROGRESS | Run bounded target-user validation | Three general users completed a fictional-demo usability check; raw outcomes and limitations are recorded and Slide 12 is accurately labelled; one to two participants with genuine caregiving, AAC, eldercare, or adjacent operational experience remain before this can be called target-user validation |
+| D | IN PROGRESS | Run bounded target-user validation | Three general users completed a fictional-demo usability check; the resulting rationale/action discoverability improvement is implemented, tested, and recorded on Slide 12; one to two participants with genuine caregiving, AAC, eldercare, or adjacent operational experience remain before this can be called target-user validation |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
 | F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
 | G | TODO | Complete top-one submission controls | Mobile and keyboard QA pass; the PPTX uses the required filename; participant-only form fields and cutoff are confirmed; submission is accepted by 7 August |

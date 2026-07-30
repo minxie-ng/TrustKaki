@@ -78,7 +78,28 @@ describe("PriorityCase", () => {
 
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain("View timeline");
-    expect(html.indexOf("View timeline")).toBeLessThan(html.indexOf("Why now"));
+    expect(html.indexOf("View timeline")).toBeLessThan(
+      html.indexOf("Why this case was surfaced")
+    );
+  });
+
+  it("shows the case rationale and recommended human action before timeline expansion", () => {
+    const html = renderToStaticMarkup(createElement(PriorityCase, {
+      items: [item],
+      data,
+      authToken: "test-token",
+      disabled: false,
+      onSaved: () => undefined,
+      onConflictRefresh: async () => undefined,
+      onUnauthorized: () => undefined,
+    }));
+
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("Why this case was surfaced");
+    expect(html).toContain("A recent change needs review.");
+    expect(html).toContain("Recommended human action");
+    expect(html).toContain("Check in today.");
+    expect(html).not.toContain("Chronological evidence timeline");
   });
 
   it("opens the timeline when the guided demo requests it", () => {

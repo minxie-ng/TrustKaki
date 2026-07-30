@@ -173,10 +173,12 @@ function PriorityCaseCard({
         </div>
       </div>
       <div className="mt-6 grid gap-5 text-sm md:grid-cols-2">
-        <div>
-          <div className="text-xs font-bold uppercase text-gray-500">Why now</div>
+        <section aria-label="Why this case was surfaced">
+          <h4 className="text-xs font-bold uppercase text-gray-500">
+            Why this case was surfaced
+          </h4>
           <div className="mt-1 text-lg font-bold leading-snug text-gray-950">{fields.reason}</div>
-        </div>
+        </section>
         <div>
           <div className="text-xs font-bold uppercase text-gray-500">Change</div>
           <div className="mt-1 text-gray-800">{fields.changeFromUsual}</div>
@@ -190,10 +192,15 @@ function PriorityCaseCard({
           <div className="text-gray-900">{fields.assignedTo ?? "Unassigned"}</div>
         </div>
       </div>
-      <div className="mt-5 border-y border-l-[3px] border-[var(--care-line)] border-l-[var(--care-coral)] px-4 py-4">
-        <div className="text-xs font-bold uppercase text-[var(--care-coral-hover)]">Recommended next step</div>
+      <section
+        aria-label="Recommended human action"
+        className="mt-5 border-y border-l-[3px] border-[var(--care-line)] border-l-[var(--care-coral)] px-4 py-4"
+      >
+        <h4 className="text-xs font-bold uppercase text-[var(--care-coral-hover)]">
+          Recommended human action
+        </h4>
         <div className="mt-1 text-base font-semibold text-gray-950">{fields.recommendedAction}</div>
-      </div>
+      </section>
       {item.relatedPatterns.length > 0 && (
         <div className="mt-3 text-xs text-gray-600">
           <span className="font-semibold text-gray-500">Supporting patterns:</span>{" "}

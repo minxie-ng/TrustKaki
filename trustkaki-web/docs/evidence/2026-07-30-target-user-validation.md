@@ -106,6 +106,24 @@ Completed summary:
 Do not describe this check as target-user or AAC validation, convert the small
 sample into population-level percentages, or claim clinical validation.
 
+## Product Response
+
+Completed on 30 July 2026:
+
+- The collapsed priority case now labels its rationale `Why this case was
+  surfaced` instead of `Why now`.
+- The primary action block now says `Recommended human action` instead of
+  `Recommended next step`.
+- Both sections remain visible before the evidence timeline is expanded and
+  expose semantic region names for assistive technology.
+- Focused component tests passed, followed by the complete 799-test suite,
+  TypeScript, ESLint, and the production build.
+- Desktop and mobile browser checks confirmed readable text, no horizontal
+  overflow, and no console errors.
+
+This product response has not yet been re-tested with a genuine caregiver,
+AAC, eldercare, or adjacent operational user.
+
 ## Deck And Closeout Update
 
 Completed on 30 July 2026:
