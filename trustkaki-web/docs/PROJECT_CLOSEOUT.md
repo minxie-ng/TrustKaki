@@ -13,7 +13,7 @@ payloads, API keys, or other secrets to this document.
 ## Current Verified State
 
 - Branch: `main`
-- Verified commit: `ae9c0d4` (`feat: clarify asynchronous judge demo access`)
+- Verified release content commit: `8fc049c` (`feat: add agent benchmark evidence`)
 - Repository: `https://github.com/minxie-ng/TrustKaki`
 - Vercel production: `https://trustkaki.vercel.app`
 - EdgeOne production: `https://trustkaki.edgeone.dev`
@@ -41,7 +41,7 @@ payloads, API keys, or other secrets to this document.
 - Production dependency audit: zero known vulnerabilities.
 - Local quality evidence: 798 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
-- Vercel reports commit `ae9c0d497f86` healthy. Live-demo preparation now uses
+- Vercel reports commit `8fc049c85ecc` healthy. Live-demo preparation now uses
   one bounded Supabase transaction measured at 29 ms in a rolled-back database
   check; duplicate guide-time polling and Realtime refreshes are suppressed,
   and caregiver action steps reconcile from persisted RPC metadata. Signed-in
@@ -61,7 +61,7 @@ payloads, API keys, or other secrets to this document.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
-- The agent-evidence branch contains a reproducible 42-case fictional benchmark
+- The `main` branch contains a reproducible 42-case fictional benchmark
   across care, social, digital-safety, durable-context, benign, and
   protected-data scenarios. Its deterministic offline run measured 100.0%
   durable-context precision, 100.0% schema validity, 0.0% fallback, and no
@@ -125,7 +125,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 2 | DONE | Build one-click public demo mode | Commit `05b893e` is deployed on Vercel and EdgeOne; anonymous acceptance check passed for all four steps, refresh persistence, reset, and exit |
 | 3 | TODO | Make channel origin visible in care evidence | Relevant timeline items show WhatsApp or Telegram source, event time, and bounded delivery/processing state without exposing identifiers |
 | 4 | IN PROGRESS | Complete final product QA | Transactional live-demo preparation and immediate persisted action reconciliation are deployed; signed-in timing acceptance passed at approximately 5-6 seconds for Step 1; keyboard, desktop, and mobile checks remain |
-| 5 | DONE | Deploy the current public-demo release | Commit `ae9c0d4` is healthy on Vercel; EdgeOne serves the updated judge entry but does not expose its deployed commit ID through `/api/health` |
+| 5 | DONE | Deploy the current benchmark-evidence release | Commit `8fc049c` is healthy on Vercel; Vercel and EdgeOne pass release smoke for health, privacy, and data-deletion routes; EdgeOne does not expose its deployed commit ID through `/api/health` |
 | 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
