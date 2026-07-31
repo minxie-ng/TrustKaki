@@ -46,6 +46,14 @@ export interface Message {
   text: string;
   timestamp: string;
   agentId?: AgentId;
+  channel?: "telegram" | "whatsapp";
+  processingState?:
+    | "processed"
+    | "provider_accepted"
+    | "sent"
+    | "delivered"
+    | "read"
+    | "failed";
 }
 
 export interface SeniorProfile {

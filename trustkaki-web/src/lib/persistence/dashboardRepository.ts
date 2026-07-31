@@ -69,13 +69,49 @@ function traceFromAgentRun(row: TableRow<"agent_runs">): AgentTrace {
   };
 }
 
+function metadataObject(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function messageProcessingState(
+  row: TableRow<"messages">
+): Message["processingState"] {
+  if (row.sender === "senior") return "processed";
+
+  const metadata = metadataObject(row.external_metadata);
+  const whatsappDelivery = metadataObject(metadata.whatsapp_delivery);
+  const whatsappStatus = whatsappDelivery.status;
+  if (
+    whatsappStatus === "sent" ||
+    whatsappStatus === "delivered" ||
+    whatsappStatus === "read" ||
+    whatsappStatus === "failed"
+  ) {
+    return whatsappStatus;
+  }
+
+  if (metadata.delivery_state === "provider_accepted") {
+    return "provider_accepted";
+  }
+
+  return row.sender === "trustkaki" ? "provider_accepted" : undefined;
+}
+
 function messageFromRow(row: TableRow<"messages">): Message {
+  const channel =
+    row.external_platform === "telegram" || row.external_platform === "whatsapp"
+      ? row.external_platform
+      : undefined;
   return {
     id: row.client_message_id ?? row.id,
     sender: row.sender,
     text: row.text,
     timestamp: row.created_at,
     agentId: row.agent_id ?? undefined,
+    channel,
+    processingState: channel ? messageProcessingState(row) : undefined,
   };
 }
 

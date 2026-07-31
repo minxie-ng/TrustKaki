@@ -87,7 +87,24 @@ describe("CaseDetails staff presentation", () => {
         id: "session-1",
         startedAt: "2026-07-18T00:00:00.000Z",
         status: "completed",
-        messages: [{ id: "message-1", sender: "senior", text: "I skipped breakfast.", timestamp: "2026-07-18T01:00:00.000Z" }],
+        messages: [
+          {
+            id: "message-1",
+            sender: "senior",
+            text: "I skipped breakfast.",
+            timestamp: "2026-07-18T01:00:00.000Z",
+            channel: "telegram",
+            processingState: "processed",
+          },
+          {
+            id: "message-2",
+            sender: "trustkaki",
+            text: "Please have something light and let Rachel know.",
+            timestamp: "2026-07-18T01:01:00.000Z",
+            channel: "whatsapp",
+            processingState: "delivered",
+          },
+        ],
         traces: [],
         riskBefore: "green",
         riskAfter: "yellow",
@@ -114,6 +131,13 @@ describe("CaseDetails staff presentation", () => {
     expect((html.match(/data-care-thread="true"/g) ?? [])).toHaveLength(1);
     expect(html).toContain("Observed signal");
     expect(html).toContain("Senior message");
+    expect(html).toContain("TrustKaki reply");
+    expect(html).toContain("Telegram");
+    expect(html).toContain("Processed by TrustKaki");
+    expect(html).toContain("WhatsApp");
+    expect(html).toContain("Delivered");
+    expect(html).toContain('dateTime="2026-07-18T01:00:00.000Z"');
+    expect(html).not.toMatch(/phone_number_id|external_message_id|wamid\.|update_id/i);
     expect(html).toContain("Caregiver record");
     expect(html).toContain("Why this case was surfaced");
     expect(html).toContain("Medium severity");
@@ -189,7 +213,7 @@ describe("CaseDetails staff presentation", () => {
     }));
 
     expect(html).toContain("No timeline evidence yet");
-    expect(html).toContain("No senior messages recorded for this case yet");
+    expect(html).toContain("No care messages recorded for this case yet");
     expect(html).toContain("Recommendation basis");
     expect(html).toContain("Recorded actions");
     expect(html).toContain("Covering another urgent visit.");

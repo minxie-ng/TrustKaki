@@ -6,7 +6,7 @@ import type {
   Message,
   PatternEvidenceItem,
 } from "@/lib/types";
-import { recentSeniorMessages } from "../dashboardViewModel";
+import { recentCareMessages } from "../dashboardViewModel";
 import {
   escalationDestinationLabel,
   formatDate,
@@ -29,6 +29,20 @@ const evidenceSeverityLabel = {
   low: "Low severity",
   medium: "Medium severity",
   high: "High severity",
+} as const;
+
+const messageChannelLabel = {
+  telegram: "Telegram",
+  whatsapp: "WhatsApp",
+} as const;
+
+const messageProcessingStateLabel = {
+  processed: "Processed by TrustKaki",
+  provider_accepted: "Accepted by provider",
+  sent: "Sent",
+  delivered: "Delivered",
+  read: "Read",
+  failed: "Delivery failed",
 } as const;
 
 export function formatCaregiverActionHistory(
@@ -106,10 +120,10 @@ function careThreadEntries(
 export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
   if (!item.pattern) return null;
   const pattern = item.pattern;
-  const seniorMessages = recentSeniorMessages(data);
+  const careMessages = recentCareMessages(data);
   const thread = careThreadEntries(
     pattern.evidence,
-    seniorMessages,
+    careMessages,
     pattern.previousActions
   );
 
@@ -126,9 +140,9 @@ export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
               </p>
             </div>
           ) : null}
-          {seniorMessages.length === 0 && (
+          {careMessages.length === 0 && (
             <p className="mt-4 text-sm leading-6 text-gray-600">
-              No senior messages recorded for this case yet.
+              No care messages recorded for this case yet.
             </p>
           )}
           <ol
@@ -138,7 +152,7 @@ export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
             {thread.map((entry) => (
               <li key={entry.id} className="relative pb-6 pl-6 last:pb-0">
                 <ThreadMarker entry={entry} />
-                <time className="text-xs font-semibold text-gray-500">
+                <time dateTime={entry.at} className="text-xs font-semibold text-gray-500">
                   {formatDate(entry.at)}
                 </time>
                 <ThreadEntry entry={entry} />
@@ -244,11 +258,24 @@ function ThreadEntry({ entry }: { entry: CareThreadEntry }) {
     return (
       <>
         <div className="mt-1 text-xs font-bold uppercase text-[var(--care-evergreen)]">
-          Senior message
+          {entry.message.sender === "senior" ? "Senior message" : "TrustKaki reply"}
         </div>
         <p className="mt-1 text-sm leading-6 text-gray-700">
           {entry.message.text}
         </p>
+        {entry.message.channel && (
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+            <span className="font-semibold text-gray-700">
+              {messageChannelLabel[entry.message.channel]}
+            </span>
+            {entry.message.processingState && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{messageProcessingStateLabel[entry.message.processingState]}</span>
+              </>
+            )}
+          </div>
+        )}
       </>
     );
   }

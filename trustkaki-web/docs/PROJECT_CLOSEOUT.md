@@ -1,6 +1,6 @@
 # TrustKaki Project Closeout
 
-Last updated: 30 July 2026
+Last updated: 31 July 2026
 
 This document is the live source of truth for taking TrustKaki from the current
 verified build through hackathon submission and public portfolio release. Update
@@ -39,7 +39,7 @@ payloads, API keys, or other secrets to this document.
   case after refresh, and produce no browser console errors. The verification
   session was signed out after completion.
 - Production dependency audit: zero known vulnerabilities.
-- Local quality evidence: 799 tests passed, 38 skipped; TypeScript, ESLint, and
+- Local quality evidence: 801 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
 - Vercel reports commit `ef2a169111bb` healthy. Live-demo preparation now uses
   one bounded Supabase transaction measured at 29 ms in a rolled-back database
@@ -88,6 +88,13 @@ payloads, API keys, or other secrets to this document.
   regions and remain visible without opening the evidence timeline. Desktop and
   mobile browser checks passed without horizontal overflow or console errors;
   genuine target-user re-check remains.
+- The chronological care timeline now admits recent senior messages and
+  TrustKaki replies, labels persisted Telegram or WhatsApp origin, preserves a
+  semantic event time, and exposes only bounded processing or delivery states.
+  Raw phone, provider-message, webhook-update, and metadata identifiers remain
+  server-side. Repository sanitization tests and 1440x1000 and 390x844 browser
+  checks passed without console errors, framework overlays, or horizontal
+  overflow.
 
 ## Deployment Responsibilities
 
@@ -137,10 +144,10 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 
 | Order | Status | Workstream | Completion evidence |
 | --- | --- | --- | --- |
-| 1 | BLOCKED | Verify WhatsApp and Telegram on the final Vercel commit | Telegram passed on 29 July; WhatsApp is blocked by Meta OAuth error 200; exact Vercel authenticated UI capture remains pending |
+| 1 | BLOCKED | Verify WhatsApp and Telegram on the final Vercel commit | Telegram passed on 29 July. On 31 July Meta access and WABA subscription recovered and a bounded WhatsApp inbound message completed TrustKaki processing without fallback, but Meta rejected outbound delivery with `131031`. Account Quality confirmed a permanent messaging restriction until formal business verification is completed. Exact Vercel authenticated UI capture also remains pending |
 | 2 | DONE | Build one-click public demo mode | Commit `05b893e` is deployed on Vercel and EdgeOne; anonymous acceptance check passed for all four steps, refresh persistence, reset, and exit |
-| 3 | TODO | Make channel origin visible in care evidence | Relevant timeline items show WhatsApp or Telegram source, event time, and bounded delivery/processing state without exposing identifiers |
-| 4 | IN PROGRESS | Complete final product QA | Transactional live-demo preparation and immediate persisted action reconciliation are deployed; signed-in timing acceptance passed at approximately 5-6 seconds for Step 1; keyboard, desktop, and mobile checks remain |
+| 3 | DONE | Make channel origin visible in care evidence | Relevant inbound messages and TrustKaki replies show Telegram or WhatsApp source, semantic event time, and bounded processing/delivery state. Repository tests prove provider and phone identifiers are discarded before dashboard rendering; desktop and 390x844 browser checks passed |
+| 4 | DONE | Complete final product QA | Transactional live-demo preparation and immediate persisted action reconciliation are deployed; signed-in timing acceptance passed at approximately 5-6 seconds for Step 1; the credential-free four-step path passed 390x844 mobile layout, real keyboard activation, retained-history, browser-error, and WCAG A/AA checks on Vercel commit `f478b3c` |
 | 5 | DONE | Deploy the current product release | Commit `ef2a169` is healthy on Vercel; Vercel and EdgeOne pass release smoke for health, privacy, and data-deletion routes; EdgeOne serves the new artifact but does not expose its deployed commit ID through `/api/health` |
 | 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
@@ -149,7 +156,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
 | 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the official event page confirms the AI Agent track and 9 August deadline; exact portal fields and cutoff time remain to be checked in the participant-only submission flow |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
-| 13 | TODO | Publish portfolio material | Public demo, repository, video, LinkedIn copy, screenshots, and technical summary are ready and comply with hackathon publicity rules |
+| 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the credential-free product video, social copy, screenshots, and technical summary are being prepared under the hackathon publicity rules |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
 
 ## Top-One Scoring Sprint
@@ -168,9 +175,9 @@ The approved design is recorded in
 | A | DONE | Correct conditional multi-agent evidence | Slide 9 states that Triage always runs; AAC Nudge, Digital Safety, and Context Memory are available only for their stated triggers; deterministic safety policy remains authoritative |
 | B | DONE | Build the synthetic AI benchmark | The committed 42-case fictional dataset, strict validation, scoring tests, real fallback tests, and bounded CLI cover six categories; the offline report is reproducible with `npm run benchmark:agents` |
 | C | DONE | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline and approved 18-case live results with failed IDs; Slide 10 matches the live sample and headline metrics exactly |
-| D | IN PROGRESS | Run bounded target-user validation | Three general users completed a fictional-demo usability check; the resulting rationale/action discoverability improvement is implemented, tested, and recorded on Slide 12; one to two participants with genuine caregiving, AAC, eldercare, or adjacent operational experience remain before this can be called target-user validation |
+| D | DEFERRED | Run bounded target-user validation | Three general users completed a fictional-demo usability check; the resulting rationale/action discoverability improvement is implemented, tested, and recorded on Slide 12. Additional target-user testing was deliberately deferred on 30 July, so this evidence remains general usability feedback and is not described as AAC, target-user, or clinical validation |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
-| F | TODO | Produce video and social proof | A credential-free 90-120 second demonstration is published with the handbook's required hashtags and earns the available bonus evidence |
+| F | IN PROGRESS | Produce video and social proof | The approved credential-free 110-second demonstration was exported as a verified 1920x1080 MP4 with H.264 video and stereo AAC narration; full decode and eight-scene sampling passed. Completion requires the published video URL and a qualifying post with the handbook's required hashtags |
 | G | TODO | Complete top-one submission controls | Mobile and keyboard QA pass; the PPTX uses the required filename; participant-only form fields and cutoff are confirmed; submission is accepted by 7 August |
 
 ## Immediate Next Workstream
@@ -178,15 +185,24 @@ The approved design is recorded in
 Telegram final-commit verification passed on 29 July. The bounded evidence is
 recorded in
 `docs/superpowers/verification/2026-07-29-final-channel-verification.md`.
-WhatsApp remains blocked by Meta account access and must not hold up independent
-closeout work.
+WhatsApp Meta account access recovered on 31 July and the TrustKaki app was
+successfully re-subscribed to its existing WABA. The bounded live retry proved
+that inbound webhook, orchestration, persistence, and Meta send acceptance work,
+but Meta rejected delivery with provider error `131031` (`Business Account
+locked`). Account Quality then confirmed that the WhatsApp Business Account has
+a permanent restriction against starting conversations, responding, and adding
+phone numbers until formal business verification is completed. Treat this as an
+external account-quality blocker; do not rotate credentials, change application
+code, or submit unverifiable business documents for it.
 
-Use the validation finding to review first-time discoverability of the case
-rationale and recommended action before recording the final video. Keep the
-change narrowly scoped and re-check it with one or two additional AAC users
-when available. Then produce the credential-free 90-120 second demonstration
-and qualifying social post. Keep the WhatsApp restoration attempt as a
-separate blocked task.
+The general-user validation finding has already been implemented and verified.
+Further target-user testing is deferred and does not block submission. Video
+and social publication were deliberately postponed on 31 July; the verified
+MP4 remains ready. Mobile and keyboard QA and channel-origin presentation are
+complete. Next confirm the required PPTX filename and participant-only
+submission fields before final release and submission checks.
+Keep WhatsApp restoration and WorkBuddy access as separate blocked tasks that
+do not hold up submission.
 
 For item 11, keep the credential-bearing native Google Slides source private
 and upload its current PPTX export to the submission portal. The public event

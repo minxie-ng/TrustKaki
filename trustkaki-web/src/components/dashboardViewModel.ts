@@ -186,6 +186,13 @@ export function recentSeniorMessages(data: DashboardData): Message[] {
     .slice(-4);
 }
 
+export function recentCareMessages(data: DashboardData): Message[] {
+  const session = data.activeSessions[0];
+  return (session?.messages ?? [])
+    .filter((message) => message.sender !== "system")
+    .slice(-6);
+}
+
 export function systemProof(args: {
   data: DashboardData;
   traces: AgentTrace[];
