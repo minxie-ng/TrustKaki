@@ -59,10 +59,11 @@ payloads, API keys, or other secrets to this document.
   all-expectations limitation alongside release evidence. Slide 7 contains
   retained-timeline proof. Slide 12 contains the bounded three-person
   general-user usability results and explicitly states that the small sample is
-  neither target-user nor clinical validation;
-  Slide 13 provides the
-  no-login and restricted live judge paths. Slide 1 identifies Team SandSeed
-  and Ng Min Xie as required by the submission brief. A full tone audit removed
+  neither target-user nor clinical validation. Slide 13 provides the no-login
+  and restricted live judge paths and links both
+  the primary Vercel host and secondary Tencent EdgeOne deployment. Slide 1
+  identifies Team SandSeed and Ng Min Xie as required by the submission brief.
+  A full tone audit removed
   internal judging and presentation language and made Slide 1 a direct product
   definition with its senior, family-caregiver, and Active Ageing Centre staff
   audiences stated explicitly.
@@ -162,7 +163,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; Slide 2 includes sourced Singapore ageing context with a linked Age Well SG reference; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
-| 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions |
+| 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions plus clickable Vercel and Tencent EdgeOne links |
 | 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
 | 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the editable PPTX exported successfully with the required filename, but the connected Drive rejected its upload because the account storage quota is full; the official event page confirms the AI Agent track and 9 August deadline; exact portal fields and cutoff time remain to be checked in the participant-only submission flow |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
