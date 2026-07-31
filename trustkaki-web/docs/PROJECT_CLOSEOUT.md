@@ -47,6 +47,11 @@ payloads, API keys, or other secrets to this document.
   and caregiver action steps reconcile from persisted RPC metadata. Signed-in
   browser acceptance passed with Step 1 completing in approximately 5-6 seconds.
 - The native Google Slides submission deck now contains 13 editable slides.
+  Slide 2 now grounds the care gap in Singapore's 2026 super-aged status and
+  the official projection that 1 in 4 citizens will be aged 65 or above by
+  2030. The slide separates those sourced facts from TrustKaki's operational
+  implications for attention prioritisation and handover continuity, and links
+  the visible citation to the official Age Well SG source.
   Slide 9 now shows Triage as always-on and AAC Nudge, Digital Safety, and
   Context Memory as trigger-selected specialists, followed by authoritative
   deterministic policy, Pattern Watch, briefing, and the persisted care case.
@@ -151,7 +156,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 5 | DONE | Deploy the current product release | Product commit `78aa64e` is healthy on Vercel; Vercel and EdgeOne pass release smoke for health, privacy, and data-deletion routes; EdgeOne serves the repository artifact but does not expose its deployed commit ID through `/api/health` |
 | 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
-| 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
+| 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; Slide 2 includes sourced Singapore ageing context with a linked Age Well SG reference; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
 | 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions |
 | 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
 | 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the official event page confirms the AI Agent track and 9 August deadline; exact portal fields and cutoff time remain to be checked in the participant-only submission flow |
