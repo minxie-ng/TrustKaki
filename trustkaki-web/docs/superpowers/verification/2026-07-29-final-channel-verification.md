@@ -81,7 +81,8 @@ times and recent TrustKaki replies while discarding raw provider-message,
 phone, webhook-update, and metadata identifiers before dashboard rendering.
 Focused repository and presentation tests passed, followed by desktop and
 390x844 browser checks with no console errors, framework overlay, or horizontal
-overflow. Deployment verification remains separate from this local UI check.
+overflow. Vercel then reported product commit `78aa64e1e2a5` healthy, and
+Vercel and EdgeOne passed health, privacy, and data-deletion release smoke.
 
 ## WhatsApp Result
 

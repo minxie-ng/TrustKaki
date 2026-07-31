@@ -13,7 +13,7 @@ payloads, API keys, or other secrets to this document.
 ## Current Verified State
 
 - Branch: `main`
-- Verified product release content commit: `ef2a169`
+- Verified product release content commit: `78aa64e`
 - Repository: `https://github.com/minxie-ng/TrustKaki`
 - Vercel production: `https://trustkaki.vercel.app`
 - EdgeOne production: `https://trustkaki.edgeone.dev`
@@ -41,7 +41,7 @@ payloads, API keys, or other secrets to this document.
 - Production dependency audit: zero known vulnerabilities.
 - Local quality evidence: 801 tests passed, 38 skipped; TypeScript, ESLint, and
   the Next.js production build passed.
-- Vercel reports commit `ef2a169111bb` healthy. Live-demo preparation now uses
+- Vercel reports product commit `78aa64e1e2a5` healthy. Live-demo preparation now uses
   one bounded Supabase transaction measured at 29 ms in a rolled-back database
   check; duplicate guide-time polling and Realtime refreshes are suppressed,
   and caregiver action steps reconcile from persisted RPC metadata. Signed-in
@@ -146,9 +146,9 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | --- | --- | --- | --- |
 | 1 | BLOCKED | Verify WhatsApp and Telegram on the final Vercel commit | Telegram passed on 29 July. On 31 July Meta access and WABA subscription recovered and a bounded WhatsApp inbound message completed TrustKaki processing without fallback, but Meta rejected outbound delivery with `131031`. Account Quality confirmed a permanent messaging restriction until formal business verification is completed. Exact Vercel authenticated UI capture also remains pending |
 | 2 | DONE | Build one-click public demo mode | Commit `05b893e` is deployed on Vercel and EdgeOne; anonymous acceptance check passed for all four steps, refresh persistence, reset, and exit |
-| 3 | DONE | Make channel origin visible in care evidence | Relevant inbound messages and TrustKaki replies show Telegram or WhatsApp source, semantic event time, and bounded processing/delivery state. Repository tests prove provider and phone identifiers are discarded before dashboard rendering; desktop and 390x844 browser checks passed |
+| 3 | DONE | Make channel origin visible in care evidence | Commit `78aa64e` is deployed on Vercel. Relevant inbound messages and TrustKaki replies show Telegram or WhatsApp source, semantic event time, and bounded processing/delivery state. Repository tests prove provider and phone identifiers are discarded before dashboard rendering; desktop and 390x844 browser checks passed |
 | 4 | DONE | Complete final product QA | Transactional live-demo preparation and immediate persisted action reconciliation are deployed; signed-in timing acceptance passed at approximately 5-6 seconds for Step 1; the credential-free four-step path passed 390x844 mobile layout, real keyboard activation, retained-history, browser-error, and WCAG A/AA checks on Vercel commit `f478b3c` |
-| 5 | DONE | Deploy the current product release | Commit `ef2a169` is healthy on Vercel; Vercel and EdgeOne pass release smoke for health, privacy, and data-deletion routes; EdgeOne serves the new artifact but does not expose its deployed commit ID through `/api/health` |
+| 5 | DONE | Deploy the current product release | Product commit `78aa64e` is healthy on Vercel; Vercel and EdgeOne pass release smoke for health, privacy, and data-deletion routes; EdgeOne serves the repository artifact but does not expose its deployed commit ID through `/api/health` |
 | 6 | IN PROGRESS | Capture channel proof | Verified Telegram screenshot is included in the deck; WhatsApp final provider proof remains blocked by Meta account access |
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
