@@ -17,3 +17,11 @@ pnpm-debug.log*
 # Env / secrets
 .env*
 *.pem
+
+# Local submission and design artifacts
+/*.pdf
+/*.pptx
+/~$*.pptx
+/trustkaki-web/*.pptx
+/trustkaki-web/scripts/create-slide-*.py
+/trustkaki-web/scripts/create-technical-evidence-slides.py

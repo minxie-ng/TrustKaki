@@ -79,6 +79,17 @@ payloads, API keys, or other secrets to this document.
   no credentials or private identifiers. The post includes the brief's required
   `#CodeBuddy`, `#WorkBuddy`, `#Miora`, and `#TencentCloudHackathon` hashtags;
   capture its public engagement figures again near submission.
+- The public GitHub repository passed its release cleanup on 31 July. A new
+  repository-root README now presents the product, public demos, architecture,
+  measured evidence, safety boundaries, setup, status, and source-use terms
+  without requiring visitors to open the nested application folder. The
+  technical README now reflects the verified Telegram, Vercel, Tencent EdgeOne,
+  WhatsApp, and demo state. Generic starter SVGs and the non-evidentiary
+  WorkBuddy home screenshot were removed; local PPTX drafts and one-off slide
+  generators remain local and ignored. Mobile and keyboard QA evidence was
+  retained for publication. The tracked-tree credential scan found no judge
+  credentials, provider tokens, or private keys; the production dependency
+  audit reports zero vulnerabilities.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
@@ -173,7 +184,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions plus clickable Vercel and Tencent EdgeOne links |
 | 10 | DONE | Confirm final submission requirements | The official brief requires a web link or Skill ZIP and a project introduction deck for the AI Agent/Skills track; video is not required; the brief explicitly suggests EdgeOne as the preferred deployment solution |
 | 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the editable PPTX exported successfully with the required filename, but the connected Drive rejected its upload because the account storage quota is full; the brief sets 9 August as the submission deadline and says materials must be submitted through a separately distributed designated form, but provides neither the form URL nor exact cutoff time; the connected Gmail contained no relevant submission email, so the school inbox and event Discord still require checking |
-| 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
+| 12 | DONE | Prepare the public GitHub release | Repository-root and technical READMEs present the working product, public links, setup, architecture, measured evidence, limitations, safety boundaries, and all-rights-reserved source-use position; useful mobile and keyboard QA evidence is retained; generic starter assets and a non-evidentiary WorkBuddy screenshot are removed; local submission and slide-generation artifacts are ignored; tracked-tree credential scan is clean; full validation, zero-vulnerability production audit, and Vercel plus EdgeOne release smoke pass |
 | 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the qualifying Rednote project post is public with the required hashtags and two credential-free images; the credential-free product video is verified but remains unpublished by choice, and public engagement figures still require a near-deadline capture |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
 

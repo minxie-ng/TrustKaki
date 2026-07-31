@@ -2,6 +2,15 @@
 
 TrustKaki is a hackathon MVP for helping AAC staff and caregivers notice when an older adult may need human follow-up. It is not only a senior chatbot: the main operational view is a caregiver follow-up queue backed by persisted messages, structured agent runs, deterministic safety policy, Pattern Watch, and caregiver action history.
 
+## Live Product
+
+- Public no-login demo: https://trustkaki.vercel.app
+- Tencent EdgeOne deployment: https://trustkaki.edgeone.dev
+- Rednote project post: https://xhslink.com/o/3OS90gWOeN7
+
+The public demo uses fictional browser-only state and cannot call Supabase, the
+LLM, messaging providers, schedulers, or processors.
+
 ## Product Focus
 
 TrustKaki watches ordinary senior check-ins for practical changes that are easy to miss:
@@ -12,16 +21,21 @@ TrustKaki watches ordinary senior check-ins for practical changes that are easy 
 - suspicious digital-safety messages
 - repeated patterns across days
 
-The demo is designed for AAC staff, caregivers, and hackathon judges. A judge should be able to reset the demo, run Quick Demo, inspect one consolidated follow-up case, record an outcome, resolve it, and see that the active queue clears while history remains.
+The product is designed for AAC staff and family caregivers. A reviewer can use
+the no-login Explore demo to inspect one consolidated follow-up case, understand
+why it was surfaced, record an outcome, resolve it, and verify that the active
+queue clears while history remains.
 
 ## Core Features
 
 - Multi-agent orchestration with typed Triage, AAC Nudge, Digital Safety, and Briefing agents.
 - Deterministic policy layer for final safety-critical risk decisions.
 - Supabase persistence for messages, agent runs, detected signals, risk events, alerts, briefs, Pattern Watch output, caregiver queue items, and caregiver actions.
-- Quick Demo path that seeds a four-day history, validates signals, evaluates deterministic patterns, and builds the caregiver queue.
+- Isolated Explore demo that seeds a fictional four-day history in browser-only state.
+- Restricted Live system demo backed by a bounded transactional Supabase reset.
+- Telegram webhook, durable inbox, idempotent processing, and verified outbound reply.
 - Meta WhatsApp Cloud API webhook foundation with durable Supabase inbox, deduplication, async `after()` fast path, and protected retry processor.
-- Judge View with concise main queue card and progressive detail disclosure.
+- Care workspace with a concise priority case and progressive detail disclosure.
 
 ## Architecture
 
@@ -93,7 +107,7 @@ remaining work and dated verification records preserve completed evidence.
 
 ## Environment Variables
 
-Required for Judge View:
+Required for authenticated Live system access:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -127,7 +141,7 @@ Development-only:
 
 Optional:
 
-- `ENABLE_FULL_AGENT_REPLAY=true` allows the slow Full Agent Replay in production. Leave it unset for the primary judge deployment.
+- `ENABLE_FULL_AGENT_REPLAY=true` allows the slow Full Agent Replay in production. Leave it unset for the primary live-demo deployment.
 
 Notes:
 
@@ -216,14 +230,15 @@ npm run build
 
 ## Vercel Deployment
 
-Recommended first deployment target: Vercel.
+Vercel is the primary production target and operates the live messaging path.
 
 1. Import the GitHub repository into Vercel.
 2. Configure the environment variables above in Vercel Project Settings.
 3. Deploy without changing Meta callback settings.
 4. Check `/api/health`.
-5. Run the Judge View Quick Demo.
-6. Only after the app is verified, configure Meta’s callback URL for live WhatsApp testing.
+5. Run the restricted Live system demo.
+6. Only after the app is verified, configure provider callback URLs for bounded
+   live-channel testing.
 
 All TrustKaki API routes are intended for the Node.js runtime. Do not move them to Edge runtime.
 
@@ -250,9 +265,12 @@ Authorization: Bearer <WHATSAPP_INTERNAL_PROCESSOR_SECRET>
 
 This endpoint processes a bounded number of received or failed events and returns non-sensitive counts. It is a recovery path; it does not replace immediate `after()` processing.
 
-## Telegram Demo Continuity
+## Telegram Channel
 
-Telegram is a temporary live-demo transport while the Meta WhatsApp account issue is being resolved. WhatsApp remains TrustKaki's preferred production channel. Both adapters use the same orchestrator, specialist agents, deterministic policy authority, Supabase care records, and caregiver dashboard.
+Telegram is the verified live messaging channel. WhatsApp uses the same
+orchestrator, specialist agents, deterministic policy authority, Supabase care
+records, and caregiver dashboard, but final WhatsApp delivery is externally
+blocked until formal Meta business verification.
 
 Current Telegram flow:
 
@@ -275,9 +293,13 @@ Authorization: Bearer <TELEGRAM_INTERNAL_PROCESSOR_SECRET>
 
 The webhook returns success only after durable inbox acceptance. Duplicate `update_id` values are acknowledged without rerunning orchestration. The development simulator is disabled in production, requires an authenticated `demo_admin`, and injects a fake outbound client so it cannot contact Telegram.
 
-## EdgeOne Future Note
+## Tencent EdgeOne Deployment
 
-Tencent EdgeOne remains a future deployment option, especially for Tencent alignment. Before switching, verify that the chosen EdgeOne Next.js hosting path supports the Node.js runtime behavior TrustKaki needs: Supabase service-role access, `node:crypto`, route handlers, outbound HTTP calls, function duration limits, and `after()`/`waitUntil` semantics.
+Tencent EdgeOne hosts a verified secondary full-stack deployment at
+https://trustkaki.edgeone.dev. It serves the public and authenticated product
+experience, server route handlers, orchestration, and Supabase-backed reads.
+Messaging, scheduler, and processor credentials remain intentionally absent so
+the secondary host cannot create duplicate provider sends or scheduled work.
 
 ## WorkBuddy Portability
 
@@ -304,9 +326,9 @@ Do not bypass deterministic policy, Pattern Watch, or Supabase persistence when 
 ## Known Limitations
 
 - Public self-service registration, password reset, and organization administration are intentionally out of scope.
-- Full Agent Replay is slow and is not the primary production judge path.
-- WhatsApp recovery is protected but still needs an external scheduler or manual trigger for production-grade retry cadence.
-- The bounded Telegram production path passed on 15 July 2026; it must be
-  reverified on the final selected commit before the hackathon release go/no-go.
+- Full Agent Replay is slow and is not the primary production demo path.
+- Meta permanently restricts the current WhatsApp Business Account from
+  messaging until formal business verification is completed.
 - WorkBuddy provider integration is not implemented yet.
-- EdgeOne deployment has not been verified yet.
+- The in-process rate limiter must be replaced before multi-instance production
+  scaling.
