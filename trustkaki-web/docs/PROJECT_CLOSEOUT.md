@@ -66,6 +66,11 @@ payloads, API keys, or other secrets to this document.
   internal judging and presentation language and made Slide 1 a direct product
   definition with its senior, family-caregiver, and Active Ageing Centre staff
   audiences stated explicitly.
+- The latest native deck exported successfully on 31 July as an editable PPTX
+  (874,778 bytes) using the required filename
+  `TrustKaki-Project Introduction Deck-SandSeed.pptx`. Uploading that export to
+  the connected Google Drive is blocked only because the account storage quota
+  is full; the credential-bearing export was not uploaded elsewhere.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
@@ -159,7 +164,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; Slide 2 includes sourced Singapore ageing context with a linked Age Well SG reference; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
 | 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions |
 | 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
-| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the official event page confirms the AI Agent track and 9 August deadline; exact portal fields and cutoff time remain to be checked in the participant-only submission flow |
+| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the editable PPTX exported successfully with the required filename, but the connected Drive rejected its upload because the account storage quota is full; the official event page confirms the AI Agent track and 9 August deadline; exact portal fields and cutoff time remain to be checked in the participant-only submission flow |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
 | 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the credential-free product video, social copy, screenshots, and technical summary are being prepared under the hackathon publicity rules |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
@@ -209,13 +214,16 @@ submission fields before final release and submission checks.
 Keep WhatsApp restoration and WorkBuddy access as separate blocked tasks that
 do not hold up submission.
 
-For item 11, keep the credential-bearing native Google Slides source private
-and upload its current PPTX export to the submission portal. The public event
-page confirms the AI Agent track, identifies WorkBuddy as a recommended rather
-than mandatory tool, and gives 9 August as the deadline. It does not expose the
-participant-only submission fields or exact cutoff time, so those must be
-checked directly in the organiser-provided portal or announcement before item
-11 can be marked done.
+For item 11, keep the credential-bearing native Google Slides source private.
+The current editable PPTX export passed and uses the required filename, but its
+temporary Drive upload is blocked by the connected account's full storage
+quota. Free at least 1 MB of Drive storage or download the PPTX directly from
+Google Slides, then upload it only to the private submission portal. The public
+event page confirms the AI Agent track, identifies WorkBuddy as a recommended
+rather than mandatory tool, and gives 9 August as the deadline. It does not
+expose the participant-only submission fields or exact cutoff time, so those
+must be checked directly in the organiser-provided portal or announcement
+before item 11 can be marked done.
 
 When WhatsApp access is restored, verify only one approved fictional test flow:
 
