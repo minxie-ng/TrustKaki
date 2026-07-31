@@ -164,8 +164,8 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 7 | DONE | Produce architecture and technical evidence | Reviewed Slides 9 and 10 explain channels, identity binding, orchestration, conditionally routed agents, deterministic policy, Pattern Watch, Supabase-backed operations, verification, Vercel, and EdgeOne |
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; Slide 2 includes sourced Singapore ageing context with a linked Age Well SG reference; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
 | 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions plus clickable Vercel and Tencent EdgeOne links |
-| 10 | DONE | Confirm final submission requirements | AI Agent/Skills track requires a web link or Skill ZIP and a project introduction deck; video is not required for this track |
-| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the editable PPTX exported successfully with the required filename, but the connected Drive rejected its upload because the account storage quota is full; the official event page confirms the AI Agent track and 9 August deadline; exact portal fields and cutoff time remain to be checked in the participant-only submission flow |
+| 10 | DONE | Confirm final submission requirements | The official brief requires a web link or Skill ZIP and a project introduction deck for the AI Agent/Skills track; video is not required; the brief explicitly suggests EdgeOne as the preferred deployment solution |
+| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the editable PPTX exported successfully with the required filename, but the connected Drive rejected its upload because the account storage quota is full; the brief sets 9 August as the submission deadline and says materials must be submitted through a separately distributed designated form, but provides neither the form URL nor exact cutoff time; the connected Gmail contained no relevant submission email, so the school inbox and event Discord still require checking |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
 | 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the credential-free product video, social copy, screenshots, and technical summary are being prepared under the hackathon publicity rules |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
@@ -219,12 +219,13 @@ For item 11, keep the credential-bearing native Google Slides source private.
 The current editable PPTX export passed and uses the required filename, but its
 temporary Drive upload is blocked by the connected account's full storage
 quota. Free at least 1 MB of Drive storage or download the PPTX directly from
-Google Slides, then upload it only to the private submission portal. The public
-event page confirms the AI Agent track, identifies WorkBuddy as a recommended
-rather than mandatory tool, and gives 9 August as the deadline. It does not
-expose the participant-only submission fields or exact cutoff time, so those
-must be checked directly in the organiser-provided portal or announcement
-before item 11 can be marked done.
+Google Slides, then upload it only to the private submission form. The official
+brief gives 9 August as the deadline and says teams must submit through a
+designated form distributed through event updates. The brief itself does not
+include the form URL, portal fields, or exact cutoff time. Check the school
+inbox and pinned announcements in the event Discord at
+`https://discord.gg/5aE7nB78K`; if neither contains the form, ask the organisers
+for the submission link and cutoff time before item 11 can be marked done.
 
 When WhatsApp access is restored, verify only one approved fictional test flow:
 
