@@ -72,6 +72,13 @@ payloads, API keys, or other secrets to this document.
   `TrustKaki-Project Introduction Deck-SandSeed.pptx`. Uploading that export to
   the connected Google Drive is blocked only because the account storage quota
   is full; the credential-bearing export was not uploaded elsewhere.
+- A public Rednote project post was verified on 31 July at
+  `https://xhslink.com/o/3OS90gWOeN7`. It identifies TrustKaki, Team SandSeed,
+  Ng Min Xie, the working product capabilities, and the Vercel plus Tencent
+  EdgeOne deployments. Its two published images contain fictional demo data and
+  no credentials or private identifiers. The post includes the brief's required
+  `#CodeBuddy`, `#WorkBuddy`, `#Miora`, and `#TencentCloudHackathon` hashtags;
+  capture its public engagement figures again near submission.
 - Ten high-severity audit findings remain in development-only ESLint tooling.
   npm currently offers only incompatible or incorrect major remediation paths.
   Do not run `npm audit fix --force`.
@@ -167,7 +174,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 10 | DONE | Confirm final submission requirements | The official brief requires a web link or Skill ZIP and a project introduction deck for the AI Agent/Skills track; video is not required; the brief explicitly suggests EdgeOne as the preferred deployment solution |
 | 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the editable PPTX exported successfully with the required filename, but the connected Drive rejected its upload because the account storage quota is full; the brief sets 9 August as the submission deadline and says materials must be submitted through a separately distributed designated form, but provides neither the form URL nor exact cutoff time; the connected Gmail contained no relevant submission email, so the school inbox and event Discord still require checking |
 | 12 | TODO | Prepare the public GitHub release | README, setup, architecture, screenshots, license, limitations, contribution/security notes, and secret scan are complete |
-| 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the credential-free product video, social copy, screenshots, and technical summary are being prepared under the hackathon publicity rules |
+| 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the qualifying Rednote project post is public with the required hashtags and two credential-free images; the credential-free product video is verified but remains unpublished by choice, and public engagement figures still require a near-deadline capture |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
 
 ## Top-One Scoring Sprint
@@ -188,7 +195,7 @@ The approved design is recorded in
 | C | DONE | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline and approved 18-case live results with failed IDs; Slide 10 matches the live sample and headline metrics exactly |
 | D | DEFERRED | Run bounded target-user validation | Three general users completed a fictional-demo usability check; the resulting rationale/action discoverability improvement is implemented, tested, and recorded on Slide 12. Additional target-user testing was deliberately deferred on 30 July, so this evidence remains general usability feedback and is not described as AAC, target-user, or clinical validation |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
-| F | IN PROGRESS | Produce video and social proof | The approved credential-free 110-second demonstration was exported as a verified 1920x1080 MP4 with H.264 video and stereo AAC narration; full decode and eight-scene sampling passed. Completion requires the published video URL and a qualifying post with the handbook's required hashtags |
+| F | IN PROGRESS | Produce video and social proof | The approved credential-free 110-second demonstration was exported as a verified 1920x1080 MP4 with H.264 video and stereo AAC narration; full decode and eight-scene sampling passed. A public Rednote project post now provides the handbook's required hashtags and credential-free product evidence. Completion requires a near-deadline engagement capture; the video remains intentionally unpublished unless needed |
 | G | TODO | Complete top-one submission controls | Mobile and keyboard QA pass; the PPTX uses the required filename; participant-only form fields and cutoff are confirmed; submission is accepted by 7 August |
 
 ## Immediate Next Workstream
