@@ -185,7 +185,7 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; Slide 2 includes sourced Singapore ageing context with a linked Age Well SG reference; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
 | 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions plus clickable Vercel and Tencent EdgeOne links |
 | 10 | DONE | Confirm final submission requirements | The official brief requires a web link or Skill ZIP and a project introduction deck for the AI Agent/Skills track; video is not required; the brief explicitly suggests EdgeOne as the preferred deployment solution |
-| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the editable PPTX exported successfully with the required filename, but the connected Drive rejected its upload because the account storage quota is full; the brief sets 9 August as the submission deadline and says materials must be submitted through a separately distributed designated form, but provides neither the form URL nor exact cutoff time; the connected Gmail contained no relevant submission email, so the school inbox and event Discord still require checking |
+| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the corrected editable PPTX is verified with the required filename; the organiser opened the signed-in Google submission form at `https://forms.gle/39KrhUhEEcLwHYWe9`; the deadline is 9 August 2026 at 11:59 PM SGT; portal-field review, upload, final submission, and confirmation capture remain |
 | 12 | DONE | Prepare the public GitHub release | Repository-root and technical READMEs present the working product, public links, setup, architecture, measured evidence, limitations, safety boundaries, and all-rights-reserved source-use position; useful mobile and keyboard QA evidence is retained; generic starter assets and a non-evidentiary WorkBuddy screenshot are removed; local submission and slide-generation artifacts are ignored; tracked-tree credential scan is clean; full validation, zero-vulnerability production audit, and Vercel plus EdgeOne release smoke pass |
 | 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the qualifying Rednote project post is public with the required hashtags and two credential-free images; the credential-free product video is verified but remains unpublished by choice, and public engagement figures still require a near-deadline capture |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
@@ -209,7 +209,7 @@ The approved design is recorded in
 | D | DEFERRED | Run bounded target-user validation | Three general users completed a fictional-demo usability check; the resulting rationale/action discoverability improvement is implemented, tested, and recorded on Slide 12. Additional target-user testing was deliberately deferred on 30 July, so this evidence remains general usability feedback and is not described as AAC, target-user, or clinical validation |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
 | F | IN PROGRESS | Produce video and social proof | The approved credential-free 110-second demonstration was exported as a verified 1920x1080 MP4 with H.264 video and stereo AAC narration; full decode and eight-scene sampling passed. A public Rednote project post now provides the handbook's required hashtags and credential-free product evidence. Completion requires a near-deadline engagement capture; the video remains intentionally unpublished unless needed |
-| G | TODO | Complete top-one submission controls | Mobile and keyboard QA pass; the PPTX uses the required filename; participant-only form fields and cutoff are confirmed; submission is accepted by 7 August |
+| G | IN PROGRESS | Complete top-one submission controls | Mobile and keyboard QA pass; the corrected PPTX uses the required filename; the signed-in submission portal and 9 August 2026, 11:59 PM SGT cutoff are confirmed; participant-only fields, final upload, submission, and confirmation capture remain; target completion is 7 August |
 
 ## Immediate Next Workstream
 
@@ -230,22 +230,21 @@ The general-user validation finding has already been implemented and verified.
 Further target-user testing is deferred and does not block submission. Video
 and social publication were deliberately postponed on 31 July; the verified
 MP4 remains ready. Mobile and keyboard QA and channel-origin presentation are
-complete. Next confirm the required PPTX filename and participant-only
-submission fields before final release and submission checks.
+complete. The organiser has opened the signed-in Google submission form at
+`https://forms.gle/39KrhUhEEcLwHYWe9` with a confirmed deadline of 9 August
+2026 at 11:59 PM SGT. Next inspect the participant-only fields, upload the
+verified final PPTX, review the complete entry, submit once, and retain the
+confirmation receipt.
 Keep WhatsApp restoration and WorkBuddy access as separate blocked tasks that
 do not hold up submission.
 
 For item 11, keep the credential-bearing native Google Slides source private.
-The current editable PPTX export passed and uses the required filename, but its
-temporary Drive upload is blocked by the connected account's full storage
-quota. Free at least 1 MB of Drive storage or download the PPTX directly from
-Google Slides, then upload it only to the private submission form. The official
-brief gives 9 August as the deadline and says teams must submit through a
-designated form distributed through event updates. The brief itself does not
-include the form URL, portal fields, or exact cutoff time. Check the school
-inbox and pinned announcements in the event Discord at
-`https://discord.gg/5aE7nB78K`; if neither contains the form, ask the organisers
-for the submission link and cutoff time before item 11 can be marked done.
+The corrected editable PPTX passed archive, rendering, text, and hyperlink
+checks and uses the required filename. Upload it only through the private form
+at `https://forms.gle/39KrhUhEEcLwHYWe9`. The portal requires Google sign-in,
+and the organiser confirmed the deadline as 9 August 2026 at 11:59 PM SGT.
+Review the participant-only fields before entering data, submit only once for
+Team SandSeed, and retain the timestamped confirmation page or email.
 
 When WhatsApp access is restored, verify only one approved fictional test flow:
 
