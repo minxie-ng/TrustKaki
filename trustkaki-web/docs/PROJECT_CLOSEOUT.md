@@ -17,6 +17,10 @@ payloads, API keys, or other secrets to this document.
 - Repository: `https://github.com/minxie-ng/TrustKaki`
 - Vercel production: `https://trustkaki.vercel.app`
 - EdgeOne production: `https://trustkaki.edgeone.dev`
+- The AI Agent/Skills entry was submitted once through the official Google
+  portal on 3 August 2026. The organiser confirmation states that it was
+  successfully received; `docs/evidence/2026-08-03-submission-confirmation.png`
+  preserves the credential-free receipt.
 - Vercel and EdgeOne release smoke checks pass for `/api/health`, `/privacy`,
   and `/data-deletion`.
 - The authenticated guided demo completes all four steps on EdgeOne.
@@ -185,18 +189,18 @@ Status values: `TODO`, `IN PROGRESS`, `BLOCKED`, `DONE`.
 | 8 | DONE | Build the hackathon slide deck | Native editable 13-slide Google deck passed visual and tone sweeps; Slide 2 includes sourced Singapore ageing context with a linked Age Well SG reference; internal judging language and layout defects were corrected; Team SandSeed and Ng Min Xie are identified on Slide 1 |
 | 9 | DONE | Prepare the asynchronous judge path | Both production hosts separate no-login Explore demo from restricted Live backend access; a fresh Vercel check confirmed judge sign-in, one-senior scope, all four live steps, refresh persistence, retained activity, and no browser errors; Slide 13 contains the private access instructions plus clickable Vercel and Tencent EdgeOne links |
 | 10 | DONE | Confirm final submission requirements | The official brief requires a web link or Skill ZIP and a project introduction deck for the AI Agent/Skills track; video is not required; the brief explicitly suggests EdgeOne as the preferred deployment solution |
-| 11 | IN PROGRESS | Run the submission audit | Vercel and EdgeOne release smoke passed; judge access passed; the corrected editable PPTX is verified with the required filename; the organiser opened the signed-in Google submission form at `https://forms.gle/39KrhUhEEcLwHYWe9`; the deadline is 9 August 2026 at 11:59 PM SGT; portal-field review, upload, final submission, and confirmation capture remain |
+| 11 | DONE | Run the submission audit | The official AI Agent/Skills entry was submitted once on 3 August with the verified final PPTX and public Vercel, EdgeOne, GitHub, and Rednote links; the organiser confirmation states that the submission was successfully received; the credential-free receipt is retained under `docs/evidence` |
 | 12 | DONE | Prepare the public GitHub release | Repository-root and technical READMEs present the working product, public links, setup, architecture, measured evidence, limitations, safety boundaries, and all-rights-reserved source-use position; useful mobile and keyboard QA evidence is retained; generic starter assets and a non-evidentiary WorkBuddy screenshot are removed; local submission and slide-generation artifacts are ignored; tracked-tree credential scan is clean; full validation, zero-vulnerability production audit, and Vercel plus EdgeOne release smoke pass |
-| 13 | IN PROGRESS | Publish portfolio material | Public demo and repository are live; the qualifying Rednote project post is public with the required hashtags and two credential-free images; the credential-free product video is verified but remains unpublished by choice, and public engagement figures still require a near-deadline capture |
+| 13 | DONE | Publish portfolio material | Public demo and repository are live; the qualifying Rednote post is public with the required hashtags and two credential-free images, and its URL was included in the official submission; the optional credential-free video remains unpublished by choice |
 | 14 | TODO | Complete post-demo cleanup | Temporary access and test records are handled according to the release runbook; judge credentials are rotated or disabled when appropriate |
 
 ## Top-One Scoring Sprint
 
 The official preliminary rubric weights Impact and Relevance at 30 points, Use
 of AI Tools at 40 points, and Project Quality at 30 points, with a five-point
-social-reach bonus. The strict current evidence-based baseline is 82/100 plus
-0/5 bonus. The target is a credible 91-95/100 base score plus the bonus; this is
-a planning target, not a promised judging result.
+social-reach bonus. The strict post-submission estimate is 84/100 plus a
+provisional 5/5 social bonus. This is an evidence-based planning estimate, not
+a promised judging result.
 
 The approved design is recorded in
 `docs/superpowers/specs/2026-07-30-top-one-submission-sprint-design.md`.
@@ -208,8 +212,8 @@ The approved design is recorded in
 | C | DONE | Publish reproducible AI evidence | `docs/evidence/2026-07-30-agent-benchmark.md` records the sanitized 42-case offline and approved 18-case live results with failed IDs; Slide 10 matches the live sample and headline metrics exactly |
 | D | DEFERRED | Run bounded target-user validation | Three general users completed a fictional-demo usability check; the resulting rationale/action discoverability improvement is implemented, tested, and recorded on Slide 12. Additional target-user testing was deliberately deferred on 30 July, so this evidence remains general usability feedback and is not described as AAC, target-user, or clinical validation |
 | E | BLOCKED | Add legitimate WorkBuddy evidence | If account access becomes available, one fictional AAC handover workflow is recorded; otherwise no WorkBuddy usage is claimed |
-| F | IN PROGRESS | Produce video and social proof | The approved credential-free 110-second demonstration was exported as a verified 1920x1080 MP4 with H.264 video and stereo AAC narration; full decode and eight-scene sampling passed. A public Rednote project post now provides the handbook's required hashtags and credential-free product evidence. Completion requires a near-deadline engagement capture; the video remains intentionally unpublished unless needed |
-| G | IN PROGRESS | Complete top-one submission controls | Mobile and keyboard QA pass; the corrected PPTX uses the required filename; the signed-in submission portal and 9 August 2026, 11:59 PM SGT cutoff are confirmed; participant-only fields, final upload, submission, and confirmation capture remain; target completion is 7 August |
+| F | DONE | Produce video and social proof | The credential-free 110-second video was exported and verified but intentionally left unpublished; the qualifying Rednote post contains the required hashtags and credential-free product evidence, and its public URL was included in the official submission |
+| G | DONE | Complete top-one submission controls | Mobile and keyboard QA pass; the corrected PPTX uses the required filename; the official entry was submitted once on 3 August with Vercel, EdgeOne, GitHub, and Rednote links; the organiser confirmation receipt is retained |
 
 ## Immediate Next Workstream
 
@@ -230,11 +234,11 @@ The general-user validation finding has already been implemented and verified.
 Further target-user testing is deferred and does not block submission. Video
 and social publication were deliberately postponed on 31 July; the verified
 MP4 remains ready. Mobile and keyboard QA and channel-origin presentation are
-complete. The organiser has opened the signed-in Google submission form at
-`https://forms.gle/39KrhUhEEcLwHYWe9` with a confirmed deadline of 9 August
-2026 at 11:59 PM SGT. Next inspect the participant-only fields, upload the
-verified final PPTX, review the complete entry, submit once, and retain the
-confirmation receipt.
+complete. The official AI Agent/Skills entry was submitted once on 3 August
+2026 with the verified final PPTX and public Vercel, EdgeOne, GitHub, and
+Rednote links. The organiser confirmation states that the submission was
+successfully received. Do not submit another response. Monitor the official
+Discord and team-leader email for judging updates or accessibility questions.
 Keep WhatsApp restoration and WorkBuddy access as separate blocked tasks that
 do not hold up submission.
 
@@ -243,8 +247,11 @@ The corrected editable PPTX passed archive, rendering, text, and hyperlink
 checks and uses the required filename. Upload it only through the private form
 at `https://forms.gle/39KrhUhEEcLwHYWe9`. The portal requires Google sign-in,
 and the organiser confirmed the deadline as 9 August 2026 at 11:59 PM SGT.
-Review the participant-only fields before entering data, submit only once for
-Team SandSeed, and retain the timestamped confirmation page or email.
+The Team SandSeed entry is now submitted, and the credential-free confirmation
+receipt is retained at
+`docs/evidence/2026-08-03-submission-confirmation.png`. Do not submit another
+response unless the organising committee explicitly instructs the team to do
+so.
 
 When WhatsApp access is restored, verify only one approved fictional test flow:
 
