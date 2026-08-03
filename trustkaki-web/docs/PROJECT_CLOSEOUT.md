@@ -1,6 +1,6 @@
 # TrustKaki Project Closeout
 
-Last updated: 31 July 2026
+Last updated: 3 August 2026
 
 This document is the live source of truth for taking TrustKaki from the current
 verified build through hackathon submission and public portfolio release. Update
@@ -55,8 +55,9 @@ payloads, API keys, or other secrets to this document.
   Slide 9 now shows Triage as always-on and AAC Nudge, Digital Safety, and
   Context Memory as trigger-selected specialists, followed by authoritative
   deterministic policy, Pattern Watch, briefing, and the persisted care case.
-  Slide 10 includes the accepted 18-case live metrics and the strict 9/18
-  all-expectations limitation alongside release evidence. Slide 7 contains
+  Slide 10 includes the accepted 18-case live metrics and clearly separates
+  16/18 exact routing from the conservative multi-check failed-case list.
+  Slide 7 contains
   retained-timeline proof. Slide 12 contains the bounded three-person
   general-user usability results and explicitly states that the small sample is
   neither target-user nor clinical validation. Slide 13 provides the no-login
@@ -102,8 +103,9 @@ payloads, API keys, or other secrets to this document.
   category, with no persistence or messaging. It measured 88.9% route exact
   match, 100.0% required-specialist recall, 95.2% forbidden-specialist
   avoidance, 100.0% Digital Safety recall, 100.0% durable-context precision,
-  100.0% schema validity, and 0.0% fallback. Nine strict failed case IDs remain
-  disclosed in the evidence report.
+  100.0% schema validity, and 0.0% fallback. The conservative composite
+  failed-case list remains disclosed in the evidence report and is explicitly
+  not presented as overall correctness.
 - A bounded fictional-demo usability check with three general users recorded
   6/9 tasks completed without coaching, 3/3 completing the response,
   resolution, and retained-history task, a seven-minute median completion time,

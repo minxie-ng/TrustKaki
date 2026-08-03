@@ -50,6 +50,12 @@ Failed case IDs: care_01, social_01, protected_data_01, care_02,
 protected_data_02, care_03, social_03, durable_context_03,
 protected_data_03
 
+The route exact-match result is 16 of 18 cases. The failed-case list is a
+separate conservative composite: a case appears when any routing,
+forbidden-agent, risk-boundary, follow-up, memory, schema, or fallback
+expectation is missed. It is not an overall correctness score, and it should
+not be interpreted as 9 of 18 responses being correct.
+
 ### Limitations
 
 - This was one stochastic run over 18 of the 42 committed fictional cases; it
