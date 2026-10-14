@@ -2,7 +2,9 @@
 
 Updated: 14 October 2026
 
-Status: clean baseline reviewed; phase 1 evaluation baseline in progress.
+Status: isolated personal-memory retrieval implemented and locally verified.
+Next: configure and run the fictional external retrieval pilot; durable external
+source storage, production integration, and cutover remain open.
 
 ## Purpose and authority
 
@@ -40,7 +42,8 @@ Three outcomes guide this cycle:
   and Briefing. Deterministic policy and Pattern Watch govern safety decisions.
 - Structured memory already supports provenance, confidence, expiry, correction,
   and supersession. Current context selects a bounded set by importance,
-  confidence, and recency; semantic retrieval is absent.
+  confidence, and recency. An isolated semantic-retrieval module now exists;
+  production integration and live semantic measurements remain open.
 - An OpenAI-compatible provider adapter already separates chat model calls.
 - Growth risks include retained messages/traces, context/results retained in
   channel retry records, repeated scheduler retries, and unbounded dashboard reads.
@@ -127,6 +130,22 @@ index rebuild and failure recovery work. Personalisation no longer depends on
 Supabase memory tables after verified cutover. Report storage and latency trade-offs.
 RAG improves relevance; summaries, retention, deduplication, and bounded reads
 control growth. Embeddings also consume storage.
+
+Completed retrieval subchunk, 14 October:
+
+- [x] Trusted-scope contract, bounded retrieval and context, source revision/status/
+  expiry checks, explicit conflict exclusion, and two-second deadline.
+- [x] Eight preserved fictional guard cases, 1,000-distractor multilingual pilot,
+  opt-in Pinecone adapter, and offline transport/evaluation tests.
+- [x] Independent code review and local verification. See
+  [implementation evidence](evidence/2026-10-14-personal-memory-retrieval.md) and
+  [presentation/architecture guide](PERSONAL_MEMORY_RAG_GUIDE.md).
+- [ ] Run the configured external semantic pilot. Pinecone remains a candidate.
+- [ ] Select durable external source storage, implement ingestion/lifecycle, migrate,
+  validate recovery/deletion, and connect production agents under one write path.
+
+Earlier growth subchunk: scheduler retry cap and quiet-hour retry fix are deployed
+and verified; broader retention/pagination work remains open.
 
 Shared AAC/service/digital-safety knowledge is a separate retrieval scope. Add
 only when needed, with maintained sources, dates, and update ownership.

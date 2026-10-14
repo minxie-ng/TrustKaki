@@ -8,6 +8,7 @@
     "start": "./node_modules/.bin/next start",
     "benchmark:agents": "./node_modules/.bin/tsx scripts/agent-benchmark.ts --mode deterministic",
     "benchmark:agents:live": "./node_modules/.bin/tsx scripts/agent-benchmark.ts --mode live --confirm-live",
+    "benchmark:memory": "node --conditions=react-server --import tsx scripts/memory-retrieval-evaluation.ts",
     "release:smoke": "node scripts/release-smoke.mjs",
     "lint": "./node_modules/.bin/eslint",
     "test": "./node_modules/.bin/vitest run",
@@ -20,6 +21,7 @@
     "next": "16.4.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "server-only": "0.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

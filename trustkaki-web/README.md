@@ -2,6 +2,14 @@
 
 TrustKaki is a hackathon MVP for helping AAC staff and caregivers notice when an older adult may need human follow-up. It is not only a senior chatbot: the main operational view is a caregiver follow-up queue backed by persisted messages, structured agent runs, deterministic safety policy, Pattern Watch, and caregiver action history.
 
+## Current development
+
+Personal-memory retrieval is implemented as an isolated, locally tested module.
+Production migration and live semantic evaluation remain open. See the
+[RAG architecture and presentation guide](docs/PERSONAL_MEMORY_RAG_GUIDE.md) and
+[active roadmap](docs/TrustKaki_BUILD_ROADMAP.md). Run `npm run benchmark:memory`
+for the fictional offline guard evaluation.
+
 ## Live Product
 
 - Public no-login demo: https://trustkaki.vercel.app
