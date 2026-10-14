@@ -16,10 +16,11 @@ function endpoint(value: string): URL {
 export function createPineconePilot(config: PineconePilotConfig, send: typeof fetch = fetch) {
   const host = endpoint(config.host);
   const embedding = endpoint(config.embeddingEndpoint);
+  const nativeEmbedding = embedding.href === "https://api.pinecone.io/embed";
   if (!host.hostname.endsWith(".pinecone.io") || host.pathname !== "/"
-    || !embedding.pathname.endsWith("/embeddings")
+    || (!nativeEmbedding && !embedding.pathname.endsWith("/embeddings"))
     || !/^trustkaki-fictional-memory-pilot-[a-z0-9-]+$/.test(config.namespace)
-    || !config.apiKey.trim() || !config.embeddingApiKey.trim()
+    || !config.apiKey.trim() || (!nativeEmbedding && !config.embeddingApiKey.trim())
     || !config.embeddingModel.trim() || !Number.isFinite(config.minimumScore)) throw new Error("Invalid memory pilot configuration");
   const usage = { embeddingTokens: 0, readUnits: 0, upsertedVectors: 0 };
   async function post(url: string, body: unknown, signal: AbortSignal, pinecone = false): Promise<unknown> {
@@ -32,8 +33,21 @@ export function createPineconePilot(config: PineconePilotConfig, send: typeof fe
       return await response.json();
     } catch { throw new Error("Memory pilot provider request failed"); }
   }
-  async function embedBatch(texts: string[], signal: AbortSignal): Promise<number[][]> {
-    if (texts.length < 1 || texts.length > 100 || texts.some(t => !t.trim() || [...t].length > 2000)) throw new Error("Invalid embedding input");
+  async function embedBatch(texts: string[], signal: AbortSignal, inputType: "passage" | "query" = "passage"): Promise<number[][]> {
+    if (texts.length < 1 || texts.length > (nativeEmbedding ? 96 : 100) || texts.some(t => !t.trim() || [...t].length > 2000)) throw new Error("Invalid embedding input");
+    if (nativeEmbedding) {
+      const response = z.object({ model: z.literal(config.embeddingModel), vector_type: z.literal("dense"),
+        data: z.array(z.object({ values: vectorSchema, vector_type: z.literal("dense").optional() })).length(texts.length),
+        usage: z.object({ total_tokens: z.number().int().nonnegative() }),
+      }).safeParse(await post(embedding.href, { model: config.embeddingModel,
+        inputs: texts.map(text => ({ text })), parameters: { input_type: inputType, truncate: "NONE" },
+      }, signal, true));
+      if (!response.success || response.data.data.some(r => r.values.length !== response.data.data[0].values.length)) {
+        throw new Error("Invalid embedding response");
+      }
+      usage.embeddingTokens += response.data.usage.total_tokens;
+      return response.data.data.map(r => r.values);
+    }
     const response = z.object({ model: z.literal(config.embeddingModel),
       data: z.array(z.object({ index: z.number().int().nonnegative(), embedding: vectorSchema })).length(texts.length),
       usage: z.object({ total_tokens: z.number().int().nonnegative() }),
@@ -86,5 +100,5 @@ export function createPineconePilot(config: PineconePilotConfig, send: typeof fe
     if (!result.success) throw new Error("Invalid index stats response");
     return { dimension: result.data.dimension, count: result.data.namespaces[config.namespace]?.vectorCount ?? 0 };
   }
-  return { embedBatch, embed: async (query: string, signal: AbortSignal) => (await embedBatch([query], signal))[0], search, upsert, indexState, usage };
+  return { embedBatch, embed: async (query: string, signal: AbortSignal) => (await embedBatch([query], signal, "query"))[0], search, upsert, indexState, usage };
 }

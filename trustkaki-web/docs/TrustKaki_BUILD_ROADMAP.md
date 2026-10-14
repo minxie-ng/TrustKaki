@@ -143,8 +143,8 @@ Completed retrieval subchunk, 14 October:
 - [ ] Run the configured external semantic pilot. Pinecone remains a candidate.
   A dedicated `trustkaki-memory-pilot` index was created on 15 October: dense,
   1,024 dimensions, cosine, AWS `us-east-1`, Starter plan. Verified empty in the
-  console. Pinecone-hosted embedding adapter support, credentials, budget setup,
-  and live measurements remain open.
+  console. Pinecone-hosted embedding adapter support is locally verified;
+  credentials, score calibration, budget setup, and live measurements remain open.
 - [ ] Select durable external source storage, implement ingestion/lifecycle, migrate,
   validate recovery/deletion, and connect production agents under one write path.
 

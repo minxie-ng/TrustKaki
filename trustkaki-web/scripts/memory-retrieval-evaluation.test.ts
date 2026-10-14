@@ -22,11 +22,14 @@ const liveEnv = Object.fromEntries(Object.entries({
   EMBEDDING_MODEL: "test", PINECONE_PILOT_HOST: "https://test.pinecone.io", PINECONE_API_KEY: "fictional",
   EMBEDDING_ENDPOINT: "https://example.com/embeddings", EMBEDDING_API_KEY: "fictional",
 }).map(([key, value]) => [`TRUSTKAKI_MEMORY_${key}`, value]));
-it.each(["clean", "distractor", "missing-correction"])("exercises the complete live branch offline: %s", async scenario => {
+it.each(["clean", "distractor", "missing-correction", "native"])("exercises the complete live branch offline: %s", async scenario => {
   let count = 0; let currentQuery = "";
   const create: Parameters<typeof runMemoryEvaluation>[2] = () => ({
     usage: { embeddingTokens: 0, readUnits: 0, upsertedVectors: 0 },
-    embedBatch: async texts => texts.map(() => [1]),
+    embedBatch: async texts => {
+      if (scenario === "native") expect(texts.length).toBeLessThanOrEqual(96);
+      return texts.map(() => [1]);
+    },
     embed: async query => { currentQuery = query; return [1]; },
     indexState: async () => ({ dimension: 1, count }),
     upsert: async records => { count += records.length; },
@@ -38,9 +41,11 @@ it.each(["clean", "distractor", "missing-correction"])("exercises the complete l
         .map(r => ({ ...r, sourceVersion: r.version, indexVersion: r.version, embeddingModel: "test", score: 1 }));
     },
   });
-  const report = await runMemoryEvaluation(liveArgs, liveEnv, create);
+  const env = scenario === "native" ? { ...liveEnv, TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT: "https://api.pinecone.io/embed",
+    TRUSTKAKI_MEMORY_EMBEDDING_API_KEY: undefined } : liveEnv;
+  const report = await runMemoryEvaluation(liveArgs, env, create);
   expect(count).toBe(1007);
-  expect(report).toMatchObject({ mode: "live", passedGate: scenario === "clean",
+  expect(report).toMatchObject({ mode: "live", passedGate: scenario === "clean" || scenario === "native",
     forbiddenFacts: scenario === "distractor" ? 30 : 0, unavailableQueries: 0 });
   expect(report.observations).toHaveLength(30);
 });

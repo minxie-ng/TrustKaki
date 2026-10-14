@@ -68,3 +68,49 @@ it("reads only the isolated namespace count and index dimensions for readiness",
   } }));
   expect(await adapter.indexState(new AbortController().signal)).toEqual({ dimension: 2, count: 1005 });
 });
+
+const nativeConfig = { ...config, embeddingEndpoint: "https://api.pinecone.io/embed",
+  embeddingApiKey: "", embeddingModel: "llama-text-embed-v2" };
+const nativeResponse = { model: "llama-text-embed-v2", vector_type: "dense",
+  data: [{ vector_type: "dense", values: [1, 0] }], usage: { total_tokens: 3 } };
+it("uses Pinecone auth and passage/query modes without truncating input", async () => {
+  const send = vi.fn(async () => ok(nativeResponse));
+  const adapter = createPineconePilot(nativeConfig, send);
+  const signal = new AbortController().signal;
+  expect(await adapter.embedBatch(["saved fact"], signal)).toEqual([[1, 0]]);
+  expect(await adapter.embed("question", signal)).toEqual([1, 0]);
+  expect(adapter.usage.embeddingTokens).toBe(6);
+  for (const [i, inputType] of ["passage", "query"].entries()) {
+    const [url, request] = send.mock.calls[i] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.pinecone.io/embed");
+    expect(request.signal).toBe(signal); expect(request.redirect).toBe("error");
+    expect(request.headers).toMatchObject({ "Api-Key": config.apiKey, "X-Pinecone-Api-Version": "2026-07" });
+    expect(request.headers).not.toHaveProperty("Authorization");
+    expect(JSON.parse(String(request.body))).toEqual({ model: nativeConfig.embeddingModel,
+      inputs: [{ text: i ? "question" : "saved fact" }], parameters: { input_type: inputType, truncate: "NONE" } });
+  }
+});
+it.each([
+  { ...nativeResponse, model: "wrong" }, { ...nativeResponse, vector_type: "sparse" },
+  { ...nativeResponse, data: [{ values: [] }] }, { ...nativeResponse, data: [] },
+  { ...nativeResponse, usage: {} },
+])("rejects malformed native embedding response", async response => {
+  const adapter = createPineconePilot(nativeConfig, async () => ok(response));
+  await expect(adapter.embed("question", new AbortController().signal)).rejects.toThrow("Invalid embedding response");
+  expect(adapter.usage.embeddingTokens).toBe(0);
+});
+it("rejects native responses with inconsistent widths", async () => {
+  const adapter = createPineconePilot(nativeConfig, async () => ok({ ...nativeResponse,
+    data: [{ values: [1] }, { values: [1, 0] }] }));
+  await expect(adapter.embedBatch(["first", "second"], new AbortController().signal)).rejects.toThrow("Invalid embedding response");
+});
+it("does not treat another host's /embed endpoint as Pinecone", () => {
+  const send = vi.fn();
+  expect(() => createPineconePilot({ ...nativeConfig, embeddingEndpoint: "https://evil.example/embed" }, send)).toThrow();
+  expect(send).not.toHaveBeenCalled();
+});
+it("rejects native embedding batches above hosted-model limit before network", async () => {
+  const send = vi.fn(); const adapter = createPineconePilot(nativeConfig, send);
+  await expect(adapter.embedBatch(Array(97).fill("fact"), new AbortController().signal)).rejects.toThrow("Invalid embedding input");
+  expect(send).not.toHaveBeenCalled();
+});

@@ -1,6 +1,6 @@
 # Personal memory RAG: implementation and presentation guide
 
-Updated: 14 October 2026. Status: isolated retrieval implementation, locally verified.
+Updated: 15 October 2026. Status: isolated retrieval implementation, locally verified.
 
 ## What exists today
 
@@ -102,7 +102,7 @@ contracts, pinned to API version `2026-07`.
 In the pilot, a generated local fixture set is canonical: five relevant facts,
 one superseded contact preference, one expired fact, and 1,000 distractors.
 The current contact preference is revision 2; the previous preference is superseded.
-The script embeds fixture content in batches of at most 100 and uploads only
+The script embeds fixture content in batches of at most 96 for Pinecone-hosted embeddings (100 for compatible external providers) and uploads only
 records exactly matching this allowlist into a fresh fictional namespace. Raw
 text is sent to the configured embedding provider. Embeddings and metadata are
 sent to Pinecone. Uploaded vectors remain there until separately cleaned up.
@@ -151,7 +151,7 @@ TRUSTKAKI_MEMORY_PILOT_BUDGET_USD
 
 ### Local configuration
 
-The environment template includes all nine pilot settings. If `.env.local` does
+The environment template includes all pilot settings. If `.env.local` does
 not exist, copy `.env.example` to `.env.local`, then fill only the pilot section.
 Preserve existing `.env.local` contents if that file already exists. Git ignores
 `.env.local`; `.env.example` must contain placeholders only. Keep API keys in
@@ -171,9 +171,23 @@ support; choose an embedding endpoint and model explicitly. An index host is the
 data-plane HTTPS host, not the Pinecone dashboard URL. Record the index's actual
 region and plan. Do not guess these values to bypass configuration checks.
 
-The embedding endpoint must use HTTPS and the supported `/embeddings` response
-format, including the configured model identity and token usage. A provider that
-returns a different model alias needs deliberate adapter validation changes.
+Two embedding formats are supported:
+
+- **Pinecone native:** exact endpoint `https://api.pinecone.io/embed`, model
+  `llama-text-embed-v2` for the dedicated 1,024-dimensional index. It uses
+  `TRUSTKAKI_MEMORY_PINECONE_API_KEY`; leave the separate embedding key blank.
+  Saved facts use `passage` mode; questions use `query` mode. Batches are limited
+  to 96 inputs and truncation is disabled so oversized inputs fail explicitly.
+- **External provider:** HTTPS `/embeddings` endpoint with a separate embedding
+  key, OpenAI-compatible response format, configured model identity, and token
+  usage. A different model alias requires deliberate validation changes.
+
+The native request/response follows Pinecone's
+[Generate vectors API](https://docs.pinecone.io/reference/api/2026-07/inference/generate-vectors).
+[Pinecone's batching guide](https://docs.pinecone.io/guides/index-data/upsert-data#upsert-in-batches)
+explains the hosted embedding model limit. Both formats preserve model/count/
+finite-vector/width/usage validation, cancellation, and sanitized provider errors.
+
 Choose/calibrate the score threshold separately from final evaluation; do not
 quietly tune on failing evaluation questions and report them as independent data.
 

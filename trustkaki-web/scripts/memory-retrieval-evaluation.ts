@@ -54,15 +54,18 @@ export async function runMemoryEvaluation(
   const plan = required("TRUSTKAKI_MEMORY_PILOT_PLAN");
   const embeddingModel = required("TRUSTKAKI_MEMORY_EMBEDDING_MODEL");
   const namespace = `trustkaki-fictional-memory-pilot-${randomUUID()}`;
+  const embeddingEndpoint = required("TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT");
+  const nativeEmbedding = embeddingEndpoint === "https://api.pinecone.io/embed";
   const adapter = create({
     host: required("TRUSTKAKI_MEMORY_PINECONE_PILOT_HOST"), apiKey: required("TRUSTKAKI_MEMORY_PINECONE_API_KEY"), namespace,
-    embeddingEndpoint: required("TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT"), embeddingApiKey: required("TRUSTKAKI_MEMORY_EMBEDDING_API_KEY"),
+    embeddingEndpoint, embeddingApiKey: nativeEmbedding ? "" : required("TRUSTKAKI_MEMORY_EMBEDDING_API_KEY"),
     embeddingModel, minimumScore,
   });
   process.stderr.write(JSON.stringify({ event: "fictional_pilot_started", namespace }) + "\n");
   let dimensions = 0;
-  for (let i = 0; i < pilotRecords.length; i += 100) {
-    const batch = pilotRecords.slice(i, i + 100);
+  const batchSize = nativeEmbedding ? 96 : 100;
+  for (let i = 0; i < pilotRecords.length; i += batchSize) {
+    const batch = pilotRecords.slice(i, i + batchSize);
     const vectors = await adapter.embedBatch(batch.map(r => r.content), AbortSignal.timeout(30000));
     if (dimensions && vectors[0].length !== dimensions) throw new Error("Embedding dimensions changed");
     dimensions = vectors[0].length;
