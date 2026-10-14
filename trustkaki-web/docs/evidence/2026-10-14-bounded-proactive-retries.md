@@ -1,6 +1,7 @@
 # Bounded proactive retries — 14 October 2026
 
-Status: implemented and verified locally; migration and application are not deployed.
+Status: database migration applied; production application candidate ready.
+Promotion awaits the required signed-in dashboard verification.
 
 ## Behaviour
 
@@ -101,7 +102,7 @@ contention, or real providers. Local fixtures have no outbound connection.
   remains active every five minutes; no scheduler configuration change needed.
 
 1. Review and apply the migration to the linked TrustKaki database through the
-   normal release process. No live migration was applied during this work.
+   normal release process. Applied on 14 October 2026; version confirmed remotely.
 2. Deploy the application. Database-first order supports older workers; do not
    treat the app alone as enforcing terminal retry limits.
 3. Inspect aggregate scheduler counts and authenticated paused/failure status.
@@ -113,7 +114,32 @@ For application rollback, keep the database bounds. An older app remains
 compatible with the RPC but resumes five-minute quiet-hour deferrals. Reverting
 the database function restores the unbounded behaviour; prefer a forward fix.
 
-No live migration, deployment, job mutation, provider send, or browser interaction
-was performed. The existing live retry loop remains unchanged until rollout.
+### Live rollout evidence
+
+- Source commit: `fc4d663842e4587583a8b1127b34af9a953f4ecc` (local, not pushed).
+- Supabase migration `20261014143934` applied successfully. Read-only inspection
+  confirmed the preserved RPC signature, security definer, empty search path,
+  five-attempt cap, denied anon/authenticated execution, and service-role access.
+- Staged production deployment: `dpl_7pmRyx65RGbHJPurbUEAXto43zTX`, READY:
+  [candidate](https://trustkaki-n03ncgc4v-minxie-ngs-projects.vercel.app).
+  Deployed from repository root because Vercel's project root is `trustkaki-web`.
+  Initial app-directory attempt failed before upload due to the doubled path.
+- Candidate `/api/health`: HTTP 200, app/database/config checks passed, commit
+  `fc4d663842e4`. `/privacy` and `/data-deletion`: HTTP 200, nonempty HTML.
+  Protected public routes were inspected through the Vercel connector.
+- Main domain still reports commit `07ca51f77354`; candidate was not promoted.
+- Normal Supabase cron ran at 15:20 UTC. The existing quiet-hours job changed to
+  pending, released its claim, retained 15,024 attempts, and scheduled 15:25 UTC.
+  Retry event count stayed 15,002, last event at 15:10 UTC. This confirms quiet
+  waits no longer append retry events. The old app still polls every five minutes
+  until promotion. Live terminal failure behaviour has not been induced.
+- No manual processor invocation, provider test message, schedule change, or
+  audit deletion. Existing cron processing continued under the new function.
+- Signed-in dashboard verification remains pending: Chrome showed the login
+  screen; browser control subsequently detached. User asked to sign in directly.
+- Automatic approval review rejected a proposed private `/api/seniors` fetch
+  through Vercel's temporary bypass because it could expose private senior data.
+  No workaround attempted; this private read remains unchecked.
+
 Current database-function privilege guidance was checked against
 [Supabase documentation](https://supabase.com/docs/guides/database/functions).
