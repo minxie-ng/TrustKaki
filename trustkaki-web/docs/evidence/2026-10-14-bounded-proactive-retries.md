@@ -1,7 +1,6 @@
 # Bounded proactive retries — 14 October 2026
 
-Status: database migration applied; production application candidate ready.
-Promotion awaits the required signed-in dashboard verification.
+Status: database migration applied and verified application promoted to production.
 
 ## Behaviour
 
@@ -127,7 +126,9 @@ the database function restores the unbounded behaviour; prefer a forward fix.
 - Candidate `/api/health`: HTTP 200, app/database/config checks passed, commit
   `fc4d663842e4`. `/privacy` and `/data-deletion`: HTTP 200, nonempty HTML.
   Protected public routes were inspected through the Vercel connector.
-- Main domain still reports commit `07ca51f77354`; candidate was not promoted.
+- Promoted the same candidate after signed-in verification, at approximately
+  23:27 Singapore time on 14 October 2026. Main domain now reports commit
+  `fc4d663842e4`; production health, privacy, and data-deletion smoke checks passed.
 - Normal Supabase cron ran at 15:20 UTC. The existing quiet-hours job changed to
   pending, released its claim, retained 15,024 attempts, and scheduled 15:25 UTC.
   Retry event count stayed 15,002, last event at 15:10 UTC. This confirms quiet
@@ -135,11 +136,23 @@ the database function restores the unbounded behaviour; prefer a forward fix.
   until promotion. Live terminal failure behaviour has not been induced.
 - No manual processor invocation, provider test message, schedule change, or
   audit deletion. Existing cron processing continued under the new function.
-- Signed-in dashboard verification remains pending: Chrome showed the login
-  screen; browser control subsequently detached. User asked to sign in directly.
+- User signed in directly. Read-only UI checks confirmed the authenticated roster,
+  persisted priority case and recommended action, care setup, and paused check-in
+  panel loaded. Refresh restored the authenticated dashboard and persisted data.
+  No settings, case status, or Resume/Update controls were changed.
+- Automatic approval review rejected the demo-mode toggle because side effects
+  were not established. It was left off. Source inspection confirmed that normal
+  authenticated dashboard hydration already reads live data; no toggle was
+  needed for this verification. Demo reset/replay flows were not exercised.
 - Automatic approval review rejected a proposed private `/api/seniors` fetch
   through Vercel's temporary bypass because it could expose private senior data.
   No workaround attempted; this private read remains unchecked.
+- At 23:28 Singapore time, aggregate retry events remained 15,002 across the
+  15:20 and 15:25 UTC cron runs, with no consumed failure attempts for quiet waits.
+  These runs preceded application promotion. The new app's overnight deferral
+  has local policy coverage but was not induced or observed live during rollout.
+- Bounded Vercel error-log scan for this deployment (preceding 15 minutes): zero
+  returned error rows. This short scan does not establish ongoing reliability.
 
 Current database-function privilege guidance was checked against
 [Supabase documentation](https://supabase.com/docs/guides/database/functions).

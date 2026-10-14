@@ -243,11 +243,12 @@ clear, and remaining limits are explicit. Deployment is a separate recorded step
   feedback implemented. Full suite: 818 passed, 38 skipped; 16 isolated PostgreSQL
   checks passed; TypeScript, lint, and build passed.
   [Evidence and release steps](evidence/2026-10-14-bounded-proactive-retries.md).
-- **14 October 2026 — scheduler database rollout complete:** migration applied;
+- **14 October 2026 — scheduler rollout complete:** migration applied;
   normal cron confirmed quiet waits add no retry events. Production candidate
   `fc4d663` is READY and public smoke passed. Next.js security updates included;
-  production dependency audit reports zero vulnerabilities. Main domain still
-  serves the previous release. Promotion awaits signed-in dashboard verification.
-- **Next chunk:** finish authenticated candidate verification and promotion;
-  finish remaining phase-1 evaluation and retrieval acceptance thresholds.
+  production dependency audit reports zero vulnerabilities. Signed-in dashboard,
+  persisted state after refresh, and paused scheduler panel verified. Same build
+  promoted to the main domain; production public smoke and commit check passed.
+- **Next chunk:** finish remaining phase-1 evaluation and retrieval acceptance
+  thresholds, then implement the first external-memory retrieval slice.
   Event discovery is proposed. RAG, prompt, and UI implementation have not started.
