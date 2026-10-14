@@ -1,6 +1,6 @@
 # TrustKaki — Active Roadmap
 
-Updated: 14 October 2026
+Updated: 15 October 2026
 
 Status: isolated personal-memory retrieval implemented and locally verified.
 Next: configure and run the fictional external retrieval pilot; durable external
@@ -141,6 +141,10 @@ Completed retrieval subchunk, 14 October:
   [implementation evidence](evidence/2026-10-14-personal-memory-retrieval.md) and
   [presentation/architecture guide](PERSONAL_MEMORY_RAG_GUIDE.md).
 - [ ] Run the configured external semantic pilot. Pinecone remains a candidate.
+  A dedicated `trustkaki-memory-pilot` index was created on 15 October: dense,
+  1,024 dimensions, cosine, AWS `us-east-1`, Starter plan. Verified empty in the
+  console. Pinecone-hosted embedding adapter support, credentials, budget setup,
+  and live measurements remain open.
 - [ ] Select durable external source storage, implement ingestion/lifecycle, migrate,
   validate recovery/deletion, and connect production agents under one write path.
 
