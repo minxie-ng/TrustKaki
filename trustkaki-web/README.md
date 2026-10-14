@@ -5,7 +5,7 @@ TrustKaki is a hackathon MVP for helping AAC staff and caregivers notice when an
 ## Current development
 
 Personal-memory retrieval is implemented as an isolated, locally tested module.
-Production migration and live semantic evaluation remain open. See the
+The first fictional live retrieval pilot passed; production migration remains open. See the
 [RAG architecture and presentation guide](docs/PERSONAL_MEMORY_RAG_GUIDE.md) and
 [active roadmap](docs/TrustKaki_BUILD_ROADMAP.md). Run `npm run benchmark:memory`
 for the fictional offline guard evaluation.

@@ -2,9 +2,9 @@
 
 Updated: 15 October 2026
 
-Status: isolated personal-memory retrieval implemented and locally verified.
-Next: configure and run the fictional external retrieval pilot; durable external
-source storage, production integration, and cutover remain open.
+Status: isolated retrieval and first fictional external pilot passed.
+Next: select durable external source storage and design ingestion/lifecycle;
+production integration and cutover remain open.
 
 ## Purpose and authority
 
@@ -140,11 +140,13 @@ Completed retrieval subchunk, 14 October:
 - [x] Independent code review and local verification. See
   [implementation evidence](evidence/2026-10-14-personal-memory-retrieval.md) and
   [presentation/architecture guide](PERSONAL_MEMORY_RAG_GUIDE.md).
-- [ ] Run the configured external semantic pilot. Pinecone remains a candidate.
+- [x] Run the configured external semantic pilot. Pinecone remains a candidate.
   A dedicated `trustkaki-memory-pilot` index was created on 15 October: dense,
   1,024 dimensions, cosine, AWS `us-east-1`, Starter plan. Verified empty in the
-  console. Pinecone-hosted embedding adapter support is locally verified;
-  credentials, score calibration, budget setup, and live measurements remain open.
+  console. Pinecone-hosted embedding adapter, separate calibration, and first live
+  pilot passed: Recall@6 10/10 per language, zero forbidden facts, p95 986ms.
+  [Live evidence](evidence/2026-10-15-memory-live-pilot.md). This small synthetic
+  result does not establish production capacity or broad multilingual quality.
 - [ ] Select durable external source storage, implement ingestion/lifecycle, migrate,
   validate recovery/deletion, and connect production agents under one write path.
 

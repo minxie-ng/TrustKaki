@@ -1,6 +1,6 @@
 # Personal memory RAG: implementation and presentation guide
 
-Updated: 15 October 2026. Status: isolated retrieval implementation, locally verified.
+Updated: 15 October 2026. Status: isolated retrieval locally verified; first fictional live pilot passed.
 
 ## What exists today
 
@@ -13,7 +13,7 @@ migration or a deployed semantic-memory feature.
 The approved destination is external personal memory. Supabase remains responsible
 for operational care data, authentication, access relationships, messages, cases,
 and schedules. The durable external source-record store has not been selected.
-Pinecone is a candidate search index, not the chosen authoritative memory store.
+Pinecone is a candidate search index with a passing first fictional pilot, not the chosen authoritative memory store.
 
 ## The three different pieces
 
@@ -127,7 +127,50 @@ rankings. It checks retrieval rules and target preservation. Passing **does not
 measure semantic accuracy**: the local ranks already know the expected answer.
 It also does not call a chat model or measure response faithfulness.
 
-## Live pilot: next gate, not yet run
+## Calibrate before evaluating
+
+The native Pinecone calibration command uses 1,005 active fictional source facts,
+15 separate target questions (five topics in three languages), and five unrelated
+questions. It embeds the corpus and questions without writing to the index, then
+computes exact cosine similarity locally. If every target score exceeds every
+forbidden score, the midpoint defines a candidate threshold; otherwise calibration
+fails. Final evaluation questions must not be used to tune the threshold.
+
+```sh
+node --env-file=.env.local --conditions=react-server --import tsx scripts/memory-calibration.ts --confirm-live --confirm-provider-budget
+```
+
+This command calls the embedding provider and consumes quota. It supports the
+configured native Pinecone model and requires a positive declared budget and
+Starter plan. Verify the actual plan in the console; environment declarations do
+not enforce billing controls. The current Starter plan is free and rejects monthly
+quota overages rather than automatically upgrading. See
+[Pinecone's rate limits](https://docs.pinecone.io/reference/api/database-limits/rate-limits).
+
+Calibration is a tiny development set. It uses the same five positive facts as
+the evaluation with different question wording. The 1,000 distractors repeat an
+inventory-note template; harder, diverse distractors and a larger independent set
+are needed before making broad semantic-quality claims.
+
+## Live pilot: first run passed
+
+On 15 October 2026, the native Pinecone/`llama-text-embed-v2` pilot passed all
+configured gates using cutoff **0.200106996389696**, frozen from a separate
+20-question calibration. Required facts were retrieved for **10/10 English,
+10/10 Mandarin, and 10/10 Singlish** questions. Forbidden facts and unavailable
+queries were both zero; nearest-rank p95 retrieval latency was **986ms** across
+30 sequential queries. All gardening and contact-correction questions passed.
+
+The run indexed 1,007 fictional vectors in the dedicated pilot index. It used
+20,498 embedding tokens and 30 reported query read units; separate calibration
+used 20,440 embedding tokens without index writes. Starter/free plan was verified
+in the console; no paid upgrade was made. Dollar billing was not reconciled.
+See [raw reports and interpretation](evidence/2026-10-15-memory-live-pilot.md).
+
+This is one small synthetic run. No chat generation, load test, durable external
+source store, production migration, or full live lifecycle validation is claimed.
+
+### Re-running the pilot
 
 Live mode requires an existing, isolated Pinecone index, appropriate permissions,
 and an explicitly selected embedding model. Index vector dimensions and cosine
@@ -242,10 +285,12 @@ would not have fixed that issue.
 > ever-growing history, the retrieval layer finds relevant facts within the
 > senior's authorised scope, verifies their latest versions, and returns a small
 > context with source references. This lets older preferences stay useful and
-> makes chat-model changes easier. We have implemented and locally tested that
-> retrieval boundary. Pinecone is our candidate vector index; live multilingual
-> validation, durable external memory storage, and production cutover are the next
-> gates. We are not yet claiming a deployed RAG migration or measured live accuracy.”
+> makes chat-model changes easier. We have implemented the retrieval boundary
+> and passed an initial fictional
+> Pinecone pilot: all 30 target memories were retrieved across English, Mandarin,
+> and Singlish, with zero forbidden facts and 986ms p95 latency. This is a small
+> synthetic result. Durable external source storage, broader evaluation, and
+> production cutover remain open; we are not claiming a deployed RAG migration.”
 
 ## Source files and evidence
 
