@@ -312,8 +312,38 @@ describe("proactive check-in processor", () => {
 
     expect(fixture.outboundClient.sendText).not.toHaveBeenCalled();
     expect(fixture.dependencies.retryJob).toHaveBeenCalledWith(
-      expect.objectContaining({ errorCategory: "quiet_hours" })
+      expect.objectContaining({
+        errorCategory: "quiet_hours",
+        nextEligibleAt: "2026-07-15T23:00:00.000Z",
+      })
     );
+  });
+
+  it("identifies a missing messaging identity as a permanent configuration issue", async () => {
+    const fixture = setup("initial_send");
+    vi.mocked(fixture.dependencies.findTelegramChatIdForSenior).mockResolvedValue(null);
+    await processDueProactiveJobs({ limit: 10, workerId: "worker-1", now,
+      ...fixture });
+    expect(fixture.dependencies.retryJob).toHaveBeenCalledWith(
+      expect.objectContaining({ errorCategory: "messaging_identity_missing" })
+    );
+    expect(fixture.outboundClient.sendText).not.toHaveBeenCalled();
+    expect(fixture.dependencies.beginSendIntent).not.toHaveBeenCalled();
+  });
+
+  it("backs off repeated failures before provider I/O", async () => {
+    const fixture = setup("initial_send");
+    vi.mocked(fixture.dependencies.claimDueJobs).mockResolvedValue([
+      { ...job("initial_send"), attempt_count: 3 },
+    ]);
+    vi.mocked(fixture.dependencies.readProcessingSchedule).mockRejectedValue(new Error("unavailable"));
+    await processDueProactiveJobs({ limit: 10, workerId: "worker-1", now,
+      ...fixture });
+    expect(fixture.dependencies.retryJob).toHaveBeenCalledWith(
+      expect.objectContaining({ errorCategory: "processor_error",
+        nextEligibleAt: "2026-07-15T01:20:00.000Z" })
+    );
+    expect(fixture.outboundClient.sendText).not.toHaveBeenCalled();
   });
 
   it("does not retry a transport failure after durable send intent", async () => {

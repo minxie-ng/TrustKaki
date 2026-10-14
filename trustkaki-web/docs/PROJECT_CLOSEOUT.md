@@ -2,10 +2,11 @@
 
 Last updated: 3 August 2026
 
-This document is the live source of truth for taking TrustKaki from the current
-verified build through hackathon submission and public portfolio release. Update
-the status and evidence here after each major step. Historical implementation
-plans remain under `docs/superpowers/` and are not active checklists.
+This document records the hackathon submission and public portfolio release,
+including outstanding operational items. Current development priorities are
+maintained in the [active roadmap](TrustKaki_BUILD_ROADMAP.md). The dated release
+evidence below is historical; it does not establish current deployment health.
+Historical implementation plans remain under `docs/superpowers/`.
 
 Do not add credentials, Auth UUIDs, phone numbers, provider identifiers, message
 payloads, API keys, or other secrets to this document.

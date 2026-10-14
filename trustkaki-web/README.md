@@ -93,17 +93,18 @@ and removes temporary Auth users and database rows.
 
 ## Project Documentation
 
-- `docs/TrustKaki_BUILD_ROADMAP.md` is the current product direction and gate status.
-- `docs/PROJECT_CLOSEOUT.md` is the live checklist from the verified build through
-  hackathon submission and public portfolio release.
+- [Active roadmap](docs/TrustKaki_BUILD_ROADMAP.md) is the source of truth for
+  memory/RAG, agent behaviour, UI improvements, and current delivery status.
+- [Project closeout](docs/PROJECT_CLOSEOUT.md) records the historical hackathon
+  release and outstanding operational items.
 - `docs/superpowers/specs/` records approved security and feature designs.
 - `docs/superpowers/verification/` records completed gate evidence.
 - `docs/superpowers/plans/` preserves historical implementation plans.
 - `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` is the bounded hackathon release,
   rollback, incident, and go/no-go checklist.
 
-The README and roadmap describe the product, while the closeout checklist tracks
-remaining work and dated verification records preserve completed evidence.
+The roadmap sets current development priorities. Dated verification records
+preserve completed evidence; historical plans do not override the active roadmap.
 
 ## Environment Variables
 
@@ -227,6 +228,21 @@ for approval checkpoints, rollback ordering, and bounded release records.
 npm run lint
 npm run build
 ```
+
+The fictional [memory retrieval baseline](docs/evidence/2026-10-14-memory-retrieval-baseline.md)
+is reproducible without a live database or LLM:
+
+```bash
+./node_modules/.bin/vitest run src/lib/persistence/seniorContextRepository.test.ts --reporter=verbose
+```
+
+Passing baseline tests reproduce documented gaps; they do not mean all retrieval
+targets or reply-quality checks pass.
+
+Scheduler retry limits and quiet-hour remediation are recorded in
+[local verification and release steps](docs/evidence/2026-10-14-bounded-proactive-retries.md).
+The database migration must precede application rollout; app deployment alone
+will not enforce terminal retry limits.
 
 ## Vercel Deployment
 

@@ -41,6 +41,19 @@ export function isWithinQuietHours(rawInput: QuietHoursInput): boolean {
   return now >= start || now < end;
 }
 
+export function nextQuietHoursEnd(rawInput: QuietHoursInput): string {
+  const input = quietHoursInputSchema.parse(rawInput);
+  if (!isWithinQuietHours(input)) return input.now;
+
+  // Search actual instants so timezone offset changes and skipped local times work.
+  const nextMinute = Math.floor(timestamp(input.now) / 60_000) * 60_000 + 60_000;
+  for (let minute = 0; minute < 48 * 60; minute += 1) {
+    const candidate = new Date(nextMinute + minute * 60_000).toISOString();
+    if (!isWithinQuietHours({ ...input, now: candidate })) return candidate;
+  }
+  throw new Error("Quiet-hour end unavailable");
+}
+
 export function nextProactiveAction(
   rawInput: NextProactiveActionInput
 ): NextProactiveAction {

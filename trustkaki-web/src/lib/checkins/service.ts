@@ -20,7 +20,7 @@ import { findTelegramChatIdForSenior } from "@/lib/persistence/seniorMessagingId
 import { telegramOutboundClient } from "@/lib/telegram/client";
 import type { TelegramOutboundClient } from "@/lib/telegram/types";
 import type { ProactiveCheckInStage } from "./contracts";
-import { isWithinQuietHours, nextProactiveAction } from "./policy";
+import { isWithinQuietHours, nextProactiveAction, nextQuietHoursEnd } from "./policy";
 
 const PROCESSOR_RETRY_DELAY_MS = 5 * 60 * 1000;
 
@@ -91,11 +91,14 @@ export function personaliseCheckIn(
 }
 
 function errorCategory(error: unknown): string {
-  if (error instanceof Error && error.message.startsWith("Telegram")) {
-    return "telegram_transport";
-  }
   if (error instanceof Error && error.message === "Telegram identity is unavailable") {
     return "messaging_identity_missing";
+  }
+  if (error instanceof Error && error.message === "Unsupported proactive transport") {
+    return "unsupported_transport";
+  }
+  if (error instanceof Error && error.message.startsWith("Telegram")) {
+    return "telegram_transport";
   }
   return "processor_error";
 }
@@ -104,13 +107,16 @@ async function deferJob(args: {
   job: ClaimedProactiveJob;
   now: string;
   category: string;
+  nextEligibleAt?: string;
   dependencies: ProactiveCheckInProcessorDependencies;
 }) {
   await args.dependencies.retryJob({
     jobId: args.job.id,
     workerId: args.job.claimed_by,
     errorCategory: args.category,
-    nextEligibleAt: new Date(Date.parse(args.now) + PROCESSOR_RETRY_DELAY_MS).toISOString(),
+    nextEligibleAt: args.nextEligibleAt ?? new Date(
+      Date.parse(args.now) + PROCESSOR_RETRY_DELAY_MS * 2 ** Math.min(4, Math.max(0, args.job.attempt_count - 1))
+    ).toISOString(),
     now: args.now,
   });
 }
@@ -226,6 +232,10 @@ async function processJob(args: {
       job: args.job,
       now: args.now,
       category: action.reason,
+      nextEligibleAt: action.reason === "quiet_hours"
+        ? nextQuietHoursEnd({ now: args.now, timezone: schedule.timezone,
+            start: schedule.quietHoursStart, end: schedule.quietHoursEnd })
+        : action.reason === "not_due" ? args.job.scheduled_for : undefined,
       dependencies: args.dependencies,
     });
     return;

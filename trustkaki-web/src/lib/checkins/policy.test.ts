@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isWithinQuietHours,
+  nextQuietHoursEnd,
   nextProactiveAction,
   responseDisposition,
 } from "./policy";
@@ -156,5 +157,21 @@ describe("proactive check-in policy", () => {
         respondedAt: "2026-07-15T00:00:00.000Z",
       })
     ).toEqual({ type: "ignore", reason: "response_window_not_open" });
+  });
+});
+
+describe("quiet-hour deferral time", () => {
+  it.each([
+    ["2026-07-15T15:00:42.123Z", "Asia/Singapore", "22:00", "07:00", "2026-07-15T23:00:00.000Z"],
+    ["2026-07-15T18:00:00.000Z", "Asia/Singapore", "22:00", "07:00", "2026-07-15T23:00:00.000Z"],
+    ["2026-07-15T01:00:00.000Z", "Asia/Singapore", "08:00", "12:00", "2026-07-15T04:00:00.000Z"],
+    ["2026-03-08T06:30:00.000Z", "America/New_York", "22:00", "07:00", "2026-03-08T11:00:00.000Z"],
+    ["2026-11-01T05:30:00.000Z", "America/New_York", "22:00", "07:00", "2026-11-01T12:00:00.000Z"],
+  ])("finds next allowed instant from %s", (now, timezone, start, end, expected) => {
+    expect(nextQuietHoursEnd({ now, timezone, start, end })).toBe(expected);
+  });
+  it("returns current time when already outside quiet hours", () => {
+    const now = "2026-07-15T01:00:00.000Z";
+    expect(nextQuietHoursEnd({ now, timezone: "Asia/Singapore", start: "22:00", end: "07:00" })).toBe(now);
   });
 });

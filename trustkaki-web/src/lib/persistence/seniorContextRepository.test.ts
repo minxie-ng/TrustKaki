@@ -1,4 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  memoryEvaluationCases,
+  memoryEvaluationTime,
+} from "@/lib/agents/evaluation/memoryCases";
 
 vi.mock("server-only", () => ({}));
 
@@ -38,6 +42,7 @@ interface QueryRecord {
   orFilters: string[];
   limit?: number;
   order?: { column: string; ascending: boolean };
+  orders: Array<{ column: string; ascending: boolean }>;
 }
 
 type ContextTable =
@@ -116,13 +121,31 @@ function createServiceClient(options?: {
           const filtersExpiry = query.orFilters.some((filter) =>
             filter.startsWith("expires_at.is.null,expires_at.gt.")
           );
+          const requestedSenior = query.filters.find(
+            ([column]) => column === "senior_id"
+          )?.[1];
+          const expiryFilter = query.orFilters.find((filter) =>
+            filter.startsWith("expires_at.is.null,expires_at.gt.")
+          );
+          const cutoff = expiryFilter?.split("expires_at.gt.")[1];
           return (
+            (row.senior_id === undefined || row.senior_id === requestedSenior) &&
             (!active || row.status === "active") &&
             (!filtersExpiry ||
               row.expires_at === null ||
-              String(row.expires_at) > "2090-01-01T00:00:00.000Z")
+              String(row.expires_at) > String(cutoff))
           );
-        }),
+        }).sort((left, right) => {
+          for (const order of query.orders) {
+            const a = left[order.column];
+            const b = right[order.column];
+            const comparison = typeof a === "number" && typeof b === "number"
+              ? a - b
+              : String(a).localeCompare(String(b));
+            if (comparison) return order.ascending ? comparison : -comparison;
+          }
+          return 0;
+        }).slice(0, query.limit),
         error: null,
       };
     }
@@ -131,7 +154,7 @@ function createServiceClient(options?: {
   }
 
   const from = vi.fn((table: string) => {
-    const query: QueryRecord = { table, filters: [], orFilters: [] };
+    const query: QueryRecord = { table, filters: [], orFilters: [], orders: [] };
     queries.push(query);
     const builder = {
       select: vi.fn(() => builder),
@@ -145,6 +168,7 @@ function createServiceClient(options?: {
       }),
       order: vi.fn((column: string, config: { ascending: boolean }) => {
         query.order = { column, ascending: config.ascending };
+        query.orders.push(query.order);
         return builder;
       }),
       limit: vi.fn((value: number) => {
@@ -466,5 +490,31 @@ describe("senior context repository", () => {
       })
     ).resolves.toBeNull();
     expect(createTrustKakiServiceClientMock).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("fictional memory retrieval baseline (no LLM or live database)", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it.each(memoryEvaluationCases)("$id", async (fixture) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(memoryEvaluationTime));
+    const service = createServiceClient({
+      contextRows: { senior_memories: fixture.memories },
+    });
+    canAccessSeniorMock.mockReturnValue(true);
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const { loadAuthorizedAgentContext } = await import("./seniorContextRepository");
+    const context = await loadAuthorizedAgentContext({ auth, seniorId });
+    const keys = context.knownContext?.items.map((item) => item.contextKey) ?? [];
+    const missing = fixture.requiredKeys.filter((key) => !keys.includes(key));
+    const forbidden = fixture.forbiddenKeys.filter((key) => keys.includes(key));
+
+    // Pin observed gaps until retrieval changes; passing tests do not mean targets pass.
+    expect(missing.sort()).toEqual([...fixture.baselineMissing].sort());
+    expect(forbidden.sort()).toEqual([...fixture.baselineForbidden].sort());
+    expect(keys.length).toBeLessThanOrEqual(12);
+    expect(fixture.replyRule.length).toBeGreaterThan(0);
   });
 });

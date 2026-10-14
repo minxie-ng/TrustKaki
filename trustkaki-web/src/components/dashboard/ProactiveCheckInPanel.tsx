@@ -29,9 +29,19 @@ export function proactiveCheckInPresentation(
   if (!isAdmin) return { visible: false } as const;
   const schedule = overview?.schedule ?? null;
   const paused = Boolean(schedule?.pausedAt);
+  const failure = overview?.lastFailure;
+  const category = failure && (!schedule ||
+    Date.parse(failure.occurredAt) >= Date.parse(schedule.updatedAt))
+    ? failure.category : null;
+  const issue = !category ? null
+    : category === "retry_exhausted" ? "Retries stopped. Review setup before resuming."
+    : category === "messaging_identity_missing" ? "Messaging connection missing. Review setup before resuming."
+    : category === "unresolved_send_intent" ? "Delivery uncertain. Check delivery before resuming."
+    : "Check-in processing failed. Review setup before resuming.";
   return {
     visible: true,
-    status: statusLabels[overview?.state ?? "not_configured"],
+    issue,
+    status: paused && issue ? "Paused — needs attention" : statusLabels[overview?.state ?? "not_configured"],
     canRunNow: Boolean(schedule && !paused),
     canPause: Boolean(schedule && !paused),
     canResume: Boolean(schedule && paused),
@@ -146,6 +156,10 @@ export function ProactiveCheckInPanel(props: Props) {
             <div><span className="block text-xs text-gray-500">Last sent</span>{displayTime(props.overview?.lastSendAt)}</div>
             <div><span className="block text-xs text-gray-500">Last issue</span>{props.overview?.lastFailure ? displayTime(props.overview.lastFailure.occurredAt) : "None"}</div>
           </div>
+        )}
+
+        {view.issue && (
+          <p role="status" className="mt-3 text-sm font-semibold text-amber-800">{view.issue}</p>
         )}
 
         <div className="mt-4 flex flex-wrap items-end gap-3">

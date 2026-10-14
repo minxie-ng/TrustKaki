@@ -223,7 +223,8 @@ export async function readScheduleOverviewForSenior(args: {
         .from("scheduled_jobs")
         .select("last_error_category, updated_at")
         .eq("schedule_id", schedule.id)
-        .eq("status", "failed")
+        .in("status", ["failed", "cancelled"])
+        .not("last_error_category", "is", null)
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle(),

@@ -86,6 +86,10 @@ through Supabase Auth and row-level security.
 
 ## Project Status
 
+Current development follows the [active roadmap](trustkaki-web/docs/TrustKaki_BUILD_ROADMAP.md):
+scalable personal memory and RAG, clearer agent responsibilities, and a cleaner
+interface that makes priorities and next actions obvious at a glance.
+
 TrustKaki is a hackathon-ready working product, not a clinically validated or
 production-certified care service. WorkBuddy integration is not claimed because
 the supplied access path was unavailable. The current limitations and dated

@@ -88,6 +88,8 @@ describe("proactive check-in repository", () => {
     const jobBuilder = {
       select: vi.fn(() => jobBuilder),
       eq: vi.fn(() => jobBuilder),
+      in: vi.fn(() => jobBuilder),
+      not: vi.fn(() => jobBuilder),
       order: vi.fn(() => jobBuilder),
       limit: vi.fn(() => jobBuilder),
       maybeSingle: vi.fn().mockResolvedValue({
@@ -123,6 +125,8 @@ describe("proactive check-in repository", () => {
       },
     });
     expect(JSON.stringify(result)).not.toMatch(/chat.?id|token|destination/i);
+    expect(jobBuilder.in).toHaveBeenCalledWith("status", ["failed", "cancelled"]);
+    expect(jobBuilder.not).toHaveBeenCalledWith("last_error_category", "is", null);
   });
 
   it("sends schedule changes only through the transactional admin RPC", async () => {

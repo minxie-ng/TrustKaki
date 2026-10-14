@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ProactiveCheckInScheduleOverview } from "@/lib/checkins/contracts";
 import {
   proactiveCheckInPresentation,
   proactiveScheduleEndpoint,
@@ -10,7 +11,7 @@ describe("proactive check-in admin panel", () => {
   });
 
   it("shows concise operational status without provider details", () => {
-    const view = proactiveCheckInPresentation({
+    const overview: ProactiveCheckInScheduleOverview = {
       schedule: {
         id: "schedule-1",
         seniorId: "senior-1",
@@ -32,7 +33,8 @@ describe("proactive check-in admin panel", () => {
       state: "awaiting_initial_response",
       lastSendAt: "2026-07-15T01:00:00.000Z",
       lastFailure: null,
-    }, true);
+    };
+    const view = proactiveCheckInPresentation(overview, true);
 
     expect(view).toMatchObject({
       visible: true,
@@ -42,6 +44,22 @@ describe("proactive check-in admin panel", () => {
       canResume: false,
     });
     expect(JSON.stringify(view)).not.toMatch(/chat.?id|token|provider|destination/i);
+    const historical = proactiveCheckInPresentation({ ...overview,
+      state: "paused",
+      schedule: { ...overview.schedule!, pausedAt: "2026-07-16T01:00:00.000Z",
+        updatedAt: "2026-07-16T01:00:00.000Z" },
+      lastFailure: { category: "retry_exhausted", occurredAt: "2026-07-15T01:00:00.000Z" },
+    }, true);
+    expect(historical).toMatchObject({ status: "Paused", issue: null });
+  });
+
+  it("explains stopped retries without exposing raw error text", () => {
+    const view = proactiveCheckInPresentation({ schedule: null, state: "failed",
+      lastSendAt: null,
+      lastFailure: { category: "retry_exhausted", occurredAt: "2026-10-14T01:00:00Z" },
+    }, true);
+    expect(view).toMatchObject({ status: "Needs attention",
+      issue: "Retries stopped. Review setup before resuming." });
   });
 
   it("binds requests to the selected senior", () => {
