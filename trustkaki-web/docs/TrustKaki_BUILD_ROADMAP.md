@@ -249,6 +249,12 @@ clear, and remaining limits are explicit. Deployment is a separate recorded step
   production dependency audit reports zero vulnerabilities. Signed-in dashboard,
   persisted state after refresh, and paused scheduler panel verified. Same build
   promoted to the main domain; production public smoke and commit check passed.
-- **Next chunk:** finish remaining phase-1 evaluation and retrieval acceptance
-  thresholds, then implement the first external-memory retrieval slice.
+- **14 October 2026 — retrieval acceptance design drafted:** scope/lifecycle
+  guards, fixed context and query budgets, multilingual retrieval targets, and
+  separate retrieval/generation gates now specified in the
+  [first-slice design](superpowers/specs/2026-10-14-personal-memory-retrieval-design.md).
+  Targets are not measured results. Provider selection and production memory
+  migration remain open; implementation awaits design review.
+- **Next chunk:** review the first-slice design, then implement its local retrieval
+  contract and fictional evaluation harness before the opt-in external pilot.
   Event discovery is proposed. RAG, prompt, and UI implementation have not started.
