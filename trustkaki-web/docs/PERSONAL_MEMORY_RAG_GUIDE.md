@@ -149,6 +149,28 @@ TRUSTKAKI_MEMORY_PILOT_PLAN
 TRUSTKAKI_MEMORY_PILOT_BUDGET_USD
 ```
 
+### Local configuration
+
+The environment template includes all nine pilot settings. If `.env.local` does
+not exist, copy `.env.example` to `.env.local`, then fill only the pilot section.
+Preserve existing `.env.local` contents if that file already exists. Git ignores
+`.env.local`; `.env.example` must contain placeholders only. Keep API keys in
+server-side variables, never `NEXT_PUBLIC_*` variables.
+
+The standalone benchmark does not automatically load Next.js environment files.
+If the variables are in `.env.local`, use this command from `trustkaki-web/` with
+the installed Node 24 runtime (only after account/index/budget setup is complete):
+
+```sh
+node --env-file=.env.local --conditions=react-server --import tsx scripts/memory-retrieval-evaluation.ts --mode live --confirm-live --confirm-provider-budget
+```
+
+The `npm run` command below is for variables already exported into the shell.
+A chat-model API key or model name does not automatically establish embedding
+support; choose an embedding endpoint and model explicitly. An index host is the
+data-plane HTTPS host, not the Pinecone dashboard URL. Record the index's actual
+region and plan. Do not guess these values to bypass configuration checks.
+
 The embedding endpoint must use HTTPS and the supported `/embeddings` response
 format, including the configured model identity and token usage. A provider that
 returns a different model alias needs deliberate adapter validation changes.
