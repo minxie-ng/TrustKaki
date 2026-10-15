@@ -49,3 +49,8 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.neon
+
+# Locally installed Neon agent tooling (reinstall with npx neon skills -y)
+.agents/
+skills-lock.json

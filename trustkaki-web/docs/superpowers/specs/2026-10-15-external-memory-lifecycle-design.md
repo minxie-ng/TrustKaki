@@ -1,7 +1,8 @@
 # External personal memory: source storage and lifecycle
 
 Date: 15 October 2026
-Status: proposed; source-store choice needs owner review. No service provisioned.
+Status: updated architecture approved by owner: Neon Postgres with pgvector.
+Supersedes the original Neon + Pinecone proposal.
 Authority: `docs/TrustKaki_BUILD_ROADMAP.md`.
 
 ## Outcome
@@ -15,24 +16,25 @@ the external store, including caregiver tools and background/channel paths.
 RAG still needs durable source storage. The successful Pinecone experiment used
 local fixtures as its source of truth; production must replace that local lookup.
 
-## Storage decision proposed
+## Approved storage decision
 
-1. **Neon Postgres source records + Pinecone index — recommended.** Transactions
-   support atomic revisions, idempotency, and indexing jobs; ordinary SQL supports
-   bounded reads, exports, and portability. Adds one managed database and credential.
-2. **Private object storage + Pinecone.** Portable source documents, but concurrent
-   corrections, command deduplication, and durable job coordination require more
-   custom implementation for this codebase.
-3. **Pinecone as both source and index.** Fewer services, but requires redesign and
-   verification of canonical revisions, audit history, coordinated writes, and
-   recovery instead of reusing the current transactional lifecycle model.
+Use Neon Postgres for both canonical personal-memory records and pgvector search.
+Supabase remains the operational store. Pinecone remains historical pilot evidence;
+no new Pinecone vector integration is planned. Embedding provider remains separate
+from chat generation and storage; the existing model uses 1,024 dimensions.
 
-Propose a dedicated Neon project for personal memory. Choose region after checking
-application runtime location and data requirements. Singapore is available; the
-current Pinecone pilot is in US East and is fictional-only. Do not treat it as an
-approved region for real senior data. Verify actual plan, backup/restore features,
-and spending controls before provisioning or live use. Previous US$1 permission
-covers the fictional pilot, not an ongoing paid database subscription.
+A source revision and its current vector share one transactional database. Source
+changes clear the vector atomically. Indexing is a compare-and-set update against
+source version/model; delayed embedding responses cannot restore stale vectors.
+Pending indexing state lives on the source row, removing the cross-service job
+queue needed by the earlier Pinecone proposal. Worker scheduling and retries remain
+a later integration chunk; this first slice exposes pending rows and guarded writes.
+
+Owner-supplied project: `floral-hall-40623128`, branch `production`, Postgres only.
+Use `pg` with Vercel pool lifecycle management as recommended by installed Neon
+skills. Schema changes are versioned SQL, verified locally first. No real senior
+records are imported during setup. A SQL fixture test and optional connection
+health check establish the first integration; agent cutover remains gated.
 
 ## Data boundary
 
@@ -53,9 +55,9 @@ covers the fictional pilot, not an ongoing paid database subscription.
 
 ## Authoritative source model
 
-Use a separate database/schema with four narrowly scoped tables:
+Use a separate schema with three narrowly scoped tables:
 
-1. `personal_memory_records`: current canonical fact, org/senior scope, stable ID,
+1. `personal_memory_records`: current canonical fact and optional pgvector embedding, org/senior scope, stable ID,
    context key, content, provenance/evidence, confirmation and expiry, status,
    integer version, explicit conflicts, safe-use notes, type/application tags.
    Preserve confidence/importance and author/extraction metadata used by current
@@ -68,36 +70,38 @@ Use a separate database/schema with four narrowly scoped tables:
 3. `personal_memory_commands`: scoped command ID, payload digest and result.
    Exact retry returns prior result; same ID with another payload fails. Unique
    command key plus database locking handles concurrent duplicate commands.
-4. `personal_memory_index_jobs`: durable scoped record/version and operation,
-   status, attempts, next-attempt time, bounded failure category and worker lease.
-   A unique record/version/operation key deduplicates jobs. No raw provider errors.
+Pending embeddings are represented by a null vector on an active source row.
+A bounded indexing reader selects pending records; publication compares source
+version and embedding model. Source corrections and erasure clear vectors in the
+same transaction. No Pinecone cleanup job or duplicated vector content is needed.
 
 No cross-database foreign keys. Provenance uses stable Supabase message references
 and a bounded evidence excerpt, with an explicit missing-source state on import.
 Reject unsupported facts rather than inventing evidence. External scope derives
 from trusted Supabase auth/verified channel identity, never request or model IDs.
-Use parameterised SQL and a server-only least-privilege runtime credential;
-database owner credentials are reserved for migrations. Scoped reads/writes and
+Use parameterised SQL and a server-only least-privilege runtime credential before
+real senior cutover; database owner credentials are then reserved for migrations.
+The foundation currently uses the CLI owner connection with an explicit restricted
+`SET LOCAL ROLE`; dedicated login provisioning remains an unpassed release gate. Scoped reads/writes and
 database policies must both be tested for isolation.
 
 ## Write and retrieval lifecycle
 
 - One external command handler serves accepted extraction and authorised manual
   create/confirm/correct/archive/delete actions. Existing eligibility rules remain.
-- A transaction locks the current scoped context key, checks expected version,
-  records the revision and command result, updates canonical state, and enqueues
-  the indexing operation. Stale editors receive a conflict. Never call Pinecone
+- A transaction serializes commands per scoped senior and locks the current record, checks expected version,
+  records the revision and command result, updates canonical state, and clears
+  the embedding for reindexing. Stale editors receive a conflict. Never generate embeddings
   inside the source transaction.
 - Corrections immediately advance source version; archives/deletions immediately
-  hide the source. Old vectors fail current-source validation while jobs catch up.
+  hide the source. Old vectors are cleared transactionally while indexing catches up.
   A corrected fact may be temporarily absent from search; never return its stale
   predecessor to hide that lag.
-- Worker claims jobs using leases, embeds current active content and upserts a
-  vector with deterministic record-and-version ID, scope and model/version.
-  Version-specific IDs prevent an older worker from overwriting a newer vector.
-  Recheck canonical state after external I/O; obsolete work enqueues cleanup.
-  Superseded/deleted vectors are removed with retryable jobs. Retain job/command
-  metadata needed to prevent replay resurrection while purging personal content.
+- An indexing caller reads a bounded batch of pending sources, generates vectors,
+  and publishes with a source-version/model compare-and-set. Multiple callers may
+  duplicate embedding work, but stale work cannot overwrite current state. This
+  first slice adds no scheduler or automatic retry; production worker scheduling
+  and cost controls require a subsequent integration task.
 - On read, resolve access, embed current query, request at most 20 scoped hits,
   bulk fetch their current canonical sources, validate versions/status/expiry,
   then return at most six whole facts within existing 4,000-character budget.
@@ -113,12 +117,12 @@ database policies must both be tested for isolation.
 
 - Distinguish archive (retained, unavailable for retrieval) from erasure (purge
   content/evidence in current and historical records and dependent artifacts).
-  Every erasure first disables serving, then deletes vectors and derived content.
-  Completion requires provider verification; pending cleanup is visible/retryable.
+  Every erasure first disables serving, then removes vectors and derived content.
+  Completion requires checking source, revision and derived-artifact stores.
 - Export scoped source records, versions and model/index manifest. Embeddings
   are reproducible artifacts, not the only surviving copy of memory.
-- Rebuild from active unexpired source records into a new index namespace.
-  Validate retrieval before changing the configured namespace/model pair.
+- Rebuild from active unexpired source records into a separately versioned model/index configuration.
+  Validate retrieval before changing the configured model/index pair.
 - Prove restore to an isolated database and rebuild from restored sources. Replay
   deletion metadata before enabling any restored data; backups must not resurrect
   erased memories. Establish backup retention and recovery targets before real
@@ -146,8 +150,8 @@ database policies must both be tested for isolation.
 ## Bounded delivery sequence and acceptance
 
 1. **Source/lifecycle slice first:** approved provider, schema, command handler,
-   bulk source fetch, and indexing worker. Fictional local/database tests prove
-   concurrent correction, command replay, stale worker, outage recovery, expiry,
+   bulk source fetch, and guarded embedding publication. Fictional local/database tests prove
+   concurrent correction, command replay, stale embedding publication, outage recovery, expiry,
    archive/erasure and cross-org/senior denial. No production wiring in this slice.
 2. **External fictional lifecycle pilot:** verify source round trips, asynchronous
    correction/delete propagation, worker recovery, export/restore/index rebuild,

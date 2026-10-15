@@ -13,20 +13,29 @@
     "lint": "./node_modules/.bin/eslint",
     "test": "./node_modules/.bin/vitest run",
     "typecheck": "./node_modules/.bin/tsc --noEmit",
-    "validate": "npm run test && npm run typecheck && npm run lint && npm run build"
+    "validate": "npm run test && npm run typecheck && npm run lint && npm run build",
+    "memory:neon:migrate": "node --env-file=.env.local --import tsx scripts/neon-memory-migrate.ts",
+    "memory:neon:smoke": "node --env-file=.env.local --conditions=react-server --import tsx scripts/neon-memory-smoke.ts"
   },
   "dependencies": {
+    "@neon/config": "1.9.1",
+    "@neon/env": "1.6.2",
     "@supabase/ssr": "0.12.0",
     "@supabase/supabase-js": "2.110.2",
+    "@vercel/functions": "3.10.1",
     "next": "16.4.0",
+    "pg": "8.23.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "0.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@electric-sql/pglite-pgvector": "0.0.11",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

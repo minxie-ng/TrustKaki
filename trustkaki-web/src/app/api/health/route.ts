@@ -1,3 +1,4 @@
+import { personalMemoryDatabaseHealth } from "@/lib/memory/neonDatabase";
 import { NextResponse } from "next/server";
 import { getSupabasePublicConfig, getSupabaseServerConfig } from "@/lib/supabase/config";
 import { createTrustKakiServiceClient } from "@/lib/supabase/server";
@@ -56,7 +57,10 @@ export async function GET() {
   const whatsappProcessorConfigured = hasValue(
     process.env.WHATSAPP_INTERNAL_PROCESSOR_SECRET
   );
+  const memoryHealth = await personalMemoryDatabaseHealth();
   const checks = {
+    personalMemoryConfigured: memoryHealth.configured,
+    personalMemoryDatabase: memoryHealth.reachable,
     app: true,
     supabasePublicConfigured,
     supabaseServiceConfigured,

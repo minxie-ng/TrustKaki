@@ -10,6 +10,11 @@ The first fictional live retrieval pilot passed; production migration remains op
 [active roadmap](docs/TrustKaki_BUILD_ROADMAP.md). Run `npm run benchmark:memory`
 for the fictional offline guard evaluation.
 
+The approved target is Neon Postgres + pgvector for personal-memory source records
+and search. The new repository and optional health check are wired; production
+agents still use transitional Supabase memory. See [Neon setup](docs/NEON_MEMORY_SETUP.md)
+for migration/smoke commands and remaining cutover gates.
+
 ## Live Product
 
 - Public no-login demo: https://trustkaki.vercel.app

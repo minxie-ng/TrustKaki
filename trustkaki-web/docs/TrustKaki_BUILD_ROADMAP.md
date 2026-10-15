@@ -6,9 +6,11 @@ Status: isolated retrieval and first fictional external pilot passed.
 Next: select durable external source storage and design ingestion/lifecycle;
 production integration and cutover remain open.
 
-Proposed next-slice design: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
-Recommends Neon for canonical records and Pinecone for the rebuildable index;
-provider choice awaits owner review. No additional service is provisioned.
+Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
+Neon with pgvector holds canonical personal memory and vector search together.
+Pinecone is retained as pilot evidence. Neon setup and the first source/pgvector lifecycle slice passed local and live
+fictional checks. [Evidence](evidence/2026-10-15-neon-memory-foundation.md).
+Production personal-memory cutover remains open.
 
 ## Purpose and authority
 

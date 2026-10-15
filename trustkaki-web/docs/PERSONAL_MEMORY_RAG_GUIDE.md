@@ -12,8 +12,32 @@ migration or a deployed semantic-memory feature.
 
 The approved destination is external personal memory. Supabase remains responsible
 for operational care data, authentication, access relationships, messages, cases,
-and schedules. The durable external source-record store has not been selected.
-Pinecone is a candidate search index with a passing first fictional pilot, not the chosen authoritative memory store.
+and schedules. The approved target is **Neon Postgres with pgvector**, holding
+source facts and vectors in one database. Pinecone remains historical pilot evidence.
+
+## Neon foundation (15 October)
+
+The source repository now supports create/correction, replay-safe commands,
+optimistic version conflicts, archive and erasure. Source changes clear embeddings
+in the same transaction. Embedding publication checks current source version/model,
+so a delayed response cannot restore a corrected or erased fact. SQL RLS scopes
+all records, revisions and receipts by organisation and senior.
+
+`pg` uses the CLI-provided pooled `DATABASE_URL` with Vercel pool lifecycle support.
+Schema migration uses `DATABASE_URL_UNPOOLED`. The existing `/api/health` reports
+optional `personalMemoryConfigured` and `personalMemoryDatabase` checks. Health
+checks database/schema access; they do not imply agent cutover or retrieval quality.
+
+This foundation starts with exact cosine search after senior/org filtering. It
+returns at most 20 candidates; query work still grows with that senior's corpus.
+ANN indexing, worker scheduling, dedicated login credentials, full metadata mapping,
+backup restore and production-scale latency require their own verification before
+real senior migration. The existing Pinecone semantic scores do not transfer as
+measured Neon results.
+
+See [Neon setup and commands](NEON_MEMORY_SETUP.md) and
+[approved lifecycle design](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
+
 
 ## The three different pieces
 
@@ -79,7 +103,10 @@ separate, current event source before offering an actual invitation.
 | Zod | Validates source records, search hits, vectors, and API response shapes. |
 | Native `fetch` and `AbortController` | Provider HTTP calls, deadline cancellation, redirect refusal. |
 | Embedding API | Converts fictional facts and questions into numeric vectors in live pilot mode. Provider/model remains configurable. |
-| Pinecone candidate index | Stores/searches vectors and scope/version metadata. The pilot does not store raw fact text in Pinecone metadata. |
+| Pinecone historical pilot index | Stores/searches vectors and scope/version metadata. The pilot does not store raw fact text in Pinecone metadata. |
+| Neon Postgres + pgvector | Approved source/vector store; transactional lifecycle, scoped cosine search, revision history. |
+| `pg` + `@vercel/functions` | Pooled server-side queries with Vercel pool lifecycle management. |
+| PGlite + pgvector | Development-only real Postgres engine for local SQL tests. |
 | Vitest | Tests isolation, lifecycle rules, budgets, failure handling, API transport, and evaluation gates with local doubles. |
 | `tsx` | Runs the TypeScript evaluation command. |
 | `server-only` | Prevents accidental client imports. Added as a direct dependency because the standalone Node command needs it. |

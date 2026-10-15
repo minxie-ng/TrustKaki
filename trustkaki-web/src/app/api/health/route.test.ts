@@ -12,11 +12,15 @@ vi.mock("@/lib/supabase/server", () => ({
   createTrustKakiServiceClient: createTrustKakiServiceClientMock,
 }));
 
+const memoryHealthMock = vi.fn().mockResolvedValue({ configured: false, reachable: null });
+vi.mock("@/lib/memory/neonDatabase", () => ({ personalMemoryDatabaseHealth: memoryHealthMock }));
+
 const originalEnv = { ...process.env };
 
 describe("/api/health", () => {
   beforeEach(() => {
     vi.resetModules();
+    memoryHealthMock.mockResolvedValue({ configured: false, reachable: null });
     selectMock.mockReset();
     fromMock.mockClear();
     fromMock.mockImplementation(() => ({ select: selectMock }));
@@ -143,4 +147,19 @@ describe("/api/health", () => {
     expect(JSON.stringify(json)).not.toContain("permission denied");
     expect(JSON.stringify(json)).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
   });
+  it("reports configured Neon readiness without leaking connection details", async () => {
+    memoryHealthMock.mockResolvedValue({ configured: true, reachable: true });
+    const { GET } = await import("./route");
+    const json = await (await GET()).json();
+    expect(json.checks.personalMemoryConfigured).toBe(true);
+    expect(json.checks.personalMemoryDatabase).toBe(true);
+  });
+  it("reports optional memory outage while transitional core remains healthy", async () => {
+    memoryHealthMock.mockResolvedValue({ configured: true, reachable: false });
+    const { GET } = await import("./route");
+    const response = await GET();
+    expect(response.status).toBe(200);
+    expect((await response.json()).checks.personalMemoryDatabase).toBe(false);
+  });
+
 });
