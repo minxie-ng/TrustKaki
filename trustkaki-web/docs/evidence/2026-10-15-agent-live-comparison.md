@@ -2,6 +2,10 @@
 
 15 October 2026, Singapore. **Release decision: NO-GO. Production unchanged.**
 
+Historical decision at this comparison stage. The specific blocker was subsequently
+resolved by [capability reply correction](2026-10-15-capability-replies.md).
+Candidate deployment and signed-in verification remain separate gates.
+
 ## Scope and method
 
 Owner approved at most US$1 total, fictional inputs only, no database writes or

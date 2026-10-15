@@ -2,6 +2,9 @@
 
 15 October 2026, Singapore. Owner-approved fictional live comparison.
 
+Historical comparison record. The subsequent [capability reply correction](../evidence/2026-10-15-capability-replies.md)
+resolved its specific memory-promise blocker; deployment checks remain separate.
+
 ## Current preflight
 
 - Baseline revision: `c727264` (six-role production architecture).

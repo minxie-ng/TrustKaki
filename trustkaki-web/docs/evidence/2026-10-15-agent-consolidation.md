@@ -4,7 +4,8 @@
 
 Subsequent live comparison: [results](2026-10-15-agent-live-comparison.md).
 It measured fewer calls and one reply per turn but found a remaining unsupported
-Mandarin memory promise. Release remains NO-GO despite passing local validation.
+Mandarin memory promise. [Subsequent correction](2026-10-15-capability-replies.md)
+resolved that blocker; exact candidate deployment and signed-in verification remain.
 
 ## Changes
 

@@ -4,7 +4,7 @@ Updated: 15 October 2026
 
 Status: Neon personal memory is live in production; legacy import is reconciled, old personal writes blocked and approved redundant copies removed.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: resolve unsupported action/memory promises with verified capability state before releasing agent consolidation. The bounded live comparison is complete but NO-GO; prompt-only fixes remain unreliable. [Results](evidence/2026-10-15-agent-live-comparison.md). Evaluate Jev only on a bounded task if it adds value. UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
+Next: approve and verify a candidate deployment of agent consolidation. The unsupported-memory-promise blocker is resolved with deterministic pending-state acknowledgements and bounded capability replies. [Correction evidence](evidence/2026-10-15-capability-replies.md); [earlier comparison](evidence/2026-10-15-agent-live-comparison.md). Production is unchanged. Evaluate Jev only on a bounded task if it adds value. UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -224,8 +224,11 @@ only when needed, with maintained sources, dates, and update ownership.
   [Live comparison](evidence/2026-10-15-agent-live-comparison.md) completed:
   26 paired fictional cases, corrected full rerun and five capability follow-ups;
   US$0.04385 estimated total charge. Fewer calls and one reply per turn observed.
-  **NO-GO:** Mandarin acknowledgement still promises memory before confirmation.
-  Design verified-state responses next; do not keep tuning prompts alone.
+  Initial NO-GO for unconfirmed Mandarin memory promises resolved by deterministic
+  pending-state acknowledgements. [Correction](evidence/2026-10-15-capability-replies.md):
+  12 affected live scenarios plus one relay follow-up, no latest observed failures;
+  final local validation 1,065 passed, 38 skipped, typecheck/lint/build passed.
+  Exact candidate deployment and signed-in checks remain before promotion.
 - [ ] Evaluate Jev as an optional bounded classification experiment against Triage
   and simple rules on fictional English/Mandarin/Singlish cases. Shadow first; no
   policy, memory-write or outreach authority. Laya is a self-hosted alternative,
@@ -365,3 +368,7 @@ clear, and remaining limits are explicit. Deployment is a separate recorded step
   local validation: 1,042 passed, 38 skipped; typecheck/lint/build passed. Resolve
   capability/persistence promises before a release request. Production memory
   remains live; event discovery, optional Jev evaluation and UI remain later work.
+- **15 October 2026 — capability blocker resolved locally:** server-owned replies
+  prevent pending-memory and recognised unsupported-action promises. Independent
+  review and focused live follow-ups passed; total comparison estimate US$0.04958.
+  Runtime `2a70f29` is ready for candidate deployment approval; production unchanged.

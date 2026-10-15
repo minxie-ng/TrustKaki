@@ -5,15 +5,15 @@
 briefing and persistence; use neutral acknowledgement while save status is unknown.
 **Tech stack:** Existing TypeScript, Vitest, model runner and comparison ledger.
 
-- [ ] Add orchestrator regressions forcing English/Mandarin promises, extraction
+- [x] Add orchestrator regressions forcing English/Mandarin promises, extraction
   failure/empty results, unsupported relay/display requests, mixed care and safety
   priority. Run `vitest run src/lib/agents/orchestrator.test.ts`; observe failures.
-- [ ] Add a private capability-reply helper in `src/lib/agents/orchestrator.ts`.
+- [x] Add a private capability-reply helper in `src/lib/agents/orchestrator.ts`.
   Return fixed text for explicit unsupported requests or requested extraction;
   otherwise return null. Select after urgent/safety branches and before the draft.
   Attribute fixed wording to deterministic policy and pass it into Briefing.
-- [ ] Run focused tests, typecheck/lint, then `npm run validate`. Commit runtime.
-- [ ] Run five affected fictional cases through `scripts/agent-live-comparison.ts`
+- [x] Run focused tests, typecheck/lint, then `npm run validate`. Commit runtime.
+- [x] Run twelve affected fictional cases and one relay follow-up through `scripts/agent-live-comparison.ts`
   with the existing `/tmp/trustkaki-agent-comparison-5rzcw6bg/results/budget.json`.
   Do not reset the ledger. Review actual replies and preserve versioned results.
-- [ ] Record evidence, limits and roadmap state; commit. Deployment remains separate.
+- [x] Record evidence, limits and roadmap state; commit. Deployment remains separate.
