@@ -1,354 +1,153 @@
 # Personal memory RAG: implementation and presentation guide
 
-Updated: 15 October 2026. Status: authenticated application integration and live fictional lifecycle verified behind a disabled feature gate. Production cutover remains open.
+Updated: 15 October 2026.
 
-## What exists today
+## What RAG replaces
 
-The application has authenticated Neon readers and writers, semantic retrieval,
-and shared agent context. `TRUSTKAKI_PERSONAL_MEMORY_BACKEND=neon` selects this
-path; its default is still Supabase until migration and release checks pass.
-The local live smoke test exercised extraction, retrieval, caregiver correction,
-retry, stale-edit rejection and archive with temporary fictional fixtures.
-[Application evidence](evidence/2026-10-15-neon-application-integration.md).
+**Neon replaces Supabase as the application's personal-memory store. RAG is the
+retrieval-and-generation method that uses that store.** RAG itself is not a database.
 
-The approved destination is external personal memory. Supabase remains responsible
-for operational care data, authentication, access relationships, messages, cases,
-and schedules. The approved target is **Neon Postgres with pgvector**, holding
-source facts and vectors in one database. Pinecone vector storage remains historical
-pilot evidence. Its inference API currently generates embeddings; no Pinecone
-vector index is used by the Neon retrieval path.
+Supabase retains authentication, organisation/senior access, conversation messages,
+cases, schedules, essential care/accessibility context and verified family contact
+routing. Neon stores personal preferences and context, evidence references,
+corrections, revisions, expiry, command receipts and vectors in one Postgres database.
 
-## Neon foundation (15 October)
+The Pinecone vector index was a historical pilot. The current Neon path does not
+write or query it. Pinecone's inference API still supplies embeddings; this is a
+separate service from Pinecone vector storage.
 
-The source repository now supports create/correction, replay-safe commands,
-optimistic version conflicts, archive and erasure. Source changes clear embeddings
-in the same transaction. Embedding publication checks current source version/model,
-so a delayed response cannot restore a corrected or erased fact. SQL RLS scopes
-all records, revisions and receipts by organisation and senior.
+## Tools and responsibilities
 
-`pg` uses the CLI-provided pooled `DATABASE_URL` with Vercel pool lifecycle support.
-Schema migration uses `DATABASE_URL_UNPOOLED`. The existing `/api/health` reports
-optional `personalMemoryConfigured` and `personalMemoryDatabase` checks. Health
-checks database/schema access; they do not imply agent cutover or retrieval quality.
-
-This foundation starts with exact cosine search after senior/org filtering. It
-returns at most 20 candidates; query work still grows with that senior's corpus.
-ANN indexing, worker scheduling, backup restore and production-scale latency
-require their own verification before real senior migration. Metadata mapping and
-a restricted local runtime login are now verified; deployment wiring/cutover remain
-open. [Metadata/login evidence](evidence/2026-10-15-neon-memory-metadata-and-credentials.md). The Neon benchmark now separately verifies 30/30 fictional questions, zero
-forbidden facts and warm p95 501 ms using live scoped source reads. This remains a
-small synthetic retrieval test, with no generation or production-scale claim.
-[Semantic evidence](evidence/2026-10-15-neon-semantic-retrieval.md).
-
-See [Neon setup and commands](NEON_MEMORY_SETUP.md) and
-[approved lifecycle design](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
-
-
-## The three different pieces
-
-1. **Storage** keeps confirmed facts and summaries, source references, timestamps,
-   revisions, expiry, corrections, and deletion state. It must support export,
-   recovery, access control, and lifecycle changes.
-2. **Retrieval** finds facts relevant to the current message and validates them
-   against current source records. RAG means retrieval-augmented generation; it
-   does not mean replacing storage with an algorithm.
-3. **Generation** gives selected evidence to a chat model to compose a reply.
-   Shared agent prompts now receive bounded retrieved evidence with its status
-   and provenance. Live response-faithfulness evaluation remains open.
-
-## Worked example: an older gardening preference
-
-A senior said months ago: “I enjoy gardening at the community centre.” Later
-messages discuss meals, television, and appointments. A recency-based loader may
-push gardening out of its limited context. A semantic index can match a new
-question such as “Do I like growing plants?” to the gardening fact even though
-its words differ and the fact is old.
-
-The implemented retrieval sequence is:
-
-1. Validate the senior ID, query, and current time. The caller must supply time
-   from the server, not from user-controlled request metadata.
-2. Resolve organisation and senior scope from trusted server authentication or
-   verified channel identity. Refuse access before embedding if resolution fails.
-   The module requires this resolver; the current pilot uses a fictional identity.
-3. Turn the current query into an **embedding**, a numeric representation of
-   meaning. This is a separate model call from composing a chat reply.
-4. Search at most 20 candidate vectors within that organisation and senior scope.
-   The Pinecone pilot also filters active status, expiry, and embedding model.
-5. Load current canonical records for matching IDs. Recheck scope, active status,
-   expiry, confirmation time, and matching source/index/current revisions.
-   Index metadata is not authoritative enough on its own.
-6. Remove explicitly unresolved conflict groups. Two current facts in one
-   exclusive conflict group also cause exclusion. This needs maintained metadata;
-   it does not infer arbitrary contradictions from natural language.
-7. Return at most six whole facts, each content/evidence excerpt at most 280
-   Unicode code points, inside a JSON context budget of 4,000 code points including
-   provenance and conflict reporting. Oversized facts are omitted, not cut mid-sentence.
-   Conflict reporting is bounded separately while all conflicted facts remain
-   excluded; diagnostics retain the total unresolved group count.
-8. Label the JSON as untrusted evidence, not instructions. A future agent
-   integration will consume it under its system prompt and output contract.
-   This label alone does not prove resistance to prompt injection.
-
-The entire retrieval call has a two-second deadline with cancellation and no
-query retries. Invalid provider output or timeouts return an unavailable result,
-without exposing provider error bodies. There is no legacy-memory fallback in
-this new module. Handling unavailable memory in the final reply remains part of
-agent integration.
-
-Gardening memory establishes a personal interest. It does **not** establish that
-an activity is currently available. A future community-event capability needs a
-separate, current event source before offering an actual invitation.
-
-## Tools and their jobs
-
-| Tool | Role in this implementation |
+| Tool | Job |
 | --- | --- |
-| TypeScript | Retrieval logic and explicit provider/source contracts. |
-| Zod | Validates source records, search hits, vectors, and API response shapes. |
-| Native `fetch` and `AbortController` | Provider HTTP calls, deadline cancellation, redirect refusal. |
-| Embedding API | Converts fictional facts and questions into numeric vectors in live pilot mode. Provider/model remains configurable. |
-| Pinecone historical pilot index | Stores/searches vectors and scope/version metadata. The pilot does not store raw fact text in Pinecone metadata. |
-| Neon Postgres + pgvector | Approved source/vector store; transactional lifecycle, scoped cosine search, revision history. |
-| `pg` + `@vercel/functions` | Pooled server-side queries with Vercel pool lifecycle management. |
-| PGlite + pgvector | Development-only real Postgres engine for local SQL tests. |
-| Vitest | Tests isolation, lifecycle rules, budgets, failure handling, API transport, and evaluation gates with local doubles. |
-| `tsx` | Runs the TypeScript evaluation command. |
-| `server-only` | Prevents accidental client imports. Added as a direct dependency because the standalone Node command needs it. |
-| Supabase | Existing operational store and transitional production memory; not accessed by this fictional pilot. |
+| Supabase Auth and Postgres | Verify identity/access; retain messages and operational care data. |
+| Neon Postgres | Canonical personal facts, lifecycle, revisions and retry receipts. |
+| pgvector in Neon | Compare vectors to find semantically relevant facts within a senior's scope. |
+| Pinecone inference, `llama-text-embed-v2` | Convert fact text and questions into 1,024-dimensional vectors. |
+| Existing OpenAI-compatible chat adapter | Compose responses; configured deployment uses `gpt-4o-mini`. |
+| `pg` and `@vercel/functions` | Restricted pooled database connections and Vercel pool lifecycle. |
+| Zod | Validate requests, evidence, vectors, source records and agent outputs. |
+| Vitest and PGlite with pgvector | Application tests and real local Postgres lifecycle/RLS tests. |
+| Neon/Vercel CLIs and Neon agent skills | Development setup, deployment and verification. MCP is tooling, not a runtime dependency. |
 
-No LangChain, new runtime agent, or MCP dependency was added. MCP is a way to
-connect tools; semantic search here uses direct HTTP APIs. Development tools used
-were repository reads/edits, shell commands, local tests/build, documentation
-lookup, and independent code review. Development review agents are unrelated to
-the application's six product agent roles.
+No LangChain or additional product agent is required for retrieval. Ordinary server
+code performs it. Development review agents are separate from the six product roles.
 
-The adapter follows Pinecone's official
-[query](https://docs.pinecone.io/reference/api/2026-07/data-plane/query),
-[upsert](https://docs.pinecone.io/reference/api/2026-07/data-plane/upsert), and
-[index stats](https://docs.pinecone.io/reference/api/2026-07/data-plane/describeindexstats)
-contracts, pinned to API version `2026-07`.
+## How a memory is saved
 
-## How facts enter the index — pilot versus future production
+1. A verified senior message reaches the existing extraction agent. It proposes a
+   durable fact with an exact excerpt from that current senior-authored message.
+2. Server code resolves organisation and senior from trusted identity/access data,
+   validates evidence, purpose, confidence and expiry, and chooses the correct store.
+   Essential routing/care context remains operational; personal facts go to Neon.
+3. A scoped Neon transaction saves the canonical fact, source attribution, version,
+   revision and command receipt. SQL row-level security isolates organisation and
+   senior. Caller-supplied organisation IDs cannot grant access.
+4. A bounded indexing attempt sends approved fact text to the embedding provider and
+   stores its vector in Neon. Source version and embedding model must still match
+   when the vector is published. Failed indexing leaves the source saved and pending.
+5. Pending indexing retries on later writes/retrieval. A durable scheduled worker
+   remains follow-up work; this is not a background queue guarantee.
 
-In the pilot, a generated local fixture set is canonical: five relevant facts,
-one superseded contact preference, one expired fact, and 1,000 distractors.
-The current contact preference is revision 2; the previous preference is superseded.
-The script embeds fixture content in batches of at most 96 for Pinecone-hosted embeddings (100 for compatible external providers) and uploads only
-records exactly matching this allowlist into a fresh fictional namespace. Raw
-text is sent to the configured embedding provider. Embeddings and metadata are
-sent to Pinecone. Uploaded vectors remain there until separately cleaned up.
+## How a reply uses memory
 
-Production ingestion is not implemented in this chunk. Its design must cover
-which facts may be saved, confirmation/confidence rules, deduplication, summaries,
-revision changes, idempotent indexing, deletion propagation, backup/export, and
-reindexing after embedding-model changes. There must be one authoritative writer
-at cutover, with migration verification and rollback. No dual writer is introduced
-here.
+1. Authenticate the caregiver or verify the channel identity, then resolve the senior.
+2. Embed the current question. Search only that senior's authorised Neon scope using
+   cosine similarity and a threshold calibrated for the configured embedding model.
+3. Re-read current sources and exclude superseded, deleted, expired, conflicting,
+   missing-evidence or stale-version facts. Vectors are search aids; current source
+   records determine which facts may be used.
+4. Return at most six facts, each content/excerpt at most 280 Unicode code points,
+   within a 4,000-character JSON budget. Retrieval has a two-second deadline and
+   explicit `available`, `empty` or `unavailable` status.
+5. Give selected facts, provenance and timestamps to the agents as **untrusted
+   evidence**, together with operational care context and dated conversation.
+   Incoming statements and historical messages are labelled separately. A current
+   explicit senior preference takes priority; otherwise newer confirmed facts
+   supersede contradictory older conversation. Evidence cannot issue instructions.
+6. Agents produce validated outputs. Deterministic policy remains the authority for
+   operational risk and escalation. Personal memory does not diagnose or override
+   verified contact routing or essential care/accessibility context.
 
-## Evaluate without external calls
+There is no automatic fallback to Supabase personal memory in Neon mode. Database
+failure does not silently restore an older fact. Runtime functions are placed in
+Singapore beside Neon; the build machine may still run elsewhere.
 
-From `trustkaki-web/`:
+## Correction example
 
-```sh
-npm run benchmark:memory
-```
+A senior previously said they preferred porridge. A caregiver later confirms toast.
+The correction increases the canonical version, preserves the old revision, and
+invalidates its vector in the same transaction. Only the current version can be
+indexed or retrieved. The agent should answer with toast when asked the remembered
+preference. If the senior now explicitly asks for noodles, that current choice wins.
 
-This executes eight original fictional memory cases with predetermined relevant
-rankings. It checks retrieval rules and target preservation. Passing **does not
-measure semantic accuracy**: the local ranks already know the expected answer.
-It also does not call a chat model or measure response faithfulness.
+Exact command retries return the original receipt. Stale edits conflict rather than
+overwrite newer changes. Archive excludes the fact from retrieval; replaying an old
+extraction cannot resurrect it. Administrative edits require verified senior-admin
+access and the expected update timestamp.
 
-## Calibrate before evaluating
+## Why this helps
 
-The native Pinecone calibration command uses 1,005 active fictional source facts,
-15 separate target questions (five topics in three languages), and five unrelated
-questions. It embeds the corpus and questions without writing to the index, then
-computes exact cosine similarity locally. If every target score exceeds every
-forbidden score, the midpoint defines a candidate threshold; otherwise calibration
-fails. Final evaluation questions must not be used to tune the threshold.
+- **Relevant context:** semantic retrieval can find an older gardening preference
+  when the senior asks about growing plants, despite different wording.
+- **Bounded prompts:** only selected relevant facts reach the model, rather than
+  the entire memory history. This can reduce prompt cost; savings are not yet measured.
+- **Correctable memory:** source records, revisions and receipts support review,
+  correction and lifecycle changes independently of a model conversation.
+- **Reduced coupling:** chat-model choice is separate from storage and embeddings.
+  Changing embedding model usually requires re-embedding and recalibration.
+- **Simpler memory storage:** canonical facts and vectors share one database, avoiding
+  synchronisation between a separate source database and vector index.
 
-```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/memory-calibration.ts --confirm-live --confirm-provider-budget
-```
+RAG does **not** automatically shrink storage. Embeddings add data. Retention,
+consolidation, deduplication, pagination and archival still control growth. Exact
+cosine search currently grows with each senior's corpus; ANN indexing and production
+load measurements are future work.
 
-This command calls the embedding provider and consumes quota. It supports the
-configured native Pinecone model and requires a positive declared budget and
-Starter plan. Verify the actual plan in the console; environment declarations do
-not enforce billing controls. The current Starter plan is free and rejects monthly
-quota overages rather than automatically upgrading. See
-[Pinecone's rate limits](https://docs.pinecone.io/reference/api/database-limits/rate-limits).
+## Migration and verification evidence
 
-Calibration is a tiny development set. It uses the same five positive facts as
-the evaluation with different question wording. The 1,000 distractors repeat an
-inventory-note template; harder, diverse distractors and a larger independent set
-are needed before making broad semantic-quality claims.
+Five legacy personal rows were imported as four canonical records and one revision.
+A family contact route remains operational in Supabase. Three canonical facts are
+active, but their original provenance is missing: they remain caregiver-visible and
+excluded from AI retrieval until an authorised caregiver confirms them. Migration
+never invents evidence or confirmation.
 
-## Live pilot: first run passed
+Legacy Supabase personal rows are frozen historical evidence, not runtime fallback.
+Deletion of those retained copies requires the retention/audit decision. Historical
+Supabase command identities were not imported as Neon receipts; old in-flight edits
+may need a dashboard refresh and reviewed reissue.
 
-On 15 October 2026, the native Pinecone/`llama-text-embed-v2` pilot passed all
-configured gates using cutoff **0.200106996389696**, frozen from a separate
-20-question calibration. Required facts were retrieved for **10/10 English,
-10/10 Mandarin, and 10/10 Singlish** questions. Forbidden facts and unavailable
-queries were both zero; nearest-rank p95 retrieval latency was **986ms** across
-30 sequential queries. All gardening and contact-correction questions passed.
+Latest bounded semantic benchmark: **30/30 questions**, 10/10 each English,
+Mandarin and Singlish; zero forbidden facts, warm p95 **460 ms**. This synthetic
+benchmark does not establish broad language quality, real-user usefulness or scale.
 
-The run indexed 1,007 fictional vectors in the dedicated pilot index. It used
-20,498 embedding tokens and 30 reported query read units; separate calibration
-used 20,440 embedding tokens without index writes. Starter/free plan was verified
-in the console; no paid upgrade was made. Dollar billing was not reconciled.
-See [raw reports and interpretation](evidence/2026-10-15-memory-live-pilot.md).
-
-This is one small synthetic run. No chat generation, load test, durable external
-source store, production migration, or full live lifecycle validation is claimed.
-
-### Re-running the pilot
-
-Live mode requires an existing, isolated Pinecone index, appropriate permissions,
-and an explicitly selected embedding model. Index vector dimensions and cosine
-metric must match the embedding model. Verify provider region, account plan,
-retention terms, and a provider-enforced spending limit before running.
-
-Configure these through your normal local secret-management process; never paste
-API keys into chat or commit them:
-
-```text
-TRUSTKAKI_MEMORY_PINECONE_PILOT_HOST
-TRUSTKAKI_MEMORY_PINECONE_API_KEY
-TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT
-TRUSTKAKI_MEMORY_EMBEDDING_API_KEY
-TRUSTKAKI_MEMORY_EMBEDDING_MODEL
-TRUSTKAKI_MEMORY_PILOT_MIN_SCORE
-TRUSTKAKI_MEMORY_PILOT_REGION
-TRUSTKAKI_MEMORY_PILOT_PLAN
-TRUSTKAKI_MEMORY_PILOT_BUDGET_USD
-```
-
-### Local configuration
-
-The environment template includes all pilot settings. If `.env.local` does
-not exist, copy `.env.example` to `.env.local`, then fill only the pilot section.
-Preserve existing `.env.local` contents if that file already exists. Git ignores
-`.env.local`; `.env.example` must contain placeholders only. Keep API keys in
-server-side variables, never `NEXT_PUBLIC_*` variables.
-
-The standalone benchmark does not automatically load Next.js environment files.
-If the variables are in `.env.local`, use this command from `trustkaki-web/` with
-the installed Node 24 runtime (only after account/index/budget setup is complete):
-
-```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/memory-retrieval-evaluation.ts --mode live --confirm-live --confirm-provider-budget
-```
-
-The `npm run` command below is for variables already exported into the shell.
-A chat-model API key or model name does not automatically establish embedding
-support; choose an embedding endpoint and model explicitly. An index host is the
-data-plane HTTPS host, not the Pinecone dashboard URL. Record the index's actual
-region and plan. Do not guess these values to bypass configuration checks.
-
-Two embedding formats are supported:
-
-- **Pinecone native:** exact endpoint `https://api.pinecone.io/embed`, model
-  `llama-text-embed-v2` for the dedicated 1,024-dimensional index. It uses
-  `TRUSTKAKI_MEMORY_PINECONE_API_KEY`; leave the separate embedding key blank.
-  Saved facts use `passage` mode; questions use `query` mode. Batches are limited
-  to 96 inputs and truncation is disabled so oversized inputs fail explicitly.
-- **External provider:** HTTPS `/embeddings` endpoint with a separate embedding
-  key, OpenAI-compatible response format, configured model identity, and token
-  usage. A different model alias requires deliberate validation changes.
-
-The native request/response follows Pinecone's
-[Generate vectors API](https://docs.pinecone.io/reference/api/2026-07/inference/generate-vectors).
-[Pinecone's batching guide](https://docs.pinecone.io/guides/index-data/upsert-data#upsert-in-batches)
-explains the hosted embedding model limit. Both formats preserve model/count/
-finite-vector/width/usage validation, cancellation, and sanitized provider errors.
-
-Choose/calibrate the score threshold separately from final evaluation; do not
-quietly tune on failing evaluation questions and report them as independent data.
-
-```sh
-npm run benchmark:memory -- --mode live --confirm-live --confirm-provider-budget
-```
-
-The declared dollar budget is recorded, **not enforced by the script**. A provider
-account limit is required. The script creates no account/index or paid resource;
-it will incur embedding, vector-write, query, and storage usage on configured
-accounts. The script prints its new namespace for later manual cleanup and never
-deletes records. Namespace counts are a readiness check, not a strong guarantee
-of query freshness. No result should be accepted if indexing visibility is unclear.
-
-The pilot queries ten English, ten Mandarin, and ten Singlish questions against
-1,007 fictional records. Gates: Recall@6 at least 90% separately per language;
-every gardening and contact-correction question passes; zero forbidden selections
-(old/expired facts or distractors); no unavailable queries; retrieval p95 at most
-1,500ms. Since each question has one required target, Recall@6 is the fraction of
-questions whose required fact appears among at most six returned facts. p95 uses
-nearest-rank over 30 sequential retrievals and excludes index seeding time.
-
-Reports include model, dataset, declared region/plan, token/read-unit/vector counts,
-latency, and per-case outcomes. Dollar cost must be reconciled with provider
-billing. These 30 questions are a small synthetic gate, not proof of broad
-multilingual quality or real-world scale. Concurrent load, full live lifecycle,
-chat faithfulness, prompt injection behaviour, and real-user usefulness remain
-separate gates. Offline tests exercise the full script using a fake adapter;
-those are not live provider evidence.
-
-## Why this design helps
-
-- **Relevance:** older relevant facts can compete by meaning rather than recency.
-- **Bounded prompts:** fact count and serialized context stay bounded as history
-  grows. Search infrastructure and stored vectors still have their own costs.
-- **Traceability:** selected facts carry evidence references, timestamps, and revisions.
-- **Correction:** stale index hits are checked against current canonical records.
-- **Model portability:** chat-model choice is separate from storage and embeddings.
-  Changing the embedding model usually requires re-embedding/reindexing; portability
-  is reduced coupling, not zero-effort vendor swapping.
-- **Operational separation:** the target architecture separates personal-memory
-  retrieval workloads from Supabase care workflows.
-
-RAG does not automatically shrink databases. Summaries, retention, deduplication,
-and archival control growth; embeddings add storage. The measured current growth
-problem was scheduler retries, handled in the earlier rollout. Moving memory alone
-would not have fixed that issue.
+See [cutover record](evidence/2026-10-15-neon-memory-cutover.md) for the exact deployed
+commit, generated-response results, failed gates and production status. Historical
+[Pinecone pilot](evidence/2026-10-15-memory-live-pilot.md) and
+[Neon semantic benchmark](evidence/2026-10-15-neon-semantic-retrieval.md) remain evidence
+for their respective earlier stages.
 
 ## A judge-ready explanation
 
-> “Neon stores confirmed personal facts, their evidence and revisions, alongside
-> a rebuildable pgvector search index. The current Pinecone inference API turns
-> text into embeddings; our chat model remains separate. For each message we
-> retrieve a small set of relevant facts within the authorised senior’s scope,
-> check their current versions, and give them to the agents as evidence.
-> Authenticated fictional tests verified extraction, correction, retrieval and
-> archival. Production migration and live generated-reply evaluation remain open.”
+> We separate operational care data from personal conversational memory. Supabase
+> handles identity and care workflows; Neon stores confirmed personal facts and their
+> evidence, with pgvector for semantic search. Pinecone's embedding API converts text
+> to vectors, while our chat model remains separate. For each question we retrieve a
+> small authorised set, check current versions and expiry, and pass it to agents as
+> evidence. Caregivers can correct or archive facts, and old retries cannot restore
+> superseded memory. RAG improves relevant context; retention still controls growth.
 
-## Application flow and operating limits
+## Operating references
 
-1. Supabase verifies identity, access relationships and the source senior message.
-2. Accepted personal preferences pass evidence, purpose and expiry checks. A scoped
-   Neon transaction stores the canonical fact, attribution, revision and retry receipt.
-3. A bounded indexing attempt embeds pending facts. Correction clears the old vector;
-   publication requires the current version. An indexing failure keeps a pending fact
-   for retry without undoing a saved correction.
-4. Retrieval embeds the current question and searches only the authorised senior’s
-   scope. It rechecks status, version, expiry and conflicts, returning at most six
-   facts within a 4,000-character JSON budget and a two-second deadline.
-5. Agents see explicit available/empty/unavailable status and untrusted evidence.
-   Essential care context remains deterministic. Neon failure never restores legacy
-   Supabase personal memory when Neon mode is selected.
-6. Caregiver edits require verified administration access and an expected timestamp.
-   Exact retries return the original receipt; stale edits conflict; archival excludes
-   facts from retrieval and old extraction retries cannot resurrect them.
-
-Request-triggered indexing is implemented. A durable scheduled worker, restore tests,
-retention policy, legacy reconciliation and live generation checks remain release work.
-The gate is disabled in the saved environment; no production cutover occurred.
-
-## Source files and evidence
-
-- [Retrieval core](../src/lib/memory/retrieval.ts)
-- [Contracts](../src/lib/memory/retrievalContracts.ts)
-- [Fictional Pinecone adapter](../src/lib/memory/pineconePilot.ts)
-- [Evaluation runner](../scripts/memory-retrieval-evaluation.ts)
-- [Implementation evidence](evidence/2026-10-14-personal-memory-retrieval.md)
 - [Active roadmap](TrustKaki_BUILD_ROADMAP.md)
+- [Neon setup and safe commands](NEON_MEMORY_SETUP.md)
+- [Lifecycle design](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md)
+- [Retrieval](../src/lib/memory/retrieval.ts)
+- [Authenticated integration](../src/lib/memory/applicationRepository.ts)
+- [Transactions and RLS scope](../src/lib/memory/neonDatabase.ts)
+- [Prompts](../src/lib/agents/prompts.ts)
+
+Before real senior use: schedule durable indexing, validate restore and retention,
+measure production load and broader reply faithfulness, and complete the operational
+pilot requirements. Community-event availability needs a separate current source;
+a remembered interest alone does not prove a suitable event exists.

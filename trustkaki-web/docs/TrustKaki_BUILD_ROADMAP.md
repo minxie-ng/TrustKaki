@@ -3,17 +3,17 @@
 Updated: 15 October 2026
 
 Status: Legacy personal memory imported and reconciled in Neon; old personal writes frozen.
-Next: verify the production candidate and grounded replies, then promote.
-Metadata mapping and the restricted local runtime login are verified.
-Migration, deployment credentials and cutover remain open.
+Next: complete the signed-in check on the accepted candidate, then promote.
+Metadata mapping, restricted deployment credentials and migration are verified.
+Live generated-reply grounding passed; exact-candidate UI and promotion remain release gates.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
 Pinecone vector storage is historical pilot evidence; its configured inference API
 still generates embeddings. Neon setup and the first source/pgvector lifecycle slice passed local and live
 fictional checks. [Evidence](evidence/2026-10-15-neon-memory-foundation.md).
-Neon semantic benchmark: 30/30 questions, zero forbidden facts, warm p95 501 ms.
-[Semantic evidence](evidence/2026-10-15-neon-semantic-retrieval.md).
+Latest Neon semantic benchmark: 30/30 questions, zero forbidden facts, warm p95 460 ms.
+[Cutover evidence](evidence/2026-10-15-neon-memory-cutover.md).
 Production personal-memory cutover remains open.
 
 ## Purpose and authority
@@ -170,8 +170,12 @@ Completed retrieval subchunk, 14 October:
   records and one revision. Family-contact routing stays operational in Supabase.
   Missing-evidence records remain excluded from retrieval until caregiver confirmation.
   [Migration evidence](evidence/2026-10-15-neon-memory-cutover.md).
-- [ ] Schedule indexing with recovery/cost controls; validate restore/retention,
-  migrate, and connect production agents under one authenticated write path.
+- [x] Verify corrected/current/empty generated replies with an injection-bearing
+  fictional fixture and exact model-input assertions. 984 tests, typecheck, lint
+  and build pass; candidate `4a262ac` accepted by independent review.
+- [ ] Complete signed-in verification on the accepted candidate and promote the
+  Neon-enabled application; verify the public production alias.
+- [ ] Schedule indexing with recovery/cost controls; validate restore and retention.
 
 Earlier growth subchunk: scheduler retry cap and quiet-hour retry fix are deployed
 and verified; broader retention/pagination work remains open.

@@ -1,6 +1,6 @@
-# Neon personal-memory foundation
+# Neon personal-memory setup and operations
 
-Updated: 15 October 2026. This is a foundation, not a production agent migration.
+Updated: 15 October 2026. Migration is reconciled; Neon-enabled candidates are under release verification. Production promotion is pending. See the [cutover record](evidence/2026-10-15-neon-memory-cutover.md).
 
 ## Selected setup
 
@@ -59,25 +59,24 @@ NOINHERIT login with only non-admin runtime-role membership. Live checks deny
 schema creation, direct DELETE and personal-memory access before SET LOCAL ROLE;
 after role selection, missing scope returns zero rows. The direct owner credential
 remains in local `DATABASE_URL_UNPOOLED` for migrations and fixture cleanup. Do not
-ship that owner URL to the production application. Deployment variables have not
-yet been updated. Scope variables are set by trusted server code, not an
+ship that owner URL to the production application. Production secret storage now
+contains the restricted runtime credential. Scope variables are set by trusted server code, not an
 authentication mechanism for untrusted SQL clients.
 
 `GET /api/health` verifies scoped schema access and exposes booleans only.
-Memory remains optional until production cutover, so its failure does not yet
-change the existing operational health status. No application agent uses external
-personal memory until its generation/access/migration gates pass.
+When `TRUSTKAKI_PERSONAL_MEMORY_BACKEND=neon`, health requires database reachability
+and embedding configuration. It exposes enabled/configured booleans, not secrets.
+Health does not replace live embedding, retrieval or generated-response checks.
 
-## Remaining gates
+## Remaining operations
 
-- Complete type/application-tag/confidence mapping for existing context records.
-- Embedding provider and live semantic retrieval are verified in the bounded
-  fictional slice below; automatic production scheduling remains open.
+- Metadata mapping, restricted credentials, authenticated integration, exact legacy
+  import/replay and multilingual semantic retrieval are verified.
+- Grounded generated replies passed on the accepted candidate. Its signed-in UI
+  check, promotion and public smoke remain; consult the cutover record.
 - Add scheduled bounded indexing with recovery/cost controls.
-- Export/restore/erasure replay checks, retention policy; install the verified
-  restricted credential in the deployment environment during release.
-- Wire authenticated reads/edits, extraction, channels and role-specific prompts;
-  validate grounded generation, backfill and cutover under a single writer.
+- Complete backup restore and retention operations. Lifecycle erasure is tested,
+  but historical Supabase copies remain frozen evidence until retention is decided.
 
 ## Semantic retrieval verification (15 October)
 
@@ -130,7 +129,8 @@ printed. This is a provisioning tool, not an application endpoint.
 the runtime identity before release; do not silently accept owner credentials.
 If the runtime role already exists but its local credential was lost, recover it
 from your secret store or perform an explicit coordinated rotation. This script
-refuses that rotation. No deployment secret store has been configured yet.
+refuses that rotation. The restricted credential is installed in Vercel production
+secret storage; the owner URL remains local.
 
 Sources now optionally carry typed metadata for memory type, confidence,
 importance, application tags, extraction method, source attribution, timestamps,
@@ -144,6 +144,19 @@ require explicit review. Reviewed personal classification cannot override an
 operational tag. Missing evidence is represented by an empty excerpt and explicit
 missing_source provenance, excluded in pending SQL, search SQL and final source
 validation. No quote is fabricated from a stored fact. Status/lineage are retained
-for the eventual importer; this helper is not a completed backfill tool.
+by the verified importer. Do not rerun the one-time schema migration or use the
+backfill as post-cutover reconciliation after legitimate new edits.
+
+## Deployment and rollback rules
+
+- Runtime functions use `sin1`, alongside the Singapore Neon database. Build-region
+  output may still say US East; inspect function placement separately.
+- Keep the Neon backend selected after cutover. A compatible application build may
+  be rolled back, but an old Supabase-writing build cannot safely resume without
+  pausing writers, reconciliation and an explicit unfreeze plan.
+- Retained Supabase personal rows are immutable historical evidence. New runtime
+  memory reads/writes use Neon; there is no automatic Supabase personal fallback.
+- Retrieval diagnostics contain fixed status/reason and numeric counts/timing only.
+  Do not add source content, identifiers, connection strings or provider bodies.
 
 [Verification evidence](evidence/2026-10-15-neon-memory-metadata-and-credentials.md).

@@ -39,7 +39,8 @@ messages or schedule/webhook changes are authorized by this release work.
 - `npm run build` originally failed because Turbopack could not bind its helper port,
   including a retry with expanded permissions. Build script now selects Webpack,
   the compiler already verified for this app. Final standard build result recorded
-  below during release verification.
+  below during release verification. Final `npm run build`: exit 0, TypeScript
+  passed and 23/23 static pages generated.
 - Independent review found two importer reconciliation safeguards; both fixed:
   exact total row count and final mapped-evidence digest comparison.
 - Supabase security advisor reports pre-existing auth/function configuration notices;
@@ -60,7 +61,125 @@ once Neon accepts new writes. Prefer a Neon-compatible build rollback; otherwise
 pause writers, reconcile both stores, explicitly review unfreezing, then release.
 Never just change the backend flag to Supabase.
 
-Candidate verification and promotion: pending.
+Initial candidate (not promoted): `dpl_HmiKHbUkQNJ1zfnbipn89zRzAb3C`, commit
+`bb12ff1179c6f76b92ad8748b37cbbed574a8ab5`.
+Health verifies this revision, Neon enabled, database reachable and embedding
+configuration present. Hosted production build passed with the standard command.
+
+Signed-in candidate UI: three expected fictional seniors visible; known context
+shows migrated personal preferences plus operational care context. No case,
+contact, schedule or existing memory was changed during the UI check.
+
+The unaliased production candidate is deployment-protected: credential-free smoke
+was rejected at the protection layer. Equivalent `/api/health`, `/privacy` and
+`/data-deletion` checks passed using existing Vercel CLI authentication; no protection
+setting was weakened. Public alias smoke remains required after promotion.
+
+Fresh live semantic benchmark: 30/30, 10/10 each English/Mandarin/Singlish,
+zero forbidden facts and unavailable queries, warm p95 460ms, cleanup verified.
+[Full sanitized result](2026-10-15-neon-cutover-retrieval.json).
+
+The first generated-reply gate failed: an older preference in conversation was
+chosen over the newer caregiver correction. Conversation timestamps were missing
+from the shared prompt. Commit `beabf0554fffe734394fcc560911815f75f520a0`
+adds timestamps and explicit chronological precedence while preserving current
+senior-statement and safety priority. Regression observed failing before the fix,
+then passing; independent review found no remaining code blocker. A separate smoke
+script assertion was corrected to the actual top-level `fallback` response field.
+Full suite after fix: 981 passed, 38 skipped; typecheck, lint and standard build
+passed. The initial restricted full-suite attempt failed ten loopback tests with
+`listen EPERM`; the permitted rerun passed all runnable tests.
+
+New candidate generation verification and promotion: pending.
+
+The timestamp-only candidate `dpl_HAuwfSGPzecMVgC6WMpKdfBw5D4K`
+passed health/legal endpoints and signed-in roster visibility, but still failed the
+corrected-preference generation assertion. It was not promoted. The deployed
+retrieval status was not yet observable; no claim that prompt changes fixed it.
+An earlier smoke preflight also failed without a bounded cause; independent health
+verification passed and the controlled retry reached the generation assertion.
+
+Next experiment: commit `16aa43513f4b1d925e634c0579866ff9ac42c7b6`
+pins runtime execution to Singapore (`sin1`) beside Neon. Build region may still
+be US East; that is separate from function execution. Normal retrieval performs
+three scoped transactions plus embedding HTTP under a two-second deadline, so
+cross-region round trips are a plausible cause. New telemetry reports only fixed
+status/reason and numeric diagnostics, never scope, content or credentials.
+Full suite: 982 passed, 38 skipped; typecheck, lint and standard build passed.
+Independent review found no important issue; acceptance requires live retrieval
+diagnostics and generated replies from this candidate, not the latency hypothesis.
+
+Singapore candidate `dpl_2GtCTAMFFuQ685as3aH9jVs4d3Jr` confirms
+function placement `sin1`. Its server telemetry shows available memory, one
+selected fact, 407ms retrieval. It still failed generation by repeating the
+superseded preference and describing the confirmed preference as a new suggestion.
+Therefore latency is ruled out for that observed failure; region alignment is
+retained for bounded latency, and promotion remains blocked on grounding.
+The next prompt change explicitly labels the current incoming message and historical
+conversation, defines which senior statement is current, and prohibits presenting
+superseded preferences alongside the confirmed answer. The smoke now checks the
+actual generated-input envelope before judging the reply.
+
+The explicit-label candidate `dpl_314F1brgqUk2bxpYwCpf5cKSPnnL`,
+commit `094fb029239c1884406b6871b53285adb1dba57e`, still failed generation.
+Additional assertions proved the actual model input contained the corrected content
+and excerpt, later confirmation timestamp, new labels and available status. A clean
+safe-use-note comparison also failed; the injected note was not the sole cause.
+
+## Accepted candidate
+
+Commit: `4a262ac094dc46c3071476cf8b749da73e9c4949`.
+Deployment: `dpl_HtpjiTdLCvcNWi5A88xxyYfpZZZy`.
+URL: https://trustkaki-ke8fd23o7-minxie-ngs-projects.vercel.app.
+
+This revision distinguishes server-selected current personal records from embedded
+instructions, removes ambiguous optional-context wording and repeats factual
+precedence after the evidence. Record text remains data in the user prompt; it is
+not elevated to system instructions. Existing retrieval/data budgets are unchanged.
+
+- Full suite: **984 passed, 38 skipped**; 140 test files passed, 5 skipped.
+- Typecheck, lint and `npm run build`: exit 0. Hosted standard build also passed.
+- Exact commit health, Neon enabled/database/embedding configuration: passed.
+- Protected health/privacy/data-deletion endpoint equivalents: passed with existing
+  Vercel CLI authentication. Public alias smoke remains a post-promotion gate.
+- Live fictional extraction into Neon only, authenticated read, unauthenticated and
+  foreign-senior denial, semantic retrieval, correction, exact retry, stale conflict,
+  archive and old-extraction non-resurrection: passed.
+- Actual generated-input content, excerpt and chronology: passed.
+- Three live generated replies: corrected preference used without superseded value;
+  current incoming choice respected; archived/empty memory did not invent a preference.
+  All used the configured LLM without fallback. The injection-bearing note was
+  present (`cleanNotesDiagnostic:false`); its canary was absent from replies.
+- Fictional Neon, Supabase and Auth fixture cleanup: passed.
+- Independent final review: no Critical or Important source finding remains.
+
+Signed-in exact-candidate UI and production promotion: pending.
+
+Hosted triage telemetry for the accepted run: available/selected=1 at 602ms and
+582ms; archived/empty selected=0 at 408ms. These are three observed checks, not a
+production latency percentile.
+
+Local `.env.local` now explicitly selects Neon and the calibrated threshold;
+other variables were preserved and file mode is 600. Built app started successfully
+(`Ready in 108ms`). Health reports Neon enabled, reachable and embedding configured.
+Overall local health is HTTP 503 because local chat/channel credentials are absent;
+the accepted hosted candidate has those credentials and passes HTTP 200 health and
+live generation. No dummy key was used to manufacture local readiness. Local server
+was stopped after verification.
+
+Temporary rehearsal branch deletion verified; production branch retained. Temporary
+environment copies and raw failed-reply/request logs removed. Sanitized result
+evidence retained. No outbound channel message, webhook or schedule was changed.
+
+`16aa435` is Neon-compatible but has a reproduced grounding regression, so it is
+not a normal rollback target. The accepted `4a262ac` deployment is the first verified
+Neon baseline for future releases. Prefer a forward fix for an initial-cutover issue;
+do not restore the old Supabase writer or silently unfreeze historical rows.
+
+Commands begun before cutover may conflict instead of replaying their historical
+Supabase receipt. Refresh the dashboard and reissue only after reviewing current
+facts. Post-cutover Neon commands preserve exact-request retries; no claim of
+exactly-once replay across both historical backends is made.
 
 ## Remaining operations after cutover
 
