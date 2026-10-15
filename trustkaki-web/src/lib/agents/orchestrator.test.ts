@@ -760,6 +760,7 @@ describe("capability-safe selected replies", () => {
 
   it.each([
     ["Please tell Mei Ling I would rather talk one to one.", /can't.*(?:message|contact)/],
+    ["Please tell Nora I would rather talk one to one.", /can't.*(?:message|contact)/],
     ["Can you call my daughter?", /can't.*(?:call|contact)/],
     ["Please contact me tomorrow.", /can't.*(?:call|contact)/],
     ["请帮我通知梅玲。", /无法.*(?:联系|传话)/],
@@ -807,7 +808,7 @@ describe("capability-safe selected replies", () => {
     expect(response.messages).toEqual([{ text: "You prefer toast for breakfast.", agentId: "triage" }]);
   });
 
-  it.each(["Can you tell a joke?", "Tell a story about your favourite food.", "Call me John.", "请告诉我一个故事。", "请告诉一个故事。"])("preserves ordinary conversation: %s", async message => {
+  it.each(["Can you tell a joke?", "Tell a story about your favourite food.", "Call me John.", "Call Me John.", "请告诉我一个故事。", "请告诉一个故事。"])("preserves ordinary conversation: %s", async message => {
     const { orchestrate } = await import("./orchestrator");
     runAgentMock.mockResolvedValueOnce(result("triage", triageData({ responseMessage: "Here is my reply." })));
     const response = await orchestrate(message, context());

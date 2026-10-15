@@ -406,10 +406,11 @@ function capabilityReply(message: string, draft: string, memoryRequested: boolea
   const recipient = contact?.[2] ?? "";
   const namedContact = [ctx.senior.caregiver, ctx.senior.aacVolunteer].some(name =>
     recipient.toLowerCase() === name.toLowerCase() || recipient.toLowerCase().startsWith(`${name.toLowerCase()} `));
+  const namedRecipient = !/^(?:me|you|us|them|it|a|an|the|this|that)\b/iu.test(recipient) && /^\p{Lu}[\p{L}'-]+\b/u.test(recipient);
   const relatedContact = /^(?:(?:my|our)\s+)?(?:daughter|son|wife|husband|sister|brother|caregiver|doctor|volunteer|family)\b/iu.test(recipient);
-  const phoneRecipient = relatedContact || namedContact || /^\+?\d/u.test(recipient) || /^me(?:[?.!]|\s+(?:now|later|tomorrow|today|tonight|back|at)\b|$)/iu.test(recipient);
+  const phoneRecipient = relatedContact || namedContact || namedRecipient || /^\+?\d/u.test(recipient) || /^me(?:[?.!]|\s+(?:now|later|tomorrow|today|tonight|back|at)\b|$)/iu.test(recipient);
   const englishContact = contact && (/^(?:notify|message|contact|phone)$/iu.test(contact[1]) ||
-    (/^tell$/iu.test(contact[1]) ? relatedContact || namedContact : phoneRecipient));
+    (/^tell$/iu.test(contact[1]) ? relatedContact || namedContact || namedRecipient : phoneRecipient));
   const chineseContact = /^(?:(?:请|請)你?|帮我|幫我|麻烦你|麻煩你|能不能|可以)?(?:帮我|幫我)?(?:通知|联系|聯繫|打电话|打電話|(?:告诉|告訴)(?:我的?)?(?:女儿|女兒|儿子|兒子|照顾者|照顧者|家人))/u.test(message.trim());
   const contactRequest = englishContact || chineseContact;
   if (!reply && contactRequest) reply = chinese
