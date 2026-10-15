@@ -107,7 +107,7 @@ describe("/api/agents/orchestrate", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(loadAuthorizedAgentContextMock).toHaveBeenCalledWith({ auth, seniorId });
+    expect(loadAuthorizedAgentContextMock).toHaveBeenCalledWith({ auth, seniorId, query: 'Not hungry today.' });
     expect(orchestrateMock).toHaveBeenCalledWith(
       "Not hungry today.",
       expect.objectContaining({

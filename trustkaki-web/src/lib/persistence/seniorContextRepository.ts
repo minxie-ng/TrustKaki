@@ -1,4 +1,6 @@
 import "server-only";
+import { memoryScopeSchema } from "@/lib/memory/retrievalContracts";
+import { retrieveNeonPersonalMemory, isNeonPersonalMemoryEnabled } from "@/lib/memory/applicationRepository";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
@@ -158,9 +160,14 @@ function buildKnownContext(
 async function loadContext(
   client: ServiceClient,
   senior: SeniorRow,
-  messageLimit: number
+  messageLimit: number,
+  query?: string
 ): Promise<AgentRunContext> {
   const now = new Date().toISOString();
+  const neon = isNeonPersonalMemoryEnabled();
+  const memoryQuery = client.from("senior_memories").select(
+    "context_key, memory_type, content, importance, confidence, safe_use_notes, application_tags, last_confirmed_at");
+  const operationalMemoryQuery = neon ? memoryQuery.overlaps("application_tags", ["trusted_contact_route", "accessibility_support"]) : memoryQuery;
   const checkInResult = await client
     .from("check_ins")
     .select("id")
@@ -214,11 +221,7 @@ async function loadContext(
       .order("confidence", { ascending: false })
       .order("last_confirmed_at", { ascending: false })
       .limit(KNOWN_CONTEXT_LIMIT),
-    client
-      .from("senior_memories")
-      .select(
-        "context_key, memory_type, content, importance, confidence, safe_use_notes, application_tags, last_confirmed_at"
-      )
+    operationalMemoryQuery
       .eq("senior_id", senior.id)
       .eq("status", "active")
       .or(`expires_at.is.null,expires_at.gt.${now}`)
@@ -241,7 +244,11 @@ async function loadContext(
     caregiverRows.find((row) => row.role === role)?.caregivers?.display_name ??
     "Not assigned";
 
+  const personalMemory = neon ? await retrieveNeonPersonalMemory(
+    memoryScopeSchema.parse({ organisationId: senior.organisation_id, seniorId: senior.id }),
+    (query ?? ([...(messageResult.data ?? [])].filter(m => m.sender === "senior").slice(0, 3).map(m => m.text).join("\n") || "Personal preferences for a supportive check-in")).slice(0, 2000), now) : undefined;
   const context = {
+    ...(personalMemory ? { personalMemory } : {}),
     senior: {
       name: senior.display_name,
       age: senior.age ?? 0,
@@ -275,7 +282,7 @@ async function loadSeniorById(
 ): Promise<SeniorRow> {
   const { data, error } = await client
     .from("seniors")
-    .select("id, display_name, age, living_situation, risk_level")
+    .select("id, organisation_id, display_name, age, living_situation, risk_level")
     .eq("id", seniorId)
     .maybeSingle();
   throwIfQueryFailed(error);
@@ -287,6 +294,7 @@ export async function loadAuthorizedAgentContext(args: {
   auth: AuthenticatedCaregiver;
   seniorId: string;
   messageLimit?: number;
+  query?: string;
 }): Promise<AgentRunContext> {
   if (!canAccessSenior(args.auth, args.seniorId)) {
     throw new Error("Forbidden");
@@ -294,12 +302,13 @@ export async function loadAuthorizedAgentContext(args: {
 
   const client = requireClient();
   const senior = await loadSeniorById(client, args.seniorId);
-  return loadContext(client, senior, boundedMessageLimit(args.messageLimit));
+  return loadContext(client, senior, boundedMessageLimit(args.messageLimit), args.query);
 }
 
 export async function loadSeniorContextByVerifiedPhone(args: {
   phone: string;
   messageLimit?: number;
+  query?: string;
 }): Promise<{ seniorId: string; context: AgentRunContext } | null> {
   const phone = normalizePhoneNumber(args.phone);
   if (!phone) return null;
@@ -307,7 +316,7 @@ export async function loadSeniorContextByVerifiedPhone(args: {
   const client = requireClient();
   const { data, error } = await client
     .from("seniors")
-    .select("id, display_name, age, living_situation, risk_level")
+    .select("id, organisation_id, display_name, age, living_situation, risk_level")
     .eq("phone_e164", phone)
     .maybeSingle();
   throwIfQueryFailed(error);
@@ -319,7 +328,8 @@ export async function loadSeniorContextByVerifiedPhone(args: {
     context: await loadContext(
       client,
       senior,
-      boundedMessageLimit(args.messageLimit)
+      boundedMessageLimit(args.messageLimit),
+      args.query
     ),
   };
 }
@@ -329,6 +339,7 @@ export async function loadSeniorContextByMessagingIdentity(args: {
   externalUserId: string;
   externalChatId?: string | null;
   messageLimit?: number;
+  query?: string;
 }): Promise<{ seniorId: string; context: AgentRunContext } | null> {
   const seniorId = await findSeniorIdByMessagingIdentity({
     platform: args.platform,
@@ -344,7 +355,8 @@ export async function loadSeniorContextByMessagingIdentity(args: {
     context: await loadContext(
       client,
       senior,
-      boundedMessageLimit(args.messageLimit)
+      boundedMessageLimit(args.messageLimit),
+      args.query
     ),
   };
 }

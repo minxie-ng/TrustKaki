@@ -1,6 +1,7 @@
 // ─── Zod Schemas for Agent Output Validation ───
 
 import { z } from "zod";
+import { agentPersonalMemorySchema } from "@/lib/memory/agentContext";
 import {
   memoryApplicationTags,
   memoryContextTypes,
@@ -63,6 +64,7 @@ export const agentRunContextSchema = z.object({
     })
   ),
   currentRiskLevel: riskLevelSchema,
+  personalMemory: agentPersonalMemorySchema.optional(),
   knownContext: z
     .object({
       items: z

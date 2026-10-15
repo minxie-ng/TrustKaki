@@ -71,7 +71,7 @@ describe("/api/agents/triage", () => {
     const { POST } = await import("./route");
     const response = await POST(request());
     const json = await response.json();
-    expect(loadContextMock).toHaveBeenCalledWith({ auth, seniorId });
+    expect(loadContextMock).toHaveBeenCalledWith({ auth, seniorId, query: 'Not hungry today.' });
     expect(runTriageAgentMock).toHaveBeenCalledWith("Not hungry today.", context);
     expect(JSON.stringify(json)).not.toContain("verified-access-token");
   });

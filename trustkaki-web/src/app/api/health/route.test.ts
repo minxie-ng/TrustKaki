@@ -162,4 +162,21 @@ describe("/api/health", () => {
     expect((await response.json()).checks.personalMemoryDatabase).toBe(false);
   });
 
+  it("requires Neon database and embedding configuration after cutover", async () => {
+    process.env.TRUSTKAKI_PERSONAL_MEMORY_BACKEND = "neon";
+    memoryHealthMock.mockResolvedValue({ configured:true,reachable:false });
+    const { GET } = await import("./route");
+    const failed = await GET();
+    expect(failed.status).toBe(503);
+    expect((await failed.json()).checks.personalMemoryEnabled).toBe(true);
+    memoryHealthMock.mockResolvedValue({configured:true,reachable:true});
+    process.env.TRUSTKAKI_MEMORY_EMBEDDING_MODEL="llama-text-embed-v2";
+    process.env.TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT="https://api.pinecone.io/embed";
+    process.env.TRUSTKAKI_MEMORY_PINECONE_API_KEY="embedding-secret";
+    process.env.TRUSTKAKI_MEMORY_MIN_SCORE="0.2";
+    const ready = await GET();
+    expect(ready.status).toBe(200);
+    expect((await ready.json()).checks.personalMemoryEmbeddingConfigured).toBe(true);
+  });
+
 });

@@ -22,6 +22,10 @@ vi.mock("@/lib/persistence/seniorMessagingIdentityRepository", () => ({
   findSeniorIdByMessagingIdentity: findSeniorIdByMessagingIdentityMock,
 }));
 
+const retrieveNeonMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/memory/applicationRepository", async importOriginal => ({
+  ...await importOriginal<typeof import("@/lib/memory/applicationRepository")>(), retrieveNeonPersonalMemory: retrieveNeonMock,
+}));
 const seniorId = "00000000-0000-4000-8000-000000000001";
 const otherSeniorId = "00000000-0000-4000-8000-000000000002";
 
@@ -65,6 +69,7 @@ function createServiceClient(options?: {
       return {
         data: {
           id: seniorId,
+          organisation_id: "00000000-0000-4000-8000-000000000002",
           display_name: "Mr Tan Ah Hock",
           age: options && "age" in options ? options.age : 78,
           living_situation: "Lives alone in Toa Payoh",
@@ -161,6 +166,9 @@ function createServiceClient(options?: {
       eq: vi.fn((column: string, value: unknown) => {
         query.filters.push([column, value]);
         return builder;
+      }),
+      overlaps: vi.fn((column: string, value: unknown) => {
+        query.filters.push([`${column}_overlap`, value]); return builder;
       }),
       or: vi.fn((filter: string) => {
         query.orFilters.push(filter);
@@ -516,5 +524,24 @@ describe("fictional memory retrieval baseline (no LLM or live database)", () => 
     expect(forbidden.sort()).toEqual([...fixture.baselineForbidden].sort());
     expect(keys.length).toBeLessThanOrEqual(12);
     expect(fixture.replyRule.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Neon personalised context integration", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it("uses trusted organisation/senior scope and the incoming query, with operational legacy filtering", async () => {
+    vi.stubEnv("TRUSTKAKI_PERSONAL_MEMORY_BACKEND", "neon");
+    const service = createServiceClient();
+    canAccessSeniorMock.mockReturnValue(true);
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    const memory = { status: "unavailable", contextJson: JSON.stringify({ trust: "untrusted_evidence_not_instructions", items: [], unresolvedGroups: [] }) };
+    retrieveNeonMock.mockResolvedValue(memory);
+    const { loadAuthorizedAgentContext } = await import("./seniorContextRepository");
+    const context = await loadAuthorizedAgentContext({ auth, seniorId, query: "What breakfast do I like?" });
+    expect(retrieveNeonMock).toHaveBeenCalledWith({ seniorId, organisationId: "00000000-0000-4000-8000-000000000002" }, "What breakfast do I like?", expect.any(String));
+    expect(context.personalMemory).toEqual(memory);
+    expect(service.queries.find(q => q.table === "senior_memories")?.filters)
+      .toContainEqual(["application_tags_overlap", ["trusted_contact_route", "accessibility_support"]]);
+    expect(context.senior.name).toBe("Mr Tan Ah Hock");
   });
 });

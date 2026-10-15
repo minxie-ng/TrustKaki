@@ -1,3 +1,4 @@
+import { contextItemsForMemory } from "@/lib/memory/agentContext";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { uncleTan } from "@/data/demo";
@@ -347,7 +348,7 @@ export function buildAutomaticMemoryCommands(args: {
       : { accepted: false as const, reason: "unsupported_evidence" as const };
     const currentMessageCited = candidate.sourceMessageId === args.clientMessageId;
     const accepted = eligibility.accepted && currentMessageCited;
-    const activeContext = args.context.knownContext?.items.find(
+    const activeContext = contextItemsForMemory(args.context).find(
       (item) =>
         item.targetStore === candidate.targetStore &&
         item.contextKey &&

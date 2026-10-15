@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "./node_modules/.bin/next dev",
-    "build": "./node_modules/.bin/next build",
+    "build": "./node_modules/.bin/next build --webpack",
     "start": "./node_modules/.bin/next start",
     "benchmark:agents": "./node_modules/.bin/tsx scripts/agent-benchmark.ts --mode deterministic",
     "benchmark:agents:live": "./node_modules/.bin/tsx scripts/agent-benchmark.ts --mode live --confirm-live",
@@ -17,7 +17,9 @@
     "memory:neon:migrate": "node --env-file=.env.local --import tsx scripts/neon-memory-migrate.ts",
     "memory:neon:smoke": "node --env-file=.env.local --conditions=react-server --import tsx scripts/neon-memory-smoke.ts",
     "memory:neon:evaluate": "node --env-file=.env.local --conditions=react-server --import tsx scripts/neon-memory-evaluation.ts",
-    "memory:neon:runtime": "node --import tsx scripts/neon-memory-runtime.ts"
+    "memory:neon:runtime": "node --import tsx scripts/neon-memory-runtime.ts",
+    "memory:neon:app-smoke": "node --env-file=.env.local --conditions=react-server --import tsx scripts/neon-memory-app-smoke.ts",
+    "memory:neon:backfill": "node --env-file=.env.local --import tsx scripts/neon-memory-backfill.ts"
   },
   "dependencies": {
     "@neon/config": "1.9.1",

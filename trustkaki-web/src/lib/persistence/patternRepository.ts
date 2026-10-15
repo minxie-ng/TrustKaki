@@ -1,3 +1,4 @@
+import { isNeonPersonalMemoryEnabled } from "@/lib/memory/applicationRepository";
 import "server-only";
 
 import {
@@ -59,6 +60,9 @@ async function readSeniorPatternContext(
   seniorId: string
 ): Promise<SeniorPatternContext> {
   const now = new Date().toISOString();
+  const memoryQuery = client.from("senior_memories").select("id, memory_type, content");
+  const operationalMemoryQuery = isNeonPersonalMemoryEnabled()
+    ? memoryQuery.overlaps("application_tags", ["trusted_contact_route", "accessibility_support"]) : memoryQuery;
   const [baselinesResult, healthResult, memoriesResult] = await Promise.all([
     client
       .from("routine_baselines")
@@ -74,9 +78,7 @@ async function readSeniorPatternContext(
       .eq("status", "active")
       .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order("created_at", { ascending: true }),
-    client
-      .from("senior_memories")
-      .select("id, memory_type, content")
+    operationalMemoryQuery
       .eq("senior_id", seniorId)
       .eq("status", "active")
       .or(`expires_at.is.null,expires_at.gt.${now}`)

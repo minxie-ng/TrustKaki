@@ -2,8 +2,8 @@
 
 Updated: 15 October 2026
 
-Status: Neon memory lifecycle and live fictional semantic retrieval passed.
-Next: connect the authenticated memory path and validate grounded replies.
+Status: Legacy personal memory imported and reconciled in Neon; old personal writes frozen.
+Next: verify the production candidate and grounded replies, then promote.
 Metadata mapping and the restricted local runtime login are verified.
 Migration, deployment credentials and cutover remain open.
 
@@ -97,8 +97,8 @@ Architecture decision, 14 October: move personalised conversational memory out
 of Supabase. Supabase remains the operational store for authentication, access
 relationships, care cases, messaging records, schedules, and other care data.
 RAG is the retrieval process; a separate durable memory store must hold source
-facts/summaries, provenance, and their search index. Choose that store in the
-memory design chunk; no vendor has been selected.
+facts/summaries, provenance, and their search index. Neon Postgres with pgvector
+has been selected to keep canonical facts and their derived vectors together.
 
 Define the boundary explicitly before migration: conversational preferences and
 recollections belong in external memory; operational care records and essential
@@ -162,6 +162,14 @@ Completed retrieval subchunk, 14 October:
 - [x] Preserve editing/extraction metadata and explicit missing-evidence state;
   verify a SQL-created restricted runtime login on a test branch and selected
   branch. [Evidence](evidence/2026-10-15-neon-memory-metadata-and-credentials.md).
+- [x] Connect authenticated shared readers, extraction, caregiver corrections, archive,
+  and bounded indexing retries behind `TRUSTKAKI_PERSONAL_MEMORY_BACKEND=neon`.
+  Verify fictional live access isolation, semantic retrieval, exact retries and
+  stale-editor conflicts. [Application evidence](evidence/2026-10-15-neon-application-integration.md).
+- [x] Classify/backfill existing memory: five personal rows imported as four canonical
+  records and one revision. Family-contact routing stays operational in Supabase.
+  Missing-evidence records remain excluded from retrieval until caregiver confirmation.
+  [Migration evidence](evidence/2026-10-15-neon-memory-cutover.md).
 - [ ] Schedule indexing with recovery/cost controls; validate restore/retention,
   migrate, and connect production agents under one authenticated write path.
 

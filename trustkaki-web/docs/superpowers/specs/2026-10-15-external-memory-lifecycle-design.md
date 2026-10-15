@@ -81,9 +81,10 @@ Reject unsupported facts rather than inventing evidence. External scope derives
 from trusted Supabase auth/verified channel identity, never request or model IDs.
 Use parameterised SQL and a server-only least-privilege runtime credential before
 real senior cutover; database owner credentials are then reserved for migrations.
-The foundation currently uses the CLI owner connection with an explicit restricted
-`SET LOCAL ROLE`; dedicated login provisioning remains an unpassed release gate. Scoped reads/writes and
-database policies must both be tested for isolation.
+The local pooled connection now uses a dedicated restricted login with an explicit
+`SET LOCAL ROLE`; provisioning was verified on the selected branch. Deployment
+credential wiring remains a release gate. Scoped reads/writes and database policies
+must both be tested for isolation.
 
 ## Write and retrieval lifecycle
 

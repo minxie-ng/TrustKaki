@@ -36,6 +36,7 @@ export async function POST(
       accessToken: authResult.accessToken,
       seniorId,
       command: parsed.data,
+      auth: authResult.auth,
     });
     const seniorContext = await readSeniorContext({
       accessToken: authResult.accessToken,

@@ -92,6 +92,7 @@ describe("admin senior context route", () => {
       accessToken: "admin-token",
       seniorId,
       command: body,
+      auth: { administrableSeniorIds: [seniorId] },
     });
     expect(await response.json()).toEqual({ context: { seniorId, items: [] } });
   });

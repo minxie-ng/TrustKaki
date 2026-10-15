@@ -284,6 +284,7 @@ describe("WhatsApp async service", () => {
     expect(result.status).toBe("senior_not_found");
     expect(loadSeniorContextByVerifiedPhoneMock).toHaveBeenCalledWith({
       phone: "6581234567",
+      query: "Not hungry today. Knee pain.",
     });
     expect(orchestrateMock).not.toHaveBeenCalled();
     expect(persistOrchestrationResultMock).not.toHaveBeenCalled();

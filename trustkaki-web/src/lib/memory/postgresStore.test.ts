@@ -153,3 +153,11 @@ it("source validation excludes missing evidence even if a search adapter returns
   expect(result.status).toBe("empty");
   expect(result.items).toEqual([]);
 });
+it("lists canonical active sources and tags without requiring embeddings, with a hard read bound", async () => {
+  await store().apply(scope, command());
+  expect(await store().listActive(scope, now, 10)).toEqual([source()]);
+  expect(await store().listActive({ ...scope, seniorId: crypto.randomUUID() }, now, 10)).toEqual([]);
+  await expect(store().listActive(scope, now, 201)).rejects.toThrow();
+  await store().apply(scope, command({ id: "second", source: source("second") }));
+  await expect(store().listActive(scope, now, 1)).rejects.toThrow("Personal memory page limit exceeded");
+});

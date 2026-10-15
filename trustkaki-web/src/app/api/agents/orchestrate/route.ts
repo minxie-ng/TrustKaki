@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     const context = await loadAuthorizedAgentContext({
       auth: authResult.auth,
       seniorId,
+      query: message,
     });
     const inboundMessage: Message = {
       id: clientMessageId ?? crypto.randomUUID(),

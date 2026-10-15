@@ -81,7 +81,7 @@ describe("/api/agents/aac-nudge", () => {
     const { POST } = await import("./route");
     const response = await POST(request());
     const json = await response.json();
-    expect(loadContextMock).toHaveBeenCalledWith({ auth, seniorId });
+    expect(loadContextMock).toHaveBeenCalledWith({ auth, seniorId, query: "Don't want. Paiseh." });
     expect(runTriageAgentMock).toHaveBeenCalledWith("Don't want. Paiseh.", context);
     expect(runAACNudgeAgentMock).toHaveBeenCalledWith(
       "Don't want. Paiseh.",

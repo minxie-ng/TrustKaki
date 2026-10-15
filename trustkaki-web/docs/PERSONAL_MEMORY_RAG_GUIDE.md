@@ -1,14 +1,15 @@
 # Personal memory RAG: implementation and presentation guide
 
-Updated: 15 October 2026. Status: isolated retrieval locally verified; first fictional live pilot passed.
+Updated: 15 October 2026. Status: authenticated application integration and live fictional lifecycle verified behind a disabled feature gate. Production cutover remains open.
 
 ## What exists today
 
-The application now has a server-only retrieval module, validated contracts,
-fictional evaluation data, and an opt-in Pinecone pilot. No application route or
-production agent calls this module yet. Existing production personal-memory
-reads/writes still use Supabase during this transition. This is not a completed
-migration or a deployed semantic-memory feature.
+The application has authenticated Neon readers and writers, semantic retrieval,
+and shared agent context. `TRUSTKAKI_PERSONAL_MEMORY_BACKEND=neon` selects this
+path; its default is still Supabase until migration and release checks pass.
+The local live smoke test exercised extraction, retrieval, caregiver correction,
+retry, stale-edit rejection and archive with temporary fictional fixtures.
+[Application evidence](evidence/2026-10-15-neon-application-integration.md).
 
 The approved destination is external personal memory. Supabase remains responsible
 for operational care data, authentication, access relationships, messages, cases,
@@ -53,8 +54,8 @@ See [Neon setup and commands](NEON_MEMORY_SETUP.md) and
    against current source records. RAG means retrieval-augmented generation; it
    does not mean replacing storage with an algorithm.
 3. **Generation** gives selected evidence to a chat model to compose a reply.
-   The isolated implementation currently covers retrieval. Generation wiring and
-   response-faithfulness evaluation remain open.
+   Shared agent prompts now receive bounded retrieved evidence with its status
+   and provenance. Live response-faithfulness evaluation remains open.
 
 ## Worked example: an older gardening preference
 
@@ -313,16 +314,35 @@ would not have fixed that issue.
 
 ## A judge-ready explanation
 
-> “We are separating personal memory from the chat model. Instead of sending an
-> ever-growing history, the retrieval layer finds relevant facts within the
-> senior's authorised scope, verifies their latest versions, and returns a small
-> context with source references. This lets older preferences stay useful and
-> makes chat-model changes easier. We have implemented the retrieval boundary
-> and passed an initial fictional
-> Pinecone pilot: all 30 target memories were retrieved across English, Mandarin,
-> and Singlish, with zero forbidden facts and 986ms p95 latency. This is a small
-> synthetic result. Durable external source storage, broader evaluation, and
-> production cutover remain open; we are not claiming a deployed RAG migration.”
+> “Neon stores confirmed personal facts, their evidence and revisions, alongside
+> a rebuildable pgvector search index. The current Pinecone inference API turns
+> text into embeddings; our chat model remains separate. For each message we
+> retrieve a small set of relevant facts within the authorised senior’s scope,
+> check their current versions, and give them to the agents as evidence.
+> Authenticated fictional tests verified extraction, correction, retrieval and
+> archival. Production migration and live generated-reply evaluation remain open.”
+
+## Application flow and operating limits
+
+1. Supabase verifies identity, access relationships and the source senior message.
+2. Accepted personal preferences pass evidence, purpose and expiry checks. A scoped
+   Neon transaction stores the canonical fact, attribution, revision and retry receipt.
+3. A bounded indexing attempt embeds pending facts. Correction clears the old vector;
+   publication requires the current version. An indexing failure keeps a pending fact
+   for retry without undoing a saved correction.
+4. Retrieval embeds the current question and searches only the authorised senior’s
+   scope. It rechecks status, version, expiry and conflicts, returning at most six
+   facts within a 4,000-character JSON budget and a two-second deadline.
+5. Agents see explicit available/empty/unavailable status and untrusted evidence.
+   Essential care context remains deterministic. Neon failure never restores legacy
+   Supabase personal memory when Neon mode is selected.
+6. Caregiver edits require verified administration access and an expected timestamp.
+   Exact retries return the original receipt; stale edits conflict; archival excludes
+   facts from retrieval and old extraction retries cannot resurrect them.
+
+Request-triggered indexing is implemented. A durable scheduled worker, restore tests,
+retention policy, legacy reconciliation and live generation checks remain release work.
+The gate is disabled in the saved environment; no production cutover occurred.
 
 ## Source files and evidence
 

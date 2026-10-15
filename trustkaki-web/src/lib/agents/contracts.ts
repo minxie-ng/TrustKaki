@@ -35,6 +35,7 @@ export interface AgentRunContext {
   };
   messages: Message[];
   currentRiskLevel: RiskLevel;
+  personalMemory?: { status: "available" | "empty" | "unavailable"; contextJson: string };
   knownContext?: {
     items: KnownContextItem[];
   };

@@ -1,3 +1,4 @@
+import { contextItemsForMemory } from "@/lib/memory/agentContext";
 // ─── Orchestrator: Multi-Agent Orchestration Logic ───
 // Chains: triage → (aac_nudge | digital_safety in parallel) → briefing
 
@@ -158,7 +159,7 @@ function contextMemoryInput(
         ...item,
         text: redactProhibitedMemoryData(item.text),
       })),
-    activeContext: (ctx.knownContext?.items ?? [])
+    activeContext: contextItemsForMemory(ctx)
       .filter(
         (item): item is typeof item & {
           targetStore: NonNullable<typeof item.targetStore>;

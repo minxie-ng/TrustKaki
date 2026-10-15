@@ -40,3 +40,23 @@ it("rejects malformed scope and aborted work before connecting", async () => {
   await expect(neonMemorySql(scope, "SELECT 1", [], controller.signal)).rejects.toThrow();
   expect(connect).not.toHaveBeenCalled();
 });
+it("runs dependent queries in one scoped transaction and rolls back a failed callback", async () => {
+  vi.stubEnv("DATABASE_URL", "postgresql://runtime:private@ep-demo-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require");
+  query.mockResolvedValue({ rows: [{ n: 1 }] });
+  const { withNeonMemoryTransaction } = await import("./neonDatabase");
+  await expect(withNeonMemoryTransaction(scope, async execute => {
+    await execute("SELECT 1", []);
+    await execute("SELECT 2", []);
+    throw new Error("private failure");
+  })).rejects.toThrow("Personal memory unavailable");
+  expect(query.mock.calls.map(call => call[0])).toEqual([
+    "BEGIN", "SET LOCAL ROLE trustkaki_memory_runtime", expect.stringContaining("set_config"), "SELECT 1", "SELECT 2", "ROLLBACK",
+  ]);
+  expect(release).toHaveBeenCalledTimes(1);
+});
+it.each(["host=attacker.example", "options=-crole=neon_superuser", "sslmode=require", "user=neondb_owner"])("rejects connection overrides: %s", async override => {
+  vi.stubEnv("DATABASE_URL", `postgresql://runtime:private@ep-demo-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&${override}`);
+  const { neonMemorySql } = await import("./neonDatabase");
+  await expect(neonMemorySql(scope, "SELECT 1", [])).rejects.toThrow("Personal memory unavailable");
+  expect(connect).not.toHaveBeenCalled();
+});

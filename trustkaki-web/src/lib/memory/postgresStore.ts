@@ -63,23 +63,36 @@ export function createPostgresMemoryStore(execute: ScopedMemorySql, embeddingMod
     [args.scope.organisationId, args.scope.seniorId, vector, embeddingModel, args.now, args.topK], signal);
     return z.array(memorySearchHitSchema).max(20).parse(rows);
   };
-  async function publishEmbedding(scope: MemoryScope, id: string, version: number, vector: number[]) {
+  async function publishEmbedding(scope: MemoryScope, id: string, version: number, vector: number[], signal?: AbortSignal) {
     idSchema.parse(id); z.number().int().positive().parse(version);
     const encoded = vectorText(vector);
     const rows = await run(scope, `UPDATE personal_memory.records SET embedding=$5::vector, index_version=version
       WHERE organisation_id=$1::uuid AND senior_id=$2::uuid AND id=$3 AND version=$4
         AND status='active' AND embedding_model=$6 AND embedding IS NULL RETURNING id`,
-    [scope.organisationId, scope.seniorId, id, version, encoded, embeddingModel]);
+    [scope.organisationId, scope.seniorId, id, version, encoded, embeddingModel], signal);
     return z.array(z.object({ id: idSchema })).max(1).parse(rows).length === 1;
   }
-  async function pending(scope: MemoryScope, limit: number) {
+  async function pending(scope: MemoryScope, limit: number, signal?: AbortSignal) {
     z.number().int().min(1).max(20).parse(limit);
     const rows = await run(scope, `SELECT source FROM personal_memory.records
       WHERE organisation_id=$1::uuid AND senior_id=$2::uuid AND status='active'
         AND embedding IS NULL AND embedding_model=$3
         AND source->'metadata'->>'provenanceStatus' IS DISTINCT FROM 'missing_source'
-      ORDER BY updated_at, id LIMIT $4`, [scope.organisationId, scope.seniorId, embeddingModel, limit]);
+      ORDER BY updated_at, id LIMIT $4`, [scope.organisationId, scope.seniorId, embeddingModel, limit], signal);
     return z.array(z.object({ source: memorySourceRecordSchema })).max(20).parse(rows).map(r => r.source);
   }
-  return { apply, fetchSources, search, publishEmbedding, pending };
+  async function listActive(scope: MemoryScope, now: string, limit = 200) {
+    z.number().int().min(1).max(200).parse(limit);
+    z.iso.datetime({ offset: true }).parse(now);
+    const rows = await run(scope, `SELECT source FROM personal_memory.records
+      WHERE organisation_id=$1::uuid AND senior_id=$2::uuid AND status='active'
+        AND (source->>'confirmedAt')::timestamptz <= $3::timestamptz
+        AND (source->>'expiresAt' IS NULL OR (source->>'expiresAt')::timestamptz > $3::timestamptz)
+      ORDER BY updated_at DESC, id LIMIT $4`, [scope.organisationId, scope.seniorId, now, limit + 1]);
+    const parsed = z.array(z.object({ source: memorySourceRecordSchema })).max(limit + 1).parse(rows);
+    // Refuse an incomplete caregiver view; add cursor pagination before this bound is reached.
+    if (parsed.length > limit) throw new Error("Personal memory page limit exceeded");
+    return parsed.map(row => row.source);
+  }
+  return { apply, fetchSources, search, publishEmbedding, pending, listActive };
 }

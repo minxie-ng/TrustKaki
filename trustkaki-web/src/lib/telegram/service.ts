@@ -141,6 +141,7 @@ async function getOrCreateOrchestration(args: {
     platform: "telegram",
     externalUserId: args.inbound.senderUserId,
     externalChatId: args.inbound.chatId,
+    query: args.inbound.text,
   });
   if (!senior) throw new UnmappedTelegramSenderError();
 

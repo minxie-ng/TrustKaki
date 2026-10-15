@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     const context = await loadAuthorizedAgentContext({
       auth: authResult.auth,
       seniorId,
+      query: message,
     });
     const triageResult = await runTriageAgent(message, context);
 

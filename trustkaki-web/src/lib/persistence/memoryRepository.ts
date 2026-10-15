@@ -18,6 +18,16 @@ import type { Json } from "@/lib/supabase/types";
 import type { Database } from "@/lib/supabase/types";
 import type { TrustKakiClient } from "./persistenceSupport";
 
+import { canAdministerSenior, type AuthenticatedCaregiver } from "@/lib/auth/session";
+import { applyNeonAutomaticMemory, mutateNeonPersonalMemory, readNeonPersonalMemory, readNeonMemoryTags,
+  resolveMemoryScope, isNeonPersonalMemoryEnabled, withOperationalMemoryPurpose } from "@/lib/memory/applicationRepository";
+
+const OPERATIONAL_MEMORY_TAGS = ["trusted_contact_route", "accessibility_support"];
+function legacyMemoryQuery(client: TrustKakiClient, columns: string) {
+  const query = client.from("senior_memories").select(columns);
+  return isNeonPersonalMemoryEnabled() ? query.overlaps("application_tags", OPERATIONAL_MEMORY_TAGS) : query;
+}
+
 const automaticContextResultSchema = z.discriminatedUnion("accepted", [
   z.object({
     accepted: z.literal(true),
@@ -126,9 +136,7 @@ export async function loadActiveContextApplicationTags(args: {
   if (!client) return [];
   const expiryFilter = `expires_at.is.null,expires_at.gt.${args.now}`;
   const [memoryResult, routineResult, healthResult] = await Promise.all([
-    client
-      .from("senior_memories")
-      .select("application_tags")
+    legacyMemoryQuery(client, "application_tags")
       .eq("senior_id", args.seniorId)
       .eq("status", "active")
       .or(expiryFilter),
@@ -163,6 +171,13 @@ export async function loadActiveContextApplicationTags(args: {
         : []
     )
   );
+  if (isNeonPersonalMemoryEnabled()) {
+    try {
+      const scope = await resolveMemoryScope(client, args.seniorId);
+      for (const tag of await readNeonMemoryTags(scope, args.now)) activeTags.add(tag);
+    }
+    catch { /* Optional personalisation must not block operational contact/safety tags. */ }
+  }
   return memoryApplicationTags.filter((tag) => activeTags.has(tag));
 }
 
@@ -175,11 +190,7 @@ export async function readSeniorContext(args: {
   if (!client) throw new Error("Senior context unavailable");
   const expiryFilter = `expires_at.is.null,expires_at.gt.${args.now}`;
   const [memoryResult, healthResult, routineResult] = await Promise.all([
-    client
-      .from("senior_memories")
-      .select(
-        "id, context_key, memory_type, content, importance, safe_use_notes, application_tags, extraction_method, last_confirmed_at, expires_at, updated_at"
-      )
+    legacyMemoryQuery(client, "id, context_key, memory_type, content, importance, safe_use_notes, application_tags, extraction_method, last_confirmed_at, expires_at, updated_at")
       .eq("senior_id", args.seniorId)
       .eq("status", "active")
       .or(expiryFilter)
@@ -252,6 +263,10 @@ export async function readSeniorContext(args: {
       updatedAt: row.updated_at,
     })),
   ];
+  if (isNeonPersonalMemoryEnabled()) {
+    const scope = await resolveMemoryScope(client, args.seniorId);
+    items.push(...await readNeonPersonalMemory(scope, args.now));
+  }
   items.sort(
     (left, right) =>
       right.lastConfirmedAt.localeCompare(left.lastConfirmedAt) ||
@@ -301,9 +316,27 @@ export async function mutateSeniorContext(args: {
   accessToken: string;
   seniorId: string;
   command: SeniorContextActionCommand;
+  auth?: AuthenticatedCaregiver;
 }) {
   const client = createTrustKakiUserClient(args.accessToken);
   if (!client) throw new Error("Senior context unavailable");
+  if (isNeonPersonalMemoryEnabled() && args.command.store === "memory") {
+    if (!args.auth || !canAdministerSenior(args.auth, args.seniorId)) throw new Error("Forbidden");
+    const { data: operational, error } = await legacyMemoryQuery(client, "id,context_key")
+      .eq("senior_id", args.seniorId).eq("id", args.command.contextId).maybeSingle();
+    if (error) throw new Error("Senior context unavailable");
+    if (!operational) {
+      try { return await mutateNeonPersonalMemory(client, args.seniorId, args.auth.caregiverId, args.command); }
+      catch (error) {
+        if (error instanceof Error && (error.message === "Memory conflict" || ("code" in error && error.code === "PT409"))) throw new ContextConflictError();
+        throw new Error("Senior context command failed");
+      }
+    }
+    if (args.command.action === "correct" && (args.command.replacement.contextKey !== z.object({ context_key: z.string() }).parse(operational).context_key
+      || !args.command.replacement.applicationTags.some(tag => OPERATIONAL_MEMORY_TAGS.includes(tag)))) {
+      throw new ContextConflictError();
+    }
+  }
   const common = {
     p_command_id: args.command.commandId,
     p_senior_id: args.seniorId,
@@ -382,6 +415,22 @@ export async function applyAutomaticSeniorContext(
 ): Promise<AutomaticContextRpcResult> {
   const payload = payloadObject(command.payload);
   if (!payload) throw new Error("invalid automatic context RPC payload");
+  if (isNeonPersonalMemoryEnabled() && payload.store === "memory" && payload.decision === "accepted") {
+    const tags = z.array(z.enum(memoryApplicationTags)).parse(payload.application_tags);
+    if (!tags.some(tag => OPERATIONAL_MEMORY_TAGS.includes(tag))) {
+      try { return await applyNeonAutomaticMemory(client, command); }
+      catch (error) {
+        throw new AutomaticContextRpcError(error instanceof Error && (error.message === "Memory conflict" || ("code" in error && error.code === "PT409")) ? "PT409" : null);
+      }
+    }
+    try { return await withOperationalMemoryPurpose(client, command, () => applyLegacyAutomaticContext(client, command, payload)); }
+    catch (error) {
+      throw new AutomaticContextRpcError(error instanceof Error && (error.message === "Memory conflict" || ("code" in error && error.code === "PT409")) ? "PT409" : null);
+    }
+  }
+  return applyLegacyAutomaticContext(client, command, payload);
+}
+async function applyLegacyAutomaticContext(client: TrustKakiClient, command: AutomaticContextRpcCommand, payload: Record<string, Json | undefined>): Promise<AutomaticContextRpcResult> {
   const expectedUpdatedAt = await replacementExpectedAt(client, command, payload);
   const rpcPayload = expectedUpdatedAt
     ? { ...payload, expected_updated_at: expectedUpdatedAt }

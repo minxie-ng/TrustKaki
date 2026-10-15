@@ -1,7 +1,7 @@
 import "server-only";
 import { Pool } from "pg";
 import { attachDatabasePool } from "@vercel/functions";
-import { memoryScopeSchema } from "./retrievalContracts";
+import { memoryScopeSchema, type MemoryScope } from "./retrievalContracts";
 import type { ScopedMemorySql } from "./postgresStore";
 
 let pool: Pool | undefined;
@@ -14,6 +14,10 @@ function databasePool(): Pool {
     const url = new URL(value);
     if (!['postgres:', 'postgresql:'].includes(url.protocol) || !url.hostname.endsWith('.neon.tech')
       || !['require', 'verify-full'].includes(url.searchParams.get('sslmode') ?? '')) throw new Error();
+    const keys = [...url.searchParams.keys()];
+    if (url.hash || keys.some(key => !['sslmode', 'channel_binding'].includes(key))
+      || new Set(keys).size !== keys.length
+      || (url.searchParams.has('channel_binding') && url.searchParams.get('channel_binding') !== 'require')) throw new Error();
     url.searchParams.set("sslmode", "verify-full");
     connectionString = url.href;
   } catch { throw new Error("Personal memory unavailable"); }
@@ -24,7 +28,9 @@ function databasePool(): Pool {
   attachDatabasePool(pool);
   return pool;
 }
-export const neonMemorySql: ScopedMemorySql = async (scope, text, values, signal) => {
+export type MemoryTransactionQuery = (text: string, values: unknown[]) => Promise<unknown[]>;
+export type MemoryTransaction = <T>(scope: MemoryScope, work: (query: MemoryTransactionQuery) => Promise<T>, signal?: AbortSignal) => Promise<T>;
+export const withNeonMemoryTransaction: MemoryTransaction = async (scope, work, signal) => {
   memoryScopeSchema.parse(scope); signal?.throwIfAborted();
   let client;
   try { client = await databasePool().connect(); }
@@ -39,10 +45,14 @@ export const neonMemorySql: ScopedMemorySql = async (scope, text, values, signal
     await client.query(`SELECT set_config('trustkaki.organisation_id',$1,true),
       set_config('trustkaki.senior_id',$2,true), set_config('statement_timeout','1500ms',true)`,
     [scope.organisationId, scope.seniorId]);
-    const result = await client.query(text, values);
+    const result = await work(async (text, values) => {
+      signal?.throwIfAborted();
+      if (released) throw new Error("Personal memory unavailable");
+      return (await client.query(text, values)).rows;
+    });
     signal?.throwIfAborted();
     await client.query("COMMIT");
-    return result.rows;
+    return result;
   } catch (error) {
     if (!released) {
       try { await client.query("ROLLBACK"); }
@@ -57,6 +67,8 @@ export const neonMemorySql: ScopedMemorySql = async (scope, text, values, signal
     if (!released) { released = true; client.release(); }
   }
 };
+export const neonMemorySql: ScopedMemorySql = (scope, text, values, signal) =>
+  withNeonMemoryTransaction(scope, query => query(text, values), signal);
 export async function personalMemoryDatabaseHealth(): Promise<{ configured: boolean; reachable: boolean | null }> {
   if (!process.env.DATABASE_URL?.trim()) return { configured: false, reachable: null };
   try {

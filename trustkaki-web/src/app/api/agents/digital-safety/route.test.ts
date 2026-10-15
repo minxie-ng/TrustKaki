@@ -73,7 +73,7 @@ describe("/api/agents/digital-safety", () => {
     const { POST } = await import("./route");
     const response = await POST(request());
     const json = await response.json();
-    expect(loadContextMock).toHaveBeenCalledWith({ auth, seniorId });
+    expect(loadContextMock).toHaveBeenCalledWith({ auth, seniorId, query: 'Someone sent me a payment link.' });
     expect(runDigitalSafetyAgentMock).toHaveBeenCalledWith(
       "Someone sent me a payment link.",
       context

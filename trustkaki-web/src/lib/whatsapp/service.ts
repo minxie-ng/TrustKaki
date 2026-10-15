@@ -155,7 +155,7 @@ async function getOrCreateOrchestration(args: {
   replyClientMessageId: string | null;
   persistenceAlreadyCompleted: boolean;
 }> {
-  const senior = await loadSeniorContextByVerifiedPhone({ phone: args.inbound.from });
+  const senior = await loadSeniorContextByVerifiedPhone({ phone: args.inbound.from, query: args.inbound.text });
   if (!senior) {
     throw new UnmappedWhatsAppSenderError();
   }

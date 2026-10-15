@@ -58,7 +58,17 @@ export async function GET() {
     process.env.WHATSAPP_INTERNAL_PROCESSOR_SECRET
   );
   const memoryHealth = await personalMemoryDatabaseHealth();
+  const memoryEnabled = process.env.TRUSTKAKI_PERSONAL_MEMORY_BACKEND === "neon";
+  const memoryBackendValid = [undefined,"supabase","neon"].includes(process.env.TRUSTKAKI_PERSONAL_MEMORY_BACKEND);
+  const endpoint = process.env.TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT;
+  const minimumScore = Number(process.env.TRUSTKAKI_MEMORY_MIN_SCORE || "NaN");
+  const memoryEmbeddingConfigured = hasValue(process.env.TRUSTKAKI_MEMORY_EMBEDDING_MODEL)
+    && hasValue(endpoint) && Number.isFinite(minimumScore) && minimumScore >= -1 && minimumScore <= 1
+    && hasValue(endpoint === "https://api.pinecone.io/embed"
+      ? process.env.TRUSTKAKI_MEMORY_PINECONE_API_KEY : process.env.TRUSTKAKI_MEMORY_EMBEDDING_API_KEY);
   const checks = {
+    personalMemoryEnabled: memoryEnabled,
+    personalMemoryEmbeddingConfigured: memoryEmbeddingConfigured,
     personalMemoryConfigured: memoryHealth.configured,
     personalMemoryDatabase: memoryHealth.reachable,
     app: true,
@@ -86,7 +96,8 @@ export async function GET() {
     checks.supabasePublicConfigured &&
     checks.supabaseServiceConfigured &&
     checks.database &&
-    checks.llmConfigured;
+    checks.llmConfigured && memoryBackendValid &&
+    (!memoryEnabled || (memoryHealth.configured && memoryHealth.reachable === true && memoryEmbeddingConfigured));
 
   return NextResponse.json(
     {
