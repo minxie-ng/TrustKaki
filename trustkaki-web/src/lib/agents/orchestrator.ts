@@ -1,6 +1,6 @@
 import { contextItemsForMemory } from "@/lib/memory/agentContext";
 // ─── Orchestrator: Multi-Agent Orchestration Logic ───
-// Chains: triage → (aac_nudge | digital_safety in parallel) → briefing
+// Triage owns conversation/routing; conditional safety/memory, policy, then briefing.
 
 import type { AgentId, AgentTrace } from "@/lib/types";
 import type {
@@ -8,7 +8,6 @@ import type {
   AgentRunResult,
   OrchestrateResponse,
   OrchestrationResult,
-  OrchestratorOutput,
   TriageOutput,
   TriageTimelineOutput,
   TriageSignal,
@@ -19,7 +18,6 @@ import type {
   ContextMemoryOutput,
 } from "./contracts";
 import {
-  orchestratorOutputSchema,
   triageOutputSchema,
   triageTimelineOutputSchema,
   aacNudgeOutputSchema,
@@ -28,12 +26,10 @@ import {
   contextMemoryOutputSchema,
 } from "./schemas";
 import { runAgent, toAgentTrace } from "./runner";
-import { applyPolicy } from "./policy";
+import { applyPolicy, hasUrgentHealthConcern } from "./policy";
 import type { PolicyResult } from "./policy";
 import { evaluatePatternWatch, type PatternSignal } from "@/lib/patterns/patternWatch";
 import {
-  ORCHESTRATOR_PROMPT,
-  orchestratorUserPrompt,
   TRIAGE_PROMPT,
   triageUserPrompt,
   triageTimelineUserPrompt,
@@ -49,6 +45,7 @@ import {
 import { contextMemoryFallback } from "./fallbacks";
 
 const contextMemoryTextExclusionPatterns = [
+  /^(?:你好|您好|早安|早上好|晚上好|谢谢|谢谢你|好的|好|再见)$/u,
   /^(?:hi|hello|hey)(?: there|(?: [a-z'-]+){1,2})?$/,
   /^(?:good (?:morning|afternoon|evening)|ok|okay|how are you|have a nice day)$/,
   /^(?:ok |okay )?(?:thanks|thank you)(?: so much| very much)?$/,
@@ -56,6 +53,7 @@ const contextMemoryTextExclusionPatterns = [
 ] as const;
 const phoneNumberPattern = /\+?\d(?:[\s().-]*\d){7,}/g;
 const prohibitedMemoryDataPatterns = [
+  /(?:密码|密碼|验证码|驗證碼|一次性密碼|银行卡号|銀行卡號|银行账号|銀行賬號|身份证号|身份證號)\s*(?:是|为|為|:|：|=)?\s*[a-z0-9-]{3,}/gi,
   /\b(?:otp|one[- ]time (?:password|pin|code)|pin)\s*(?:(?:is|:|=)\s*)?\d{4,12}\b/gi,
   /\b(?:password|passcode|credentials?)\s*(?:is|are|:|=)\s*[^\s,.;]{4,}/gi,
   /\b(?:password|passcode|credentials?)\s+(?=[^\s,.;]*[^a-z\s,.;])[^\s,.;]{4,}/gi,
@@ -66,6 +64,9 @@ const prohibitedMemoryDataPatterns = [
 ] as const;
 const REDACTED_PROHIBITED_DATA = "[REDACTED_PROHIBITED_DATA]";
 const durableContextPatterns = [
+  /(?:喜欢|喜歡|偏好|习惯|習慣|宁愿|寧願).{0,35}(?:华语|華語|中文|普通话|普通話|英语|英語|电话|電話|通话|通話|短信|语音|語音|活动|活動|一对一|一對一|吃|睡|散步)/u,
+  /(?:每天|每早|通常|每周|每週|一直).{0,35}(?:早餐|吃|睡|起床|散步|运动|運動|打电话|打電話)/u,
+  /(?:大字体|大字體|看不清小字|听不清|聽不清|轮椅|輪椅|助听器|助聽器)/u,
   /\b(?:i\s+)?(?:prefer|would rather|like)\b.{0,50}\b(?:voice calls?|phone calls?|calls?|texts?|messages?|mandarin|english|language)\b/i,
   /\b(?:i\s+)?(?:prefer|do not eat|don't eat|cannot eat|can't eat|am allergic to)\b.{0,60}\b(?:food|meal|breakfast|lunch|dinner|porridge|rice|meat|vegetables?)\b/i,
   /\b(?:i am|i'm)\s+(?:vegetarian|vegan|pescatarian)\b/i,
@@ -92,7 +93,7 @@ function normalizedMessage(message: string): string {
   return message
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9\s'-]/g, "")
+    .replace(/[^\p{L}\p{N}\s'-]/gu, "")
     .replace(/\s+/g, " ");
 }
 
@@ -212,15 +213,6 @@ function contextMemoryTrace(
 // These are NOT hardcoded scripted answers — they are minimal
 // safe-passthrough responses that avoid false conclusions.
 
-function orchestratorFallback(): OrchestratorOutput {
-  return {
-    agentsToRun: ["triage"],
-    priority: { triage: "high" },
-    reasoning:
-      "LLM unavailable. Defaulting to triage-only analysis for safety.",
-  };
-}
-
 function triageFallback(ctx: AgentRunContext): TriageOutput {
   return {
     signals: [],
@@ -230,7 +222,7 @@ function triageFallback(ctx: AgentRunContext): TriageOutput {
     summary:
       "Unable to analyze message automatically. Manual review recommended.",
     responseMessage:
-      "I heard you. Let me note that down. Is there anything else you'd like to share?",
+      "I'm having trouble understanding this message right now. Could you tell me a little more?",
     humanFollowUpRequired: false,
   };
 }
@@ -255,7 +247,7 @@ function triageTimelineFallback(ctx: AgentRunContext): TriageTimelineOutput {
 function aacNudgeFallback(): AACNudgeOutput {
   return {
     nudgeMessage:
-      "Hey, Mei Ling was asking about you. Maybe a kopi sometime this week? No rush at all.",
+      "We can leave activities for now. You can tell me if you'd like to explore an option later.",
     approach: "Gentle, low-pressure 1-on-1 invitation",
     rationale:
       "Default nudge used when AI analysis unavailable. Keeps social connection without pressure.",
@@ -269,9 +261,9 @@ function digitalSafetyFallback(): DigitalSafetyOutput {
     scamType: null,
     confidence: 0,
     warningMessage:
-      "I couldn't fully check this message. If it has a link and you're not sure, please don't click it. Ask Rachel first.",
+      "I couldn't fully check this message. If it has a link and you're not sure, please don't click it or share private codes. Check through a trusted official channel.",
     educationalNote:
-      "When in doubt, don't click links in messages. Forward suspicious messages to 77266 (ScamShield).",
+      "Use contact details you already trust, rather than those supplied in the suspicious message.",
   };
 }
 
@@ -384,14 +376,15 @@ function buildPatternWatchTrace(
   };
 }
 
-function enforceBriefingRisk(
-  briefing: BriefingOutput,
-  finalRisk: BriefingOutput["overallRisk"]
-): BriefingOutput {
-  return {
-    ...briefing,
-    overallRisk: finalRisk,
-  };
+function hasDigitalSafetyCue(message: string): boolean {
+  // Bounded guard supplements Triage; this is not a general scam detector.
+  return /https?:\/\/|www\.|bit\.ly|tinyurl|\b(?:otp|one[- ]time password|phishing|scam|suspicious link|investment scheme)\b|验证码|驗證碼|诈骗|詐騙|可疑链接|可疑連結/i.test(message) ||
+    prohibitedMemoryDataPatterns.some(pattern => message.search(pattern) >= 0);
+}
+
+function digitalSafetySummary(data?: DigitalSafetyOutput): string | undefined {
+  if (!data) return undefined;
+  return `${data.isScam ? "Suspected scam" : "Assessment inconclusive; safety is not verified"}; reported confidence=${data.confidence}: ${data.warningMessage}`;
 }
 
 // ─── Main orchestration function ───
@@ -405,23 +398,7 @@ export async function orchestrate(
   let briefing: BriefingOutput | null = null;
   let contextMemoryCandidates: ContextMemoryOutput["candidates"] = [];
 
-  // ── Step 1: Run Orchestrator (routing decision) ──
-  const orchResult: AgentRunResult<OrchestratorOutput> = await runAgent({
-    agentId: "orchestrator",
-    agentName: "Orchestrator Agent",
-    systemPrompt: ORCHESTRATOR_PROMPT,
-    userPrompt: orchestratorUserPrompt(message, ctx),
-    schema: orchestratorOutputSchema,
-    fallback: orchestratorFallback,
-    temperature: 0.3,
-    inputSummary: `Route message for ${ctx.senior.name}`,
-    stateChanges: ["execution_plan:requested"],
-  });
-  traces.push(toAgentTrace(orchResult));
-
-  const agentsToRun = new Set(orchResult.data.agentsToRun);
-
-  // ── Step 2: Run Triage (always) ──
+  // Triage owns primary interpretation, routing and the conversation draft.
   const triageResult: AgentRunResult<TriageOutput> = await runAgent({
     agentId: "triage",
     agentName: "Triage Agent",
@@ -437,33 +414,10 @@ export async function orchestrate(
 
   signals = triageResult.data.signals;
 
-  // Add triage response message to chat
-  responseMessages.push({
-    text: triageResult.data.responseMessage,
-    agentId: "triage",
-  });
-
-  // ── Step 3: Run specialist agents in parallel based on routing ──
-
-  const runAACNudge: Promise<AgentRunResult<AACNudgeOutput> | null> =
-    agentsToRun.has("aac_nudge") ||
-    triageResult.data.routing.includes("aac_nudge")
-      ? runAgent({
-          agentId: "aac_nudge",
-          agentName: "AAC Nudge Agent",
-          systemPrompt: AAC_NUDGE_PROMPT,
-          userPrompt: aacNudgeUserPrompt(message, ctx, signals),
-          schema: aacNudgeOutputSchema,
-          fallback: aacNudgeFallback,
-          temperature: 0.7,
-          inputSummary: `Generate low-pressure AAC nudge from social signals`,
-          stateChanges: ["senior_reply:aac_nudge"],
-        })
-      : Promise.resolve(null);
-
   const runDigitalSafety: Promise<AgentRunResult<DigitalSafetyOutput> | null> =
-    agentsToRun.has("digital_safety") ||
-    triageResult.data.routing.includes("digital_safety")
+    triageResult.data.routing.includes("digital_safety") ||
+    signals.some(signal => signal.type === "digital_safety") ||
+    hasDigitalSafetyCue(message)
       ? runAgent({
           agentId: "digital_safety",
           agentName: "Digital Safety Agent",
@@ -482,7 +436,7 @@ export async function orchestrate(
     promise: Promise<AgentRunResult<ContextMemoryOutput> | null>;
   } =
     !shouldExcludeContextMemory(message) &&
-    (agentsToRun.has("context_memory") || mayContainDurableContext(message))
+    (triageResult.data.routing.includes("context_memory") || mayContainDurableContext(message))
       ? (() => {
           const input = contextMemoryInput(message, ctx);
           return {
@@ -503,29 +457,13 @@ export async function orchestrate(
         })()
       : { input: null, promise: Promise.resolve(null) };
 
-  const [aacNudgeResult, digitalSafetyResult, contextMemoryResult] =
+  const [digitalSafetyResult, contextMemoryResult] =
     await Promise.all([
-      runAACNudge,
       runDigitalSafety,
       contextMemoryExecution.promise,
     ]);
 
-  if (aacNudgeResult) {
-    traces.push(toAgentTrace(aacNudgeResult));
-    responseMessages.push({
-      text: aacNudgeResult.data.nudgeMessage,
-      agentId: "aac_nudge",
-    });
-  }
-  if (digitalSafetyResult) {
-    traces.push(toAgentTrace(digitalSafetyResult));
-    if (digitalSafetyResult.data.isScam) {
-      responseMessages.push({
-        text: digitalSafetyResult.data.warningMessage,
-        agentId: "digital_safety",
-      });
-    }
-  }
+  if (digitalSafetyResult) traces.push(toAgentTrace(digitalSafetyResult));
   if (contextMemoryResult && contextMemoryExecution.input) {
     traces.push(
       contextMemoryTrace(contextMemoryResult, contextMemoryExecution.input)
@@ -551,6 +489,18 @@ export async function orchestrate(
   traces.push(buildPolicyTrace(policyResult, signals, ctx.currentRiskLevel));
   traces.push(buildPatternWatchTrace(signals, message, ctx));
 
+  // One selected reply, after authoritative policy; specialist drafts are not concatenated.
+  const urgentHealth = hasUrgentHealthConcern(message, signals);
+  const safetyReply = digitalSafetyResult && (
+    digitalSafetyResult.fallback || digitalSafetyResult.data.isScam ||
+    signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message)
+  );
+  responseMessages.push(urgentHealth
+    ? { text: "Your message may need urgent help. Please seek immediate help from local emergency services or someone nearby. I cannot contact them for you.\n\n您的情况可能需要紧急帮助。请立即联系当地急救服务或身边的人求助。我无法替您联系他们。", agentId: "policy" }
+    : safetyReply
+      ? { text: digitalSafetyResult.data.warningMessage, agentId: "digital_safety" }
+      : { text: triageResult.data.responseMessage, agentId: "triage" });
+
   // ── Step 5: Run Briefing (only if policy says so) ──
   // The orchestrator LLM can no longer force a briefing. The policy layer
   // decides based on: signals present, risk changed, or human follow-up needed.
@@ -560,23 +510,40 @@ export async function orchestrate(
       agentName: "Briefing Agent",
       systemPrompt: BRIEFING_PROMPT,
       userPrompt: briefingUserPrompt(
-        ctx,
+        { ...ctx, currentRiskLevel: policyResult.finalRisk },
         triageResult.data.summary,
-        aacNudgeResult?.data.nudgeMessage,
-        digitalSafetyResult
-          ? `${digitalSafetyResult.data.isScam ? "SCAM DETECTED" : "No scam"}: ${digitalSafetyResult.data.warningMessage}`
-          : undefined
+        undefined,
+        digitalSafetySummary(digitalSafetyResult?.data),
+        {
+          finalRisk: policyResult.finalRisk,
+          signals,
+          triageStatus: triageResult.fallback ? "unavailable" : "available",
+          digitalSafetyStatus: digitalSafetyResult?.fallback ? "unavailable"
+            : digitalSafetyResult ? "available" : "not_requested",
+          selectedReply: responseMessages[0].text,
+        }
       ),
       schema: briefingOutputSchema,
-      fallback: () => briefingFallback(ctx),
+      fallback: () => briefingFallback({ ...ctx, currentRiskLevel: policyResult.finalRisk }),
       temperature: 0.5,
       inputSummary: `Summarize observed facts and next actions for caregiver/AAC`,
       stateChanges: ["briefing:created"],
     });
-    traces.push(toAgentTrace(briefingResult));
-    briefing = enforceBriefingRisk(briefingResult.data, policyResult.finalRisk);
-    // NOTE: The briefing LLM's overallRisk is advisory only.
-    // The policy layer's finalRisk is authoritative and is NOT overridden.
+    if (briefingResult.data.overallRisk !== policyResult.finalRisk) {
+      briefing = briefingFallback({ ...ctx, currentRiskLevel: policyResult.finalRisk });
+      traces.push(toAgentTrace({
+        ...briefingResult,
+        data: briefing,
+        output: JSON.stringify(briefing),
+        outputSummary: "Briefing rejected because its risk conflicts with final policy; manual review required",
+        fallback: true,
+        tags: [...briefingResult.tags, "policy_risk_mismatch"],
+        errorMessage: "briefing_policy_risk_mismatch",
+      }));
+    } else {
+      briefing = briefingResult.data;
+      traces.push(toAgentTrace(briefingResult));
+    }
   }
 
   // ── Build response ──
@@ -675,9 +642,7 @@ export async function runBriefingAgent(
       ctx,
       triageResult?.summary,
       aacNudgeResult?.nudgeMessage,
-      digitalSafetyResult
-        ? `${digitalSafetyResult.isScam ? "SCAM DETECTED" : "No scam"}: ${digitalSafetyResult.warningMessage}`
-        : undefined
+      digitalSafetySummary(digitalSafetyResult)
     ),
     schema: briefingOutputSchema,
     fallback: () => briefingFallback(ctx),

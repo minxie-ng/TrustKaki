@@ -4,7 +4,7 @@ Updated: 15 October 2026
 
 Status: Neon personal memory is live in production; legacy import is reconciled, old personal writes blocked and approved redundant copies removed.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: review agent audit and slice A proposal (prompts, truthful fallbacks, Mandarin extraction gate and final-risk briefing input). UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
+Next: validate the locally implemented agent consolidation with a bounded live comparison before release; evaluate Jev only on a bounded task if it adds value. UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -214,14 +214,31 @@ only when needed, with maintained sources, dates, and update ownership.
   and handoffs. Six LLM roles plus deterministic Policy/Pattern Watch; no new agent.
   [Audit and proposed contracts](agents/2026-10-15-agent-audit-proposal.md).
   82 focused tests and 42 offline benchmark cases pass; no live model run.
-- [ ] Rewrite prompts against those contracts; distinguish quoted/retrieved data
+- [x] Locally remove the main-flow LLM router and merge social suggestions into
+  Triage. Three generative tasks (conversation, conditional memory extraction,
+  conditional briefing) plus conditional Digital Safety. One reply selected after
+  policy; standalone AAC endpoint retained for compatibility. Not promoted.
+- [ ] Before production promotion: bounded live comparison of routing, grounded
+  responses and refusal handling; no claim of model-quality parity from mocks.
+  [Local implementation evidence](evidence/2026-10-15-agent-consolidation.md).
+  [Prepared live comparison](agents/2026-10-15-live-comparison-plan.md): baseline
+  `c727264`, balanced fictional cases plus targeted language/grounding checks;
+  US$1 total cap accepted; waiting for the local model key.
+- [ ] Evaluate Jev as an optional bounded classification experiment against Triage
+  and simple rules on fictional English/Mandarin/Singlish cases. Shadow first; no
+  policy, memory-write or outreach authority. Laya is a self-hosted alternative,
+  with model-card limitations recorded in the audit; neither is integrated.
+- [x] Locally rewrite retained-role prompts; distinguish quoted/retrieved data
   from instructions. Require factual grounding and respectful, concise language.
-- [ ] Refine role-relevant context and forbid invented invitations/activities/social
-  claims. Audit correction: AAC Nudge already receives known context and RAG.
-  First slice also fixes Mandarin-only memory extraction exclusion and supplies
-  final policy risk/assessment status to Briefing.
-- [ ] Establish ownership of one coherent senior-facing reply across specialist
-  outputs. Preserve channel reliability and avoid duplicate or conflicting advice.
+- [x] Locally remove invented fallback invitations/contacts/save claims, fix the
+  Unicode memory exclusion gate with representative Mandarin durable cues and
+  sensitive-data exclusions; supply final policy risk/assessment status to Briefing.
+  Reject briefings whose risk field conflicts with final policy.
+- [ ] Further minimise role-relevant input context and repeated grounding text;
+  audit correction: AAC Nudge already received known context and RAG.
+- [x] Locally select one senior reply after policy; urgent health guidance takes
+  priority, then relevant safety guidance, then the primary conversation draft.
+  Preserve messaging/persistence regression tests. Semantic quality still needs live evaluation.
 - [ ] Compare revised roles/prompts against the same evaluation set. Record
   routing, schema validity, groundedness, safety, latency, and cost regressions.
 
@@ -233,7 +250,8 @@ Retrieval itself can remain ordinary application code.
 ### Proposed extension: verified community-event discovery
 
 Capture nearby AAC/community events from a verified source, match interests and
-practical constraints, and offer an optional invitation through AAC Nudge.
+practical constraints, and offer an optional suggestion through the conversation
+role's social-support capability.
 Start with one maintained source or staff-curated feed; evaluate a dedicated
 agent only if matching needs separate reasoning. API/MCP availability, terms,
 coverage, and freshness must be verified before choosing an integration.

@@ -5,11 +5,19 @@ import type {
   OrchestrationResult,
 } from "./contracts";
 import {
+  TRIAGE_PROMPT,
+  BRIEFING_PROMPT,
+  DIGITAL_SAFETY_PROMPT,
+  AAC_NUDGE_PROMPT,
   CONTEXT_MEMORY_PROMPT,
   contextMemoryUserPrompt,
   orchestratorUserPrompt,
 } from "./prompts";
 import {
+  triageOutputSchema,
+  briefingOutputSchema,
+  digitalSafetyOutputSchema,
+  aacNudgeOutputSchema,
   contextMemoryOutputSchema,
   orchestratorOutputSchema,
 } from "./schemas";
@@ -235,5 +243,33 @@ describe("agent prompts", () => {
         reasoning: "Unknown route",
       }).success
     ).toBe(false);
+  });
+});
+
+
+describe("retained role contracts", () => {
+  it.each([
+    ["triage", TRIAGE_PROMPT, triageOutputSchema],
+    ["briefing", BRIEFING_PROMPT, briefingOutputSchema],
+    ["digital safety", DIGITAL_SAFETY_PROMPT, digitalSafetyOutputSchema],
+    ["legacy AAC endpoint", AAC_NUDGE_PROMPT, aacNudgeOutputSchema],
+  ])("provides a schema-valid concrete example for %s", (_role, prompt, schema) => {
+    const marker = "Return ONLY valid JSON:";
+    const example = JSON.parse(prompt.slice(prompt.lastIndexOf(marker) + marker.length).trim());
+    expect(schema.safeParse(example).success).toBe(true);
+  });
+
+  it("makes Triage own routing, language matching and optional grounded social suggestions", () => {
+    expect(TRIAGE_PROMPT).toMatch(/context_memory/);
+    expect(TRIAGE_PROMPT).toMatch(/refusal|declin/i);
+    expect(TRIAGE_PROMPT).toMatch(/Mandarin/);
+    expect(TRIAGE_PROMPT).toMatch(/never invent.*invitation/i);
+    expect(TRIAGE_PROMPT).toMatch(/policy.*final|final.*policy/i);
+  });
+
+  it("requires Briefing to preserve final risk and explicit uncertainty", () => {
+    expect(BRIEFING_PROMPT).toMatch(/final.*policy|policy.*final/i);
+    expect(BRIEFING_PROMPT).toMatch(/unavailable/);
+    expect(BRIEFING_PROMPT).toMatch(/not.*safe|never.*safe/i);
   });
 });

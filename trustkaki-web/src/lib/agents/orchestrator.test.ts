@@ -1,12 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
-  AACNudgeOutput,
   AgentRunContext,
   AgentRunResult,
   BriefingOutput,
   ContextMemoryOutput,
-  OrchestratorOutput,
-  SpecialistAgentId,
   TriageOutput,
 } from "./contracts";
 import type { AgentId } from "@/lib/types";
@@ -71,14 +68,6 @@ function result<T>(
   };
 }
 
-const orchestratorData = (
-  agentsToRun: SpecialistAgentId[]
-): OrchestratorOutput => ({
-  agentsToRun,
-  priority: Object.fromEntries(agentsToRun.map((agent) => [agent, "high"])),
-  reasoning: "route selected",
-});
-
 const triageData = (
   overrides: Partial<TriageOutput> = {}
 ): TriageOutput => ({
@@ -119,12 +108,11 @@ describe("orchestrate", () => {
     const { orchestrate } = await import("./orchestrator");
 
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()));
 
     const response = await orchestrate("Good morning, I slept well.", context());
 
-    expect(runAgentMock).toHaveBeenCalledTimes(2);
+    expect(runAgentMock).toHaveBeenCalledTimes(1);
     expect(response.riskLevel).toBe("green");
     expect(response.briefing).toBeNull();
     expect(response.alerts).toEqual([]);
@@ -143,53 +131,25 @@ describe("orchestrate", () => {
     });
   });
 
-  it("preserves AAC Nudge routing for low social signal without Digital Safety, briefing, or caregiver alert", async () => {
+  it("handles social refusal in the primary reply without a router or AAC call", async () => {
     const { orchestrate } = await import("./orchestrator");
-
-    const triage = triageData({
-      signals: [
-        {
-          type: "social",
-          severity: "low",
-          description: "Reluctant to join AAC activity",
-        },
-      ],
-      routing: ["aac_nudge"],
-      summary: "Social reluctance",
-    });
-    const aac: AACNudgeOutput = {
-      nudgeMessage: "No pressure. Maybe kopi with Mei Ling another day?",
-      approach: "low pressure",
-      rationale: "Preserve autonomy",
-      suggestedChannel: "whatsapp",
-    };
-
-    runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
-      .mockResolvedValueOnce(result("triage", triage))
-      .mockResolvedValueOnce(result("aac_nudge", aac));
-
+    const reply = "That's okay. We can leave activities for now.";
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({
+      signals: [{ type: "social", severity: "low", description: "Declines activity" }],
+      routing: ["aac_nudge"], // Historical provider output must not add another call.
+      responseMessage: reply,
+    })));
     const response = await orchestrate("Don't want. Paiseh.", context());
-
-    const calledAgentIds = runAgentMock.mock.calls.map((call) => call[0].agentId);
-    expect(calledAgentIds).toEqual([
-      "orchestrator",
-      "triage",
-      "aac_nudge",
-    ]);
-    expect(calledAgentIds).not.toContain("digital_safety");
-    expect(calledAgentIds).not.toContain("briefing");
-    expect(response.alerts).toEqual([]);
+    expect(runAgentMock.mock.calls.map(call => call[0].agentId)).toEqual(["triage"]);
+    expect(response.messages).toEqual([{ text: reply, agentId: "triage" }]);
     expect(response.briefing).toBeNull();
-    expect(response.policy.briefingRequired).toBe(false);
-    expect(response.messages.some((m) => m.agentId === "aac_nudge")).toBe(true);
+    expect(response.alerts).toEqual([]);
   });
 
   it("keeps policy risk authoritative when briefing returns a conflicting overallRisk", async () => {
     const { orchestrate } = await import("./orchestrator");
 
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(
         result(
           "triage",
@@ -214,6 +174,9 @@ describe("orchestrate", () => {
     expect(response.riskLevel).toBe("yellow");
     expect(response.briefing?.overallRisk).toBe("yellow");
     expect(response.alerts).toHaveLength(1);
+    // Reject the conflicting draft, rather than overwriting only its risk field.
+    expect(response.briefing?.forCaregiver).toMatch(/unavailable|unable/i);
+    expect(response.traces.find(trace => trace.agentId === "briefing")?.fallback).toBe(true);
   });
 
   it("invokes context memory through the shared runner for a durable communication preference", async () => {
@@ -231,7 +194,6 @@ describe("orchestrate", () => {
     };
 
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()))
       .mockResolvedValueOnce(
         result("context_memory", memoryData({ candidates: [candidate] }))
@@ -276,13 +238,7 @@ describe("orchestrate", () => {
     const { orchestrate } = await import("./orchestrator");
 
     runAgentMock
-      .mockResolvedValueOnce(
-        result(
-          "orchestrator",
-          orchestratorData(["triage", "context_memory"])
-        )
-      )
-      .mockResolvedValueOnce(result("triage", triageData()))
+      .mockResolvedValueOnce(result("triage", triageData({ routing: ["context_memory"] })))
       .mockResolvedValueOnce(result("context_memory", memoryData()));
 
     await orchestrate("Please note this for later.", context());
@@ -326,7 +282,6 @@ describe("orchestrate", () => {
       intent: "replace" as const,
     };
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()))
       .mockResolvedValueOnce(
         result("context_memory", memoryData({ candidates: [replacement] }))
@@ -352,7 +307,6 @@ describe("orchestrate", () => {
     const { orchestrate } = await import("./orchestrator");
 
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()));
 
     const response = await orchestrate(message, context());
@@ -405,7 +359,6 @@ describe("orchestrate", () => {
       }
     );
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()))
       .mockResolvedValueOnce(result("context_memory", memoryData()));
 
@@ -440,13 +393,7 @@ describe("orchestrate", () => {
     async (message) => {
       const { orchestrate } = await import("./orchestrator");
       runAgentMock
-        .mockResolvedValueOnce(
-          result(
-            "orchestrator",
-            orchestratorData(["triage", "digital_safety", "context_memory"])
-          )
-        )
-        .mockResolvedValueOnce(result("triage", triageData()))
+        .mockResolvedValueOnce(result("triage", triageData({ routing: ["digital_safety", "context_memory"] })))
         .mockResolvedValueOnce(
           result("digital_safety", {
             isScam: false,
@@ -460,8 +407,7 @@ describe("orchestrate", () => {
       const response = await orchestrate(message, context());
 
       expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
-        "orchestrator",
-        "triage",
+          "triage",
         "digital_safety",
       ]);
       expect(response.contextMemoryCandidates).toEqual([]);
@@ -481,15 +427,13 @@ describe("orchestrate", () => {
         timestamp: "2026-07-16T00:00:00.000Z",
       });
       runAgentMock
-        .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
         .mockResolvedValueOnce(result("triage", triageData()))
         .mockResolvedValueOnce(result("context_memory", memoryData()));
 
       await orchestrate(message, ctx);
 
       expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
-        "orchestrator",
-        "triage",
+          "triage",
         "context_memory",
       ]);
     }
@@ -506,14 +450,12 @@ describe("orchestrate", () => {
       timestamp: "2026-07-16T00:00:00.000Z",
     });
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()))
       .mockResolvedValueOnce(result("context_memory", memoryData()));
 
     await orchestrate(message, ctx);
 
     expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
-      "orchestrator",
       "triage",
       "context_memory",
     ]);
@@ -534,19 +476,12 @@ describe("orchestrate", () => {
     async (message) => {
       const { orchestrate } = await import("./orchestrator");
       runAgentMock
-        .mockResolvedValueOnce(
-          result(
-            "orchestrator",
-            orchestratorData(["triage", "context_memory"])
-          )
-        )
-        .mockResolvedValueOnce(result("triage", triageData()));
+        .mockResolvedValueOnce(result("triage", triageData({ routing: ["context_memory"] })));
 
       const response = await orchestrate(message, context());
 
       expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
-        "orchestrator",
-        "triage",
+          "triage",
       ]);
       expect(response.contextMemoryCandidates).toEqual([]);
     }
@@ -563,14 +498,12 @@ describe("orchestrate", () => {
       timestamp: "2026-07-16T00:00:00.000Z",
     });
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()))
       .mockResolvedValueOnce(result("context_memory", memoryData()));
 
     await orchestrate(message, ctx);
 
     expect(runAgentMock.mock.calls.map((call) => call[0].agentId)).toEqual([
-      "orchestrator",
       "triage",
       "context_memory",
     ]);
@@ -597,7 +530,6 @@ describe("orchestrate", () => {
       timestamp: "2026-07-16T00:00:00.000Z",
     });
     runAgentMock
-      .mockResolvedValueOnce(result("orchestrator", orchestratorData(["triage"])))
       .mockResolvedValueOnce(result("triage", triageData()))
       .mockResolvedValueOnce(
         result("context_memory", memoryData({ candidates: [candidate] }))
@@ -654,29 +586,7 @@ describe("orchestrate", () => {
       new Promise((resolve) => setTimeout(() => resolve(value), delayMs));
 
     runAgentMock
-      .mockResolvedValueOnce(
-        result(
-          "orchestrator",
-          orchestratorData([
-            "triage",
-            "aac_nudge",
-            "digital_safety",
-            "context_memory",
-          ])
-        )
-      )
-      .mockResolvedValueOnce(result("triage", triageData()))
-      .mockImplementationOnce(() =>
-        delayed(
-          result("aac_nudge", {
-            nudgeMessage: "AAC nudge",
-            approach: "gentle",
-            rationale: "support connection",
-            suggestedChannel: "whatsapp" as const,
-          }),
-          30
-        )
-      )
+      .mockResolvedValueOnce(result("triage", triageData({ routing: ["digital_safety", "context_memory"] })))
       .mockImplementationOnce(() =>
         delayed(
           result("digital_safety", {
@@ -703,21 +613,142 @@ describe("orchestrate", () => {
       response.traces
         .map((trace) => trace.agentId)
         .filter((agentId) =>
-          ["aac_nudge", "digital_safety", "context_memory"].includes(agentId)
+          ["digital_safety", "context_memory"].includes(agentId)
         )
-    ).toEqual(["aac_nudge", "digital_safety", "context_memory"]);
+    ).toEqual(["digital_safety", "context_memory"]);
     expect(response.messages).toEqual([
-      { text: "Good to hear.", agentId: "triage" },
-      { text: "AAC nudge", agentId: "aac_nudge" },
       { text: "Digital safety warning", agentId: "digital_safety" },
     ]);
     expect(response.contextMemoryCandidates).toEqual([candidate]);
   });
 });
 
+describe("consolidated safety and briefing boundaries", () => {
+  const safetyData = {
+    isScam: false, scamType: null, confidence: 0.2,
+    warningMessage: "I cannot verify this. Please use a trusted official channel.",
+    educationalNote: "Do not share private codes.",
+  };
+
+  it.each([
+    ["See https://example.test/parcel", []],
+    ["They asked me for my OTP", []],
+    ["有人让我提供验证码。", []],
+    ["Please check this message", [{ type: "digital_safety", severity: "low", description: "Suspicious sender" }]],
+  ])("retains safety analysis when Triage omits its route: %s", async (message, signals) => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async (options) => {
+      if (options.agentId === "triage") return result("triage", triageData({ signals: signals as TriageOutput["signals"] }));
+      if (options.agentId === "digital_safety") return result("digital_safety", safetyData);
+      return result(options.agentId, options.fallback());
+    });
+    const response = await orchestrate(message, context());
+    expect(runAgentMock.mock.calls.map(call => call[0].agentId)).toContain("digital_safety");
+    expect(response.messages).toHaveLength(1);
+  });
+
+  it("allows a Triage-requested Mandarin memory statement past the exclusion gate", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ routing: ["context_memory"] })))
+      .mockResolvedValueOnce(result("context_memory", memoryData()));
+    await orchestrate("我一般选择比较安静的地方。", context());
+    expect(runAgentMock.mock.calls.map(call => call[0].agentId)).toEqual(["triage", "context_memory"]);
+  });
+
+  it.each(["你好！", "谢谢你。", "我的密码是hunter2，我喜欢用电话。", "我的验证码是123456，我喜欢华语。"])(
+    "blocks small talk or credentials even when Triage requests memory: %s", async message => {
+      const { orchestrate } = await import("./orchestrator");
+      runAgentMock.mockImplementation(async options => result(options.agentId,
+        options.agentId === "triage" ? triageData({ routing: ["context_memory"] }) : options.fallback()));
+      const response = await orchestrate(message, context());
+      expect(runAgentMock.mock.calls.map(call => call[0].agentId)).not.toContain("context_memory");
+      expect(response.contextMemoryCandidates).toEqual([]);
+    });
+
+  it("gives Briefing final policy risk, validated signals and unavailable assessment status", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => {
+      if (options.agentId === "triage") return result("triage", triageData({
+        signals: [{ type: "digital_safety", severity: "high", description: "Suspicious payment request" }],
+        routing: ["digital_safety"],
+      }));
+      if (options.agentId === "digital_safety") return { ...result("digital_safety", options.fallback()), fallback: true };
+      return result(options.agentId, options.fallback());
+    });
+    const response = await orchestrate("Please check this payment request", context());
+    const prompt = runAgentMock.mock.calls.find(call => call[0].agentId === "briefing")![0].userPrompt;
+    expect(prompt).toContain('"finalRisk":"yellow"');
+    expect(prompt).toContain('"digitalSafetyStatus":"unavailable"');
+    expect(prompt).toContain("Suspicious payment request");
+    expect(prompt).not.toContain("No scam");
+    expect(response.briefing?.overallRisk).toBe("yellow");
+    expect(response.messages).toEqual([{ text: expect.stringMatching(/couldn't|cannot|unable/i), agentId: "digital_safety" }]);
+    expect(response.messages[0].text).not.toMatch(/Rachel|Mei Ling/);
+  });
+
+  it("prefers one urgent health response over a social draft and scam warning", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => {
+      if (options.agentId === "triage") return result("triage", triageData({
+        responseMessage: "Maybe join an activity?", routing: ["aac_nudge", "digital_safety"],
+        signals: [{ type: "health", severity: "high", description: "Chest pain" }],
+      }));
+      if (options.agentId === "digital_safety") return result("digital_safety", { ...safetyData, isScam: true });
+      return result(options.agentId, options.fallback());
+    });
+    const response = await orchestrate("Chest pain and this suspicious link", context());
+    expect(response.messages).toHaveLength(1);
+    expect(response.messages[0].text).toMatch(/urgent|immediate/i);
+    expect(response.messages[0].text).not.toContain("activity");
+    expect(response.riskLevel).toBe("red");
+  });
+
+  it("keeps emergency guidance when only a high digital signal was extracted", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => {
+      if (options.agentId === "triage") return result("triage", triageData({
+        signals: [{ type: "digital_safety", severity: "high", description: "Scam request" }],
+      }));
+      if (options.agentId === "digital_safety") return result("digital_safety", { ...safetyData, isScam: true });
+      return result(options.agentId, options.fallback());
+    });
+    const response = await orchestrate("I have chest pain and someone asked for my OTP", context());
+    expect(response.riskLevel).toBe("red");
+    expect(response.messages).toEqual([{ text: expect.stringMatching(/urgent|immediate/i), agentId: "policy" }]);
+  });
+
+  it("keeps Mandarin emergency guidance when replacing the primary draft", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({
+        responseMessage: "请立即找人帮忙。",
+        signals: [{ type: "health", severity: "high", description: "Chest pain" }],
+      }) : options.fallback()));
+    const response = await orchestrate("我胸口很痛。", context());
+    expect(response.messages).toHaveLength(1);
+    expect(response.messages[0].text).toMatch(/立即|紧急/);
+  });
+
+  it("uses truthful fallbacks without claiming saved memory, invitations or named contacts", async () => {
+    const { orchestrate, runAACNudgeAgent, runDigitalSafetyAgent } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => ({ ...result(options.agentId, options.fallback()), fallback: true }));
+    const response = await orchestrate("Hello", context());
+    const aac = await runAACNudgeAgent("Hello", context(), []);
+    const safety = await runDigitalSafetyAgent("Hello", context());
+    expect(response.messages[0].text).not.toMatch(/note that down|saved|contacted/i);
+    expect(aac.data.nudgeMessage).not.toMatch(/Mei Ling|asking about|miss you/);
+    expect(safety.data.warningMessage).not.toContain("Rachel");
+  });
+});
+
 describe("mayContainDurableContext", () => {
   it.each([
     "I prefer voice calls in Mandarin.",
+    "我喜欢用华语通话。",
+    "我每天早餐吃粥。",
+    "我习惯晚上九点睡觉。",
+    "请用大字体，我看不清小字。",
+    "我比较喜欢一对一的活动。",
     "I am vegetarian.",
     "I always eat porridge for breakfast.",
     "I prefer one-to-one AAC visits.",
@@ -731,7 +762,7 @@ describe("mayContainDurableContext", () => {
     expect(mayContainDurableContext(message)).toBe(true);
   });
 
-  it.each(["Okay thank you.", "Good morning", "Knee pain today."])(
+  it.each(["Okay thank you.", "Good morning", "Knee pain today.", "你好！", "谢谢你。", "今天膝盖痛。", "我的密码是 hunter2，我喜欢电话。", "我的验证码是123456。", "我的银行卡号是1234567890123456。", "🙂"])(
     "rejects a transient cue: %s",
     async (message) => {
       const { mayContainDurableContext } = await import("./orchestrator");

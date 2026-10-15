@@ -49,24 +49,24 @@ describe("scoreBenchmark", () => {
   });
 
   it("scores missed required and selected forbidden specialists", () => {
-    const socialCase = benchmarkCases.find((item) => item.category === "social")!;
+    const digitalCase = benchmarkCases.find((item) => item.category === "digital_safety")!;
     const observation: BenchmarkObservation = {
-      ...perfectObservation(socialCase, 12),
-      selectedAgents: ["triage", "digital_safety"],
+      ...perfectObservation(digitalCase, 12),
+      selectedAgents: ["triage", "context_memory"],
       durableContextProposed: true,
       schemaValid: false,
       fallback: true,
     };
 
-    expect(scoreBenchmark([socialCase], [observation])).toMatchObject({
+    expect(scoreBenchmark([digitalCase], [observation])).toMatchObject({
       routeExactMatchRate: 0,
       requiredSpecialistRecall: 0.5,
       forbiddenSpecialistAvoidance: 0.5,
-      digitalSafetyRecall: null,
+      digitalSafetyRecall: 0,
       durableContextPrecision: 0,
       schemaValidRate: 0,
       fallbackRate: 1,
-      failedCaseIds: [socialCase.id],
+      failedCaseIds: [digitalCase.id],
     });
   });
 

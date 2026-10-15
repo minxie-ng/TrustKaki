@@ -204,8 +204,8 @@ const socialCases = socialMessages.map((message, index) =>
       signals: [signal("social", "Possible social withdrawal", "low")],
     },
     {
-      requiredAgents: ["triage", "aac_nudge"],
-      forbiddenAgents: ["digital_safety", "context_memory"],
+      requiredAgents: ["triage"],
+      forbiddenAgents: ["aac_nudge", "digital_safety", "context_memory"],
     }
   )
 );

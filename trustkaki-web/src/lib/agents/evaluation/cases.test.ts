@@ -43,3 +43,13 @@ describe("benchmarkCases", () => {
     expect(text).not.toContain("4111 1111 1111 1111");
   });
 });
+
+
+describe("consolidated conversation benchmark contract", () => {
+  it("assigns social cases to Triage without requiring a separate AAC draft", () => {
+    for (const item of benchmarkCases.filter(item => item.category === "social")) {
+      expect(item.expected.requiredAgents).toEqual(["triage"]);
+      expect(item.expected.forbiddenAgents).toContain("aac_nudge");
+    }
+  });
+});

@@ -168,6 +168,26 @@ const MONEY_LOSS_KEYWORDS: string[] = [
   "deducted",
 ];
 
+function hasUrgentHealthSignal(signals: TriageSignal[]): boolean {
+  return signals.some(
+    (signal) =>
+      signal.type === "health" &&
+      signal.severity === "high" &&
+      URGENT_HEALTH_SIGNAL_TERMS.some((term) =>
+        signal.description.toLowerCase().includes(term)
+      )
+  );
+}
+
+function hasEmergencyHealthLanguage(message: string): boolean {
+  const lower = message.toLowerCase();
+  return EMERGENCY_KEYWORDS.some(keyword => lower.includes(keyword));
+}
+
+export function hasUrgentHealthConcern(message: string, signals: TriageSignal[]): boolean {
+  return hasEmergencyHealthLanguage(message) || hasUrgentHealthSignal(signals);
+}
+
 // ─── Main policy function ───
 
 export function applyPolicy(input: PolicyInput): PolicyResult {
@@ -238,14 +258,7 @@ export function applyPolicy(input: PolicyInput): PolicyResult {
     reasoning.push("Digital Safety Agent confirmed scam → at least Yellow");
   }
 
-  const hasUrgentStructuredHealthSignal = signals.some(
-    (signal) =>
-      signal.type === "health" &&
-      signal.severity === "high" &&
-      URGENT_HEALTH_SIGNAL_TERMS.some((term) =>
-        signal.description.toLowerCase().includes(term)
-      )
-  );
+  const hasUrgentStructuredHealthSignal = hasUrgentHealthSignal(signals);
   if (hasUrgentStructuredHealthSignal) {
     risk = maxRisk(risk, "red");
     reasoning.push("Urgent validated health signal → Red");
@@ -254,9 +267,7 @@ export function applyPolicy(input: PolicyInput): PolicyResult {
   // ── Fail-safe: immediate danger / severe health emergency → Red ──
   // Raw text is intentionally narrow and secondary. Structured signals remain
   // the primary classifier; these checks catch obvious emergency phrasing.
-  const hasEmergencyKeyword = EMERGENCY_KEYWORDS.some((kw) =>
-    msgLower.includes(kw)
-  );
+  const hasEmergencyKeyword = hasEmergencyHealthLanguage(message);
   if (hasEmergencyKeyword) {
     risk = maxRisk(risk, "red");
     reasoning.push("Emergency keyword detected → Red");

@@ -1,28 +1,91 @@
 # Agent audit and proposed responsibilities
 
-15 October 2026. Audit complete; proposed runtime changes await owner review.
-Current production runtime remains unchanged. This document describes the actual
-code and the recommended next slices, not completed behaviour.
+15 October 2026. Owner approved the consolidation/correctness chunk; implemented
+and tested locally. Production remains unchanged pending live evaluation and
+release gates. [Implementation evidence](../evidence/2026-10-15-agent-consolidation.md).
+The current-role table and observed issues below describe the audited production
+baseline, before the local changes; the evidence document records the fixes.
 
 ## Decision summary
 
-Keep the established agent stack: six LLM roles plus deterministic policy and
-Pattern Watch. Improve contracts, prompts, language handling and fallbacks first;
-then make reply selection respect those contracts. Community-event discovery is a
-later bounded integration; UI redesign follows the behavioural changes.
+The original keep-six recommendation was too broad. Six roles exist today, but
+this audit has not demonstrated that six separate model calls improve outcomes.
+Prefer three distinct generative tasks, invoked only when needed, and evaluate
+consolidation before removing any specialist safety coverage.
+
+| Current role/module | Recommendation | Justification |
+| --- | --- | --- |
+| Triage / conversation | Keep as primary generative task | Interpret the current message and draft the senior response; already runs every turn and returns routing. |
+| Context Memory | Keep conditional extraction task | Different evidence contract: exact current-message excerpts and typed durable proposals; validation and writes remain code. Separation is defensible, but its incremental benefit still needs measurement. |
+| Briefing | Keep conditional summary task | Different audience and output: caregiver/AAC summary after final policy. Do not run for ordinary chat. |
+| Standalone LLM Orchestrator | Candidate for removal | Adds a sequential call before always-on Triage, which already returns routing. Compare consolidated routing on the same cases first. |
+| AAC Nudge | Fold into conversation capability | A social suggestion alone does not establish a need for another model call. Preserve verified-context, consent and refusal rules. |
+| Digital Safety | Retain conditionally during evaluation | Concrete scam-analysis purpose; no ablation proves that a separate call adds recall or useful warnings over Triage. Consolidate only if safety cases remain covered. |
+| Policy / Pattern Watch / RAG | Keep ordinary code | Rules, longitudinal calculations, retrieval and storage do not need autonomous LLM agents. |
+| Community events | Start with verified fetch/filter code | Add model-based matching only when rules fail a measured need; no automatic outreach or booking. |
 
 ### Approaches considered
 
-1. **Existing roles, targeted handoff fixes — recommended.** Reuse schemas, runner,
-   Neon retrieval and messaging. Resolve observed defects with no added model call.
-2. **Add a dedicated reply-composer agent.** Flexible rewriting of specialist drafts,
-   but adds a call, latency, cost and a new opportunity for unsupported assertions.
-   Consider only if simpler reply selection fails evaluated coherence cases.
-3. **Add more health/daily-living/event agents now.** More specialisation, but overlaps
-   Triage and introduces more routing/handoffs before current gaps are corrected.
-   Not justified by this audit.
+1. **Consolidate overlapping roles — recommended target.** Preserve specialised
+   extraction and audience contracts; remove calls only after comparison tests.
+2. **Keep six calls and improve every prompt.** Less immediate orchestration change,
+   but preserves duplicated routing and response ownership. Useful as a comparison
+   baseline, not the justified final architecture.
+3. **Add a composer or more agents now.** Extra latency, cost and failure surfaces
+   without an established gap. Not justified.
 
-## What actually runs today
+## Jev and Laya: bounded decision-model experiment
+
+Owner supplied both model references on 15 October 2026. These models return
+bounded decisions/probabilities rather than arbitrary reply or memory text.
+They are candidates for an existing classification responsibility, not an extra
+persona or a replacement for RAG, conversation or evidence extraction.
+
+- **Jev:** official documentation provides a hosted API and JavaScript/TypeScript
+  SDK with Choice, Score and Noul questions. Provisional first experiment for this
+  Next.js application because it avoids adding a model-serving service. API access,
+  data handling, actual cost and Singapore round-trip latency remain unverified.
+- **Laya:** Apache-2.0 model weights with a Python serving path. Mandarin requires
+  the multilingual checkpoint; the root checkpoint is English. Self-hosting adds
+  compute and operational costs even without per-token API charges. The model card
+  explicitly reports weak base-checkpoint zero-shot typed-decision results,
+  overconfidence and an unusable act_probability signal. Do not treat it as a
+  validated elder-care decision engine.
+- A fixed output schema prevents invented output types/labels; it does not prevent
+  an incorrect classification. Model probabilities require local evaluation;
+  confidence is not a verified probability of correctness on TrustKaki cases.
+- Neither vendor's speed/calibration/accuracy claims are TrustKaki measurements.
+  Laya's Jev comparison uses different third-party runs; it is not a controlled
+  head-to-head result for this app.
+
+**Candidate task:** classify whether the current message asks for social activity
+help or declines suggestions, with an explicit unclear option. Start offline on
+fictional English, Mandarin and Singlish cases, then shadow evaluation where the
+model cannot affect the reply, memory, alerts or outreach. Compare against the
+existing Triage output and simple rules; if those already solve it, skip the call.
+A useful future application is interest matching among already verified events;
+code must enforce consent, quiet hours, freshness and accessibility constraints.
+This does not by itself justify reinstating a separate always-on router.
+
+Record per-case correctness, false invitations after refusal, abstention coverage,
+calibration, model/version, end-to-end latency and cost. Use separate development
+and held-out cases when choosing thresholds. Promote one provider only if it adds
+measured value; keep the existing path on timeout or uncertainty. No model may
+lower policy risk, approve memory writes or trigger contact independently.
+
+Primary sources reviewed:
+
+- [Jev introduction](https://typesafe.ai/blog/introducing-system-one-models-and-jev)
+- [TypeSafe primitives and architecture](https://docs.typesafe.ai/introduction)
+- [TypeSafe API / JS quick start](https://docs.typesafe.ai/introduction/quickstart)
+- [TypeSafe confidence definitions](https://docs.typesafe.ai/confidence)
+- [Laya model card and limitations](https://huggingface.co/convaiinnovations/laya)
+
+Status: research and proposed scope only; no model installed, account configured,
+paid inference or decision-model deployment performed. Local consolidation is
+tracked separately in the implementation evidence above.
+
+## Audited production baseline
 
 | Role | Trigger and current input | Current output / authority | Proposed boundary |
 | --- | --- | --- | --- |
@@ -129,6 +192,10 @@ Shared instructions, once per model request:
 
 ## Draft role-specific instructions for review
 
+These cover today's roles as a baseline. Orchestrator and AAC Nudge instructions
+become routing/conversation requirements if their separate calls are removed;
+they are not a recommendation to preserve six model invocations.
+
 These are semantic drafts; full schema examples and final wording come in the
 implementation slice after approval.
 
@@ -166,18 +233,23 @@ into an event that happened. Never label an unavailable scam assessment ‘No sc
 
 ## Small implementation slices
 
-### A. Prompt contracts, fallbacks and essential input fixes — next
+### A. Consolidation and essential correctness fixes — implemented locally; live comparison pending
 
-- Version/rewrite the six existing prompts against these responsibilities.
+- Compare existing routing with Triage-owned routing; compare separate AAC drafts
+  with a conversation capability using the same fictional cases. Remove redundant
+  calls only after preserving required coverage. Do not add a decision model by default.
+- Rewrite prompts for retained responsibilities and carry merged-role requirements
+  into the primary conversation prompt.
 - Fix Unicode handling in memory exclusion and add Mandarin durable-context coverage;
   retain prohibited-data checks and exact-evidence validation. A keyword change is
   not proof of general multilingual safety; add representative negative cases too.
 - Replace invented fallback people/actions and guilt-based invitation language.
 - Pass authoritative final risk and explicit assessment/fallback status into Briefing.
-- Preserve current policy, role IDs, persistence semantics and channel delivery.
+- Preserve current policy, persistence semantics and channel delivery. Adapt role
+  traces, schemas, callers and benchmarks consistently if a separate role is removed.
 - Add behaviour tests for all concrete defects and compare existing benchmark cases.
 
-### B. One policy-constrained senior response
+### B. One policy-constrained senior response — implemented locally; live quality gate pending
 
 - Select/assemble validated drafts only after final policy is known. Reuse existing
   outputs first; do not add an LLM composer by default.
@@ -190,7 +262,7 @@ into an event that happened. Never label an unavailable scam assessment ‘No sc
 ### C. Verified community-event support, then UI
 
 Start with one staff-curated/verified event feed and ordinary fetch/filter code.
-AAC Nudge can present a grounded option. A dedicated event agent is justified only
+The conversation role can present a grounded option. A dedicated event agent is justified only
 if evaluated matching needs reasoning beyond those rules. No source/API/MCP has
 been selected or validated in this audit. Proactive contact needs the already
 planned opt-in, quiet hours, caps, cooldowns, freshness and care-priority suppression.
@@ -226,6 +298,7 @@ Before accepting revised behaviour:
 - Add no model role/call by default. Confirm the bounded live-run cost cap before
   spending; the earlier embedding-pilot cap is not a blanket LLM benchmark budget.
 
-No paid model call, provider/source setup, prompt deployment, channel send, UI
-change or new agent was made in this audit. Next decision: approve slice A's scope
-and prompt boundaries; then write its implementation plan and implement it.
+Owner approved the next chunk and local implementation is recorded separately.
+No paid model call, provider/source setup, production deployment, channel send, UI
+change or new agent was made. Next gate: a separately budgeted live comparison
+and the existing release checks before promotion.
