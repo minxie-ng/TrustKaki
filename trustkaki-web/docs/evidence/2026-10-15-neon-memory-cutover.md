@@ -153,7 +153,54 @@ not elevated to system instructions. Existing retrieval/data budgets are unchang
 - Fictional Neon, Supabase and Auth fixture cleanup: passed.
 - Independent final review: no Critical or Important source finding remains.
 
-Signed-in exact-candidate UI and production promotion: pending.
+Signed-in exact-candidate UI: passed. Expected three fictional seniors, priority
+case, recommended human action and care-setup context were visible. Existing case
+and memory records were not edited. Demo-admin orientation was inspected and exited
+without preparing or mutating its scenario. Normal-caregiver API isolation and UI
+boundaries are covered by the automated checks; this manual account is demo-admin.
+
+## Production promotion
+
+On 15 October 2026 at approximately 14:12 Singapore time, the verified production
+candidate was promoted without rebuilding. `vercel promote` returned success for
+`dpl_HtpjiTdLCvcNWi5A88xxyYfpZZZy`. Subsequent `vercel inspect
+https://trustkaki.vercel.app` resolved to that exact deployment, status Ready,
+functions in `sin1`.
+
+Public `npm run release:smoke -- https://trustkaki.vercel.app` exited 0:
+
+```text
+PASS /api/health
+PASS /privacy
+PASS /data-deletion
+RELEASE SMOKE PASSED
+```
+
+Production health: HTTP 200, commit `4a262ac094dc`, personal memory enabled,
+embedding configured, scoped Neon database reachable and LLM configured. The
+production-alias fictional memory and generated-response verification exited 0:
+
+```sh
+TRUSTKAKI_MEMORY_MIN_SCORE=0.200106996389696 npm run memory:neon:app-smoke -- \
+  --confirm-live --confirm-provider-budget --confirm-production-candidate \
+  --evaluate-generation --origin=https://trustkaki.vercel.app
+```
+
+Result booleans: passed, publicConfig, authenticatedRead, unauthenticatedDenied,
+foreignSeniorDenied, acceptedExtractionInNeonOnly, liveSemanticRetrieval,
+caregiverCorrection, correctedFactRetrieved, exactRetry, staleEditorConflict,
+archiveExcluded, oldExtractionCannotResurrect, fictionalFixturesCleaned and
+generatedReplyEvaluated all true. `cleanNotesDiagnostic:false` confirms the
+injection-bearing note was retained for all three real generated-reply cases.
+The script reports `productionCandidate:true` for its remote transport mode and
+`productionCutover:false` because it never promotes deployments itself; the separate
+promotion and alias inspection above prove the actual cutover.
+
+All three production reply cases passed without model fallback. Temporary fictional
+Neon/Supabase/Auth records were cleaned and cleanup verified. Existing care records,
+outbound channels, schedules and webhooks were not changed. This completes the
+personal-memory migration, bounded retrieval checks and application production
+cutover; it does not constitute a fresh transport certification or care-pilot approval.
 
 Hosted triage telemetry for the accepted run: available/selected=1 at 602ms and
 582ms; archived/empty selected=0 at 408ms. These are three observed checks, not a

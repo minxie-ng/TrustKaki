@@ -1,6 +1,6 @@
 # Neon personal-memory setup and operations
 
-Updated: 15 October 2026. Migration is reconciled; Neon-enabled candidates are under release verification. Production promotion is pending. See the [cutover record](evidence/2026-10-15-neon-memory-cutover.md).
+Updated: 15 October 2026. Neon personal memory is live in production. Migration, signed-in candidate, promotion, public smoke and production lifecycle/generated-reply checks passed. See the [cutover record](evidence/2026-10-15-neon-memory-cutover.md).
 
 ## Selected setup
 
@@ -72,8 +72,8 @@ Health does not replace live embedding, retrieval or generated-response checks.
 
 - Metadata mapping, restricted credentials, authenticated integration, exact legacy
   import/replay and multilingual semantic retrieval are verified.
-- Grounded generated replies passed on the accepted candidate. Its signed-in UI
-  check, promotion and public smoke remain; consult the cutover record.
+- Signed-in candidate, exact deployment promotion, public smoke and production
+  grounded generated replies passed; consult the cutover record.
 - Add scheduled bounded indexing with recovery/cost controls.
 - Complete backup restore and retention operations. Lifecycle erasure is tested,
   but historical Supabase copies remain frozen evidence until retention is decided.

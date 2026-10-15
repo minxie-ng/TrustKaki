@@ -14,8 +14,8 @@
 - [x] Rehearse import/reconciliation on a temporary Neon branch; apply to selected branch; verify rows, revisions, source hashes and retry safety.
 - [x] Complete health/readiness reporting and generated-reply retrieval checks using fictional fixtures; no outbound channel messages.
 - [x] Install restricted pooled credential and embedding settings in production secret storage; keep direct owner URL local. Deploy exact reviewed commit with --prod --skip-domain.
-- [ ] Verify public smoke, authenticated dashboard/access and candidate lifecycle; promote only after gates pass. Record deployment, source commit and previous deployment.
-- [ ] Verify production, cleanup fictional fixtures and temporary branch, update roadmap/evidence and operating/rollback instructions.
+- [x] Verify public smoke, authenticated dashboard/access and candidate lifecycle; promote only after gates pass. Record deployment, source commit and previous deployment.
+- [x] Verify production, cleanup fictional fixtures and temporary branch, update roadmap/evidence and operating/rollback instructions.
 
 ## Files
 

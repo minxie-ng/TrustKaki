@@ -2,10 +2,9 @@
 
 Updated: 15 October 2026
 
-Status: Legacy personal memory imported and reconciled in Neon; old personal writes frozen.
-Next: complete the signed-in check on the accepted candidate, then promote.
-Metadata mapping, restricted deployment credentials and migration are verified.
-Live generated-reply grounding passed; exact-candidate UI and promotion remain release gates.
+Status: Neon personal memory is live in production; legacy import is reconciled and old personal writes frozen.
+Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
+Next: close indexing, restore and retention operations, then take the next agreed UI/agent slice.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -14,7 +13,7 @@ still generates embeddings. Neon setup and the first source/pgvector lifecycle s
 fictional checks. [Evidence](evidence/2026-10-15-neon-memory-foundation.md).
 Latest Neon semantic benchmark: 30/30 questions, zero forbidden facts, warm p95 460 ms.
 [Cutover evidence](evidence/2026-10-15-neon-memory-cutover.md).
-Production personal-memory cutover remains open.
+Production personal-memory cutover completed on 15 October 2026, runtime commit `4a262ac`.
 
 ## Purpose and authority
 
@@ -173,8 +172,9 @@ Completed retrieval subchunk, 14 October:
 - [x] Verify corrected/current/empty generated replies with an injection-bearing
   fictional fixture and exact model-input assertions. 984 tests, typecheck, lint
   and build pass; candidate `4a262ac` accepted by independent review.
-- [ ] Complete signed-in verification on the accepted candidate and promote the
-  Neon-enabled application; verify the public production alias.
+- [x] Complete signed-in verification on the accepted candidate and promote the
+  Neon-enabled application; verify the public production alias and repeat fictional
+  memory lifecycle, access isolation and all three generated-reply checks with cleanup.
 - [ ] Schedule indexing with recovery/cost controls; validate restore and retention.
 
 Earlier growth subchunk: scheduler retry cap and quiet-hour retry fix are deployed
