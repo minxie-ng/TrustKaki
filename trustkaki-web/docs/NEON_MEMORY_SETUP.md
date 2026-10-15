@@ -54,11 +54,14 @@ This is database/vector lifecycle verification, not semantic-quality evaluation.
 
 The application uses a lazy `pg` pool, applies `SET LOCAL ROLE` and trusted scope
 inside each transaction, rolls back errors, and destroys cancelled connections.
-The CLI-provided database owner credential is used for this foundation, with
-queries switching to the restricted runtime role. Before real senior cutover,
-provision a separate login credential granted only that role; do not claim the
-owner credential itself has least privilege. Scope variables are set by trusted
-server code, not an authentication mechanism for untrusted SQL clients.
+The local pooled `DATABASE_URL` now uses `trustkaki_memory_app`, a SQL-created
+NOINHERIT login with only non-admin runtime-role membership. Live checks deny
+schema creation, direct DELETE and personal-memory access before SET LOCAL ROLE;
+after role selection, missing scope returns zero rows. The direct owner credential
+remains in local `DATABASE_URL_UNPOOLED` for migrations and fixture cleanup. Do not
+ship that owner URL to the production application. Deployment variables have not
+yet been updated. Scope variables are set by trusted server code, not an
+authentication mechanism for untrusted SQL clients.
 
 `GET /api/health` verifies scoped schema access and exposes booleans only.
 Memory remains optional until production cutover, so its failure does not yet
@@ -71,7 +74,8 @@ personal memory until its generation/access/migration gates pass.
 - Embedding provider and live semantic retrieval are verified in the bounded
   fictional slice below; automatic production scheduling remains open.
 - Add scheduled bounded indexing with recovery/cost controls.
-- Dedicated database login, export/restore/erasure replay checks, retention policy.
+- Export/restore/erasure replay checks, retention policy; install the verified
+  restricted credential in the deployment environment during release.
 - Wire authenticated reads/edits, extraction, channels and role-specific prompts;
   validate grounded generation, backfill and cutover under a single writer.
 
@@ -106,3 +110,40 @@ exits nonzero and requires investigation; no global deletion is performed.
 
 Measured: 30/30 questions, zero forbidden facts, warm p95 501 ms.
 [Evidence and limitations](evidence/2026-10-15-neon-semantic-retrieval.md).
+
+## Metadata and runtime credential (15 October)
+
+```sh
+npm run memory:neon:runtime -- --confirm-live
+```
+
+The command reads the current ignored `.env.local`, uses its direct owner URL to
+create the restricted login, proves role attributes/membership and privilege
+boundaries, then atomically replaces only DATABASE_URL. It preserves other lines
+and writes mode 600. A normal repeat reuses the saved password; an existing role
+without a matching local credential fails rather than rotating it. Unknown query
+options and duplicate URL options are rejected because pg query parameters can
+override hostname or userinfo. Passwords, connection strings and SQL are never
+printed. This is a provisioning tool, not an application endpoint.
+
+`neon deploy`/`neon env pull` can restore a CLI owner URL. After an env pull, check
+the runtime identity before release; do not silently accept owner credentials.
+If the runtime role already exists but its local credential was lost, recover it
+from your secret store or perform an explicit coordinated rotation. This script
+refuses that rotation. No deployment secret store has been configured yet.
+
+Sources now optionally carry typed metadata for memory type, confidence,
+importance, application tags, extraction method, source attribution, timestamps,
+follow-up, legacy status and supersession. Existing fictional fixtures remain
+compatible. `personalMemoryMapping.ts` preserves all senior_memories row fields
+and maps to the current caregiver read model. It performs no database reads/writes.
+The caller must resolve trusted organisation/senior access and fetch source text.
+
+Routing/accessibility tags classify a record as operational; family/other records
+require explicit review. Reviewed personal classification cannot override an
+operational tag. Missing evidence is represented by an empty excerpt and explicit
+missing_source provenance, excluded in pending SQL, search SQL and final source
+validation. No quote is fabricated from a stored fact. Status/lineage are retained
+for the eventual importer; this helper is not a completed backfill tool.
+
+[Verification evidence](evidence/2026-10-15-neon-memory-metadata-and-credentials.md).

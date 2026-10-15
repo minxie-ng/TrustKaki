@@ -67,6 +67,7 @@ export async function retrievePersonalMemory(
     signal.throwIfAborted();
     if (new Set(sources.map(r => r.id)).size !== sources.length) throw new RetrievalError("malformed_result");
     const valid = sources.filter(r => scoped(r) && r.status === "active"
+      && r.metadata?.provenanceStatus !== "missing_source"
       && Date.parse(r.confirmedAt) <= Date.parse(input.now)
       && (!r.expiresAt || Date.parse(r.expiresAt) > Date.parse(input.now))
       && unique.some(h => h.id === r.id && h.sourceVersion === r.version));

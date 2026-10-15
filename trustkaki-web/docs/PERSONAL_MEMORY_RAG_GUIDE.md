@@ -32,9 +32,10 @@ checks database/schema access; they do not imply agent cutover or retrieval qual
 
 This foundation starts with exact cosine search after senior/org filtering. It
 returns at most 20 candidates; query work still grows with that senior's corpus.
-ANN indexing, worker scheduling, dedicated login credentials, full metadata mapping,
-backup restore and production-scale latency require their own verification before
-real senior migration. The Neon benchmark now separately verifies 30/30 fictional questions, zero
+ANN indexing, worker scheduling, backup restore and production-scale latency
+require their own verification before real senior migration. Metadata mapping and
+a restricted local runtime login are now verified; deployment wiring/cutover remain
+open. [Metadata/login evidence](evidence/2026-10-15-neon-memory-metadata-and-credentials.md). The Neon benchmark now separately verifies 30/30 fictional questions, zero
 forbidden facts and warm p95 501 ms using live scoped source reads. This remains a
 small synthetic retrieval test, with no generation or production-scale claim.
 [Semantic evidence](evidence/2026-10-15-neon-semantic-retrieval.md).

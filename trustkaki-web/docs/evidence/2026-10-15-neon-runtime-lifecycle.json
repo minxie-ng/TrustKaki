@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "sourceRoundTrip": true,
+  "metadataRoundTrip": true,
+  "longNotesPreserved": true,
+  "idempotentReplay": true,
+  "concurrentCorrectionGuard": true,
+  "scopedVectorRetrieval": true,
+  "correctedVectorInvalidated": true,
+  "stalePublicationRejected": true,
+  "archivalExcluded": true,
+  "erasureVerified": true,
+  "fictionalScopeCleaned": true,
+  "semanticEmbeddingMeasured": false,
+  "branch": "production"
+}

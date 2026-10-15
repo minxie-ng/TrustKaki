@@ -26,13 +26,19 @@ async function main() {
   const id = "fictional-gardening";
   const source = { ...scope, id, contextKey: "activity_preference", content: "Fictional senior enjoys gardening",
     sourceRef: "fictional:smoke", evidenceExcerpt: "I enjoy gardening", confirmedAt: now, expiresAt: null,
-    status: "active" as const, version: 1, conflictGroup: null, unresolvedConflict: false, safeUseNotes: null };
+    status: "active" as const, version: 1, conflictGroup: null, unresolvedConflict: false, safeUseNotes: "n".repeat(500),
+    metadata: { memoryType: "aac_preference" as const, confidence: 0.95, importance: 4, applicationTags: ["gentle_one_to_one" as const],
+      extractionMethod: "imported" as const, provenanceStatus: "manual_confirmation" as const,
+      sourceMessageId: null, sourceLabel: "fictional smoke", rememberedAt: now, followUpAfter: null,
+      createdByCaregiverId: null, createdBySystem: "fictional-smoke", updatedByCaregiverId: null, updatedBySystem: "fictional-smoke",
+      createdAt: now, updatedAt: now, legacyStatus: null, supersededById: null } };
   const base = { commandId: randomUUID(), id, expectedVersion: 0, action: "put" as const,
     source, actor: "fictional-smoke", reason: "fictional lifecycle verification" };
   let failure: unknown;
   try {
     const created = await store.apply(scope, base);
     assert.equal(created.version, 1);
+    assert.deepEqual(await store.fetchSources(scope, [id]), [source]);
     assert.deepEqual(await store.apply(scope, base), created);
     assert.equal(await store.publishEmbedding(scope, id, 1, vector), true);
     const result = await retrievePersonalMemory({ seniorId: scope.seniorId, query: "What activity do I enjoy?", now }, {
@@ -76,7 +82,7 @@ async function main() {
     } finally { await cleanup.end(); }
   }
   if (failure) throw failure;
-  console.log(JSON.stringify({ passed: true, sourceRoundTrip: true, idempotentReplay: true, concurrentCorrectionGuard: true, scopedVectorRetrieval: true,
+  console.log(JSON.stringify({ passed: true, sourceRoundTrip: true, metadataRoundTrip: true, longNotesPreserved: true, idempotentReplay: true, concurrentCorrectionGuard: true, scopedVectorRetrieval: true,
     correctedVectorInvalidated: true, stalePublicationRejected: true, archivalExcluded: true, erasureVerified: true,
     fictionalScopeCleaned: true, semanticEmbeddingMeasured: false, branch: process.env.NEON_BRANCH ?? "unknown" }));
 }

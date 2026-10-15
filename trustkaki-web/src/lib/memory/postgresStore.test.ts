@@ -4,6 +4,7 @@ import { vector } from "@electric-sql/pglite-pgvector";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { createPostgresMemoryStore, type ScopedMemorySql } from "./postgresStore";
+import { retrievePersonalMemory } from "./retrieval";
 import { fictionalRecord, retrievalEvaluationScope as scope, retrievalEvaluationTime as now } from "@/lib/agents/evaluation/memoryRetrievalCases";
 import type { MemoryScope } from "./retrievalContracts";
 
@@ -115,4 +116,40 @@ it("rejects malformed or foreign writes, oversized reads and bad vectors before 
 it("sanitises database errors", async () => {
   const s = createPostgresMemoryStore(async () => { throw new Error("password and private fact"); }, model);
   await expect(s.fetchSources(scope, ["gardening"])).rejects.toThrow(/^Personal memory unavailable$/);
+});
+
+const metadata = () => ({ memoryType: "food_preference" as const, confidence: 0.9, importance: 4,
+  applicationTags: ["practical_meal_prompt" as const], extractionMethod: "ai_extracted" as const,
+  provenanceStatus: "verified_excerpt" as const, sourceMessageId: "00000000-0000-4000-8000-000000000031", sourceLabel: "chat",
+  rememberedAt: now, followUpAfter: null, createdByCaregiverId: null, createdBySystem: "context_memory",
+  updatedByCaregiverId: null, updatedBySystem: "context_memory", createdAt: now, updatedAt: now,
+  legacyStatus: "active" as const, supersededById: null });
+it("round trips metadata and long notes, preserves revisions, and erases their content", async () => {
+  const original = { ...source(), metadata: metadata(), safeUseNotes: "n".repeat(500) };
+  await store().apply(scope, command({ source: original }));
+  expect(await store().fetchSources(scope, [original.id])).toEqual([original]);
+  await store().apply(scope, command({ commandId: crypto.randomUUID(), expectedVersion: 1,
+    source: { ...original, version: 2, metadata: { ...metadata(), importance: 3 } } }));
+  const revisions = await db.query<{ snapshot: unknown }>("SELECT snapshot FROM personal_memory.revisions");
+  expect(revisions.rows[0].snapshot).toEqual(original);
+  await store().apply(scope, command({ commandId: crypto.randomUUID(), expectedVersion: 2, action: "erase", source: undefined }));
+  expect((await db.query<{ snapshot: unknown }>("SELECT snapshot FROM personal_memory.revisions")).rows.every(row => row.snapshot === null)).toBe(true);
+});
+it("does not index or search records whose evidence is missing", async () => {
+  const unverified = { ...source(), evidenceExcerpt: "", metadata: { ...metadata(), provenanceStatus: "missing_source" as const } };
+  await store().apply(scope, command({ source: unverified }));
+  expect(await store().pending(scope, 20)).toEqual([]);
+  await store().publishEmbedding(scope, unverified.id, 1, embedding());
+  expect(await store().search({ scope, vector: embedding(), topK: 20, now })).toEqual([]);
+});
+
+it("source validation excludes missing evidence even if a search adapter returns its hit", async () => {
+  await store().apply(scope, command({ source: { ...source(), evidenceExcerpt: "", metadata: { ...metadata(), provenanceStatus: "missing_source" } } }));
+  const result = await retrievePersonalMemory({ seniorId: scope.seniorId, query: "gardening", now }, {
+    embeddingModel: model, indexEmbeddingModel: model, minimumScore: 0.2,
+    resolveScope: async () => scope, embed: async () => embedding(), fetchSources: store().fetchSources,
+    search: async () => [{ ...scope, id: "gardening", sourceVersion: 1, indexVersion: 1, embeddingModel: model, score: 1 }],
+  });
+  expect(result.status).toBe("empty");
+  expect(result.items).toEqual([]);
 });

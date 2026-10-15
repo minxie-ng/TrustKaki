@@ -56,6 +56,7 @@ export function createPostgresMemoryStore(execute: ScopedMemorySql, embeddingMod
       1 - (embedding <=> $3::vector) AS score FROM personal_memory.records
       WHERE organisation_id=$1::uuid AND senior_id=$2::uuid AND status='active'
         AND embedding IS NOT NULL AND index_version=version AND embedding_model=$4
+        AND source->'metadata'->>'provenanceStatus' IS DISTINCT FROM 'missing_source'
         AND (source->>'confirmedAt')::timestamptz <= $5::timestamptz
         AND (source->>'expiresAt' IS NULL OR (source->>'expiresAt')::timestamptz > $5::timestamptz)
       ORDER BY embedding <=> $3::vector, id LIMIT $6`,
@@ -76,6 +77,7 @@ export function createPostgresMemoryStore(execute: ScopedMemorySql, embeddingMod
     const rows = await run(scope, `SELECT source FROM personal_memory.records
       WHERE organisation_id=$1::uuid AND senior_id=$2::uuid AND status='active'
         AND embedding IS NULL AND embedding_model=$3
+        AND source->'metadata'->>'provenanceStatus' IS DISTINCT FROM 'missing_source'
       ORDER BY updated_at, id LIMIT $4`, [scope.organisationId, scope.seniorId, embeddingModel, limit]);
     return z.array(z.object({ source: memorySourceRecordSchema })).max(20).parse(rows).map(r => r.source);
   }

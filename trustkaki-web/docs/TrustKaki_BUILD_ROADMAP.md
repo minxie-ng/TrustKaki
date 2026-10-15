@@ -3,8 +3,9 @@
 Updated: 15 October 2026
 
 Status: Neon memory lifecycle and live fictional semantic retrieval passed.
-Next: finish metadata mapping and dedicated runtime credentials, then connect the
-authenticated memory path and validate grounded replies. Migration/cutover remain open.
+Next: connect the authenticated memory path and validate grounded replies.
+Metadata mapping and the restricted local runtime login are verified.
+Migration, deployment credentials and cutover remain open.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -158,6 +159,9 @@ Completed retrieval subchunk, 14 October:
   result does not establish production capacity or broad multilingual quality.
 - [x] Select Neon Postgres with pgvector; implement source lifecycle and bounded
   pending indexing; pass live multilingual retrieval using remote source reads.
+- [x] Preserve editing/extraction metadata and explicit missing-evidence state;
+  verify a SQL-created restricted runtime login on a test branch and selected
+  branch. [Evidence](evidence/2026-10-15-neon-memory-metadata-and-credentials.md).
 - [ ] Schedule indexing with recovery/cost controls; validate restore/retention,
   migrate, and connect production agents under one authenticated write path.
 
@@ -296,5 +300,5 @@ clear, and remaining limits are explicit. Deployment is a separate recorded step
   30/30 questions, zero forbidden facts, warm p95 501 ms, fixture cleanup verified.
   [Evidence](evidence/2026-10-15-neon-semantic-retrieval.md).
 - **Next chunk:** authenticated application memory integration and grounded reply
-  evaluation. Dedicated credentials, mapping, restore, retention and cutover remain
-  gates. Event discovery, prompt redesign and UI improvements remain later work.
+  evaluation. Deployment credentials, restore, retention and cutover remain gates.
+  Metadata mapping and local restricted-login verification are complete. Event discovery, prompt redesign and UI improvements remain later work.
