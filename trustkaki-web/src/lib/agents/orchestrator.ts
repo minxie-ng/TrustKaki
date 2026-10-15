@@ -394,6 +394,36 @@ function digitalSafetySummary(data?: DigitalSafetyOutput): string | undefined {
   return `${data.isScam ? "Suspected scam" : "Assessment inconclusive; safety is not verified"}; reported confidence=${data.confidence}: ${data.warningMessage}`;
 }
 
+function capabilityReply(message: string, draft: string, memoryRequested: boolean, signals: TriageSignal[], ctx: AgentRunContext): string | null {
+  const chinese = /\p{Script=Han}/u.test(message) || /\p{Script=Han}/u.test(draft);
+  const displayRequest = /\b(?:large|larger|bigger)\s+(?:text|font)|\b(?:increase|enlarge)\b.{0,20}\b(?:text|font)|\b(?:font|text)\b.{0,12}\b(?:larger|bigger)\b|大字体|大字體|看不清小字|放大.{0,6}(?:字|文字)/iu.test(message);
+  let reply: string | null = null;
+  if (displayRequest) reply = chinese
+    ? "我无法在聊天中更改字号。您可以请照顾者帮忙调整设备的显示设置。"
+    : "I can't change the text size from this chat. Your caregiver may be able to help with the device's display settings.";
+  // shortcut: explicit English/Mandarin requests only; broaden with reviewed paraphrase fixtures.
+  const contact = message.trim().match(/^(?:(?:please|can you|could you|would you|will you)\s+)?(tell|notify|message|contact|call|phone)\s+(.+)/iu);
+  const recipient = contact?.[2] ?? "";
+  const namedContact = [ctx.senior.caregiver, ctx.senior.aacVolunteer].some(name =>
+    recipient.toLowerCase() === name.toLowerCase() || recipient.toLowerCase().startsWith(`${name.toLowerCase()} `));
+  const relatedContact = /^(?:(?:my|our)\s+)?(?:daughter|son|wife|husband|sister|brother|caregiver|doctor|volunteer|family)\b/iu.test(recipient);
+  const phoneRecipient = relatedContact || namedContact || /^\+?\d/u.test(recipient) || /^me(?:[?.!]|\s+(?:now|later|tomorrow|today|tonight|back|at)\b|$)/iu.test(recipient);
+  const englishContact = contact && (/^(?:notify|message|contact|phone)$/iu.test(contact[1]) ||
+    (/^tell$/iu.test(contact[1]) ? relatedContact || namedContact : phoneRecipient));
+  const chineseContact = /^(?:(?:请|請)你?|帮我|幫我|麻烦你|麻煩你|能不能|可以)?(?:帮我|幫我)?(?:通知|联系|聯繫|打电话|打電話|(?:告诉|告訴)(?:我的?)?(?:女儿|女兒|儿子|兒子|照顾者|照顧者|家人))/u.test(message.trim());
+  const contactRequest = englishContact || chineseContact;
+  if (!reply && contactRequest) reply = chinese
+    ? "我可以在这里和您聊天，但无法替您联系别人或传话。请直接联系对方，或请照顾者帮忙。"
+    : "I can chat with you here, but I can't place calls or pass messages to others. Please contact the person directly or ask your caregiver for help.";
+  // Persistence happens after orchestration, so no save outcome is known here.
+  if (!reply && memoryRequested) reply = chinese ? "谢谢您告诉我。" : "Thank you for telling me.";
+  if (!reply) return null;
+  const careConcern = signals.some(signal => signal.type === "health" || signal.type === "daily_living");
+  return reply + (careConcern
+    ? chinese ? "请向您的照顾者说明您现在的身体状况。" : " Please tell your caregiver how you're feeling."
+    : "");
+}
+
 // ─── Main orchestration function ───
 export async function orchestrate(
   message: string,
@@ -493,7 +523,8 @@ export async function orchestrate(
     message,
   });
 
-  traces.push(buildPolicyTrace(policyResult, signals, ctx.currentRiskLevel));
+  const policyTrace = buildPolicyTrace(policyResult, signals, ctx.currentRiskLevel);
+  traces.push(policyTrace);
   traces.push(buildPatternWatchTrace(signals, message, ctx));
 
   // One selected reply, after authoritative policy; specialist drafts are not concatenated.
@@ -502,11 +533,15 @@ export async function orchestrate(
     digitalSafetyResult.fallback || digitalSafetyResult.data.isScam ||
     signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message)
   );
+  const boundedReply = capabilityReply(message, triageResult.data.responseMessage, contextMemoryExecution.input !== null, signals, ctx);
+  if (!urgentHealth && !safetyReply && boundedReply) policyTrace.tags.push("capability_bound_reply");
   responseMessages.push(urgentHealth
     ? { text: "Your message may need urgent help. Please seek immediate help from local emergency services or someone nearby. I cannot contact them for you.\n\n您的情况可能需要紧急帮助。请立即联系当地急救服务或身边的人求助。我无法替您联系他们。", agentId: "policy" }
     : safetyReply
       ? { text: digitalSafetyResult.data.warningMessage, agentId: "digital_safety" }
-      : { text: triageResult.data.responseMessage, agentId: "triage" });
+      : boundedReply
+        ? { text: boundedReply, agentId: "policy" }
+        : { text: triageResult.data.responseMessage, agentId: "triage" });
 
   // ── Step 5: Run Briefing (only if policy says so) ──
   // The orchestrator LLM can no longer force a briefing. The policy layer

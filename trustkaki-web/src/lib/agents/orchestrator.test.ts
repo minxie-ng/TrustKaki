@@ -230,7 +230,7 @@ describe("orchestrate", () => {
     );
     expect(response.contextMemoryCandidates).toEqual([candidate]);
     expect(response.messages).toEqual([
-      { text: "Good to hear.", agentId: "triage" },
+      { text: "Thank you for telling me.", agentId: "policy" },
     ]);
   });
 
@@ -738,6 +738,80 @@ describe("consolidated safety and briefing boundaries", () => {
     expect(response.messages[0].text).not.toMatch(/note that down|saved|contacted/i);
     expect(aac.data.nudgeMessage).not.toMatch(/Mei Ling|asking about|miss you/);
     expect(safety.data.warningMessage).not.toContain("Rachel");
+  });
+});
+
+describe("capability-safe selected replies", () => {
+  it.each([
+    ["I prefer phone calls in Mandarin.", "I will remember your preference.", false],
+    ["我喜欢用华语通话。", "我会记住您的偏好。", false],
+    ["I prefer phone calls in Mandarin.", "Saved your preference.", true],
+    ["我喜欢用华语通话。", "已保存您的偏好。", true],
+  ])("does not confirm or promise storage before persistence: %s", async (message, draft, failed) => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => ({ ...result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: draft }) : options.fallback()),
+      fallback: options.agentId === "context_memory" && failed }));
+    const response = await orchestrate(message, context());
+    expect(response.messages).toEqual([{ text: expect.any(String), agentId: "policy" }]);
+    expect(response.messages[0].text).not.toMatch(/remember|saved|记住|保存/);
+    expect(response.contextMemoryCandidates).toEqual([]);
+  });
+
+  it.each([
+    ["Please tell Mei Ling I would rather talk one to one.", /can't.*(?:message|contact)/],
+    ["Can you call my daughter?", /can't.*(?:call|contact)/],
+    ["Please contact me tomorrow.", /can't.*(?:call|contact)/],
+    ["请帮我通知梅玲。", /无法.*(?:联系|传话)/],
+    ["Please use larger text because I cannot read small words.", /can't change.*text size/],
+    ["请用大字体，我看不清小字。", /无法.*(?:字号|字体)/],
+  ])("uses honest capability wording for %s", async (message, expected) => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: "I'll do that now." }) : options.fallback()));
+    const response = await orchestrate(message, context());
+    expect(response.messages).toEqual([{ text: expect.stringMatching(expected), agentId: "policy" }]);
+  });
+
+  it.each(["I prefer phone calls. My knee hurts today.", "Please use larger text. My knee hurts today."])("keeps care follow-up and gives Briefing the actual reply: %s", async message => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({
+        responseMessage: "Saved your preference. Your knee will be fine.",
+        signals: [{ type: "health", category: "health_frailty_signal", description: "Knee pain", severity: "medium" }],
+      }) : options.agentId === "briefing" ? briefingData() : options.fallback()));
+    const response = await orchestrate(message, context());
+    expect(response.messages[0]).toEqual({ text: expect.stringMatching(/tell your caregiver how you're feeling/), agentId: "policy" });
+    expect(response.messages[0].text).not.toMatch(/saved|fine/);
+    const brief = runAgentMock.mock.calls.find(call => call[0].agentId === "briefing")![0];
+    expect(brief.userPrompt).toContain(response.messages[0].text);
+  });
+
+  it.each(["I prefer phone calls. I have chest pain.", "I prefer phone calls. Someone asked for my OTP."])(
+    "keeps urgent and scam guidance ahead of acknowledgement: %s", async message => {
+      const { orchestrate } = await import("./orchestrator");
+      runAgentMock.mockImplementation(async options => result(options.agentId,
+        options.agentId === "triage" ? triageData({ responseMessage: "Saved." }) :
+        options.agentId === "digital_safety" ? { isScam: true, scamType: "OTP", confidence: 0.9, warningMessage: "Do not share your OTP.", educationalNote: "Keep codes private." } : options.fallback()));
+      const response = await orchestrate(message, context());
+      expect(response.messages).toHaveLength(1);
+      expect(response.messages[0].text).toMatch(/urgent|OTP/);
+      expect(response.messages[0].text).not.toMatch(/Saved/);
+    }
+  );
+
+  it.each(["What breakfast do I prefer?", "Tell me what breakfast I prefer."])("preserves a grounded recall answer: %s", async message => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ responseMessage: "You prefer toast for breakfast." })));
+    const response = await orchestrate(message, context());
+    expect(response.messages).toEqual([{ text: "You prefer toast for breakfast.", agentId: "triage" }]);
+  });
+
+  it.each(["Can you tell a joke?", "Tell a story about your favourite food.", "Call me John.", "请告诉我一个故事。", "请告诉一个故事。"])("preserves ordinary conversation: %s", async message => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ responseMessage: "Here is my reply." })));
+    const response = await orchestrate(message, context());
+    expect(response.messages).toEqual([{ text: "Here is my reply.", agentId: "triage" }]);
   });
 });
 
