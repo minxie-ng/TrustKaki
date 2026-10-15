@@ -1,0 +1,313 @@
+{
+  "dataset": "fictional-memory-v1",
+  "provider": "Neon Postgres with pgvector",
+  "sourceStore": "live Neon fictional source records",
+  "embeddingProvider": "Pinecone inference only; no vector-index calls",
+  "embeddingModel": "llama-text-embed-v2",
+  "dimensions": 1024,
+  "minimumScore": 0.200106996389696,
+  "records": 1007,
+  "indexed": 1006,
+  "semanticQualityMeasured": true,
+  "generationMeasured": false,
+  "crossSeniorIsolation": true,
+  "cleanupVerified": true,
+  "latencyScope": "warm database; query embedding + scoped search + source validation; excludes ingestion",
+  "languages": [
+    {
+      "language": "English",
+      "queries": 10,
+      "recallAt6": 1
+    },
+    {
+      "language": "Mandarin",
+      "queries": 10,
+      "recallAt6": 1
+    },
+    {
+      "language": "Singlish",
+      "queries": 10,
+      "recallAt6": 1
+    }
+  ],
+  "p95Ms": 501,
+  "usage": {
+    "embeddingTokens": 20482
+  },
+  "declaredBudgetUsd": 1,
+  "budgetEnforcedByScript": false,
+  "dollarCost": "unmeasured; existing provider controls required",
+  "passedGate": true,
+  "observations": [
+    {
+      "id": "gardening-0-0",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 420
+    },
+    {
+      "id": "gardening-0-1",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 397
+    },
+    {
+      "id": "gardening-1-0",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 349
+    },
+    {
+      "id": "gardening-1-1",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 423
+    },
+    {
+      "id": "gardening-2-0",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 449
+    },
+    {
+      "id": "gardening-2-1",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 355
+    },
+    {
+      "id": "contact-0-0",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 501
+    },
+    {
+      "id": "contact-0-1",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 389
+    },
+    {
+      "id": "contact-1-0",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 363
+    },
+    {
+      "id": "contact-1-1",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 440
+    },
+    {
+      "id": "contact-2-0",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 413
+    },
+    {
+      "id": "contact-2-1",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 411
+    },
+    {
+      "id": "walk-0-0",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 410
+    },
+    {
+      "id": "walk-0-1",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 363
+    },
+    {
+      "id": "walk-1-0",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 361
+    },
+    {
+      "id": "walk-1-1",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 371
+    },
+    {
+      "id": "walk-2-0",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 352
+    },
+    {
+      "id": "walk-2-1",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 399
+    },
+    {
+      "id": "breakfast-0-0",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 403
+    },
+    {
+      "id": "breakfast-0-1",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 353
+    },
+    {
+      "id": "breakfast-1-0",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 370
+    },
+    {
+      "id": "breakfast-1-1",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 379
+    },
+    {
+      "id": "breakfast-2-0",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 355
+    },
+    {
+      "id": "breakfast-2-1",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 350
+    },
+    {
+      "id": "visits-0-0",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 366
+    },
+    {
+      "id": "visits-0-1",
+      "language": "English",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 695
+    },
+    {
+      "id": "visits-1-0",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 413
+    },
+    {
+      "id": "visits-1-1",
+      "language": "Mandarin",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 406
+    },
+    {
+      "id": "visits-2-0",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 402
+    },
+    {
+      "id": "visits-2-1",
+      "language": "Singlish",
+      "pass": true,
+      "forbidden": 0,
+      "unavailable": false,
+      "reason": null,
+      "elapsedMs": 363
+    }
+  ]
+}

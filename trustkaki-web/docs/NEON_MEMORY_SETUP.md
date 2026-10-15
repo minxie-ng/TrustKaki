@@ -68,9 +68,41 @@ personal memory until its generation/access/migration gates pass.
 ## Remaining gates
 
 - Complete type/application-tag/confidence mapping for existing context records.
-- Select/configure the embedding provider independently of Pinecone vector storage;
-  benchmark Neon with the same multilingual corpus and remote source reads.
+- Embedding provider and live semantic retrieval are verified in the bounded
+  fictional slice below; automatic production scheduling remains open.
 - Add scheduled bounded indexing with recovery/cost controls.
 - Dedicated database login, export/restore/erasure replay checks, retention policy.
 - Wire authenticated reads/edits, extraction, channels and role-specific prompts;
   validate grounded generation, backfill and cutover under a single writer.
+
+## Semantic retrieval verification (15 October)
+
+```sh
+npm run memory:neon:evaluate -- --confirm-live --confirm-provider-budget
+```
+
+Reuses the existing `TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT`,
+`TRUSTKAKI_MEMORY_EMBEDDING_MODEL`, `TRUSTKAKI_MEMORY_PINECONE_API_KEY`,
+`TRUSTKAKI_MEMORY_PILOT_MIN_SCORE`, and `TRUSTKAKI_MEMORY_PILOT_BUDGET_USD`.
+This comparison deliberately fixes llama-text-embed-v2, the native inference
+endpoint, and the previously calibrated score. It never calls a Pinecone vector
+index. Existing account spending controls must remain in place: the script records
+a declared budget, not a real-time dollar meter. No new services are provisioned.
+
+`embeddings.ts` is independent of database storage and supports native Pinecone
+inference or an explicitly configured OpenAI-compatible embeddings endpoint. All
+vectors must be 1,024-dimensional, finite and nonzero. Changing embedding model
+requires rebuilding vectors and evaluating the threshold again.
+
+`indexPendingMemory` attempts at most 20 sources. Provider failures leave sources
+pending; version-checked publication rejects corrections/erasures made during the
+API call. This is the indexing operation, not a deployed scheduler or durable retry
+policy. Source content is sent to the configured embedding provider.
+
+The benchmark uses random fictional org/senior UUIDs and reads source facts from
+Neon through the same scoped repository. It deletes records/revisions/receipts for
+that exact scope in `finally` and asserts zero remaining rows. A cleanup failure
+exits nonzero and requires investigation; no global deletion is performed.
+
+Measured: 30/30 questions, zero forbidden facts, warm p95 501 ms.
+[Evidence and limitations](evidence/2026-10-15-neon-semantic-retrieval.md).

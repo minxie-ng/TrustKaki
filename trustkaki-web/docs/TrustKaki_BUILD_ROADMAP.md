@@ -2,14 +2,17 @@
 
 Updated: 15 October 2026
 
-Status: isolated retrieval and first fictional external pilot passed.
-Next: select durable external source storage and design ingestion/lifecycle;
-production integration and cutover remain open.
+Status: Neon memory lifecycle and live fictional semantic retrieval passed.
+Next: finish metadata mapping and dedicated runtime credentials, then connect the
+authenticated memory path and validate grounded replies. Migration/cutover remain open.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
-Pinecone is retained as pilot evidence. Neon setup and the first source/pgvector lifecycle slice passed local and live
+Pinecone vector storage is historical pilot evidence; its configured inference API
+still generates embeddings. Neon setup and the first source/pgvector lifecycle slice passed local and live
 fictional checks. [Evidence](evidence/2026-10-15-neon-memory-foundation.md).
+Neon semantic benchmark: 30/30 questions, zero forbidden facts, warm p95 501 ms.
+[Semantic evidence](evidence/2026-10-15-neon-semantic-retrieval.md).
 Production personal-memory cutover remains open.
 
 ## Purpose and authority
@@ -153,8 +156,10 @@ Completed retrieval subchunk, 14 October:
   pilot passed: Recall@6 10/10 per language, zero forbidden facts, p95 986ms.
   [Live evidence](evidence/2026-10-15-memory-live-pilot.md). This small synthetic
   result does not establish production capacity or broad multilingual quality.
-- [ ] Select durable external source storage, implement ingestion/lifecycle, migrate,
-  validate recovery/deletion, and connect production agents under one write path.
+- [x] Select Neon Postgres with pgvector; implement source lifecycle and bounded
+  pending indexing; pass live multilingual retrieval using remote source reads.
+- [ ] Schedule indexing with recovery/cost controls; validate restore/retention,
+  migrate, and connect production agents under one authenticated write path.
 
 Earlier growth subchunk: scheduler retry cap and quiet-hour retry fix are deployed
 and verified; broader retention/pagination work remains open.
@@ -286,6 +291,10 @@ clear, and remaining limits are explicit. Deployment is a separate recorded step
   [first-slice design](superpowers/specs/2026-10-14-personal-memory-retrieval-design.md).
   Targets are not measured results. Provider selection and production memory
   migration remain open; implementation awaits design review.
-- **Next chunk:** review the first-slice design, then implement its local retrieval
-  contract and fictional evaluation harness before the opt-in external pilot.
-  Event discovery is proposed. RAG, prompt, and UI implementation have not started.
+- **15 October 2026 — Neon semantic retrieval passed:** 1,007 fictional sources,
+  1,006 indexed active facts (including one expired fact excluded at search),
+  30/30 questions, zero forbidden facts, warm p95 501 ms, fixture cleanup verified.
+  [Evidence](evidence/2026-10-15-neon-semantic-retrieval.md).
+- **Next chunk:** authenticated application memory integration and grounded reply
+  evaluation. Dedicated credentials, mapping, restore, retention and cutover remain
+  gates. Event discovery, prompt redesign and UI improvements remain later work.

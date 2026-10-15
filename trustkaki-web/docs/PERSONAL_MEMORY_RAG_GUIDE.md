@@ -13,7 +13,9 @@ migration or a deployed semantic-memory feature.
 The approved destination is external personal memory. Supabase remains responsible
 for operational care data, authentication, access relationships, messages, cases,
 and schedules. The approved target is **Neon Postgres with pgvector**, holding
-source facts and vectors in one database. Pinecone remains historical pilot evidence.
+source facts and vectors in one database. Pinecone vector storage remains historical
+pilot evidence. Its inference API currently generates embeddings; no Pinecone
+vector index is used by the Neon retrieval path.
 
 ## Neon foundation (15 October)
 
@@ -32,8 +34,10 @@ This foundation starts with exact cosine search after senior/org filtering. It
 returns at most 20 candidates; query work still grows with that senior's corpus.
 ANN indexing, worker scheduling, dedicated login credentials, full metadata mapping,
 backup restore and production-scale latency require their own verification before
-real senior migration. The existing Pinecone semantic scores do not transfer as
-measured Neon results.
+real senior migration. The Neon benchmark now separately verifies 30/30 fictional questions, zero
+forbidden facts and warm p95 501 ms using live scoped source reads. This remains a
+small synthetic retrieval test, with no generation or production-scale claim.
+[Semantic evidence](evidence/2026-10-15-neon-semantic-retrieval.md).
 
 See [Neon setup and commands](NEON_MEMORY_SETUP.md) and
 [approved lifecycle design](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
