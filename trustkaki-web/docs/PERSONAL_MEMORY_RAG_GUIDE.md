@@ -118,12 +118,15 @@ with explicit fictional provenance in each audit reason; current embeddings were
 verified for all three. This is not verification about real seniors. Migration
 itself never invents evidence or confirmation.
 
-Legacy Supabase personal rows are frozen historical evidence, not runtime fallback.
+The five legacy Supabase personal rows were frozen at cutover, then removed after
+owner approval on 15 October. Four related audit events were scrubbed while keeping
+metadata. The operational contact route remains intact. Neon is the canonical store.
 A historical-branch recovery drill passed: facts, vectors, revisions, receipts and
 access isolation matched. Current Neon history is six hours; independent backup
 and post-restore erasure replay remain unverified. See the
 [recovery/retention runbook](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md).
-Deletion of retained Supabase rows and audit snapshots requires the retention/audit decision. Historical
+The approved legacy cleanup is complete. Old pilot vectors and provider historical
+copies still require separate review. Historical
 Supabase command identities were not imported as Neon receipts; old in-flight edits
 may need a dashboard refresh and reviewed reissue.
 

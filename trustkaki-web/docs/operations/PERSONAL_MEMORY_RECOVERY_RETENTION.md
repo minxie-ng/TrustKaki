@@ -1,7 +1,7 @@
 # Personal-memory recovery and retention
 
-Updated 15 October 2026. Recovery drill passed; owner selected “Prepare cleanup now”.
-The exact cleanup proposal is prepared, not approved for execution or applied. [Evidence](../evidence/2026-10-15-memory-recovery-retention.md).
+Updated 15 October 2026. Recovery drill passed; owner approved the exact cleanup and it was applied.
+Production verification passed; remaining backup/erasure limits below still apply. [Evidence](../evidence/2026-10-15-memory-recovery-retention.md).
 
 ## Recovery available today
 
@@ -67,33 +67,32 @@ backup. No paid upgrade or backup destination was configured in this slice.
 
 | Copy | Verified state | Proposed handling |
 | --- | --- | --- |
-| Supabase personal `senior_memories` | 5 frozen legacy rows; guard trigger enabled | Prepare removal now; execute only after owner approves the exact migration. |
-| Related Supabase `senior_context_events` | 4 events with personal before/after snapshots | Remove personal snapshot content in the same approved cleanup; retain only agreed non-content migration/audit evidence. |
+| Supabase personal `senior_memories` | 5 reviewed legacy rows removed; 0 remain; guard enabled | Completed 15 October after owner approval. |
+| Related Supabase `senior_context_events` | 4 reviewed events scrubbed; snapshots null, reason/key replaced | Metadata retained; cleanup complete. |
 | Supabase operational context | 1 family contact route; 1 related snapshot event | Preserve; operational data remains in Supabase. |
 | Other memory audit events | 2 null-context events without snapshots | Preserve unless separately reviewed; no blanket event deletion. |
 | Neon canonical memory | 4 records (3 current vectors), 4 revisions, 7 receipts | Canonical source; existing archive/erasure behavior applies. Do not prune versions or receipts arbitrarily. |
 | Neon recovery history | Rolling 6-hour setting | Keep current setting for fictional demo; account for historical copies during erasure and recovery. |
 | Pinecone historical pilot | Earlier evidence records a retained fictional namespace | Review exact pilot namespaces before deletion; live inventory not checked in this slice. Keep inference credentials/service working. |
 
-The owner selected “Prepare cleanup now” on 15 October. No automatic deletion job
-has been set. The [exact cleanup proposal](proposed-migrations/20261015070533_purge_legacy_personal_memory_copies.sql)
-is stored outside the active migration directory to prevent accidental deployment.
-It allowlists five memory IDs and four audit-event IDs with full-row change
-checksums. It aborts if the inventory, content or expected triggers have changed.
-MD5 is only an optimistic change detector; it is not authorization or a cryptographic
-authenticity claim. Execution remains unapproved.
+The owner selected “Prepare cleanup now”, then approved execution of the exact
+proposal on 15 October. [Applied migration](../../supabase/migrations/20261015071528_purge_legacy_personal_memory_copies.sql)
+is recorded remotely under version `20261015071528`; the local filename matches.
+Do not rerun it. It is an exact historical cleanup, not a reusable general purge.
 
-Both Supabase tables have protective mutation triggers (personal-memory freeze and
-append-only audit). Cleanup therefore needs a reviewed, transactional maintenance
-migration with exact row/snapshot predicates and postconditions. Do not bypass the
-triggers in an ad hoc request or delete the operational contact route. The
-migration is now prepared for the accepted scope; execute it only after approval
-of the concrete irreversible action. It clears the four events' snapshots, replaces
-their reason/context-key text with fixed purge labels and retains event metadata.
-It checks unrelated rows/events byte-for-byte and restores both guards in the same
-transaction. Local PGlite checks cover successful cleanup, changed-snapshot refusal
-and postcondition rollback. Rejected/null-context events are outside this cleanup;
-review them separately before declaring complete erasure.
+The transaction allowlisted five memory IDs and four audit-event IDs with full-row
+change checksums, locked both tables, and refused changed inventory/trigger state.
+MD5 was an optimistic change detector, not authorization. Both protective triggers
+were restored in the same transaction. Four events retained metadata while snapshots
+were cleared and reason/context-key text was replaced with fixed purge labels.
+Postconditions checked unrelated rows/events byte-for-byte. Post-commit checks found
+0 personal legacy rows, 1 operational row, 4 scrubbed events, 7 total memory events,
+1 remaining operational snapshot and both protections enabled. Neon fingerprints
+matched before/after; production public smoke passed.
+
+Three local PGlite tests cover successful cleanup, changed-snapshot refusal and
+postcondition rollback. Rejected/null-context events, old Pinecone pilot vectors,
+provider backups and other historical copies remain outside this exact cleanup.
 
 Keep content-free reconciliation evidence (counts/checksums/result booleans) in
 version control. Do not create extra raw-data exports merely to delete redundant

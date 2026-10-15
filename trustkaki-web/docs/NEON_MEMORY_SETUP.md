@@ -77,9 +77,10 @@ Health does not replace live embedding, retrieval or generated-response checks.
 - Scheduled bounded indexing is live; see [worker release evidence](evidence/2026-10-15-memory-index-retries.md).
 - Historical branch recovery drill passed (facts, vectors, revisions, receipts and
   RLS); current Free history window is six hours, not an independent backup.
-- Decide historical-copy retention; five Supabase personal rows and four related
-  snapshots remain frozen. Independent backup and post-restore erasure replay remain
-  open before real-user use. See the [recovery/retention runbook](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md).
+- Owner-approved legacy cleanup completed: five Supabase personal rows removed and
+  four related audit events scrubbed; operational context preserved. Independent
+  backup, old pilot-copy inventory and post-restore erasure replay remain open before
+  real-user use. See the [recovery/retention runbook](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md).
 
 ## Semantic retrieval verification (15 October)
 
@@ -186,7 +187,8 @@ backfill as post-cutover reconciliation after legitimate new edits.
 - Keep the Neon backend selected after cutover. A compatible application build may
   be rolled back, but an old Supabase-writing build cannot safely resume without
   pausing writers, reconciliation and an explicit unfreeze plan.
-- Retained Supabase personal rows are immutable historical evidence. New runtime
+- Legacy Supabase personal rows were initially frozen, then removed by the
+  owner-approved 15 October cleanup; four related audit events retain metadata only. New runtime
   memory reads/writes use Neon; there is no automatic Supabase personal fallback.
 - Retrieval diagnostics contain fixed status/reason and numeric counts/timing only.
   Do not add source content, identifiers, connection strings or provider bodies.

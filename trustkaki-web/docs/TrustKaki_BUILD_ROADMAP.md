@@ -2,9 +2,9 @@
 
 Updated: 15 October 2026
 
-Status: Neon personal memory is live in production; legacy import is reconciled and old personal writes frozen.
+Status: Neon personal memory is live in production; legacy import is reconciled, old personal writes blocked and approved redundant copies removed.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: review/apply the prepared legacy-copy cleanup; historical recovery drill passed. Then take the next agreed UI/agent slice.
+Next: take the agreed UI/agent slice. Historical recovery and owner-approved legacy-copy cleanup passed; independent backup and broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -187,11 +187,16 @@ Completed retrieval subchunk, 14 October:
 - [x] Prepare immediate legacy-copy cleanup, as requested: 5 frozen Supabase personal
   rows and 4 related audit snapshots/reason/key text; exact allowlist/change guards,
   transaction rollback and preservation checks prepared outside active migrations.
-  Three PGlite tests pass. [Proposal](operations/proposed-migrations/20261015070533_purge_legacy_personal_memory_copies.sql).
-- [ ] Obtain approval for the concrete irreversible cleanup, apply and verify it. No
-  production rows or snapshots have been deleted.
+  Three PGlite tests pass. [Applied migration](../supabase/migrations/20261015071528_purge_legacy_personal_memory_copies.sql).
+- [x] Owner approved execution; migration `20261015071528` applied. Verified zero
+  legacy personal rows, four scrubbed audit events, operational route preserved,
+  both guards enabled, unchanged Neon fingerprints and production public smoke.
 - [ ] Before real-user use: independent backup recovery, post-restore erasure replay
   and recovery objectives beyond the current history window.
+- [ ] Review the unchanged Supabase security-advisor findings recorded after cleanup
+  (definer execution grants/search paths, service-only RLS tables and Auth password
+  protection); distinguish intended RPC access from unintended grants.
+  [Advisor evidence](evidence/2026-10-15-memory-recovery-retention.md).
 - [x] Review three migrated active facts with the project owner; retain them as
   fictional demo context using authenticated corrections. Verify three manual
   confirmations, three current embeddings and three explicit fictional audit reasons.

@@ -1,4 +1,5 @@
--- REVIEW ONLY: not in supabase/migrations, not approved for execution.
+-- Owner approved and applied on 15 October 2026; version matches remote history.
+-- Originally reviewed outside the active migration directory. Do not rerun.
 -- Removes only the reviewed fictional legacy copies; Neon is untouched.
 -- MD5 is an optimistic change detector, not an authentication mechanism.
 BEGIN;

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { expect, test } from "vitest";
 
-const proposal = readFileSync("docs/operations/proposed-migrations/20261015070533_purge_legacy_personal_memory_copies.sql", "utf8");
+const proposal = readFileSync("supabase/migrations/20261015071528_purge_legacy_personal_memory_copies.sql", "utf8");
 const entries = [...proposal.matchAll(/\('([0-9a-f-]{36})','([0-9a-f]{32})'\)/g)];
 const memoryIds = entries.slice(0, 5).map(match => match[1]);
 const auditIds = entries.slice(5).map(match => match[1]);

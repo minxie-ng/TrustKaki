@@ -99,3 +99,51 @@ Execution of this irreversible cleanup remains unapproved. Independent review fo
 Critical or Important issue and independently reran all three focused tests.
 Recovery-script source review found no additional blocker. Production data remains
 unchanged. Temporary local metadata copies were removed.
+
+
+## Approved cleanup executed — 15 October, 15:15–15:16 Singapore
+
+After reviewing the exact five-row/four-event proposal, the owner replied “approve”.
+The approved SQL was applied through Supabase `apply_migration` to the existing
+project, under name `purge_legacy_personal_memory_copies`. The first connector
+attempt returned an expired-request-state error. Before retrying, read-only SQL
+confirmed 5 rows, 0 scrubbed events, 2 enabled protections and no migration record;
+no partial cleanup occurred. The second attempt returned `success: true`.
+
+Remote history records version `20261015071528`. The reviewed file was moved from
+its proposal location to the local active migration directory under that version;
+only its approval/status comment changed. Local test references were updated.
+
+Post-commit read-only SQL returned:
+
+```text
+legacy_personal_rows: 0
+operational_rows: 1
+scrubbed_events: 4
+total_memory_events: 7
+remaining_snapshot_events: 1 (operational context)
+enabled_protections: 2
+```
+
+All in-transaction exact-snapshot and preservation postconditions passed. Neon
+SHA-256 fingerprints of records/revisions/commands matched before and after
+(4 records, 4 revisions, 7 receipts). Production public smoke exited 0 with all
+three endpoints passing. No application code or deployment changed. The three focused cleanup tests passed
+again after moving the local file to its applied migration version.
+
+Supabase security advisors were inspected after the transaction. Findings concern
+unchanged objects: two INFO RLS-without-policy tables, three mutable-search-path
+functions, executable SECURITY DEFINER functions (one anon, fourteen authenticated),
+and disabled leaked-password protection. This cleanup did not modify those roles,
+functions or Auth settings; findings are not resolved by this release. Review the
+actual function authorization before changing intended authenticated RPC grants.
+Remediation references: [search paths](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable),
+[anonymous definer access](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable),
+[authenticated definer access](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable),
+[RLS policies](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy),
+[password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+This completes the approved legacy-row/audit cleanup only. It does not establish
+global erasure from provider backups, messages/traces, old Pinecone pilot storage or
+other historical copies. Six-hour Neon history and independent-backup limitations
+remain as documented in the runbook.
