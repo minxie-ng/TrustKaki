@@ -118,6 +118,8 @@ async function main() {
       const response=await api("/api/agents/triage",{seniorId:scope.seniorId,message:"What breakfast do I prefer?"});
       assert.equal(response.status,200);const generated=await response.json();
       assert.equal(generated.fallback,false);
+      assert.match(generated.input,/Personal memory status: available/);
+      assert.ok(generated.input.includes(correction.replacement.content));
       assert.match(generated.data.responseMessage,/toast/i);
       assert.doesNotMatch(generated.data.responseMessage,/porridge|MEMORY_OVERRIDE_CANARY_927/i);
       stage = "current statement overrides older memory";
