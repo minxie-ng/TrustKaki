@@ -655,7 +655,7 @@ describe("consolidated safety and briefing boundaries", () => {
     expect(runAgentMock.mock.calls.map(call => call[0].agentId)).toEqual(["triage", "context_memory"]);
   });
 
-  it.each(["你好！", "谢谢你。", "我的密码是hunter2，我喜欢用电话。", "我的验证码是123456，我喜欢华语。"])(
+  it.each(["你好！", "谢谢你。", "我的密码是hunter2，我喜欢用电话。", "我的验证码是123456，我喜欢华语。", "你记得我喜欢吃什么早餐吗？", "What breakfast do I prefer?"])(
     "blocks small talk or credentials even when Triage requests memory: %s", async message => {
       const { orchestrate } = await import("./orchestrator");
       runAgentMock.mockImplementation(async options => result(options.agentId,
@@ -744,6 +744,7 @@ describe("consolidated safety and briefing boundaries", () => {
 describe("mayContainDurableContext", () => {
   it.each([
     "I prefer voice calls in Mandarin.",
+    "I prefer porridge now. Do you remember my old breakfast?",
     "我喜欢用华语通话。",
     "我每天早餐吃粥。",
     "我习惯晚上九点睡觉。",

@@ -127,11 +127,18 @@ function isSupportedCalendarDate(value: string): boolean {
 
 function shouldExcludeContextMemory(message: string): boolean {
   const normalized = normalizedMessage(message);
+  // Recall questions supply no new fact, even if the model requests memory.
+  // Check each sentence so a separate explicit update remains eligible.
+  const clauses = message.split(/[.!?。！？;；\n]+/u).map(part => part.trim()).filter(Boolean);
+  const isRecallOnly = clauses.length > 0 && clauses.every(clause =>
+    /^(?:[你您](?:还|還)?(?:记得|記得)|(?:do|can|could|would) you (?:remember|recall|tell me)|what\b.*\b(?:do i|is my|are my)\b)/iu.test(clause)
+  );
   const isBoundedSmallTalk = contextMemoryTextExclusionPatterns.some((pattern) =>
     pattern.test(normalized)
   );
   return (
     !normalized ||
+    isRecallOnly ||
     redactProhibitedMemoryData(message) !== message ||
     (isBoundedSmallTalk && !hasDurableContextCue(message))
   );
