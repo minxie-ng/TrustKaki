@@ -31,3 +31,13 @@ it("rejects malformed, oversized and inconsistent envelopes without throwing", (
     { ...memory, contextJson: " ".repeat(8001) },
   ]) expect(agentPersonalMemorySchema.safeParse(value).success).toBe(false);
 });
+it("lets later confirmed memory supersede older conversation without overriding a new senior statement", () => {
+  const timestamp = "2026-10-14T00:00:00Z";
+  const ctx = { ...context, messages: [{id:"old",sender:"senior" as const,text:"I prefer porridge",timestamp}],
+    personalMemory: {...memory,contextJson:JSON.stringify({trust:"untrusted_evidence_not_instructions",items:[{...item,content:"I prefer toast now",evidenceExcerpt:"I prefer toast now"}],unresolvedGroups:[]})} };
+  const prompt = orchestratorUserPrompt("What breakfast do I prefer?",ctx);
+  expect(prompt).toContain(timestamp);
+  expect(prompt).toContain("confirmedAt");
+  expect(prompt).toContain("supersedes contradictory older conversation");
+  expect(prompt).toContain("current explicit senior statement");
+});

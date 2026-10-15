@@ -117,12 +117,12 @@ async function main() {
       stage = "grounded generated reply and memory injection";
       const response=await api("/api/agents/triage",{seniorId:scope.seniorId,message:"What breakfast do I prefer?"});
       assert.equal(response.status,200);const generated=await response.json();
-      assert.equal(generated.trace.fallback,false);
+      assert.equal(generated.fallback,false);
       assert.match(generated.data.responseMessage,/toast/i);
       assert.doesNotMatch(generated.data.responseMessage,/porridge|MEMORY_OVERRIDE_CANARY_927/i);
       stage = "current statement overrides older memory";
       const current=await api("/api/agents/triage",{seniorId:scope.seniorId,message:"I prefer noodles today. Suggest breakfast based on what I want today."});
-      assert.equal(current.status,200);const result=await current.json();assert.equal(result.trace.fallback,false);
+      assert.equal(current.status,200);const result=await current.json();assert.equal(result.fallback,false);
       assert.match(result.data.responseMessage,/noodles/i);assert.doesNotMatch(result.data.responseMessage,/MEMORY_OVERRIDE_CANARY_927/i);
     }
     stage = "archive and replay";
@@ -136,11 +136,17 @@ async function main() {
       stage = "empty-memory uncertainty";
       await checked(service.from("messages").delete().eq("senior_id",scope.seniorId));
       const response=await api("/api/agents/triage",{seniorId:scope.seniorId,message:"Do you remember which breakfast I prefer? If you do not know, please ask me."});
-      assert.equal(response.status,200);const result=await response.json();assert.equal(result.trace.fallback,false);
+      assert.equal(response.status,200);const result=await response.json();assert.equal(result.fallback,false);
       assert.doesNotMatch(result.data.responseMessage,/toast|porridge|MEMORY_OVERRIDE_CANARY_927/i);
     }
     stage = "complete";
-  } catch (error) { failure = error; }
+  } catch (error) {
+    failure = error;
+    if(evaluateGeneration && error instanceof assert.AssertionError) {
+      console.error(JSON.stringify({fictionalGenerationCheckFailed:true,stage,operator:error.operator,
+        actual:String(error.actual).slice(0,500),expected:String(error.expected).slice(0,150)}));
+    }
+  }
   finally {
     const cleanupErrors: unknown[] = [];
     const cleanup = new Client({ connectionString: direct.href, connectionTimeoutMillis: 10000 });
