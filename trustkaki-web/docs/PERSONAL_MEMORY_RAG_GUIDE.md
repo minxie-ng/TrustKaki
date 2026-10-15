@@ -107,10 +107,13 @@ load measurements are future work.
 ## Migration and verification evidence
 
 Five legacy personal rows were imported as four canonical records and one revision.
-A family contact route remains operational in Supabase. Three canonical facts are
-active, but their original provenance is missing: they remain caregiver-visible and
-excluded from AI retrieval until an authorised caregiver confirms them. Migration
-never invents evidence or confirmation.
+A family contact route remains operational in Supabase. Three active canonical
+facts initially lacked original provenance and were excluded from AI retrieval.
+On 15 October, the project owner approved retaining all three as fictional demo
+facts. They were confirmed through the authenticated caregiver correction flow,
+with explicit fictional provenance in each audit reason; current embeddings were
+verified for all three. This is not verification about real seniors. Migration
+itself never invents evidence or confirmation.
 
 Legacy Supabase personal rows are frozen historical evidence, not runtime fallback.
 Deletion of those retained copies requires the retention/audit decision. Historical

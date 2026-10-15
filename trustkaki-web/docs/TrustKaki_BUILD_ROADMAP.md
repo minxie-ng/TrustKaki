@@ -176,6 +176,10 @@ Completed retrieval subchunk, 14 October:
   Neon-enabled application; verify the public production alias and repeat fictional
   memory lifecycle, access isolation and all three generated-reply checks with cleanup.
 - [ ] Schedule indexing with recovery/cost controls; validate restore and retention.
+- [x] Review three migrated active facts with the project owner; retain them as
+  fictional demo context using authenticated corrections. Verify three manual
+  confirmations, three current embeddings and three explicit fictional audit reasons.
+  [Review evidence](evidence/2026-10-15-demo-memory-confirmation.md).
 
 Earlier growth subchunk: scheduler retry cap and quiet-hour retry fix are deployed
 and verified; broader retention/pagination work remains open.
