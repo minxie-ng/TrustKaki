@@ -74,7 +74,7 @@ Health does not replace live embedding, retrieval or generated-response checks.
   import/replay and multilingual semantic retrieval are verified.
 - Signed-in candidate, exact deployment promotion, public smoke and production
   grounded generated replies passed; consult the cutover record.
-- Add scheduled bounded indexing with recovery/cost controls.
+- Scheduled bounded indexing is live; see [worker release evidence](evidence/2026-10-15-memory-index-retries.md).
 - Complete backup restore and retention operations. Lifecycle erasure is tested,
   but historical Supabase copies remain frozen evidence until retention is decided.
 
@@ -97,10 +97,39 @@ inference or an explicitly configured OpenAI-compatible embeddings endpoint. All
 vectors must be 1,024-dimensional, finite and nonzero. Changing embedding model
 requires rebuilding vectors and evaluating the threshold again.
 
-`indexPendingMemory` attempts at most 20 sources. Provider failures leave sources
-pending; version-checked publication rejects corrections/erasures made during the
-API call. This is the indexing operation, not a deployed scheduler or durable retry
-policy. Source content is sent to the configured embedding provider.
+## Scheduled indexing and recovery
+
+Migration `002_index_retries.sql` is applied on production after the foundation:
+
+```sh
+npm run memory:neon:migrate -- --confirm-live --migration=002_index_retries
+```
+
+Do not rerun an applied migration. Rehearse new schema changes on an isolated Neon
+branch first. The migration runner validates the selected version and prerequisites.
+
+Foreground `indexPendingMemory` claims at most twenty sources. The protected
+`/api/internal/memory/process-pending` worker claims at most ten. Both use durable
+Neon claims, two-minute leases, version/token/model fences, five attempts per source
+version and backoff of 15/30/60/120/240 minutes. A correction creates a new version
+and resets attempts; an exact request replay does not. Capped pending facts need
+review and an intentional correction/reconfirmation. Provider failure preserves the
+source. Approved source text is sent to the configured embedding provider.
+
+Vercel Cron invokes the worker daily at `15 0 * * *` (nominal 08:15 Singapore;
+Hobby execution has hourly precision). It uses existing `CRON_SECRET`; missing or
+incorrect authorization fails closed. To inspect or manually trigger this memory
+job from the linked app directory without exposing that secret:
+
+```sh
+vercel crons list
+vercel crons run /api/internal/memory/process-pending
+```
+
+The production trigger returned HTTP 200 on 15 October. The next natural daily tick
+has not yet been observed. This is bounded retry recovery, not an immediate-recovery
+or dollar-budget guarantee. Keep provider spending controls enabled. See the
+[worker release record](evidence/2026-10-15-memory-index-retries.md).
 
 The benchmark uses random fictional org/senior UUIDs and reads source facts from
 Neon through the same scoped repository. It deletes records/revisions/receipts for

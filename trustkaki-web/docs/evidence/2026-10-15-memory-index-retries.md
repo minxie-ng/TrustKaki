@@ -73,8 +73,45 @@ unauthenticated/foreign-senior denial, extraction into Neon only, semantic retri
 caregiver correction, exact retries, stale-editor conflicts, archive exclusion,
 old-extraction non-resurrection and fictional fixture cleanup all passed.
 
-Signed-in candidate verification, promotion, hosted cron invocation and production
-smoke remain release gates. The daily schedule is not yet active on production.
+## Production completion — 15 October, 14:52–14:54 Singapore
+
+The owner signed in on the exact candidate. Read-only UI verification loaded all
+three fictional seniors, the selected priority case, human follow-up and supporting
+care context. Normal caregiver view showed no technical traces or admin controls.
+
+`vercel promote` exited 0 and reported promotion of
+`dpl_DLK2uZdWJHh36Gcz1Y4KskjL2Fyj`. Inspection of the public alias resolved to that
+same Ready deployment; production health returned `a208a00d284a`, status ok and
+personal-memory database reachable.
+
+```text
+npm run release:smoke -- https://trustkaki.vercel.app
+PASS /api/health
+PASS /privacy
+PASS /data-deletion
+RELEASE SMOKE PASSED
+
+vercel crons list
+1 cron job: /api/internal/memory/process-pending, 15 0 * * *
+
+vercel crons run /api/internal/memory/process-pending
+Cron job triggered, invocation time 2026-10-15T06:52:41.240Z
+
+vercel logs [exact deployment, memory route, bounded time filter]
+14:52:41 GET /api/internal/memory/process-pending 200
+```
+
+All commands exited 0. The hosted protected worker completed successfully through
+Vercel's trigger, using the existing secret without exposing or rotating it. This
+verifies a manual platform invocation; the next natural daily tick has not yet
+been observed. Real embedding recovery was separately verified in the production
+DB smoke above. No outbound channel processing was invoked.
+
+The daily memory schedule is now active. The previous verified Neon deployment
+remains the rollback target. Rehearsal branch, temporary credentials copy and failed
+raw-response log were removed; fictional fixture cleanup passed. Documentation-only
+commit `8a1c110` updated the smoke matcher/evidence after runtime staging; no runtime
+redeploy was needed.
 
 ## Operating limits
 

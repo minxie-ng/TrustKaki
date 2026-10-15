@@ -4,7 +4,7 @@ Updated: 15 October 2026
 
 Status: Neon personal memory is live in production; legacy import is reconciled and old personal writes frozen.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: close indexing, restore and retention operations, then take the next agreed UI/agent slice.
+Next: validate restore and retention operations, then take the next agreed UI/agent slice.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -175,9 +175,10 @@ Completed retrieval subchunk, 14 October:
 - [x] Complete signed-in verification on the accepted candidate and promote the
   Neon-enabled application; verify the public production alias and repeat fictional
   memory lifecycle, access isolation and all three generated-reply checks with cleanup.
-- [ ] Finish scheduled indexing release: retry/lease migration applied, 995 tests,
-  branch and production recovery checks, and candidate generated replies pass.
-  Exact-candidate sign-in and promotion/hosted cron trigger remain.
+- [x] Release scheduled indexing: retry/lease migration, 995 tests, branch and
+  production recovery checks, candidate generated replies and signed-in UI pass.
+  Runtime `a208a00d284a` promoted; hosted memory cron returned 200 and production
+  public smoke passed. Daily schedule active; natural daily tick not yet observed.
   [Worker evidence](evidence/2026-10-15-memory-index-retries.md).
 - [ ] Validate restore and historical-copy retention.
 - [x] Review three migrated active facts with the project owner; retain them as

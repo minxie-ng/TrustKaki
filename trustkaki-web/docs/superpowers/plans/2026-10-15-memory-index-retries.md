@@ -19,7 +19,7 @@ Execute inline using the approved design and test-first steps.
   on an expiring Neon branch; verify runtime permission and cleanup.
 - [x] Run `npm run test`, `npm run typecheck`, `npm run lint`, `npm run build`.
   Apply tested migration, stage reviewed code and verify fictional retry lifecycle.
-- [ ] Complete signed-in candidate check, promote, trigger the protected hosted cron
+- [x] Complete signed-in candidate check, promote, trigger the protected hosted cron
   and verify production smoke.
-- [ ] Configure only the memory daily cron, update operations/roadmap/evidence,
+- [x] Configure only the memory daily cron, update operations/roadmap/evidence,
   remove rehearsal resources and commit the final evidence.

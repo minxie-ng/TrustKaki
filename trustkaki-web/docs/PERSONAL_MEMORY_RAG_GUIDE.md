@@ -46,8 +46,11 @@ code performs it. Development review agents are separate from the six product ro
 4. A bounded indexing attempt sends approved fact text to the embedding provider and
    stores its vector in Neon. Source version and embedding model must still match
    when the vector is published. Failed indexing leaves the source saved and pending.
-5. Pending indexing retries on later writes/retrieval. A durable scheduled worker
-   remains follow-up work; this is not a background queue guarantee.
+5. Pending indexing retries through shared Neon claims on later writes/retrieval
+   and a protected daily Vercel worker. The worker handles at most ten facts per run;
+   leases and increasing delays prevent concurrent/immediate repeated charges.
+   Five attempts per version require review if exhausted; corrections reset the cap.
+   Daily scheduling does not guarantee immediate recovery.
 
 ## How a reply uses memory
 
@@ -150,7 +153,7 @@ for their respective earlier stages.
 - [Transactions and RLS scope](../src/lib/memory/neonDatabase.ts)
 - [Prompts](../src/lib/agents/prompts.ts)
 
-Before real senior use: schedule durable indexing, validate restore and retention,
+Before real senior use: validate restore and retention,
 measure production load and broader reply faithfulness, and complete the operational
 pilot requirements. Community-event availability needs a separate current source;
 a remembered interest alone does not prove a suitable event exists.
