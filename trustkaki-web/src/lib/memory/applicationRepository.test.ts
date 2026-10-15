@@ -97,7 +97,8 @@ it("keeps indexed facts retrievable when an unrelated pending batch cannot be em
     evidenceExcerpt: "I like porridge", confirmedAt: now, expiresAt: null, status: "active", version: 1,
     conflictGroup: null, unresolvedConflict: false, safeUseNotes: null };
   query.mockImplementation(async (_scope, sql) => {
-    if (sql.includes("embedding IS NULL")) return [{ source: { ...source, id: "pending" } }];
+    if (sql.includes("claim_index_batch")) return [{ source: { ...source, id: "pending" }, leaseToken: crypto.randomUUID() }];
+    if (sql.includes("UPDATE personal_memory.records")) return [{ id: "pending" }];
     if (sql.includes("1 - (embedding")) return [{ organisationId, seniorId, id: "ready", sourceVersion: 1, indexVersion: 1, embeddingModel: "fictional-model", score: 0.9 }];
     return [{ source }];
   });

@@ -1,6 +1,13 @@
 import "server-only";
 import { z } from "zod";
 
+export function configuredMemoryEmbeddings() {
+  const endpoint = process.env.TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT ?? "";
+  return createMemoryEmbeddings({ endpoint, model: process.env.TRUSTKAKI_MEMORY_EMBEDDING_MODEL ?? "",
+    apiKey: endpoint === "https://api.pinecone.io/embed" ? process.env.TRUSTKAKI_MEMORY_PINECONE_API_KEY ?? ""
+      : process.env.TRUSTKAKI_MEMORY_EMBEDDING_API_KEY ?? "" });
+}
+
 export function createMemoryEmbeddings(config: { endpoint: string; apiKey: string; model: string }, send: typeof fetch = fetch) {
   const url = new URL(config.endpoint);
   const native = url.href === "https://api.pinecone.io/embed";

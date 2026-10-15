@@ -110,7 +110,9 @@ describe("deployment hardening", () => {
     expect(scheduler).toBeTruthy();
     const sql = source(`supabase/migrations/${scheduler}`);
 
-    expect(config.crons ?? []).toEqual([]);
+    expect(config.crons ?? []).toEqual([
+      { path: "/api/internal/memory/process-pending", schedule: "15 0 * * *" },
+    ]);
     expect(sql).toContain("cron.schedule");
     expect(sql).toContain("*/5 * * * *");
     expect(sql).toContain("/api/internal/check-ins/process-due");

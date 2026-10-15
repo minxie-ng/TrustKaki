@@ -1,4 +1,4 @@
 {
   "regions": ["sin1"],
-  "crons": []
+  "crons": [{ "path": "/api/internal/memory/process-pending", "schedule": "15 0 * * *" }]
 }

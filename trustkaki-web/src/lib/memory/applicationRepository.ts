@@ -7,7 +7,7 @@ import { neonMemorySql, withNeonMemoryTransaction, type MemoryTransaction, type 
 import { memoryScopeSchema, type MemoryScope, type MemoryRetrievalResult } from "./retrievalContracts";
 import { createPostgresMemoryStore } from "./postgresStore";
 import { personalMemoryReadItem } from "./personalMemoryMapping";
-import { createMemoryEmbeddings } from "./embeddings";
+import { configuredMemoryEmbeddings } from "./embeddings";
 import { retrievePersonalMemory } from "./retrieval";
 import { memoryApplicationTags } from "./contracts";
 import { indexPendingMemory } from "./indexPending";
@@ -81,7 +81,7 @@ export async function retrieveNeonPersonalMemory(scope: MemoryScope, query: stri
   try {
     memoryScopeSchema.parse(scope);
     const model = process.env.TRUSTKAKI_MEMORY_EMBEDDING_MODEL ?? "";
-    const embeddings = configuredEmbeddings();
+    const embeddings = configuredMemoryEmbeddings();
     const store = createPostgresMemoryStore(neonMemorySql, model);
     const result = await retrievePersonalMemory({ seniorId: scope.seniorId, query, now }, {
       embeddingModel: model, indexEmbeddingModel: model,
@@ -102,19 +102,12 @@ export async function retrieveNeonPersonalMemory(scope: MemoryScope, query: stri
   }
 }
 
-function configuredEmbeddings() {
-  const model = process.env.TRUSTKAKI_MEMORY_EMBEDDING_MODEL ?? "";
-  const endpoint = process.env.TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT ?? "";
-  const apiKey = endpoint === "https://api.pinecone.io/embed"
-    ? process.env.TRUSTKAKI_MEMORY_PINECONE_API_KEY ?? "" : process.env.TRUSTKAKI_MEMORY_EMBEDDING_API_KEY ?? "";
-  return createMemoryEmbeddings({ endpoint, apiKey, model });
-}
 async function tryIndexPersonalMemory(scope: MemoryScope) {
   try {
-    const embeddings = configuredEmbeddings();
+    const embeddings = configuredMemoryEmbeddings();
     const store = createPostgresMemoryStore(neonMemorySql, process.env.TRUSTKAKI_MEMORY_EMBEDDING_MODEL ?? "");
     await indexPendingMemory(scope, store, embeddings.embedBatch, AbortSignal.timeout(2000));
-  } catch { /* Source commit succeeded. Pending rows retry on the next write or retrieval. */ }
+  } catch { /* Source commit succeeded. Durable retry state is shared with the daily worker. */ }
 }
 
 async function memoryPurposeTransaction<T>(client: TrustKakiClient, command: AutomaticContextRpcCommand,

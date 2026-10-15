@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { createPostgresMemoryStore, type ScopedMemorySql } from "./postgresStore";
 import { retrievePersonalMemory } from "./retrieval";
+import { indexPendingMemory } from "./indexPending";
 import { fictionalRecord, retrievalEvaluationScope as scope, retrievalEvaluationTime as now } from "@/lib/agents/evaluation/memoryRetrievalCases";
 import type { MemoryScope } from "./retrievalContracts";
 
@@ -26,6 +27,7 @@ const store = () => createPostgresMemoryStore(execute, model);
 beforeAll(async () => {
   db = await PGlite.create({ extensions: { vector } });
   await db.exec(await readFile("neon/migrations/001_personal_memory.sql", "utf8"));
+  await db.exec(await readFile("neon/migrations/002_index_retries.sql", "utf8"));
 }, 30000);
 afterAll(async () => { await db?.close(); });
 beforeEach(async () => { await db.exec("TRUNCATE personal_memory.records, personal_memory.revisions, personal_memory.commands"); });
@@ -101,6 +103,77 @@ it("exposes a bounded pending batch until current embeddings are published", asy
   expect(await store().pending(scope, 10)).toEqual([source()]);
   await store().publishEmbedding(scope, "gardening", 1, embedding());
   expect(await store().pending(scope, 10)).toEqual([]);
+});
+it("backs off a failed embedding instead of charging again on the next read", async () => {
+  await store().apply(scope, command());
+  const embed = vi.fn().mockRejectedValue(new Error("provider unavailable"));
+  await expect(indexPendingMemory(scope, store(), embed, AbortSignal.timeout(1000))).rejects.toThrow();
+  expect(await indexPendingMemory(scope, store(), embed, AbortSignal.timeout(1000)))
+    .toEqual({ attempted: 0, published: 0, stale: 0 });
+  expect(embed).toHaveBeenCalledTimes(1);
+});
+it("leases claims once and fences a worker whose lease expired and was reclaimed", async () => {
+  await store().apply(scope, command());
+  const [old] = await store().claimPending(scope, 10);
+  await db.exec("UPDATE personal_memory.records SET index_next_attempt_at='-infinity'");
+  expect(await store().claimPending(null, 10)).toEqual([]);
+  await db.exec("UPDATE personal_memory.records SET index_lease_until=clock_timestamp()-interval '1 second'");
+  const [current] = await store().claimPending(null, 10);
+  expect(current.leaseToken).not.toBe(old.leaseToken);
+  expect(await store().finishClaim(old, embedding())).toBe(false);
+  expect(await store().finishClaim(current, embedding())).toBe(true);
+  expect(await store().claimPending(null, 10)).toEqual([]);
+});
+it("caps each version at five attempts, preserves cap on replay and resets on correction", async () => {
+  const c = command(); await store().apply(scope, c);
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const [claim] = await store().claimPending(scope, 10);
+    expect(claim).toBeDefined();
+    const { rows } = await db.query<{ attempts: number; delay: number }>(`SELECT index_attempts AS attempts,
+      extract(epoch FROM index_next_attempt_at-clock_timestamp())::float AS delay FROM personal_memory.records`);
+    expect(rows[0].attempts).toBe(attempt);
+    expect(rows[0].delay).toBeGreaterThan(15 * 60 * 2 ** (attempt - 1) - 10);
+    await store().finishClaim(claim, null);
+    expect(await store().claimPending(scope, 10)).toEqual([]);
+    await db.exec("UPDATE personal_memory.records SET index_next_attempt_at='-infinity'");
+  }
+  expect(await store().claimPending(null, 10)).toEqual([]);
+  await store().apply(scope, c);
+  expect(await store().claimPending(scope, 10)).toEqual([]);
+  await store().apply(scope, command({ expectedVersion: 1, source: source("gardening", 2) }));
+  const [fresh] = await store().claimPending(scope, 10);
+  expect(fresh.source.version).toBe(2);
+  expect((await db.query("SELECT index_attempts FROM personal_memory.records")).rows).toEqual([{ index_attempts: 1 }]);
+});
+it("rejects a stale claim after a correction or archive", async () => {
+  await store().apply(scope, command());
+  const [claim] = await store().claimPending(scope, 10);
+  await store().apply(scope, command({ expectedVersion: 1, source: source("gardening", 2) }));
+  expect(await store().finishClaim(claim, embedding())).toBe(false);
+  const [next] = await store().claimPending(scope, 10);
+  await store().apply(scope, command({ expectedVersion: 2, action: "archive", source: undefined }));
+  expect(await store().finishClaim(next, embedding())).toBe(false);
+  expect(await store().claimPending(null, 10)).toEqual([]);
+});
+it("claims only eligible unexpired confirmed records for the requested model", async () => {
+  for (const s of [source("good"), { ...source("expired"), expiresAt: new Date(Date.now()-1000).toISOString() },
+    { ...source("future"), confirmedAt: new Date(Date.now()+60000).toISOString() },
+    { ...source("missing"), evidenceExcerpt: "", metadata: { ...metadata(), provenanceStatus: "missing_source" as const } }]) {
+    await store().apply(scope, command({ id: s.id, source: s }));
+  }
+  expect(await createPostgresMemoryStore(execute, "different-model").claimPending(null, 10)).toEqual([]);
+  expect((await store().claimPending(null, 10)).map(c => c.source.id)).toEqual(["good"]);
+});
+it("keeps global discovery behind the bounded function without granting the worker role", async () => {
+  await store().apply(scope, command());
+  const foreign = { ...scope, seniorId: crypto.randomUUID() };
+  expect(await store().claimPending(foreign, 10)).toEqual([]);
+  expect(await execute(foreign, "SELECT source FROM personal_memory.records", [])).toEqual([]);
+  const member = await db.query<{ member: boolean }>("SELECT pg_has_role('trustkaki_memory_runtime','trustkaki_memory_index_worker','MEMBER') AS member");
+  expect(member.rows[0].member).toBe(false);
+  expect((await store().claimPending(null, 1))).toHaveLength(1);
+  await expect(store().claimPending(null, 21)).rejects.toThrow();
+  await expect(execute(scope, "SELECT * FROM personal_memory.claim_index_batch($1,21,NULL,NULL)", [model])).rejects.toThrow();
 });
 it("rejects malformed or foreign writes, oversized reads and bad vectors before SQL", async () => {
   const sql = vi.fn(); const s = createPostgresMemoryStore(sql, model);
