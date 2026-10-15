@@ -76,6 +76,18 @@ it("checks original backend receipts before mutable purpose checks on retry", as
 });
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+it("logs bounded retrieval status without source content, scope or credentials", async () => {
+  const log = vi.spyOn(console, "info").mockImplementation(() => {});
+  try {
+    vi.stubEnv("TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT", "https://embedding.example/embeddings");
+    vi.stubEnv("TRUSTKAKI_MEMORY_EMBEDDING_API_KEY", "fictional-secret");
+    vi.stubEnv("TRUSTKAKI_MEMORY_MIN_SCORE", "invalid");
+    await retrieveNeonPersonalMemory({ organisationId, seniorId }, "Private fictional preference", "2026-10-15T00:00:00.000Z");
+    const event = JSON.parse(log.mock.calls[0][0]);
+    expect(event).toEqual({ event: "personal_memory_retrieval", status: "unavailable", reason: "invalid_input",
+      candidates: 0, unresolvedGroupCount: 0, selected: 0, elapsedMs: expect.any(Number) });
+  } finally { log.mockRestore(); }
+});
 it("keeps indexed facts retrievable when an unrelated pending batch cannot be embedded", async () => {
   vi.stubEnv("TRUSTKAKI_MEMORY_EMBEDDING_ENDPOINT", "https://embedding.example/embeddings");
   vi.stubEnv("TRUSTKAKI_MEMORY_EMBEDDING_API_KEY", "fictional-key");

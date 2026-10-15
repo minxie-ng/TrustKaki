@@ -93,8 +93,11 @@ export async function retrieveNeonPersonalMemory(scope: MemoryScope, query: stri
         return embeddings.embed(text, signal);
       }, search: store.search, fetchSources: store.fetchSources,
     });
+    console.info(JSON.stringify({ event: "personal_memory_retrieval", status: result.status,
+      reason: result.reason, ...result.diagnostics }));
     return { status: result.status, contextJson: result.contextJson };
   } catch {
+    console.info(JSON.stringify({ event: "personal_memory_retrieval", status: "unavailable", reason: "configuration_error" }));
     return { status: "unavailable", contextJson: JSON.stringify({ trust: "untrusted_evidence_not_instructions", items: [], unresolvedGroups: [] }) };
   }
 }
