@@ -119,7 +119,11 @@ verified for all three. This is not verification about real seniors. Migration
 itself never invents evidence or confirmation.
 
 Legacy Supabase personal rows are frozen historical evidence, not runtime fallback.
-Deletion of those retained copies requires the retention/audit decision. Historical
+A historical-branch recovery drill passed: facts, vectors, revisions, receipts and
+access isolation matched. Current Neon history is six hours; independent backup
+and post-restore erasure replay remain unverified. See the
+[recovery/retention runbook](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md).
+Deletion of retained Supabase rows and audit snapshots requires the retention/audit decision. Historical
 Supabase command identities were not imported as Neon receipts; old in-flight edits
 may need a dashboard refresh and reviewed reissue.
 
@@ -153,7 +157,7 @@ for their respective earlier stages.
 - [Transactions and RLS scope](../src/lib/memory/neonDatabase.ts)
 - [Prompts](../src/lib/agents/prompts.ts)
 
-Before real senior use: validate restore and retention,
+Before real senior use: complete independent-backup/post-restore erasure checks and retention,
 measure production load and broader reply faithfulness, and complete the operational
 pilot requirements. Community-event availability needs a separate current source;
 a remembered interest alone does not prove a suitable event exists.

@@ -75,8 +75,11 @@ Health does not replace live embedding, retrieval or generated-response checks.
 - Signed-in candidate, exact deployment promotion, public smoke and production
   grounded generated replies passed; consult the cutover record.
 - Scheduled bounded indexing is live; see [worker release evidence](evidence/2026-10-15-memory-index-retries.md).
-- Complete backup restore and retention operations. Lifecycle erasure is tested,
-  but historical Supabase copies remain frozen evidence until retention is decided.
+- Historical branch recovery drill passed (facts, vectors, revisions, receipts and
+  RLS); current Free history window is six hours, not an independent backup.
+- Decide historical-copy retention; five Supabase personal rows and four related
+  snapshots remain frozen. Independent backup and post-restore erasure replay remain
+  open before real-user use. See the [recovery/retention runbook](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md).
 
 ## Semantic retrieval verification (15 October)
 

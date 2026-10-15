@@ -4,7 +4,7 @@ Updated: 15 October 2026
 
 Status: Neon personal memory is live in production; legacy import is reconciled and old personal writes frozen.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: validate restore and retention operations, then take the next agreed UI/agent slice.
+Next: review/apply the prepared legacy-copy cleanup; historical recovery drill passed. Then take the next agreed UI/agent slice.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -180,7 +180,18 @@ Completed retrieval subchunk, 14 October:
   Runtime `a208a00d284a` promoted; hosted memory cron returned 200 and production
   public smoke passed. Daily schedule active; natural daily tick not yet observed.
   [Worker evidence](evidence/2026-10-15-memory-index-retries.md).
-- [ ] Validate restore and historical-copy retention.
+- [x] Rehearse recovery into an isolated historical Neon branch: 4 facts, 4 revisions,
+  7 receipts and 3 current vectors recovered; RLS/scoped retrieval pass; production
+  unchanged and test branches removed. Current Free history window: six hours.
+  [Recovery evidence](evidence/2026-10-15-memory-recovery-retention.md).
+- [x] Prepare immediate legacy-copy cleanup, as requested: 5 frozen Supabase personal
+  rows and 4 related audit snapshots/reason/key text; exact allowlist/change guards,
+  transaction rollback and preservation checks prepared outside active migrations.
+  Three PGlite tests pass. [Proposal](operations/proposed-migrations/20261015070533_purge_legacy_personal_memory_copies.sql).
+- [ ] Obtain approval for the concrete irreversible cleanup, apply and verify it. No
+  production rows or snapshots have been deleted.
+- [ ] Before real-user use: independent backup recovery, post-restore erasure replay
+  and recovery objectives beyond the current history window.
 - [x] Review three migrated active facts with the project owner; retain them as
   fictional demo context using authenticated corrections. Verify three manual
   confirmations, three current embeddings and three explicit fictional audit reasons.
