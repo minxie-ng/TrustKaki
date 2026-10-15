@@ -4,7 +4,7 @@ Updated: 15 October 2026
 
 Status: Neon personal memory is live in production; legacy import is reconciled, old personal writes blocked and approved redundant copies removed.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: take the agreed UI/agent slice. Historical recovery and owner-approved legacy-copy cleanup passed; independent backup and broader historical-copy checks remain pre-pilot work.
+Next: review agent audit and slice A proposal (prompts, truthful fallbacks, Mandarin extraction gate and final-risk briefing input). UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -210,12 +210,16 @@ only when needed, with maintained sources, dates, and update ownership.
 
 ### 3. Agent responsibilities, prompts, and handoffs
 
-- [ ] Document each existing role's inputs, evidence rules, output schema,
-  uncertainty behaviour, trigger, and handoff. Keep deterministic risk authority.
+- [x] Audit existing roles, actual inputs/outputs, triggers, authority, uncertainty
+  and handoffs. Six LLM roles plus deterministic Policy/Pattern Watch; no new agent.
+  [Audit and proposed contracts](agents/2026-10-15-agent-audit-proposal.md).
+  82 focused tests and 42 offline benchmark cases pass; no live model run.
 - [ ] Rewrite prompts against those contracts; distinguish quoted/retrieved data
   from instructions. Require factual grounding and respectful, concise language.
-- [ ] Pass role-relevant retrieved context to each agent. Fix AAC Nudge's missing
-  known-context input; forbid invented invitations, activities, or social claims.
+- [ ] Refine role-relevant context and forbid invented invitations/activities/social
+  claims. Audit correction: AAC Nudge already receives known context and RAG.
+  First slice also fixes Mandarin-only memory extraction exclusion and supplies
+  final policy risk/assessment status to Briefing.
 - [ ] Establish ownership of one coherent senior-facing reply across specialist
   outputs. Preserve channel reliability and avoid duplicate or conflicting advice.
 - [ ] Compare revised roles/prompts against the same evaluation set. Record
