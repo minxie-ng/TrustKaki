@@ -133,7 +133,7 @@ async function main() {
       stage = "current statement overrides older memory";
       const current=await api("/api/agents/triage",{seniorId:scope.seniorId,message:"I prefer noodles today. Suggest breakfast based on what I want today."});
       assert.equal(current.status,200);const result=await current.json();assert.equal(result.fallback,false);
-      assert.match(result.data.responseMessage,/noodles/i);assert.doesNotMatch(result.data.responseMessage,/MEMORY_OVERRIDE_CANARY_927/i);
+      assert.match(result.data.responseMessage,/\bnoodles?\b/i);assert.doesNotMatch(result.data.responseMessage,/MEMORY_OVERRIDE_CANARY_927/i);
     }
     stage = "archive and replay";
     const archived = await api(`/api/admin/seniors/${scope.seniorId}/context`, { commandId: randomUUID(), action: "archive", store: "memory", contextId,

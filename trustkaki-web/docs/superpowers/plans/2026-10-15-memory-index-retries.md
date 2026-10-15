@@ -7,18 +7,19 @@ claims, scoped publication and one protected daily Vercel job.
 
 Execute inline using the approved design and test-first steps.
 
-- [ ] Add failing real-SQL tests in `src/lib/memory/indexQueue.test.ts` for the
+- [x] Add failing real-SQL tests in `src/lib/memory/postgresStore.test.ts` for the
   migration's claim contract, RLS, exclusions, backoff, attempt cap and version reset.
-  Run `npm test -- src/lib/memory/indexQueue.test.ts`; verify missing function fails.
-- [ ] Add `neon/migrations/002_index_retries.sql`, `indexQueue.ts` and shared
+  Run the new backoff regression; observe the second request incorrectly calls the provider.
+- [x] Add `neon/migrations/002_index_retries.sql`, queue methods in `postgresStore.ts` and shared
   token-fenced publication. Run the SQL tests until green.
-- [ ] Change `indexPending.ts` to claim and release durably; add provider-failure,
+- [x] Change `indexPending.ts` to claim and release durably; add provider-failure,
   cancellation and no-work tests. Add `indexWorker.ts` and authenticated route/tests
   at `src/app/api/internal/memory/process-pending/`. Test authorization and hard caps.
-- [ ] Update versioned migration runner and fictional live smoke script. Rehearse
+- [x] Update versioned migration runner and fictional live smoke script. Rehearse
   on an expiring Neon branch; verify runtime permission and cleanup.
-- [ ] Run `npm run test`, `npm run typecheck`, `npm run lint`, `npm run build`.
-  Apply tested migration, stage reviewed code, verify worker endpoint and fictional
-  retry lifecycle, then promote and verify production smoke.
+- [x] Run `npm run test`, `npm run typecheck`, `npm run lint`, `npm run build`.
+  Apply tested migration, stage reviewed code and verify fictional retry lifecycle.
+- [ ] Complete signed-in candidate check, promote, trigger the protected hosted cron
+  and verify production smoke.
 - [ ] Configure only the memory daily cron, update operations/roadmap/evidence,
   remove rehearsal resources and commit the final evidence.

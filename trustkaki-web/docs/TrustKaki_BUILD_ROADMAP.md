@@ -175,7 +175,11 @@ Completed retrieval subchunk, 14 October:
 - [x] Complete signed-in verification on the accepted candidate and promote the
   Neon-enabled application; verify the public production alias and repeat fictional
   memory lifecycle, access isolation and all three generated-reply checks with cleanup.
-- [ ] Schedule indexing with recovery/cost controls; validate restore and retention.
+- [ ] Finish scheduled indexing release: retry/lease migration applied, 995 tests,
+  branch and production recovery checks, and candidate generated replies pass.
+  Exact-candidate sign-in and promotion/hosted cron trigger remain.
+  [Worker evidence](evidence/2026-10-15-memory-index-retries.md).
+- [ ] Validate restore and historical-copy retention.
 - [x] Review three migrated active facts with the project owner; retain them as
   fictional demo context using authenticated corrections. Verify three manual
   confirmations, three current embeddings and three explicit fictional audit reasons.
