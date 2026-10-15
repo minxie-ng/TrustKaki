@@ -2,6 +2,10 @@
 
 15 October 2026 (Singapore). Local implementation; production is unchanged.
 
+Subsequent live comparison: [results](2026-10-15-agent-live-comparison.md).
+It measured fewer calls and one reply per turn but found a remaining unsupported
+Mandarin memory promise. Release remains NO-GO despite passing local validation.
+
 ## Changes
 
 - Main chat flow starts with Triage, which owns routing and optional grounded social

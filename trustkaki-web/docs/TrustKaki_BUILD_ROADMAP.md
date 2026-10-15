@@ -4,7 +4,7 @@ Updated: 15 October 2026
 
 Status: Neon personal memory is live in production; legacy import is reconciled, old personal writes blocked and approved redundant copies removed.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: validate the locally implemented agent consolidation with a bounded live comparison before release; evaluate Jev only on a bounded task if it adds value. UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
+Next: resolve unsupported action/memory promises with verified capability state before releasing agent consolidation. The bounded live comparison is complete but NO-GO; prompt-only fixes remain unreliable. [Results](evidence/2026-10-15-agent-live-comparison.md). Evaluate Jev only on a bounded task if it adds value. UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -221,9 +221,11 @@ only when needed, with maintained sources, dates, and update ownership.
 - [ ] Before production promotion: bounded live comparison of routing, grounded
   responses and refusal handling; no claim of model-quality parity from mocks.
   [Local implementation evidence](evidence/2026-10-15-agent-consolidation.md).
-  [Prepared live comparison](agents/2026-10-15-live-comparison-plan.md): baseline
-  `c727264`, balanced fictional cases plus targeted language/grounding checks;
-  US$1 total cap accepted; waiting for the local model key.
+  [Live comparison](evidence/2026-10-15-agent-live-comparison.md) completed:
+  26 paired fictional cases, corrected full rerun and five capability follow-ups;
+  US$0.04385 estimated total charge. Fewer calls and one reply per turn observed.
+  **NO-GO:** Mandarin acknowledgement still promises memory before confirmation.
+  Design verified-state responses next; do not keep tuning prompts alone.
 - [ ] Evaluate Jev as an optional bounded classification experiment against Triage
   and simple rules on fictional English/Mandarin/Singlish cases. Shadow first; no
   policy, memory-write or outreach authority. Laya is a self-hosted alternative,
@@ -358,6 +360,8 @@ clear, and remaining limits are explicit. Deployment is a separate recorded step
   1,006 indexed active facts (including one expired fact excluded at search),
   30/30 questions, zero forbidden facts, warm p95 501 ms, fixture cleanup verified.
   [Evidence](evidence/2026-10-15-neon-semantic-retrieval.md).
-- **Next chunk:** authenticated application memory integration and grounded reply
-  evaluation. Deployment credentials, restore, retention and cutover remain gates.
-  Metadata mapping and local restricted-login verification are complete. Event discovery, prompt redesign and UI improvements remain later work.
+- **15 October 2026 — live agent comparison complete, release blocked:** baseline,
+  initial candidate, corrected 26-case run and five follow-ups recorded. Final
+  local validation: 1,042 passed, 38 skipped; typecheck/lint/build passed. Resolve
+  capability/persistence promises before a release request. Production memory
+  remains live; event discovery, optional Jev evaluation and UI remain later work.

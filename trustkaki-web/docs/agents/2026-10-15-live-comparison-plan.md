@@ -1,19 +1,27 @@
 # Bounded live comparison: consolidated agents
 
-15 October 2026, Singapore. Prepared; no paid inference has run.
+15 October 2026, Singapore. Owner-approved fictional live comparison.
 
 ## Current preflight
 
 - Baseline revision: `c727264` (six-role production architecture).
-- Candidate: current local consolidation; capture an exact commit and clean diff
-  before the paid run. Local validation evidence is in
+- Initial candidate: `512f70f`; corrected candidate: `95847ce`. Local validation evidence is in
   `../evidence/2026-10-15-agent-consolidation.md`.
-- Local `.env.local` has no usable `TRUSTKAKI_LLM_API_KEY`, model or base-URL entry.
-  No other local `.env` file supplied a model credential. Values were not printed.
-- Owner instructed proceeding after the proposed US$1 total evaluation cap;
-  use that cap for this fictional comparison. A fresh local check still found
-  no usable model key. Never run unconfigured-provider fallbacks as a successful
-  live evaluation. No paid inference has run.
+- Owner saved the OpenAI key in ignored `.env.local`; values were not printed.
+- Model pinned to `gpt-4o-mini-2024-07-18` in the evaluation process only.
+  Official standard pricing checked: US$0.15/million input tokens and
+  US$0.60/million output tokens ([model documentation](https://developers.openai.com/api/docs/models/gpt-4o-mini)).
+- Owner approved US$1 total. A persisted per-request reservation includes the
+  UTF-8 input byte bound, framing allowance, complete output allowance and retries.
+  No refunds for failures; independent ceiling of 250 requests. Use one process
+  at a time and preserve the same budget file across baseline, candidate and reruns.
+- First run exposed an unsupported memory proposal from a Mandarin recall
+  question, object-shaped routing retries, and unsupported action promises.
+  Fixes and corrected-run results are recorded in the comparison evidence.
+- Final focused revision: `0482c59`, five follow-ups. Comparison complete;
+  **NO-GO** because a Mandarin reply still promises to remember before confirmed
+  persistence. Total estimated charge US$0.0438471; reservation US$0.331489.
+  See [results and next design](../evidence/2026-10-15-agent-live-comparison.md).
 
 ## Approach
 
