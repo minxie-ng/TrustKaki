@@ -28,10 +28,12 @@ Updated: 16 October 2026
   typecheck/lint/build passed. Independent review addressed the tested edge cases.
   Not deployed or re-evaluated with paid models.
   [Corrections and limits](evidence/2026-10-16-chat-reply-corrections.md).
-- **Next chunk:** design bounded Jev routing authority and failure/uncertainty
-  behavior before implementation; retain deterministic safety, conversational
-  generation and memory validation. Any new paid evaluation needs separate scope
-  and approval. Hosted release remains a separate checkpoint.
+- **Routing design prepared for owner review:** Jev may request specialist work;
+  independent safety triggers, care interpretation and memory validation retain
+  their roles. Uncertainty, fallback, trace attribution and default-off rollback
+  are specified. [Proposed authority design](superpowers/specs/2026-10-16-jev-specialist-routing-design.md).
+  Implementation awaits review of that design. Any new paid evaluation needs
+  separate scope and approval. Hosted release remains a separate checkpoint.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports
