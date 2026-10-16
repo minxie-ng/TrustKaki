@@ -1,10 +1,10 @@
 # TrustKaki — Active Roadmap
 
-Updated: 15 October 2026
+Updated: 16 October 2026
 
 Status: Neon personal memory is live in production; legacy import is reconciled, old personal writes blocked and approved redundant copies removed.
 Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Next: approve and verify a candidate deployment of agent consolidation. The unsupported-memory-promise blocker is resolved with deterministic pending-state acknowledgements and bounded capability replies. [Correction evidence](evidence/2026-10-15-capability-replies.md); [earlier comparison](evidence/2026-10-15-agent-live-comparison.md). Production is unchanged. Evaluate Jev only on a bounded task if it adds value. UI follows agent behaviour. Independent backup and broader historical-copy checks remain pre-pilot work.
+Agent consolidation `410b6ef` is live: owner-approved exact candidate promoted on 16 October; production health/privacy/data-deletion smoke passed. Remote build, signed-in demo-admin checks and two ordinary-caregiver API/browser isolation checks passed; fixture cleanup independently verified. [Release evidence](evidence/2026-10-16-agent-candidate.md) records precise coverage, runner errors and blank runtime commit-label limitation. Deterministic pending-state acknowledgements and bounded capability replies resolve the unsupported-memory-promise blocker. [Correction evidence](evidence/2026-10-15-capability-replies.md); [earlier comparison](evidence/2026-10-15-agent-live-comparison.md). Next: release the approved Jev normal-chat integration, then UI discovery. Isolated Jev/GPT evaluation completed: both scored 18/18 on reserved fictional cases with zero refusals called interest; Jev cost/latency were lower in this run. Owner subsequently approved normal-chat integration. Jev now selects bounded social replies in local code, reusing the existing AAC slot; local feature enabled, hosted release pending. No additional agent or care-risk/memory authority. [Integration evidence and judge walkthrough](evidence/2026-10-16-jev-runtime-integration.md). Benchmark-only checks: 23 focused tests, typecheck and targeted lint pass. [Pilot results and decision](agents/2026-10-16-jev-social-intent-pilot.md). UI then focuses on priority, evidence and next human action. Evaluate Jev separately only on a bounded task if it adds value. Independent backup and broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.
@@ -217,8 +217,8 @@ only when needed, with maintained sources, dates, and update ownership.
 - [x] Locally remove the main-flow LLM router and merge social suggestions into
   Triage. Three generative tasks (conversation, conditional memory extraction,
   conditional briefing) plus conditional Digital Safety. One reply selected after
-  policy; standalone AAC endpoint retained for compatibility. Not promoted.
-- [ ] Before production promotion: bounded live comparison of routing, grounded
+  policy; standalone AAC endpoint retained for compatibility. Promoted 16 October.
+- [x] Before production promotion: bounded live comparison of routing, grounded
   responses and refusal handling; no claim of model-quality parity from mocks.
   [Local implementation evidence](evidence/2026-10-15-agent-consolidation.md).
   [Live comparison](evidence/2026-10-15-agent-live-comparison.md) completed:
@@ -228,7 +228,9 @@ only when needed, with maintained sources, dates, and update ownership.
   pending-state acknowledgements. [Correction](evidence/2026-10-15-capability-replies.md):
   12 affected live scenarios plus one relay follow-up, no latest observed failures;
   final local validation 1,065 passed, 38 skipped, typecheck/lint/build passed.
-  Exact candidate deployment and signed-in checks remain before promotion.
+  Exact candidate deployed, signed-in demo-admin and ordinary-caregiver checks
+  passed, fixtures removed, then promoted with production smoke passing on
+  16 October. [Release evidence](evidence/2026-10-16-agent-candidate.md).
 - [ ] Evaluate Jev as an optional bounded classification experiment against Triage
   and simple rules on fictional English/Mandarin/Singlish cases. Shadow first; no
   policy, memory-write or outreach authority. Laya is a self-hosted alternative,

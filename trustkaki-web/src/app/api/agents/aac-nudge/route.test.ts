@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
 import type { AgentRunContext } from "@/lib/agents/contracts";
 
@@ -50,6 +50,7 @@ function request(extra: Record<string, unknown> = {}) {
 }
 
 describe("/api/agents/aac-nudge", () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -66,6 +67,15 @@ describe("/api/agents/aac-nudge", () => {
     expect((await POST(request())).status).toBe(401);
     expect(runTriageAgentMock).not.toHaveBeenCalled();
     expect(runAACNudgeAgentMock).not.toHaveBeenCalled();
+  });
+
+  it("reports Jev configuration without exposing the key", async () => {
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
+    vi.stubEnv("OPENROUTER_API_KEY", "fake-secret");
+    const { GET } = await import("./route");
+    const json = await (await GET()).json();
+    expect(json).toMatchObject({ jevEnabled: true, llmConfigured: true, model: "typesafe/jev-1.14" });
+    expect(JSON.stringify(json)).not.toContain("fake-secret");
   });
 
   it("returns 403 before loading context or model work", async () => {

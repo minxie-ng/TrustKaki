@@ -43,6 +43,7 @@ import {
   contextMemoryUserPrompt,
 } from "./prompts";
 import { contextMemoryFallback } from "./fallbacks";
+import { hasSocialActivityCue, jevIsEnabled, runJevSocialDecision } from "./socialDecision";
 
 const contextMemoryTextExclusionPatterns = [
   /^(?:你好|您好|早安|早上好|晚上好|谢谢|谢谢你|好的|好|再见)$/u,
@@ -535,6 +536,14 @@ export async function orchestrate(
     signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message)
   );
   const boundedReply = capabilityReply(message, triageResult.data.responseMessage, contextMemoryExecution.input !== null, signals, ctx);
+  const socialDecision = jevIsEnabled() && !urgentHealth && !safetyReply && !boundedReply &&
+    policyResult.finalRisk !== "red" && !signals.some(signal => signal.type === "health" || signal.type === "daily_living") &&
+    (hasSocialActivityCue(message) || signals.some(signal => signal.type === "social") || triageResult.data.routing.includes("aac_nudge"))
+      ? await runJevSocialDecision(message) : null;
+  if (socialDecision) {
+    socialDecision.tags.push("reply_selected");
+    traces.push(toAgentTrace(socialDecision));
+  }
   if (!urgentHealth && !safetyReply && boundedReply) policyTrace.tags.push("capability_bound_reply");
   responseMessages.push(urgentHealth
     ? { text: "Your message may need urgent help. Please seek immediate help from local emergency services or someone nearby. I cannot contact them for you.\n\n您的情况可能需要紧急帮助。请立即联系当地急救服务或身边的人求助。我无法替您联系他们。", agentId: "policy" }
@@ -542,6 +551,8 @@ export async function orchestrate(
       ? { text: digitalSafetyResult.data.warningMessage, agentId: "digital_safety" }
       : boundedReply
         ? { text: boundedReply, agentId: "policy" }
+        : socialDecision
+          ? { text: socialDecision.data.nudgeMessage, agentId: "aac_nudge" }
         : { text: triageResult.data.responseMessage, agentId: "triage" });
 
   // ── Step 5: Run Briefing (only if policy says so) ──
@@ -645,6 +656,11 @@ export async function runAACNudgeAgent(
   ctx: AgentRunContext,
   signals: TriageSignal[]
 ): Promise<AgentRunResult<AACNudgeOutput>> {
+  if (jevIsEnabled()) return runJevSocialDecision(message, {
+    boundedReply: capabilityReply(message, "", false, signals, ctx),
+    carePriority: ctx.currentRiskLevel === "red" || hasUrgentHealthConcern(message, signals) || hasDigitalSafetyCue(message) ||
+      signals.some(signal => signal.type === "health" || signal.type === "daily_living" || signal.type === "digital_safety"),
+  });
   return runAgent({
     agentId: "aac_nudge",
     agentName: "AAC Nudge Agent",

@@ -17,6 +17,7 @@ pnpm-debug.log*
 # Env / secrets
 .env*
 *.pem
+/trustkaki-web/.jev-evaluation/
 
 # Local submission and design artifacts
 /*.pdf

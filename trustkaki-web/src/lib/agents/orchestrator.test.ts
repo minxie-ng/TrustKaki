@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AgentRunContext,
   AgentRunResult,
@@ -41,6 +41,85 @@ const context = (currentRiskLevel: AgentRunContext["currentRiskLevel"] = "green"
   },
   messages: [],
   currentRiskLevel,
+});
+
+describe("enabled Jev social reply", () => {
+  beforeEach(() => {
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
+    vi.stubEnv("OPENROUTER_API_KEY", "fake-key");
+  });
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+  it.each(["interested", "declining", "unclear"])("selects the %s reply and records the real model", async choice => {
+    const { orchestrate } = await import("./orchestrator");
+    const request = vi.fn().mockResolvedValue(Response.json({ model: "typesafe/jev-1.14-20261014",
+      usage: { input_tokens: 500, output_tokens: 0 }, answers: { social_intent: { type: "choice", choice, confidence: 0.9,
+        probabilities: { interested: +(choice === "interested"), declining: +(choice === "declining"), unclear: +(choice === "unclear") } } } }));
+    vi.stubGlobal("fetch", request);
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ responseMessage: "Join the club today!" })));
+    const response = await orchestrate("Any chess activities nearby?", context());
+    expect(response.messages).toHaveLength(1);
+    expect(response.messages[0].agentId).toBe("aac_nudge");
+    expect(response.messages[0].text).not.toContain("Join the club today");
+    expect(response.traces.find(t => t.agentName === "Jev Social Decision")).toMatchObject({ modelUsed: "typesafe/jev-1.14-20261014", fallback: false, tags: expect.arrayContaining([choice, "reply_selected"]) });
+    expect(response.riskLevel).toBe("green");
+    expect(response.contextMemoryCandidates).toEqual([]);
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not preserve an invitation when Jev fails", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("private upstream")));
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ responseMessage: "Come join an activity!" })));
+    const response = await orchestrate("Stop suggesting activities.", context());
+    expect(response.messages[0].text).toContain("leave activities");
+    expect(response.traces.find(t => t.agentId === "aac_nudge")?.fallback).toBe(true);
+  });
+
+  it("uses a Triage social signal only for eligibility, never as interest", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const request = vi.fn().mockResolvedValue(Response.json({ model: "typesafe/jev-1.14", usage: { input_tokens: 500, output_tokens: 0 },
+      answers: { social_intent: { type: "choice", choice: "unclear", confidence: 0.9, probabilities: { interested: 0, declining: 0, unclear: 1 } } } }));
+    vi.stubGlobal("fetch", request);
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ signals: [{ type: "social", severity: "low", description: "Ambiguous response about social support" }] })));
+    const response = await orchestrate("See how first lor.", context());
+    expect(response.messages[0].text).toContain("Either is okay");
+    expect(response.traces.find(t => t.agentId === "aac_nudge")?.tags).toContain("unclear");
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses Jev in the enabled AAC tool and suppresses it for care concerns", async () => {
+    const { runAACNudgeAgent } = await import("./orchestrator");
+    const request = vi.fn().mockResolvedValue(Response.json({ model: "typesafe/jev-1.14", usage: { input_tokens: 500, output_tokens: 0 },
+      answers: { social_intent: { type: "choice", choice: "declining", confidence: 0.9, probabilities: { interested: 0, declining: 1, unclear: 0 } } } }));
+    vi.stubGlobal("fetch", request);
+    const normal = await runAACNudgeAgent("No activities please.", context(), []);
+    expect(normal.modelUsed).toBe("typesafe/jev-1.14");
+    const care = await runAACNudgeAgent("Chess later; I have chest pain.", context(), [{ type: "health", severity: "high", description: "Chest pain" }]);
+    expect(care.fallback).toBe(true);
+    expect(care.data.nudgeMessage).toContain("care or safety");
+    const capability = await runAACNudgeAgent("Please call my daughter about activities", context(), []);
+    expect(capability.fallback).toBe(true);
+    expect(capability.data.nudgeMessage).toContain("can't place calls");
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(runAgentMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["Hello", []],
+    ["Chess sounds good but I have chest pain", [{ type: "health", severity: "high", description: "Chest pain" }]],
+    ["Chess later, I have not eaten", [{ type: "daily_living", severity: "medium", description: "Missed meals" }]],
+    ["Please call my daughter about activities", []],
+    ["I got this suspicious chess link https://example.com", []],
+  ])("skips Jev when another response has priority: %s", async (message, signals) => {
+    const { orchestrate } = await import("./orchestrator");
+    const request = vi.fn(); vi.stubGlobal("fetch", request);
+    runAgentMock.mockImplementation(async options => result(options.agentId, options.agentId === "triage" ? triageData({ signals: signals as TriageOutput["signals"] }) : options.fallback()));
+    const response = await orchestrate(message as string, context());
+    expect(request).not.toHaveBeenCalled();
+    expect(response.traces.some(t => t.agentId === "aac_nudge")).toBe(false);
+    expect(response.messages).toHaveLength(1);
+  });
 });
 
 function result<T>(

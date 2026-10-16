@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth/session";
 import { runAACNudgeAgent, runTriageAgent } from "@/lib/agents/orchestrator";
 import { getLLMProvider } from "@/lib/agents/provider";
+import { JEV_SOCIAL_MODEL, jevIsEnabled } from "@/lib/agents/socialDecision";
 import { loadAuthorizedAgentContext } from "@/lib/persistence/seniorContextRepository";
 
 export const runtime = "nodejs";
@@ -57,11 +58,14 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   const provider = getLLMProvider();
+  const jevEnabled = jevIsEnabled();
   return NextResponse.json({
     agent: "aac_nudge",
     description:
-      "Crafts gentle social engagement nudges for seniors showing withdrawal",
-    llmConfigured: provider.isConfigured,
-    model: provider.getModel(),
+      jevEnabled ? "Jev classifies activity interest and selects a bounded social reply"
+        : "Crafts gentle social engagement nudges for seniors showing withdrawal",
+    jevEnabled,
+    llmConfigured: jevEnabled ? !!process.env.OPENROUTER_API_KEY?.trim() : provider.isConfigured,
+    model: jevEnabled ? JEV_SOCIAL_MODEL : provider.getModel(),
   });
 }
