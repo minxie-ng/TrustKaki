@@ -151,6 +151,29 @@ describe("active whole-flow preparation (mock transport)", () => {
     expect(() => wholeFlowPreflight("active", true, true)).toThrow();
   });
 
+  it("records safe Jev schema paths and retains the rejected request without retries", async () => {
+    const options = setup();
+    let badCalls = 0;
+    const request = vi.fn<typeof fetch>(async (_url, init) => {
+      const body = JSON.parse(init!.body as string);
+      const data = response(body);
+      if (body.questions && !("social_intent" in body.questions) && "answers" in data) {
+        badCalls++;
+        data.answers!.health.choice = "PRIVATE_INVALID_VALUE";
+      }
+      return Response.json(data);
+    });
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow();
+    const text = readFileSync(join(options.directory, "budget.json"), "utf8");
+    const ledger = JSON.parse(text);
+    expect(ledger.failureCode).toBe("jev_schema");
+    expect(ledger.schemaIssues).toContainEqual({ code: "invalid_value", path: ["answers", "health", "choice"] });
+    expect(text).not.toMatch(/PRIVATE_INVALID_VALUE|fictional-router/);
+    const calls = request.mock.calls.length;
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow();
+    expect(request).toHaveBeenCalledTimes(calls); expect(badCalls).toBe(1);
+  });
+
   it("requires separate approval and stops a failed active request without retry or resumption", async () => {
     const options = setup();
     let failedRoutingCalls = 0;

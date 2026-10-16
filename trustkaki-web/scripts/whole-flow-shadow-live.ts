@@ -167,8 +167,8 @@ export async function runWholeFlowShadow(options: { directory: string; experimen
           ledger.inFlight = ledger.inFlight.filter(id => id !== requestId); save(ledger);
           return Response.json(data);
         } catch (error) {
-          if (stage === "agent_schema" && error instanceof z.ZodError) {
-            const fields = new Set(["signals", "type", "category", "description", "severity", "riskLevel", "riskChange", "confidence", "routing", "summary", "responseMessage", "humanFollowUpRequired", "recommendedAction", "candidates", "isScam", "scamType", "warningMessage", "educationalNote", "forCaregiver", "forAACVolunteer", "overallRisk", "keyConcerns", "recommendedActions"]);
+          if (["agent_schema", "jev_schema", "jev_usage", "openai_envelope"].includes(stage) && error instanceof z.ZodError) {
+            const fields = new Set(["answers", "health", "daily_living", "digital_safety", "social", "durable_context", "urgent", "social_intent", "choice", "probabilities", "present", "absent", "unclear", "model", "usage", "input_tokens", "output_tokens", "cost", "choices", "finish_reason", "message", "content", "prompt_tokens", "completion_tokens", "signals", "type", "category", "description", "severity", "riskLevel", "riskChange", "confidence", "routing", "summary", "responseMessage", "humanFollowUpRequired", "recommendedAction", "candidates", "isScam", "scamType", "warningMessage", "educationalNote", "forCaregiver", "forAACVolunteer", "overallRisk", "keyConcerns", "recommendedActions"]);
             ledger.schemaIssues = error.issues.slice(0, 10).map(issue => ({ code: issue.code,
               path: issue.path.map(part => typeof part === "number" ? part : fields.has(String(part)) ? String(part) : "field") }));
           }

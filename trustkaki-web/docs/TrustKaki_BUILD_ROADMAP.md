@@ -48,8 +48,15 @@ Updated: 16 October 2026
   approximately US$0.00038115. Broad type enum and urgent multi-signal example
   clarified locally; full suite1,227 passed/38 skipped, typecheck/lint/build passed.
   Independent review found no blockers. Prompt change has not been tested live.
-  **Next chunk:** separately authorize the full comparison recovery, retaining all
-  three attempts/reservations, then review every result. No Jev quality conclusion
+  **Active comparison attempted after correction:** three flows completed before
+  Jev response validation failed on mixed care/preference. The urgent pair passed
+  with the same policy response; Jev added no specialist in that pair. Mixed
+  baseline asked about immediate help and preserved preference proposals, but
+  omitted the missed-meal daily-living signal.15 cumulative attempts; reservation
+  US$0.047590. No automatic retry or production change.
+  [Partial results and limits](evidence/2026-10-16-jev-active-partial-results.md).
+  **Next chunk:** resolve Jev response reliability and the mixed-care extraction
+  gap before another evaluation or release. No general Jev quality conclusion
   is available; hosted configuration/deployment/promotion remain separate checkpoints.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
