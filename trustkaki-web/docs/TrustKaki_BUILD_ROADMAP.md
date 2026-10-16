@@ -1,17 +1,18 @@
 # TrustKaki — Active Roadmap
 
-Updated: 16 October 2026
+Updated: 17 October 2026
 
 ## Current checkpoint
 
 - **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
   [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
   [agent release](evidence/2026-10-16-agent-candidate.md).
-- **Hosted candidate:** Jev social-decision integration `9a90107` is enabled on
-  an unpromoted candidate. Build, health, signed-in demo and two ordinary-caregiver
-  API/browser checks passed; all temporary accounts/rows were removed.
-  Hosted inference and promotion remain pending.
-  [Candidate evidence](evidence/2026-10-16-jev-hosted-candidate.md).
+- **Latest hosted candidate:** active Jev specialist routing `75f617a` is READY,
+  unpromoted. Exact commit/project metadata,41 matching Supabase migrations,
+  protected public smoke, Neon database health and social configuration passed.
+  Signed-in demo/isolation and hosted inference remain pending.
+  [Current candidate](evidence/2026-10-17-jev-active-hosted-candidate.md).
+  Earlier social-only candidate `9a90107` remains historical evidence.
 - **Local shadow integration prepared:** independently disabled by default;
   observes six Jev routing labels in parallel with Triage and appends a comparison
   trace. Existing routing, replies, safety and memory proposals retain authority.

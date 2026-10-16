@@ -1,0 +1,67 @@
+# Jev active-routing hosted candidate — 17 October 2026
+
+## Status and authorization
+
+Owner approved linked-service read-only inspection, enabling the active-routing
+flag for new deployments, deploying exact commit75f617a with Production settings
+and `--skip-domain`, and public smoke checks. Authenticated demo checks, ordinary
+caregiver fixtures, hosted inference and promotion remain separate checkpoints.
+
+Candidate READY; not promoted. No model requests, application record writes,
+outbound messages, schema changes, webhooks or schedule changes were performed.
+
+## Identity
+
+- Project: `minxie-ngs-projects/trustkaki`.
+- Commit: `75f617a383c880de887b7764ccc20136a19f16d7`.
+- Deployment: `dpl_7HRvbupA3BpUBEo7su6GPQqpyWeV`.
+- URL: https://trustkaki-n9atjqoc4-minxie-ngs-projects.vercel.app
+- Source: clean Git archive of approved commit, preserving repository layout;
+  no local environment files or evaluation artifacts included.
+- Target: Production, `--skip-domain`; metadata commit and project ID match.
+- Added `TRUSTKAKI_JEV_ROUTING_ENABLED=true` to Production configuration.
+  Existing Jev social flag and OpenRouter secret were already present.
+- Last verified public deployment remains `dpl_4yfi39CYn2gtnHN5r9p7fJrSbCbR`.
+
+## Inspection and checks
+
+All41 local/remote Supabase migration versions match. No migration applied.
+Vercel configuration names/scopes match expected services; no secrets printed.
+
+```text
+Build Completed in /vercel/output [33s]
+Deployment completed
+readyState: READY
+PASS /api/health HTTP200
+PASS /privacy HTTP200
+PASS /data-deletion HTTP200
+PASS /api/agents/aac-nudge HTTP200
+PROTECTED CANDIDATE SMOKE PASSED
+PASS public domain remains on previous verified deployment
+```
+
+Health confirms operational DB and Neon personal-memory DB are reachable.
+Social configuration GET confirms Jev enabled/configured, model typesafe/jev-1.14.
+Configuration checks do not prove an inference or routing execution.
+
+## Bounded failures and recovery
+
+- Sandboxed npm command could not resolve registry; escalated approved CLI check
+  succeeded. No migration mutation or credential change.
+- First deployment from app directory failed before creating a candidate because
+  Vercel's Root Directory already names trustkaki-web. Repeated from the exact
+  Git archive's repository root; deployment succeeded.
+- Direct credential-free smoke hit deployment protection. Existing authenticated
+  `vercel curl` path passed all endpoints; protection settings unchanged.
+- Build emitted existing npm configuration/install-script warnings, without a
+  build failure.
+- Deployment metadata does not expose the health endpoint's automatic Git label
+  through the Git-less archive; exact source and API metadata confirm SHA.
+
+## Remaining gates
+
+Exact-candidate signed-in dashboard and ordinary-caregiver isolation, bounded
+hosted model evaluation of corrected replies and actual router trace, then
+separate promotion and production smoke approval. Local corrections passed
+1,247 tests plus typecheck/lint/build and independent review; the earlier paid
+20-flow result is not a passing live result of these corrections.
