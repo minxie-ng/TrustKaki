@@ -23,6 +23,11 @@ describe("separate social-intent budget", () => {
     expect(last.calls).toBe(113);
     expect(() => reserveSocialIntentRequest(last, "openai", openai, 113)).toThrow();
   });
+  it("enforces 126 cumulative attempts for complete quality coverage", () => {
+    const last = reserveSocialIntentRequest({ ...fresh, calls: 125 }, "openai", openai, 126);
+    expect(last.calls).toBe(126);
+    expect(() => reserveSocialIntentRequest(last, "openai", openai, 126)).toThrow();
+  });
   it("reserves a full Jev context before a call, even for short input", () => {
     expect(reserveSocialIntentRequest(fresh, "jev", jev)).toEqual({ ...fresh, calls: 1, reservedMicroUsd: 11011 });
   });

@@ -38,6 +38,13 @@ function response(body: Record<string, unknown>) {
     choices: [{ finish_reason: "stop", message: { content: JSON.stringify(data) } }] };
 }
 
+function seedQualityHistory(history: string) {
+    writeFileSync(join(history, "budget.json"), '{"capMicroUsd":1000000,"reservedMicroUsd":47590,"calls":15,"protocolHash":"6df05a47f8e2692a33d77621ef03f04ef74128d453fef7c354539714deeaefc1","stopped":true,"failureCode":"jev_schema","inFlight":[14],"completedFlows":3,"finished":false,"jevModel":"typesafe/jev-1.14-20261014"}');
+    writeFileSync(join(history, "jev-diagnostic.json"), JSON.stringify({ capMicroUsd: 1000000, reservedMicroUsd: 58601, calls: 16,
+      previousLedgerHash: "72af3777314f5815e3f00328722b15ab641bf5968b683311c6566e97b66041f6", runtimeBaseCommit: "a56a708", caseId: "mixed_preference",
+      status: "schema_valid", schemaValid: true, successfulCostUsd: 0.00006468, issues: [] }, null, 2));
+}
+
 describe("active whole-flow preparation (mock transport)", () => {
   it("flags missed specialists, false care signals and unsupported promises", () => {
     const result = { messages: [{ text: "I can cook breakfast for you." }], traces: [],
@@ -175,6 +182,56 @@ describe("active whole-flow preparation (mock transport)", () => {
     const calls = request.mock.calls.length;
     await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow();
     expect(request).toHaveBeenCalledTimes(calls); expect(badCalls).toBe(1);
+  });
+
+  it("completes quality coverage with invalid Jev/Triage content, real fallback and no transport retries", async () => {
+    const options = setup(), history = setup().directory;
+    seedQualityHistory(history);
+    const counts = new Map<string, number>();
+    const request = vi.fn<typeof fetch>(async (_url, init) => {
+      const body = JSON.parse(init!.body as string), data = response(body);
+      const ledger = JSON.parse(readFileSync(join(options.directory, "budget.json"), "utf8"));
+      expect(ledger.calls).toBeGreaterThan(16); expect(ledger.reservedMicroUsd).toBeGreaterThan(58601);
+      const key = ledger.completedFlows + ":" + (body.questions ? ("social_intent" in body.questions ? "social" : "routing") : body.messages[0].content);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      if (body.questions && !("social_intent" in body.questions) && "answers" in data) data.answers!.health.choice = "PRIVATE_INVALID";
+      if (!body.questions && "choices" in data && ![DIGITAL_SAFETY_PROMPT, CONTEXT_MEMORY_PROMPT, BRIEFING_PROMPT].includes(body.messages[0].content)) data.choices![0].message.content = "{}";
+      return Response.json(data);
+    });
+    const report = await runWholeFlowShadow({ ...options, qualityHistoryDirectory: history, request });
+    expect(report.flows).toHaveLength(20); expect(report.qualityCoverage).toBe(true);
+    expect(report.calls).toBe(request.mock.calls.length + 16);
+    expect(report.flows.every(f => f.qualityFailures.length > 0)).toBe(true);
+    expect(report.flows.every(f => f.checks.contentValid === false && f.checks.noFallback === false)).toBe(true);
+    expect(report.flows.some(f => f.fallbackAgents.includes("triage"))).toBe(true);
+    expect(report.flows.filter(f => f.variant === "active").every(f => f.qualityFailures.some(q => q.kind === "routing"))).toBe(true);
+    expect([...counts.values()].every(n => n === 1)).toBe(true);
+    expect(JSON.stringify(report)).not.toContain("PRIVATE_INVALID");
+    const count = request.mock.calls.length;
+    await runWholeFlowShadow({ ...options, qualityHistoryDirectory: history, request }); expect(request).toHaveBeenCalledTimes(count);
+    expect(wholeFlowPreflight("active", false, false, true)).toMatchObject({ maxAttempts: 126, reservedUsd: 0.942691 });
+  });
+
+  it.each(["history", "model", "usage", "cost", "transport"])("quality coverage still stops on %s failures", async reason => {
+    const options = setup(), history = setup().directory; seedQualityHistory(history);
+    if (reason === "history") writeFileSync(join(history, "jev-diagnostic.json"), "{}");
+    const request = vi.fn<typeof fetch>(async (_url, init) => {
+      if (reason === "transport") throw new Error("private transport failure");
+      const data = response(JSON.parse(init!.body as string));
+      if (reason === "model") data.model = "wrong-model";
+      // First request is OpenAI, whose token names differ.
+      if ("choices" in data) {
+        if (reason === "usage") data.usage.completion_tokens = -1;
+        if (reason === "cost") data.usage.prompt_tokens = 100000000;
+      }
+      return Response.json(data);
+    });
+    await expect(runWholeFlowShadow({ ...options, qualityHistoryDirectory: history, request })).rejects.toThrow();
+    expect(request).toHaveBeenCalledTimes(reason === "history" ? 0 : 1);
+    if (reason !== "history") {
+      const ledger = JSON.parse(readFileSync(join(options.directory, "budget.json"), "utf8"));
+      expect(ledger.stopped).toBe(true); expect(ledger.calls).toBe(17);
+    }
   });
 
   it("requires separate approval and stops a failed active request without retry or resumption", async () => {

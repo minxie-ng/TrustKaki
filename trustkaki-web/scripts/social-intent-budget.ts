@@ -1,11 +1,11 @@
 import { reserveRequest, type ComparisonBudget } from "./agent-comparison-budget";
 
 // Separate US$1 pilot. Prices checked 16 Oct 2026 from official model endpoints.
-export function reserveSocialIntentRequest(state: ComparisonBudget, provider: "jev" | "openai", request: unknown, attemptLimit: 72 | 73 | 74 | 110 | 111 | 113 = 72): ComparisonBudget {
+export function reserveSocialIntentRequest(state: ComparisonBudget, provider: "jev" | "openai", request: unknown, attemptLimit: 72 | 73 | 74 | 110 | 111 | 113 | 126 = 72): ComparisonBudget {
   if (!Number.isInteger(state.capMicroUsd) || state.capMicroUsd < 1 || state.capMicroUsd > 1_000_000 ||
       !Number.isInteger(state.reservedMicroUsd) || state.reservedMicroUsd < 0 || state.reservedMicroUsd > state.capMicroUsd ||
       !Number.isInteger(state.calls) || state.calls < 0) throw new Error("social_intent_invalid_budget");
-  if (![72, 73, 74, 110, 111, 113].includes(attemptLimit) || state.calls >= attemptLimit) throw new Error("social_intent_request_limit");
+  if (![72, 73, 74, 110, 111, 113, 126].includes(attemptLimit) || state.calls >= attemptLimit) throw new Error("social_intent_request_limit");
   if (provider === "openai") return reserveRequest(state, request);
   const body = request as { model?: unknown; state?: unknown; questions?: unknown } | null;
   if (!body || body.model !== "typesafe/jev-1.14" || !body.state || !body.questions ||

@@ -29,3 +29,4 @@ pnpm-debug.log*
 trustkaki-web/.jev-routing-evaluation/
 trustkaki-web/.jev-whole-flow-evaluation/
 trustkaki-web/.jev-active-routing-evaluation/
+trustkaki-web/.jev-active-coverage-evaluation/
