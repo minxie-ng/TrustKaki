@@ -16,8 +16,11 @@ Updated: 16 October 2026
   observes six Jev routing labels in parallel with Triage and appends a comparison
   trace. Existing routing, replies, safety and memory proposals retain authority.
   [Runtime evidence](evidence/2026-10-16-jev-routing-shadow-runtime.md).
-- **Active next chunk:** prepare a capped fictional whole-flow evaluation before
-  enabling shadow mode. The completed 36-message screen matched all six labels on 24/36 Jev
+- **Active next chunk:** capped fictional whole-flow evaluation is prepared and
+  independently reviewed; execution awaits separate US$1 spending approval.
+  Six scenarios, 12 complete flows, at most 66 provider attempts, no database
+  access or writes. [Prepared scope and checks](evidence/2026-10-16-jev-whole-flow-preparation.md).
+  The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports
   further evaluation, not a production replacement or whole-flow savings claim.
