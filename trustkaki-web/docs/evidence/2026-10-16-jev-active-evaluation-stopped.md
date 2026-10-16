@@ -86,3 +86,52 @@ names become `field`. Raw values, provider prose and credentials are omitted.
 cannot retroactively recover the rejected field. No runtime prompt/schema changes
 were made based on guesses. The next useful paid step is one explicitly approved
 diagnostic request before attempting another full comparison.
+
+## Single diagnostic and prompt correction
+
+Owner said proceed to the proposed single diagnostic. Runner `13f0f77` was
+reviewed independently and checked with three mocked tests, typecheck and lint.
+It verified the exact stopped recovery ledger hash, reserved before its sole
+network request, kept historical ledgers unchanged and used an exclusive
+`triage-diagnostic.json` artifact to refuse reruns. No further requests were made.
+
+Command:
+
+```sh
+node --env-file=.env.local --import tsx scripts/triage-output-diagnostic.ts --confirm-one-diagnostic
+```
+
+Result (exit1 because the observed output failed validation):
+
+```json
+{"capMicroUsd":1000000,"reservedMicroUsd":6672,"calls":3,"previousLedgerHash":"4b52328e91abb64400c3b3bf4ed9d9976c2cb78e872708b58eac5091c2ddadc8","runtimeBaseCommit":"79c3fd7","caseId":"urgent_scam","status":"agent_schema","schemaValid":false,"successfulCostUsd":0.00038114999999999997,"issues":[{"code":"invalid_value","path":["signals",1,"type"]}]}
+```
+
+The second signal's broad `type` was outside the allowed enum. The rejected value
+was intentionally not saved, so it is unknown whether the model confused category
+and type, combined values or returned another invalid value. This diagnostic does
+not retroactively establish that the earlier two attempts failed on the same
+field. Cost is token-based estimated diagnostic response cost, not an invoice;
+costs of the earlier two responses remain unknown within retained reservations.
+US$0.006672 is cumulative reservation for three attempts, not total billed cost.
+
+Local prompt correction makes the four broad types explicit (`health`,
+`daily_living`, `digital_safety`, `social`), distinguishes category labels and
+shows a concrete urgent health-plus-scam example with separate signal objects.
+No schema was weakened; output was not coerced. A new prompt contract test failed
+before the change and passed afterward, checking the mixed example against the
+actual signal schema. This improves guidance for the observed contract failure;
+**it has not been verified with another live model response**.
+
+Fresh verification after correction:
+
+- 193 focused prompt/orchestration/diagnostic tests passed.
+- Full suite:155 files passed,5 skipped; **1,227 tests passed,38 skipped**.
+- Typecheck and targeted lint:exit0.
+- Production build:exit0;24 static pages generated.
+- Independent review of diagnostic and prompt correction:no Critical/Important
+ findings; live effectiveness remains unverified.
+
+No Jev requests, complete chat flows, production changes or database operations
+occurred. Next stage requires a separately authorized evaluation recovery carrying
+all three attempts and their reservations; do not reset the historical ledger.

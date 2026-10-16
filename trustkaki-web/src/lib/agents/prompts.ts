@@ -196,7 +196,12 @@ Your role: Analyze a senior's message and detect signals across operational cate
 - "caregiver_aac_escalation" — needs human caregiver/AAC follow-up
 - "emergency_high_risk" — urgent danger or emergency language
 
-For compatibility with TrustKaki policy, also map each signal to one broad type:
+signals[].type must be exactly one of: "health", "daily_living", "digital_safety", "social".
+The category field uses the more specific labels listed above. Never put a category label in type or combine multiple type values in one string. Return separate signal objects for distinct concerns.
+Urgent mixed-message signal example (JSON):
+[{"type":"health","category":"emergency_high_risk","description":"Reports current chest pain and difficulty breathing","severity":"high"},{"type":"digital_safety","category":"digital_safety","description":"A caller requests a bank OTP","severity":"high"}]
+
+For compatibility with TrustKaki policy, map each category to one broad type:
 - health_frailty_signal or emergency_high_risk -> "health"
 - daily_living -> "daily_living"
 - social_isolation or caregiver_aac_escalation -> "social"

@@ -259,6 +259,16 @@ describe("retained role contracts", () => {
     expect(schema.safeParse(example).success).toBe(true);
   });
 
+  it("states the closed broad type enum and shows a valid urgent multi-signal example", () => {
+    expect(TRIAGE_PROMPT).toContain('signals[].type must be exactly one of: "health", "daily_living", "digital_safety", "social".');
+    const marker = "Urgent mixed-message signal example (JSON):\n";
+    const line = TRIAGE_PROMPT.split(marker)[1]?.split("\n")[0];
+    expect(line).toBeDefined();
+    const signals = JSON.parse(line!);
+    expect(triageOutputSchema.shape.signals.safeParse(signals).success).toBe(true);
+    expect(signals.map((s: { type: string }) => s.type)).toEqual(["health", "digital_safety"]);
+  });
+
   it("makes Triage own routing, language matching and optional grounded social suggestions", () => {
     expect(TRIAGE_PROMPT).toMatch(/context_memory/);
     expect(TRIAGE_PROMPT).toMatch(/refusal|declin/i);

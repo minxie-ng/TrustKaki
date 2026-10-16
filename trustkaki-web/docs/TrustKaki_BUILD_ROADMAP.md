@@ -43,9 +43,14 @@ Updated: 16 October 2026
   validation. Two total attempts, zero completed flows, no Jev requests and
   US$0.004448 retained reservation (not confirmed billing). Both ledgers preserved.
   [Failure evidence](evidence/2026-10-16-jev-active-evaluation-stopped.md).
-  **Next chunk:** capture safe field-level diagnostics with a separately
-  approved request, fix the identified output-contract issue, then complete and
-  review the comparison. No quality conclusion is available; hosted configuration/deployment/promotion remain separate checkpoints.
+  **Single diagnostic complete:** a third request identified invalid enum value at
+  `signals[1].type`. Cumulative reservation US$0.006672; diagnostic token cost
+  approximately US$0.00038115. Broad type enum and urgent multi-signal example
+  clarified locally; full suite1,227 passed/38 skipped, typecheck/lint/build passed.
+  Independent review found no blockers. Prompt change has not been tested live.
+  **Next chunk:** separately authorize the full comparison recovery, retaining all
+  three attempts/reservations, then review every result. No Jev quality conclusion
+  is available; hosted configuration/deployment/promotion remain separate checkpoints.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports
