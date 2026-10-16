@@ -50,6 +50,7 @@ describe("whole-flow shadow harness (mock transport only)", () => {
   it("executes actual orchestration, reserves before requests and restores process state", async () => {
     const options = setup(), originalFetch = globalThis.fetch, originalLog = console.log;
     vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "previous-value");
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", "true");
     let calls = 0;
     const request = vi.fn<typeof fetch>(async (url, init) => {
       calls++;
@@ -70,6 +71,7 @@ describe("whole-flow shadow harness (mock transport only)", () => {
     expect(report.flows.filter(r => r.variant === "shadow").every(r => r.shadow !== null)).toBe(true);
     expect(globalThis.fetch).toBe(originalFetch); expect(console.log).toBe(originalLog);
     expect(process.env.TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED).toBe("previous-value");
+    expect(process.env.TRUSTKAKI_JEV_ROUTING_ENABLED).toBe("true");
     expect(JSON.stringify(report)).not.toMatch(/fictional-openai|fictional-router/);
     const count = calls;
     await runWholeFlowShadow({ ...options, request });

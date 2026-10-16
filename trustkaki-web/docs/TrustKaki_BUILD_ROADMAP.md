@@ -28,12 +28,15 @@ Updated: 16 October 2026
   typecheck/lint/build passed. Independent review addressed the tested edge cases.
   Not deployed or re-evaluated with paid models.
   [Corrections and limits](evidence/2026-10-16-chat-reply-corrections.md).
-- **Routing design prepared for owner review:** Jev may request specialist work;
-  independent safety triggers, care interpretation and memory validation retain
-  their roles. Uncertainty, fallback, trace attribution and default-off rollback
-  are specified. [Proposed authority design](superpowers/specs/2026-10-16-jev-specialist-routing-design.md).
-  Implementation awaits review of that design. Any new paid evaluation needs
-  separate scope and approval. Hosted release remains a separate checkpoint.
+- **Approved Jev routing implemented locally:** Jev can add real specialist
+  invocations; independent safety triggers, care interpretation and memory
+  validation retain their roles. Active mode remains disabled by default.
+  Full suite: 1,210 passed, 38 skipped; typecheck/lint/build passed; independent
+  review found no blocking issues.
+  [Runtime behavior and evidence](evidence/2026-10-16-jev-specialist-routing-runtime.md).
+- **Next chunk:** prepare a separately scoped fictional live evaluation of
+  active routing and the corrected replies. New paid calls need spending
+  approval; hosted configuration/deployment/promotion remain separate checkpoints.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports

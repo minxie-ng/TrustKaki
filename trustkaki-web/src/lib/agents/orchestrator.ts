@@ -1,6 +1,6 @@
 import { agentPersonalMemorySchema, contextItemsForMemory } from "@/lib/memory/agentContext";
 // ─── Orchestrator: Multi-Agent Orchestration Logic ───
-// Triage owns conversation/routing; conditional safety/memory, policy, then briefing.
+// Triage drafts signals/replies; optional Jev routes specialists, then policy and briefing.
 
 import type { AgentId, AgentTrace } from "@/lib/types";
 import type {
@@ -45,6 +45,7 @@ import {
 import { contextMemoryFallback } from "./fallbacks";
 import { hasSocialActivityCue, jevIsEnabled, runJevSocialDecision } from "./socialDecision";
 import { runJevRoutingShadow, routingShadowTrace } from "./routingShadow";
+import { selectSpecialistRouting } from "./specialistRouting";
 
 const contextMemoryTextExclusionPatterns = [
   /^(?:你好|您好|早安|早上好|晚上好|谢谢|谢谢你|好的|好|再见)$/u,
@@ -460,9 +461,10 @@ export async function orchestrate(
   let signals: TriageSignal[] = [];
   let briefing: BriefingOutput | null = null;
   let contextMemoryCandidates: ContextMemoryOutput["candidates"] = [];
-  const routingShadow = runJevRoutingShadow(message, ctx);
+  const activeRouting = process.env.TRUSTKAKI_JEV_ROUTING_ENABLED === "true";
+  const routingRun = runJevRoutingShadow(message, ctx);
 
-  // Triage owns primary interpretation, routing and the conversation draft.
+  // Triage retains independent care interpretation and the conversation draft.
   const triageResult: AgentRunResult<TriageOutput> = await runAgent({
     agentId: "triage",
     agentName: "Triage Agent",
@@ -477,11 +479,16 @@ export async function orchestrate(
   traces.push(toAgentTrace(triageResult));
 
   signals = triageResult.data.signals;
+  const activeObservation = activeRouting ? await routingRun : null;
+  const routes = selectSpecialistRouting(activeObservation?.judgment ?? null, {
+    digitalSafety: triageResult.data.routing.includes("digital_safety") ||
+      signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message),
+    contextMemory: triageResult.data.routing.includes("context_memory") || mayContainDurableContext(message),
+    social: hasSocialActivityCue(message) || signals.some(signal => signal.type === "social") || triageResult.data.routing.includes("aac_nudge"),
+  }, !shouldExcludeContextMemory(message));
 
   const runDigitalSafety: Promise<AgentRunResult<DigitalSafetyOutput> | null> =
-    triageResult.data.routing.includes("digital_safety") ||
-    signals.some(signal => signal.type === "digital_safety") ||
-    hasDigitalSafetyCue(message)
+    routes.digitalSafety
       ? runAgent({
           agentId: "digital_safety",
           agentName: "Digital Safety Agent",
@@ -499,8 +506,7 @@ export async function orchestrate(
     input: ContextMemoryInput | null;
     promise: Promise<AgentRunResult<ContextMemoryOutput> | null>;
   } =
-    !shouldExcludeContextMemory(message) &&
-    (triageResult.data.routing.includes("context_memory") || mayContainDurableContext(message))
+    routes.contextMemory
       ? (() => {
           const input = contextMemoryInput(message, ctx);
           return {
@@ -558,12 +564,18 @@ export async function orchestrate(
   const urgentHealth = hasUrgentHealthConcern(message, signals);
   const safetyReply = digitalSafetyResult && (
     digitalSafetyResult.fallback || digitalSafetyResult.data.isScam ||
-    signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message)
+    signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message) ||
+    routes.requestedSpecialists.includes("digital_safety")
   );
   const boundedReply = capabilityReply(message, triageResult.data.responseMessage, contextMemoryExecution.input !== null, signals, ctx);
-  const socialDecision = jevIsEnabled() && !urgentHealth && !safetyReply && !boundedReply &&
-    policyResult.finalRisk !== "red" && !signals.some(signal => signal.type === "health" || signal.type === "daily_living") &&
-    (hasSocialActivityCue(message) || signals.some(signal => signal.type === "social") || triageResult.data.routing.includes("aac_nudge"))
+  const triageCare = signals.some(signal => signal.type === "health" || signal.type === "daily_living");
+  const socialEligible = !urgentHealth && !safetyReply && !boundedReply && policyResult.finalRisk !== "red" && !triageCare && routes.social;
+  const careClarification = socialEligible && routes.carePause
+    ? /\p{Script=Han}/u.test(message) || /\p{Script=Han}/u.test(triageResult.data.responseMessage)
+      ? "在讨论活动之前，您现在需要什么帮助？"
+      : "Before discussing activities, what help do you need right now?"
+    : null;
+  const socialDecision = jevIsEnabled() && socialEligible && !routes.carePause
       ? await runJevSocialDecision(message) : null;
   if (socialDecision) {
     socialDecision.tags.push("reply_selected");
@@ -573,9 +585,15 @@ export async function orchestrate(
   responseMessages.push(urgentHealth
     ? { text: "Your message may need urgent help. Please seek immediate help from local emergency services or someone nearby. I cannot contact them for you.\n\n您的情况可能需要紧急帮助。请立即联系当地急救服务或身边的人求助。我无法替您联系他们。", agentId: "policy" }
     : safetyReply
-      ? { text: digitalSafetyResult.data.warningMessage, agentId: "digital_safety" }
+      ? { text: routes.requestedSpecialists.includes("digital_safety") && !digitalSafetyResult.data.isScam
+        ? /\p{Script=Han}/u.test(message)
+          ? "我无法确认这条信息是否安全。请先不要分享验证码、密码或转账，并请可信任的人帮忙核实。"
+          : "I can't verify whether this request is safe. Avoid sharing codes, passwords or money, and ask someone you trust to help check it."
+        : digitalSafetyResult.data.warningMessage, agentId: "digital_safety" }
       : boundedReply
         ? { text: boundedReply, agentId: "policy" }
+        : careClarification
+          ? { text: careClarification, agentId: "policy" }
         : socialDecision
           ? { text: socialDecision.data.nudgeMessage, agentId: "aac_nudge" }
         : { text: triageResult.data.responseMessage, agentId: "triage" });
@@ -626,8 +644,20 @@ export async function orchestrate(
   }
 
   // ── Build response ──
-  const routingObservation = await routingShadow;
-  if (routingObservation) traces.push(routingShadowTrace(routingObservation, triageResult));
+  const routingObservation = activeObservation ?? await routingRun;
+  if (routingObservation) traces.push(routingShadowTrace(routingObservation, triageResult, {
+    requestedSpecialists: routes.requestedSpecialists, independentTriggers: routes.independentTriggers,
+    executedSpecialists: [...(digitalSafetyResult ? ["digital_safety" as const] : []),
+      ...(contextMemoryResult ? ["context_memory" as const] : []), ...(socialDecision ? ["aac_nudge" as const] : [])],
+    carePause: routes.carePause,
+    blockedReasons: {
+      ...(!routes.contextMemory && (routes.requestedSpecialists.includes("context_memory") || routes.independentTriggers.includes("context_memory"))
+        ? { context_memory: "memory_exclusion" } : {}),
+      ...(routes.social && !socialDecision ? { aac_nudge: urgentHealth ? "urgent_priority" : safetyReply ? "safety_priority"
+        : boundedReply ? "capability_priority" : policyResult.finalRisk === "red" ? "red_risk"
+          : triageCare || routes.carePause ? "care_priority" : "social_disabled" } : {}),
+    },
+  }));
   const response: OrchestrateResponse = {
     messages: responseMessages,
     traces,

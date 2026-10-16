@@ -144,6 +144,146 @@ describe("Jev routing shadow noninterference", () => {
   });
 });
 
+describe("active Jev specialist routing", () => {
+  const routingBody = (labels: Record<string, string> = {}) => ({
+    model: "typesafe/jev-1.14-20261014", usage: { input_tokens: 100, output_tokens: 0, cost: 0.0000042 },
+    answers: Object.fromEntries(routingFlags.map(flag => {
+      const choice = labels[flag] ?? "absent";
+      return [flag, { type: "choice", choice, confidence: 1,
+        probabilities: { present: +(choice === "present"), absent: +(choice === "absent"), unclear: +(choice === "unclear") } }];
+    })),
+  });
+  const traceOutput = (response: Awaited<ReturnType<typeof import("./orchestrator").orchestrate>>) =>
+    JSON.parse(response.traces.find(t => t.agentName === "Jev Specialist Router")!.output);
+  beforeEach(() => {
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", "true"); vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "false");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "false"); vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData() : options.fallback()));
+  });
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+  it.each(["present", "unclear"])("Jev-only %s safety triggers one specialist and selects its cautious reply", async label => {
+    const { orchestrate } = await import("./orchestrator");
+    const request = vi.fn().mockResolvedValue(Response.json(routingBody({ digital_safety: label }))); vi.stubGlobal("fetch", request);
+    const response = await orchestrate("Could you check this request?", context());
+    expect(runAgentMock.mock.calls.filter(([o]) => o.agentId === "digital_safety")).toHaveLength(1);
+    expect(response.messages[0].agentId).toBe("digital_safety");
+    expect(response.messages[0].text).toMatch(/verif|unsure|caution|avoid/i);
+    expect(traceOutput(response)).toMatchObject({ requestedSpecialists: ["digital_safety"], executedSpecialists: ["digital_safety"] });
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it("Jev-only durable context requests the real extractor", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(routingBody({ durable_context: "present" }))));
+    const response = await orchestrate("Phone calls suit me best.", context());
+    expect(runAgentMock.mock.calls.filter(([o]) => o.agentId === "context_memory")).toHaveLength(1);
+    expect(traceOutput(response)).toMatchObject({ requestedSpecialists: ["context_memory"], executedSpecialists: ["context_memory"] });
+  });
+
+  it.each(["你知道我平时早餐喜欢吃什么吗？", "My password is hunter2. I prefer voice calls."])("cannot bypass memory exclusions: %s", async message => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(routingBody({ durable_context: "present" }))));
+    const response = await orchestrate(message, context());
+    expect(runAgentMock.mock.calls.some(([o]) => o.agentId === "context_memory")).toBe(false);
+    expect(response.contextMemoryCandidates).toEqual([]);
+    expect(traceOutput(response).blockedSpecialists).toContain("context_memory");
+  });
+
+  it("absent labels cannot suppress independent safety or memory triggers, and do not duplicate calls", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(routingBody())));
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ routing: ["digital_safety", "context_memory"] }) : options.fallback()));
+    const response = await orchestrate("I prefer voice calls. Someone asked for my OTP.", context());
+    expect(runAgentMock.mock.calls.filter(([o]) => o.agentId === "digital_safety")).toHaveLength(1);
+    expect(runAgentMock.mock.calls.filter(([o]) => o.agentId === "context_memory")).toHaveLength(1);
+    expect(traceOutput(response).independentOverrides).toEqual(["digital_safety", "context_memory"]);
+  });
+
+  it.each(["false", "true"])("social eligibility requires the independent social flag=%s", async enabled => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", enabled);
+    const request = vi.fn(async (_url, options) => {
+      if (!JSON.parse(options.body).questions.social_intent) return Response.json(routingBody({ social: "present" }));
+      return Response.json({ model: "typesafe/jev-1.14-20261014", usage: { input_tokens: 100, output_tokens: 0 },
+        answers: { social_intent: { type: "choice", choice: "declining", confidence: 1, probabilities: { interested: 0, declining: 1, unclear: 0 } } } });
+    }); vi.stubGlobal("fetch", request);
+    const response = await orchestrate("Maybe that would be nice.", context());
+    expect(request).toHaveBeenCalledTimes(enabled === "true" ? 2 : 1);
+    expect(traceOutput(response).executedSpecialists).toEqual(enabled === "true" ? ["aac_nudge"] : []);
+    if (enabled === "true") expect(response.messages[0].text).toContain("leave activities");
+  });
+
+  it.each(["health", "daily_living", "urgent"])("%s uncertainty pauses activities without inventing care facts or risk", async flag => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
+    const request = vi.fn().mockResolvedValue(Response.json(routingBody({ [flag]: "unclear", social: "present" }))); vi.stubGlobal("fetch", request);
+    const response = await orchestrate("Can we discuss group activities?", context());
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(response.messages[0]).toEqual({ agentId: "policy", text: expect.stringContaining("what help do you need right now") });
+    expect(response.signals).toEqual([]); expect(response.riskLevel).toBe("green"); expect(response.alerts).toEqual([]);
+    expect(response.briefing).toBeNull(); expect(traceOutput(response).carePause).toBe(true);
+  });
+
+  it("uses one active routing request when both routing modes are enabled", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "true");
+    const request = vi.fn().mockResolvedValue(Response.json(routingBody())); vi.stubGlobal("fetch", request);
+    const response = await orchestrate("Hello", context());
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(response.traces.filter(t => /Jev (?:Routing Shadow|Specialist Router)/.test(t.agentName))).toHaveLength(1);
+    expect(response.traces.at(-1)?.agentName).toBe("Jev Specialist Router");
+  });
+
+  it("preserves urgent priority and records why Jev social work was blocked", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
+    const request = vi.fn().mockResolvedValue(Response.json(routingBody({ social: "present" }))); vi.stubGlobal("fetch", request);
+    const response = await orchestrate("I have chest pain and cannot breathe. Can we discuss activities?", context());
+    expect(response.riskLevel).toBe("red"); expect(response.messages[0].agentId).toBe("policy");
+    expect(response.messages[0].text).toContain("cannot contact");
+    expect(traceOutput(response).blockedReasons).toMatchObject({ aac_nudge: "urgent_priority" });
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it("executes overlapping safety/memory requests once and pauses social work", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
+    const request = vi.fn().mockResolvedValue(Response.json(routingBody({ digital_safety: "present", durable_context: "present", social: "present" })));
+    vi.stubGlobal("fetch", request);
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ routing: ["digital_safety", "context_memory"] }) : options.fallback()));
+    const response = await orchestrate("I prefer phone calls. Can we discuss group activities?", context());
+    for (const id of ["digital_safety", "context_memory"]) expect(runAgentMock.mock.calls.filter(([o]) => o.agentId === id)).toHaveLength(1);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(traceOutput(response)).toMatchObject({ executedSpecialists: ["digital_safety", "context_memory"], blockedReasons: { aac_nudge: "safety_priority" } });
+  });
+
+  it("missing routing key makes no request and visibly falls back", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("OPENROUTER_API_KEY", "");
+    const request = vi.fn(); vi.stubGlobal("fetch", request);
+    const response = await orchestrate("Hello", context());
+    expect(response.messages[0].text).toBe("Good to hear.");
+    expect(response.traces.at(-1)).toMatchObject({ fallback: true, errorMessage: "jev_routing_not_configured" });
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it.each(["http", "invalid", "transport"])("%s routing failure restores the existing reply with visible fallback", async failure => {
+    const { orchestrate } = await import("./orchestrator");
+    const request = vi.fn();
+    if (failure === "transport") request.mockRejectedValue(new Error("private error"));
+    else request.mockResolvedValue(failure === "http" ? new Response(null, { status: 503 }) : Response.json({}));
+    vi.stubGlobal("fetch", request);
+    const response = await orchestrate("Hello", context());
+    expect(response.messages).toEqual([{ text: "Good to hear.", agentId: "triage" }]);
+    expect(response.traces.find(t => t.agentName === "Jev Specialist Router")?.fallback).toBe(true);
+    expect(traceOutput(response).requestedSpecialists).toEqual([]); expect(request).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("enabled Jev social reply", () => {
   beforeEach(() => {
     vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");

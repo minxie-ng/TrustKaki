@@ -1,6 +1,6 @@
 # Jev specialist routing authority
 
-Status: **proposed for owner review; no runtime changes authorized by this draft**.
+Status: **owner approved for local implementation on 16 October 2026**.
 Base: local reply corrections `f3b34e1`. Production remains `410b6ef`;
 the existing social-decision candidate is still unpromoted.
 

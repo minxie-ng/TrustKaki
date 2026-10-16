@@ -15,7 +15,7 @@ const MODEL = "gpt-4o-mini-2024-07-18";
 const OPENAI = "https://api.openai.com/v1/chat/completions", ROUTER = "https://openrouter.ai/api/v1/systemone";
 const prompts = [TRIAGE_PROMPT, DIGITAL_SAFETY_PROMPT, CONTEXT_MEMORY_PROMPT, BRIEFING_PROMPT];
 const schemas = [triageOutputSchema, digitalSafetyOutputSchema, contextMemoryOutputSchema, briefingOutputSchema];
-const envNames = ["TRUSTKAKI_LLM_MODEL", "TRUSTKAKI_LLM_BASE_URL", "TRUSTKAKI_LLM_TIMEOUT_MS", "TRUSTKAKI_JEV_ENABLED", "TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED"] as const;
+const envNames = ["TRUSTKAKI_LLM_MODEL", "TRUSTKAKI_LLM_BASE_URL", "TRUSTKAKI_LLM_TIMEOUT_MS", "TRUSTKAKI_JEV_ENABLED", "TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "TRUSTKAKI_JEV_ROUTING_ENABLED"] as const;
 interface Ledger extends ComparisonBudget { protocolHash: string; stopped: boolean; failureCode: string | null; inFlight: number[]; completedFlows: number; finished: boolean; jevModel: string | null }
 interface Flow {
   caseId: string; variant: "baseline" | "shadow"; durationMs: number; costUsd: number; requests: number;
@@ -26,7 +26,7 @@ interface Report { protocolHash: string; calls: number; reservedUsd: number; suc
 
 export function wholeFlowPreflight() {
   const files = ["orchestrator.ts", "runner.ts", "provider.ts", "prompts.ts", "schemas.ts", "policy.ts", "fallbacks.ts",
-    "routingContract.ts", "routingShadow.ts", "socialDecision.ts", "socialIntentContract.ts"];
+    "routingContract.ts", "routingShadow.ts", "specialistRouting.ts", "socialDecision.ts", "socialIntentContract.ts"];
   const source = files.map(file => readFileSync(new URL("../src/lib/agents/" + file, import.meta.url), "utf8"));
   source.push(readFileSync(new URL("../src/lib/memory/agentContext.ts", import.meta.url), "utf8"),
     readFileSync(new URL("../src/lib/memory/retrievalContracts.ts", import.meta.url), "utf8"),
@@ -75,6 +75,7 @@ export async function runWholeFlowShadow(options: { directory: string; approvedC
     save(ledger);
     process.env.TRUSTKAKI_LLM_MODEL = MODEL; process.env.TRUSTKAKI_LLM_BASE_URL = "https://api.openai.com/v1";
     process.env.TRUSTKAKI_LLM_TIMEOUT_MS = "15000"; process.env.TRUSTKAKI_JEV_ENABLED = "true";
+    process.env.TRUSTKAKI_JEV_ROUTING_ENABLED = "false"; // This experiment compares shadow only, never active authority.
     console.log = console.warn = console.error = () => {}; // Do not leak framework/provider prose to the CLI.
     globalThis.fetch = (input, init) => {
       const task = (async () => {

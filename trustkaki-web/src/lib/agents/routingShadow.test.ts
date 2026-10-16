@@ -12,6 +12,22 @@ beforeEach(() => { vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "true"); v
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("Jev routing shadow observer", () => {
+  it.each(["false", "true"])("active mode takes precedence with shadow=%s and sends one request", async shadow => {
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", "true");
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", shadow);
+    const request = vi.fn().mockResolvedValue(Response.json(response())); vi.stubGlobal("fetch", request);
+    const observation = await runJevRoutingShadow("private current message", fictionalRoutingContext());
+    expect(observation).toHaveProperty("mode", "active");
+    expect(request).toHaveBeenCalledTimes(1);
+    const trace = routingShadowTrace(observation!, baseline(), {
+      requestedSpecialists: ["digital_safety"], independentTriggers: [], executedSpecialists: ["digital_safety"], carePause: true,
+    });
+    expect(trace.agentName).toBe("Jev Specialist Router");
+    expect(JSON.parse(trace.output)).toMatchObject({ mode: "active", requestedSpecialists: ["digital_safety"], executedSpecialists: ["digital_safety"] });
+    expect(trace.stateChanges).toContain("specialist_invoked:digital_safety");
+    expect(trace.outputSummary).not.toContain("Shadow only");
+    expect(JSON.stringify(trace)).not.toMatch(/private current message|fictional-key/);
+  });
   it("does nothing when disabled, independently of the social flag", async () => {
     vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "false"); vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
     const request = vi.fn(); vi.stubGlobal("fetch", request);
@@ -72,7 +88,8 @@ describe("Jev routing shadow observer", () => {
     expect(JSON.stringify(trace)).not.toMatch(/private provider|private current|fictional-key/);
   });
 
-  it("aborts after three seconds without retry", async () => {
+  it.each(["false", "true"])("aborts after three seconds without retry with active=%s", async active => {
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", active);
     vi.useFakeTimers();
     const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation(ms => {
       const controller = new AbortController(); setTimeout(() => controller.abort(), ms); return controller.signal;
