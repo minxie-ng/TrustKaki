@@ -10,7 +10,9 @@ Updated: 17 October 2026
 - **Latest hosted candidate:** active Jev specialist routing `75f617a` is READY,
   unpromoted. Exact commit/project metadata,41 matching Supabase migrations,
   protected public smoke, Neon database health and social configuration passed.
-  Signed-in demo passed. Ordinary-caregiver isolation and hosted inference remain pending.
+  Signed-in demo and ordinary-caregiver API isolation passed; browser account switching
+  exposed stale prior-account data. Fixtures are fully removed. Promotion blocked
+  pending the session-isolation fix, a fresh candidate and repeated hosted checks.
   [Current candidate](evidence/2026-10-17-jev-active-hosted-candidate.md).
   Earlier social-only candidate `9a90107` remains historical evidence.
 - **Local shadow integration prepared:** independently disabled by default;

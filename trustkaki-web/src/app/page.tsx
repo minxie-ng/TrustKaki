@@ -106,22 +106,63 @@ export default function Home() {
     isSeniorLoading: loadingSeniorId === selectedSeniorId,
   });
 
+  const sessionTokenRef = useRef<string | null>(null);
+  const sessionGenerationRef = useRef(0);
+  const [sessionGeneration, setSessionGeneration] = useState(0);
+  const isCurrentSession = useCallback(() => Boolean(authToken) &&
+    authToken === sessionTokenRef.current && sessionGeneration === sessionGenerationRef.current,
+  [authToken, sessionGeneration]);
+  const applySession = useCallback((nextSession: Session | null) => {
+    const nextToken = nextSession?.access_token ?? null;
+    if (nextToken !== sessionTokenRef.current) {
+      // Invalidate old requests and child callbacks before exposing a different session.
+      sessionGenerationRef.current++;
+      setSessionGeneration(sessionGenerationRef.current);
+      dashboardRequestSeq.current++;
+      contactPlanRequestSeq.current++;
+      checkInScheduleRequestSeq.current++;
+      seniorContextRequestSeq.current++;
+      selectedSeniorIdRef.current = null;
+      setLiveDashboardData(null);
+      setLiveTraces([]);
+      setLiveBriefing(null);
+      setLoadedSeniorId(null);
+      setLoadingSeniorId(null);
+      setDashboardError(null);
+      setContactPlan(null);
+      setContactPlanLoading(false);
+      setContactPlanError(null);
+      setCheckInSchedule(null);
+      setCheckInScheduleLoading(false);
+      setCheckInScheduleError(null);
+      setSeniorContext(null);
+      setSeniorContextLoading(false);
+      setSeniorContextError(null);
+      setRiskLevel("green");
+      setDemoMode(false);
+      setDemoPhase("exited");
+      setDemoError(null);
+      setActiveView("workspace");
+      setCareSetupOpen(false);
+      setReasoningVisible(false);
+      sessionTokenRef.current = nextToken;
+    }
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+  }, []);
+
   const handleUnauthorized = useCallback(() => {
+    if (!isCurrentSession()) return;
     const client = createTrustKakiBrowserClient();
     void client?.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setDemoMode(false);
-    setDemoPhase("exited");
-    setDemoError(null);
-    setReasoningVisible(false);
+    applySession(null);
     setAuthError("Please sign in again to continue.");
-  }, []);
+  }, [applySession, isCurrentSession]);
 
   const refreshDashboardState = useCallback(async (
     nextSeniorId?: string | null
   ): Promise<DashboardData | null> => {
-    if (!authToken) return null;
+    if (!authToken || !isCurrentSession()) return null;
     const requestId = dashboardRequestSeq.current + 1;
     dashboardRequestSeq.current = requestId;
     setDashboardError(null);
@@ -133,6 +174,7 @@ export default function Home() {
           headers: authHeader(authToken),
         }
       );
+      if (requestId !== dashboardRequestSeq.current) return null;
       if (response.status === 401) {
         handleUnauthorized();
         return null;
@@ -158,7 +200,7 @@ export default function Home() {
       }
       throw error;
     }
-  }, [authToken, handleUnauthorized]);
+  }, [authToken, handleUnauthorized, isCurrentSession]);
 
   const requestDashboardRefresh = useCallback((nextSeniorId?: string | null) => {
     fireAndForgetDashboardRefresh(refreshDashboardState, nextSeniorId);
@@ -171,7 +213,7 @@ export default function Home() {
   );
 
   const refreshContactPlan = useCallback((nextSeniorId?: string | null) => {
-    if (!authToken) return;
+    if (!authToken || !isCurrentSession()) return;
     const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
     if (!seniorId) return;
     const requestId = contactPlanRequestSeq.current + 1;
@@ -182,6 +224,7 @@ export default function Home() {
       cache: "no-store",
       headers: authHeader(authToken),
     }).then(async (response) => {
+      if (requestId !== contactPlanRequestSeq.current) return null;
       if (response.status === 401) {
         handleUnauthorized();
         return null;
@@ -198,10 +241,10 @@ export default function Home() {
     }).finally(() => {
       if (requestId === contactPlanRequestSeq.current) setContactPlanLoading(false);
     });
-  }, [authToken, handleUnauthorized]);
+  }, [authToken, handleUnauthorized, isCurrentSession]);
 
   const refreshCheckInSchedule = useCallback((nextSeniorId?: string | null) => {
-    if (!authToken || !isDemoAdmin) return;
+    if (!authToken || !isDemoAdmin || !isCurrentSession()) return;
     const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
     if (!seniorId) return;
     const requestId = checkInScheduleRequestSeq.current + 1;
@@ -212,6 +255,7 @@ export default function Home() {
       cache: "no-store",
       headers: authHeader(authToken),
     }).then(async (response) => {
+      if (requestId !== checkInScheduleRequestSeq.current) return null;
       if (response.status === 401) {
         handleUnauthorized();
         return null;
@@ -230,10 +274,10 @@ export default function Home() {
         setCheckInScheduleLoading(false);
       }
     });
-  }, [authToken, handleUnauthorized, isDemoAdmin]);
+  }, [authToken, handleUnauthorized, isDemoAdmin, isCurrentSession]);
 
   const refreshSeniorContext = useCallback((nextSeniorId?: string | null) => {
-    if (!authToken) return;
+    if (!authToken || !isCurrentSession()) return;
     const seniorId = nextSeniorId ?? selectedSeniorIdRef.current;
     if (!seniorId) return;
     const requestId = seniorContextRequestSeq.current + 1;
@@ -244,6 +288,7 @@ export default function Home() {
       cache: "no-store",
       headers: authHeader(authToken),
     }).then(async (response) => {
+      if (requestId !== seniorContextRequestSeq.current) return null;
       if (response.status === 401) {
         handleUnauthorized();
         return null;
@@ -262,10 +307,11 @@ export default function Home() {
         setSeniorContextLoading(false);
       }
     });
-  }, [authToken, handleUnauthorized]);
+  }, [authToken, handleUnauthorized, isCurrentSession]);
 
   const selectSenior = useCallback(
     (seniorId: string) => {
+      if (!isCurrentSession()) return;
       setCareSetupOpen(false);
       selectedSeniorIdRef.current = seniorId;
       setLoadingSeniorId(seniorId);
@@ -280,7 +326,7 @@ export default function Home() {
       );
       requestDashboardRefresh(seniorId);
     },
-    [isDemoAdmin, requestDashboardRefresh]
+    [isDemoAdmin, requestDashboardRefresh, isCurrentSession]
   );
 
   useEffect(() => {
@@ -293,26 +339,32 @@ export default function Home() {
       return;
     }
 
+    let active = true;
+    let authEventReceived = false;
+    const restoreStoredPublicDemo = () => {
+      try {
+        const restored = restorePublicDemo(window.sessionStorage.getItem(PUBLIC_DEMO_STORAGE_KEY));
+        if (restored) { setPublicDemoDocument(restored); setPublicDemo(true); }
+      } catch { /* public demo can start clean if storage is unavailable */ }
+    };
     void client.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
+      if (!active || authEventReceived) return;
+      applySession(data.session);
       setAuthLoading(false);
-      if (!data.session) {
-        try {
-          const restored = restorePublicDemo(window.sessionStorage.getItem(PUBLIC_DEMO_STORAGE_KEY));
-          if (restored) { setPublicDemoDocument(restored); setPublicDemo(true); }
-        } catch { /* public demo can start clean if storage is unavailable */ }
-      }
+      if (!data.session) restoreStoredPublicDemo();
     });
 
-    const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+    const { data } = client.auth.onAuthStateChange((event, nextSession) => {
+      if (!active) return;
+      authEventReceived = true;
+      if (event === "INITIAL_SESSION" && !nextSession) restoreStoredPublicDemo();
+      setAuthLoading(false);
+      applySession(nextSession);
       setAuthError(null);
     });
 
-    return () => data.subscription.unsubscribe();
-  }, []);
+    return () => { active = false; data.subscription.unsubscribe(); };
+  }, [applySession]);
 
   function enterPublicDemo() {
     setPublicDemo(true);
@@ -320,7 +372,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!authToken) return;
+    if (!authToken || !isCurrentSession()) return;
 
     const refreshIfVisible = () => {
       if (
@@ -347,7 +399,7 @@ export default function Home() {
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshIfVisible);
     };
-  }, [authToken, guideActive, requestDashboardRefresh]);
+  }, [authToken, guideActive, requestDashboardRefresh, isCurrentSession]);
 
   useEffect(() => {
     if (!authToken || guideActive) return;
@@ -400,28 +452,13 @@ export default function Home() {
       setAuthError("Unable to sign in with those credentials.");
       return;
     }
-    setSession(data.session);
-    setUser(data.user);
+    applySession(data.session);
   }
 
   async function signOut() {
     const client = createTrustKakiBrowserClient();
+    applySession(null);
     await client?.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setDemoMode(false);
-    setDemoPhase("exited");
-    setDemoError(null);
-    setActiveView("workspace");
-    setCareSetupOpen(false);
-    setReasoningVisible(false);
-    setLiveDashboardData(null);
-    setLiveTraces([]);
-    setLiveBriefing(null);
-    setContactPlan(null);
-    setCheckInSchedule(null);
-    setSeniorContext(null);
-    selectedSeniorIdRef.current = null;
   }
 
   if (authLoading) {
@@ -441,6 +478,7 @@ export default function Home() {
 
   return (
     <AppShell
+      key={sessionGeneration}
       activeView={activeView}
       isDemoAdmin={isDemoAdmin}
       riskLevel={riskLevel}
@@ -506,11 +544,13 @@ export default function Home() {
                 data={liveDashboardData}
                 authToken={authToken}
                 onPhaseChange={(phase) => {
+                  if (!isCurrentSession()) return;
                   setDemoPhase(phase);
                   if (phase === "complete") setActiveView("activity");
                 }}
-                onErrorChange={setDemoError}
+                onErrorChange={(error) => { if (isCurrentSession()) setDemoError(error); }}
                 onDataChange={(nextData) => {
+                  if (!isCurrentSession()) return;
                   setLiveDashboardData(nextData);
                   setRiskLevel(nextData.senior.riskLevel);
                   const nextSeniorId = nextData.selectedSeniorId ?? null;
@@ -521,11 +561,13 @@ export default function Home() {
                   refreshDashboardForConsumer(seniorId)
                 }
                 onOpenTimeline={() => {
+                  if (!isCurrentSession()) return;
                   setActiveView("workspace");
                   setDemoTimelineRequest((request) => request + 1);
                 }}
                 onUnauthorized={handleUnauthorized}
                 onExit={() => {
+                  if (!isCurrentSession()) return;
                   setDemoMode(false);
                   setDemoPhase("exited");
                   setDemoError(null);
@@ -560,7 +602,7 @@ export default function Home() {
                       seniorContext={seniorContext}
                       seniorContextLoading={seniorContextLoading}
                       seniorContextError={seniorContextError}
-                      onSeniorContextChanged={setSeniorContext}
+                      onSeniorContextChanged={(context) => { if (isCurrentSession()) setSeniorContext(context); }}
                       careSetupOpen={careSetupOpen}
                       onCloseCareSetup={() => setCareSetupOpen(false)}
                       onViewActivity={() => setActiveView("activity")}
