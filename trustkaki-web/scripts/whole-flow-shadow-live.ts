@@ -17,7 +17,7 @@ const OPENAI = "https://api.openai.com/v1/chat/completions", ROUTER = "https://o
 const prompts = [TRIAGE_PROMPT, DIGITAL_SAFETY_PROMPT, CONTEXT_MEMORY_PROMPT, BRIEFING_PROMPT];
 const schemas = [triageOutputSchema, digitalSafetyOutputSchema, contextMemoryOutputSchema, briefingOutputSchema];
 const envNames = ["TRUSTKAKI_LLM_MODEL", "TRUSTKAKI_LLM_BASE_URL", "TRUSTKAKI_LLM_TIMEOUT_MS", "TRUSTKAKI_JEV_ENABLED", "TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "TRUSTKAKI_JEV_ROUTING_ENABLED"] as const;
-interface Ledger extends ComparisonBudget { protocolHash: string; stopped: boolean; failureCode: string | null; inFlight: number[]; completedFlows: number; finished: boolean; jevModel: string | null }
+interface Ledger extends ComparisonBudget { schemaIssues?: Array<{ code: string; path: Array<string | number> }>; protocolHash: string; stopped: boolean; failureCode: string | null; inFlight: number[]; completedFlows: number; finished: boolean; jevModel: string | null }
 interface Flow {
   caseId: string; variant: "baseline" | "shadow" | "active"; durationMs: number; costUsd: number; requests: number;
   risk: string; reply: { text: string; agentId?: string }; agents: string[]; memoryCandidateCount: number;
@@ -151,7 +151,12 @@ export async function runWholeFlowShadow(options: { directory: string; experimen
           appendFileSync(resolve(options.directory, "requests.jsonl"), JSON.stringify({ requestId, caseId: activeCase, variant: activeVariant, kind, model, inputTokens, outputTokens, costUsd }) + "\n", { mode: 0o600 });
           ledger.inFlight = ledger.inFlight.filter(id => id !== requestId); save(ledger);
           return Response.json(data);
-        } catch {
+        } catch (error) {
+          if (stage === "agent_schema" && error instanceof z.ZodError) {
+            const fields = new Set(["signals", "type", "category", "description", "severity", "riskLevel", "riskChange", "confidence", "routing", "summary", "responseMessage", "humanFollowUpRequired", "recommendedAction", "candidates", "isScam", "scamType", "warningMessage", "educationalNote", "forCaregiver", "forAACVolunteer", "overallRisk", "keyConcerns", "recommendedActions"]);
+            ledger.schemaIssues = error.issues.slice(0, 10).map(issue => ({ code: issue.code,
+              path: issue.path.map(part => typeof part === "number" ? part : fields.has(String(part)) ? String(part) : "field") }));
+          }
           stop(stage);
           throw new Error("whole_flow_stopped");
         }

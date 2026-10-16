@@ -44,3 +44,45 @@ the same US$1 total, explicitly count the failed attempt, record source/protocol
 changes and stop on the next error. No recovery or paid retry has been executed.
 No claims about active Jev quality, cost savings or latency can be made from this
 attempt.
+
+## Owner-approved recovery result
+
+Owner subsequently approved one retry/continuation, max111 total attempts,
+same US$1 cap, preserving the failed reservation and stopping on another error.
+Recovery source `be930a1` was independently reviewed with no Critical/Important
+findings.27 related mocked tests, typecheck and targeted lint passed before
+execution. Conservative recovery preflight:111 attempts / US$0.886314.
+
+The following command executed once and exited1:
+
+```sh
+node --env-file=.env.local --import tsx scripts/whole-flow-shadow-live.ts --confirm-live --cap-usd=1 --prices-verified --active --recover-first-validation
+```
+
+It stopped at **agent_schema** on baseline Triage: the HTTP response envelope
+passed validation and message content parsed as JSON, but that object failed
+Triage's schema. The precise field and rejected value were not retained, so they
+cannot be reconstructed. This does not identify a Jev defect; Jev was never
+called. No full chat or paired result exists. Do not claim the schema defect is
+fixed or that active routing has been evaluated successfully.
+
+Current ledger snapshot:
+
+```json
+{"capMicroUsd":1000000,"reservedMicroUsd":4448,"calls":2,"protocolHash":"4204a626c03fb51c614c6ed311164bd44007e72906dae563dd6e5c56fb3e422d","stopped":true,"failureCode":"agent_schema","inFlight":[2],"completedFlows":0,"finished":false,"jevModel":null}
+```
+
+US$0.004448 is total retained reservation, not confirmed billing. The original
+ledger bytes are preserved in `first-failed-budget.json`; SHA256
+`da9a74604a95ef0d2d41dd52cb083158f9800fc4364bbcfa97d6502140569faa`.
+The stopped recovery ledger SHA256 is
+`4b52328e91abb64400c3b3bf4ed9d9976c2cb78e872708b58eac5091c2ddadc8`.
+No further request or automatic recovery occurred.
+
+After stopping, diagnostics were improved locally to retain up to10 schema issue
+codes and paths restricted to known field names/numeric indices; arbitrary field
+names become `field`. Raw values, provider prose and credentials are omitted.
+28 related mocked tests, typecheck and targeted lint pass. These new diagnostics
+cannot retroactively recover the rejected field. No runtime prompt/schema changes
+were made based on guesses. The next useful paid step is one explicitly approved
+diagnostic request before attempting another full comparison.

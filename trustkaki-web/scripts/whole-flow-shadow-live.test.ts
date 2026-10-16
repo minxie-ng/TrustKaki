@@ -127,6 +127,27 @@ describe("whole-flow shadow harness (mock transport only)", () => {
     expect(ledger).not.toMatch(/private|fictional-openai|fictional-router/);
   });
 
+  it("records only schema issue codes and allowed field paths, never rejected values", async () => {
+    const options = setup();
+    const request = vi.fn<typeof fetch>(async (_url, init) => {
+      const data = providerResponse(JSON.parse(init!.body as string));
+      if ("choices" in data) {
+        const content = JSON.parse(data.choices![0].message.content);
+        content.signals = [{ type: "PRIVATE_REJECTED_VALUE", category: "PRIVATE_CATEGORY", description: "private text", severity: "high" }];
+        data.choices![0].message.content = JSON.stringify(content);
+      }
+      return Response.json(data);
+    });
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow();
+    expect(request).toHaveBeenCalledTimes(1);
+    const text = readFileSync(join(options.directory, "budget.json"), "utf8");
+    expect(JSON.parse(text).schemaIssues).toEqual([
+      { code: "invalid_value", path: ["signals", 0, "type"] },
+      { code: "invalid_value", path: ["signals", 0, "category"] },
+    ]);
+    expect(text).not.toMatch(/PRIVATE|private text|fictional-openai/);
+  });
+
   it("retains a failed parallel request reservation when its companion succeeds", async () => {
     const options = setup();
     let release: (() => void) | undefined;
