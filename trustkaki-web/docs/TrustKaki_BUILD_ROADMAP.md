@@ -55,9 +55,16 @@ Updated: 16 October 2026
   omitted the missed-meal daily-living signal.15 cumulative attempts; reservation
   US$0.047590. No automatic retry or production change.
   [Partial results and limits](evidence/2026-10-16-jev-active-partial-results.md).
-  **Next chunk:** resolve Jev response reliability and the mixed-care extraction
-  gap before another evaluation or release. No general Jev quality conclusion
-  is available; hosted configuration/deployment/promotion remain separate checkpoints.
+  **Follow-up locally verified:** explicit mixed-care extraction instructions and
+  a new missed-meal failure screen;1,235 tests passed, typecheck/lint/build passed.
+  One focused Jev diagnostic returned a schema-valid response; earlier failure
+  did not reproduce and its exact cause remains unknown.16 cumulative attempts,
+  US$0.058601 reservation. No deployment or broader reliability claim.
+  [Follow-up evidence](evidence/2026-10-16-care-and-jev-follow-up.md).
+  **Next chunk:** approve a revised evaluation protocol that records invalid
+  model outputs/fallback as failed cases without retrying them, then completes
+  coverage while retaining transport/cost stop conditions. No general Jev quality
+  conclusion is available; hosted configuration/deployment/promotion remain separate checkpoints.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports
