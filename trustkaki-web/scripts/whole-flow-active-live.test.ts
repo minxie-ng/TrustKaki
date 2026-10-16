@@ -47,6 +47,9 @@ describe("active whole-flow preparation (mock transport)", () => {
     expect(activeFlowChecks("indirect_preference", result).indirectPreferenceProposed).toBe(false);
     expect(activeFlowChecks("benign_recipe", result).benignRecipeNoCareSignal).toBe(false);
     expect(activeFlowChecks("benign_recipe", result).noObservedMealPromise).toBe(false);
+    expect(activeFlowChecks("mixed_preference", result).mixedDailyLivingDetected).toBe(false);
+    result.signals = [{ type: "daily_living", category: "daily_living", description: "Could not get lunch", severity: "medium" }];
+    expect(activeFlowChecks("mixed_preference", result).mixedDailyLivingDetected).toBe(true);
     result.messages[0].text = "Here is a recipe you can cook yourself.";
     result.signals = [];
     expect(activeFlowChecks("benign_recipe", result).benignRecipeNoCareSignal).toBe(true);

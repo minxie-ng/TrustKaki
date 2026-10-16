@@ -29,6 +29,7 @@ export function activeFlowChecks(caseId: string, result: OrchestrationResult) {
     ...wholeFlowChecks(caseId, result),
     recallNotExtracted: !recall || !result.traces.some(t => t.agentId === "context_memory"),
     noObservedMealPromise: !/需要我帮你准备|would you like me to prepare|I can cook.{0,25}for you/iu.test(text),
+    mixedDailyLivingDetected: caseId !== "mixed_preference" || result.signals.some(s => s.type === "daily_living"),
     mixedCareClarification: caseId !== "mixed_preference" || /\?|？/u.test(text),
     implicitScamAssessed: caseId !== "implicit_scam" || result.traces.some(t => t.agentId === "digital_safety"),
     indirectPreferenceProposed: caseId !== "indirect_preference" || result.contextMemoryCandidates.some(c =>

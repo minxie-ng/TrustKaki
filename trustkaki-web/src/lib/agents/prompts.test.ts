@@ -269,6 +269,16 @@ describe("retained role contracts", () => {
     expect(signals.map((s: { type: string }) => s.type)).toEqual(["health", "digital_safety"]);
   });
 
+  it("preserves meal-access and pain signals alongside a lasting communication preference", () => {
+    const marker = "Mixed care and preference signal example (JSON):\n";
+    const line = TRIAGE_PROMPT.split(marker)[1]?.split("\n")[0];
+    expect(line).toBeDefined();
+    const signals = JSON.parse(line!);
+    expect(triageOutputSchema.shape.signals.safeParse(signals).success).toBe(true);
+    expect(signals.map((s: { type: string }) => s.type)).toEqual(["health", "daily_living"]);
+    expect(TRIAGE_PROMPT).toContain("Do not omit a missed meal or meal-access problem because pain or a lasting preference is also present.");
+  });
+
   it("makes Triage own routing, language matching and optional grounded social suggestions", () => {
     expect(TRIAGE_PROMPT).toMatch(/context_memory/);
     expect(TRIAGE_PROMPT).toMatch(/refusal|declin/i);

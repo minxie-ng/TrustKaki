@@ -54,6 +54,15 @@ describe("routing shadow preparation (no provider calls)", () => {
     expect(() => parseRoutingShadowResponse(winner)).toThrow();
   });
 
+  it("locates distribution-sum and selected-winner violations without raw payload logging", () => {
+    const sum = response(); sum.answers.health.probabilities.present = 0.5;
+    const winner = response(); winner.answers.daily_living.choice = "present";
+    for (const [value, path] of [[sum, ["answers", "health", "probabilities"]], [winner, ["answers", "daily_living", "choice"]]] as const) {
+      try { parseRoutingShadowResponse(value); throw new Error("expected rejection"); }
+      catch (error) { expect((error as { issues: Array<{ path: unknown }> }).issues).toEqual(expect.arrayContaining([expect.objectContaining({ path })])); }
+    }
+  });
+
   it("adapts validated Triage fields without treating its suggested risk or response as routing evidence", () => {
     const triage = { signals: [{ type: "health", category: "emergency_high_risk", severity: "high", description: "Fictional urgent concern" }],
       routing: ["digital_safety", "context_memory"], riskLevel: "red", riskChange: "increase", summary: "Fictional summary",

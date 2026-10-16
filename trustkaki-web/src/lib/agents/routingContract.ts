@@ -25,9 +25,11 @@ const probabilities = z.object({ present: z.number().min(0).max(1), absent: z.nu
 const answerSchema = z.object({ type: z.literal("choice"), choice: labelSchema,
   confidence: z.number().min(0).max(1), probabilities }).superRefine((answer, ctx) => {
   const values = Object.values(answer.probabilities);
-  if (Math.abs(values.reduce((a, b) => a + b, 0) - 1) > 0.001 ||
-      answer.probabilities[answer.choice] + 0.000001 < Math.max(...values)) {
-    ctx.addIssue({ code: "custom", message: "Invalid choice distribution" });
+  if (Math.abs(values.reduce((a, b) => a + b, 0) - 1) > 0.001) {
+    ctx.addIssue({ code: "custom", path: ["probabilities"], message: "Choice probabilities must sum to one" });
+  }
+  if (answer.probabilities[answer.choice] + 0.000001 < Math.max(...values)) {
+    ctx.addIssue({ code: "custom", path: ["choice"], message: "Choice must have the highest probability" });
   }
 });
 const answersSchema = z.object({ health: answerSchema, daily_living: answerSchema, digital_safety: answerSchema,
