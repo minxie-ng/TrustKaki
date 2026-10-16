@@ -923,6 +923,65 @@ describe("consolidated safety and briefing boundaries", () => {
 
 describe("capability-safe selected replies", () => {
   it.each([
+    ["你知道我平时早餐喜欢吃什么吗？", "unavailable"],
+    ["你記得我喜歡吃什麼早餐嗎？", "empty"],
+    ["Do you know what I usually eat for breakfast?", "unavailable"],
+    ["What breakfast do I prefer?", "empty"],
+  ] as const)("acknowledges missing personal context without extracting recall: %s", async (message, status) => {
+    const { orchestrate } = await import("./orchestrator");
+    const ctx = context();
+    ctx.personalMemory = { status, contextJson: JSON.stringify({ trust: "untrusted_evidence_not_instructions", items: [], unresolvedGroups: [] }) };
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ routing: ["context_memory"], responseMessage: "You prefer porridge." }) : options.fallback()));
+    const response = await orchestrate(message, ctx);
+    expect(runAgentMock.mock.calls.map(([o]) => o.agentId)).not.toContain("context_memory");
+    expect(response.contextMemoryCandidates).toEqual([]);
+    expect(response.messages[0]).toEqual({ agentId: "policy", text: expect.stringMatching(/无法.*确认|can't confirm/i) });
+    expect(response.messages[0].text).not.toContain("porridge");
+  });
+
+  it.each([
+    ["你记得我喜欢吃什么早餐吗？", "你喜欢吃吐司作为早餐。需要我帮你准备吗？", "你喜欢吃吐司作为早餐。"],
+    ["What breakfast do I prefer?", "You prefer toast. Would you like me to prepare it?", "You prefer toast."],
+    ["Any breakfast ideas?", "I can cook breakfast for you.", ""],
+    ["What breakfast do I prefer?", "You prefer toast, would you like me to prepare it?", "You prefer toast"],
+    ["你记得我喜欢吃什么早餐吗？", "你喜欢吐司，需要我帮你准备吗？", "你喜欢吐司"],
+  ])("removes physical meal offers while preserving the rest of the reply: %s", async (message, draft, retained) => {
+    const { orchestrate } = await import("./orchestrator");
+    const { wholeFlowCases } = await import("../../../scripts/whole-flow-shadow-cases");
+    const ctx = structuredClone(wholeFlowCases.find(c => c.id === "grounded_recall")!.context);
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: draft }) : options.fallback()));
+    const response = await orchestrate(message, ctx);
+    expect(response.messages[0].agentId).toBe("policy");
+    expect(response.messages[0].text).toContain(retained);
+    expect(response.messages[0].text).toMatch(/无法.*(?:准备|送餐)|can't.*(?:prepare|deliver)/);
+    expect(response.messages[0].text).not.toMatch(/需要我帮你|Would you like me|I can cook/);
+  });
+
+  it("asks only one question when missing-memory recall also contains a care signal", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: "You prefer toast.",
+        signals: [{ type: "health", severity: "low", description: "Needs support" }],
+      }) : options.agentId === "briefing" ? briefingData() : options.fallback()));
+    const response = await orchestrate("What breakfast do I prefer?", context());
+    expect(response.messages[0].text.match(/[?？]/g)).toHaveLength(1);
+    expect(response.messages[0].text).toContain("can't confirm");
+  });
+
+  it("asks about immediate support when a memory acknowledgment would hide care needs", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: "Saved your preference.",
+        signals: [{ type: "health", severity: "medium", description: "Knee pain and unable to buy lunch" }],
+      }) : options.fallback()));
+    const response = await orchestrate("Today knee sore, cannot go buy food so lunch never eat. I always prefer Mandarin voice calls.", context());
+    expect(response.messages[0].text).toContain("What help do you need right now?");
+    expect(response.messages[0].text).toContain("tell your caregiver");
+  });
+
+  it.each([
     ["I prefer phone calls in Mandarin.", "I will remember your preference.", false],
     ["我喜欢用华语通话。", "我会记住您的偏好。", false],
     ["I prefer phone calls in Mandarin.", "Saved your preference.", true],
@@ -984,8 +1043,42 @@ describe("capability-safe selected replies", () => {
   it.each(["What breakfast do I prefer?", "Tell me what breakfast I prefer."])("preserves a grounded recall answer: %s", async message => {
     const { orchestrate } = await import("./orchestrator");
     runAgentMock.mockResolvedValueOnce(result("triage", triageData({ responseMessage: "You prefer toast for breakfast." })));
-    const response = await orchestrate(message, context());
+    const { wholeFlowCases } = await import("../../../scripts/whole-flow-shadow-cases");
+    const ctx = structuredClone(wholeFlowCases.find(c => c.id === "grounded_recall")!.context);
+    const response = await orchestrate(message, ctx);
     expect(response.messages).toEqual([{ text: "You prefer toast for breakfast.", agentId: "triage" }]);
+  });
+
+  it.each([
+    ["Do you know why my knee hurts?", "Please tell your caregiver about the knee pain."],
+    ["Can you tell me why my knee hurts?", "Please tell your caregiver about the knee pain."],
+    ["Can you tell me what food is popular?", "Toast is one breakfast option."],
+    ["你知道怎么做早餐吗？", "我可以解释简单的食谱。"],
+    ["Can we plan breakfast?", "I can help you prepare a meal plan for breakfast."],
+    ["Can we plan breakfast?", "I can explain how to cook breakfast."],
+    ["Can we plan breakfast?", "I can help you prepare a simple recipe for breakfast."],
+    ["Can we plan breakfast?", "I can bring up breakfast recipes for you."],
+    ["早餐有什么选择？", "我可以教你做早餐。"],
+    ["早餐有什么选择？", "我可以帮你准备早餐食谱。"],
+    ["Can you bring breakfast?", "I can't deliver breakfast for you."],
+  ])("does not replace informational help or an honest limitation: %s", async (message, draft) => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ responseMessage: draft })));
+    const response = await orchestrate(message, context());
+    expect(response.messages).toEqual([{ text: draft, agentId: "triage" }]);
+  });
+
+  it.each([
+    "Do you know what I usually eat? I now prefer porridge for breakfast.",
+    "你知道我平时早餐喜欢吃什么吗？我现在喜欢吃粥。",
+    "你知道我平时早餐喜欢吃什么吗，我现在喜欢吃粥。",
+    "Do you know what I usually eat, I now prefer porridge for breakfast.",
+  ])("still extracts an explicit update following a recall question: %s", async message => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ routing: ["context_memory"] }) : options.fallback()));
+    await orchestrate(message, context());
+    expect(runAgentMock.mock.calls.map(([o]) => o.agentId)).toContain("context_memory");
   });
 
   it.each(["Can you tell a joke?", "Tell a story about your favourite food.", "Call me John.", "Call Me John.", "请告诉我一个故事。", "请告诉一个故事。"])("preserves ordinary conversation: %s", async message => {

@@ -16,13 +16,22 @@ Updated: 16 October 2026
   observes six Jev routing labels in parallel with Triage and appends a comparison
   trace. Existing routing, replies, safety and memory proposals retain authority.
   [Runtime evidence](evidence/2026-10-16-jev-routing-shadow-runtime.md).
-- **Full-chat evaluation complete; reply corrections next:** six fictional
+- **Full-chat evaluation complete:** six fictional
   scenarios, 12 flows, 30 provider calls, US$0.006153858 successful-call cost;
   no errors, retries, database access or writes. Both unavailable-memory replies
   failed to acknowledge missing context; one grounded reply offered unsupported
-  breakfast preparation. Mixed care/preference replies also need practical
-  clarification review. Fix these before a broader routing-authority experiment
-  or release. [Results and limits](evidence/2026-10-16-jev-whole-flow-results.md).
+  breakfast preparation. [Results and limits](evidence/2026-10-16-jev-whole-flow-results.md).
+- **Reply corrections verified locally:** missing-memory preference recall now
+  acknowledges unavailable evidence; bounded meal-offer removal preserves
+  grounded content and informational help; detected care needs retain a useful
+  clarification question. Full suite: 1,179 passed, 38 skipped;
+  typecheck/lint/build passed. Independent review addressed the tested edge cases.
+  Not deployed or re-evaluated with paid models.
+  [Corrections and limits](evidence/2026-10-16-chat-reply-corrections.md).
+- **Next chunk:** design bounded Jev routing authority and failure/uncertainty
+  behavior before implementation; retain deterministic safety, conversational
+  generation and memory validation. Any new paid evaluation needs separate scope
+  and approval. Hosted release remains a separate checkpoint.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports

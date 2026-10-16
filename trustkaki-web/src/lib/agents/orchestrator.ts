@@ -1,4 +1,4 @@
-import { contextItemsForMemory } from "@/lib/memory/agentContext";
+import { agentPersonalMemorySchema, contextItemsForMemory } from "@/lib/memory/agentContext";
 // ─── Orchestrator: Multi-Agent Orchestration Logic ───
 // Triage owns conversation/routing; conditional safety/memory, policy, then briefing.
 
@@ -127,20 +127,25 @@ function isSupportedCalendarDate(value: string): boolean {
   );
 }
 
+function isRecallOnly(message: string): boolean {
+  // Recall questions supply no new fact, even if the model requests memory.
+  // Check each clause so a separate explicit update remains eligible.
+  const clauses = message.split(/[.!?。！？,，;；\n]+/u).map(part => part.trim()).filter(Boolean);
+  return clauses.length > 0 && clauses.every(clause =>
+    /^(?:[你您](?:还|還)?(?:记得|記得)|(?:do|can|could|would) you (?:remember|recall|tell me)|tell me what\b|what\b.*\b(?:do i|is my|are my)\b)/iu.test(clause) ||
+    /^[你您]知道我.{0,50}(?:平时|平時|通常|喜欢|喜歡|偏好|习惯|習慣)/u.test(clause) ||
+    /^(?:do|can|could|would) you know\b(?=.*\b(?:i|my)\b)(?=.*\b(?:prefer|like|usually|normally|routine)\b)/iu.test(clause)
+  );
+}
+
 function shouldExcludeContextMemory(message: string): boolean {
   const normalized = normalizedMessage(message);
-  // Recall questions supply no new fact, even if the model requests memory.
-  // Check each sentence so a separate explicit update remains eligible.
-  const clauses = message.split(/[.!?。！？;；\n]+/u).map(part => part.trim()).filter(Boolean);
-  const isRecallOnly = clauses.length > 0 && clauses.every(clause =>
-    /^(?:[你您](?:还|還)?(?:记得|記得)|(?:do|can|could|would) you (?:remember|recall|tell me)|what\b.*\b(?:do i|is my|are my)\b)/iu.test(clause)
-  );
   const isBoundedSmallTalk = contextMemoryTextExclusionPatterns.some((pattern) =>
     pattern.test(normalized)
   );
   return (
     !normalized ||
-    isRecallOnly ||
+    isRecallOnly(message) ||
     redactProhibitedMemoryData(message) !== message ||
     (isBoundedSmallTalk && !hasDurableContextCue(message))
   );
@@ -398,6 +403,7 @@ function digitalSafetySummary(data?: DigitalSafetyOutput): string | undefined {
 
 function capabilityReply(message: string, draft: string, memoryRequested: boolean, signals: TriageSignal[], ctx: AgentRunContext): string | null {
   const chinese = /\p{Script=Han}/u.test(message) || /\p{Script=Han}/u.test(draft);
+  const careConcern = signals.some(signal => signal.type === "health" || signal.type === "daily_living");
   const displayRequest = /\b(?:large|larger|bigger)\s+(?:text|font)|\b(?:increase|enlarge)\b.{0,20}\b(?:text|font)|\b(?:font|text)\b.{0,12}\b(?:larger|bigger)\b|大字体|大字體|看不清小字|放大.{0,6}(?:字|文字)/iu.test(message);
   let reply: string | null = null;
   if (displayRequest) reply = chinese
@@ -418,12 +424,29 @@ function capabilityReply(message: string, draft: string, memoryRequested: boolea
   if (!reply && contactRequest) reply = chinese
     ? "我可以在这里和您聊天，但无法替您联系别人或传话。请直接联系对方，或请照顾者帮忙。"
     : "I can chat with you here, but I can't place calls or pass messages to others. Please contact the person directly or ask your caregiver for help.";
+  const personalMemory = agentPersonalMemorySchema.safeParse(ctx.personalMemory);
+  const personalRecall = isRecallOnly(message) && /\b(?:i|my)\b|我/u.test(message.toLowerCase()) &&
+    /\b(?:prefer|preference|like|usually|normally|routine|always|favourite|favorite)\b|喜欢|喜歡|偏好|平时|平時|习惯|習慣|通常/iu.test(message);
+  if (!reply && personalRecall && (!personalMemory.success || personalMemory.data.status !== "available")) reply = chinese
+    ? "我目前无法从可用的个人记忆中确认。" + (careConcern ? "" : "您可以再告诉我吗？")
+    : "I can't confirm that from the personal memory available right now." + (careConcern ? "" : " Could you tell me again?");
+  // shortcut: English/Mandarin meal offers only; extend with reviewed paraphrase cases.
+  if (!reply && /\b(?:breakfast|lunch|dinner|meals?|food|toast|porridge)\b|早餐|午餐|晚餐|饭|飯|餐|吐司|粥/iu.test(message + " " + draft)) {
+    const clauses = draft.match(/[^.!?。！？\n,，;；]+(?:[.!?。！？,，;；]+|$)/gu) ?? [];
+    const physicalOffers = [
+      /\b(?:I(?:\s+(?:can|will|could)|['’]ll)\s+|(?:like|want|need)\s+me\s+to\s+)(?:help\s+(?:you\s+)?(?:to\s+)?)?(?:prepare|cook|deliver|bring(?!\s+up))\b(?![^,;.!?]{0,50}\b(?:meal\s+plans?|menus?|recipes?|shopping\s+lists?)\b)/iu,
+      /(?:(?:需要|想要|要不要)我|我(?:可以|能|会|會|来|來))(?:帮|幫)?[你您]?(?:准备|準備|做|煮|送)(?![^，；。！？]{0,20}(?:食谱|食譜|菜单|菜單|计划|計劃|清单|清單))/u,
+    ];
+    const retained = clauses.filter(clause => !physicalOffers.some(pattern => pattern.test(clause)));
+    if (retained.length !== clauses.length) reply = [retained.join("").trim().replace(/[,，;；]$/u, chinese ? "。" : "."), chinese
+      ? "我可以在这里讨论饮食选择，但无法替您准备食物或送餐。"
+      : "I can discuss food options here, but I can't prepare or deliver meals for you."].filter(Boolean).join(" ");
+  }
   // Persistence happens after orchestration, so no save outcome is known here.
   if (!reply && memoryRequested) reply = chinese ? "谢谢您告诉我。" : "Thank you for telling me.";
   if (!reply) return null;
-  const careConcern = signals.some(signal => signal.type === "health" || signal.type === "daily_living");
   return reply + (careConcern
-    ? chinese ? "请向您的照顾者说明您现在的身体状况。" : " Please tell your caregiver how you're feeling."
+    ? chinese ? "请向您的照顾者说明您现在的身体状况。您现在需要什么帮助？" : " Please tell your caregiver how you're feeling. What help do you need right now?"
     : "");
 }
 

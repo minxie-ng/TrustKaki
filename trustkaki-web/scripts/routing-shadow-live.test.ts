@@ -100,7 +100,7 @@ describe("routing shadow live runner (all transport mocked)", () => {
     expect(failed).toHaveBeenCalledTimes(count);
   });
 
-  it("recovers only the specifically approved 30-pair stop and retains both failed reservations", async () => {
+  it("rejects the historical 30-pair recovery after prompt changes alter its approved reservation", async () => {
     const options = setup();
     const failure = vi.fn<typeof fetch>(async () => { throw new Error("failure"); });
     await expect(runRoutingShadow({ ...options, request: failure })).rejects.toThrow();
@@ -111,11 +111,13 @@ describe("routing shadow live runner (all transport mocked)", () => {
     });
     await expect(runRoutingShadow({ ...options, request: partial, approvedDnsRetry: true })).rejects.toThrow();
     const request = vi.fn<typeof fetch>(async url => Response.json(String(url).includes("systemone") ? jevResponse() : triageResponse()));
-    const report = await runRoutingShadow({ ...options, request, approvedRemainingRetry: true });
-    expect(report.calls).toBe(74);
-    expect(request).toHaveBeenCalledTimes(12);
-    expect(report.reservedUsd).toBeCloseTo(report.plannedReservationUsd + 0.022022, 6);
-    await runRoutingShadow({ ...options, request, approvedRemainingRetry: true });
-    expect(request).toHaveBeenCalledTimes(12);
+    const before = readFileSync(join(options.directory, "budget.json"), "utf8");
+    // The completed historical experiment used 415967 microUSD at this stop.
+    // New prompts must not silently inherit that narrowly approved recovery.
+    expect(JSON.parse(before).reservedMicroUsd).not.toBe(415967);
+    await expect(runRoutingShadow({ ...options, request, approvedRemainingRetry: true }))
+      .rejects.toThrow("routing_shadow_remaining_retry_state_mismatch");
+    expect(request).not.toHaveBeenCalled();
+    expect(readFileSync(join(options.directory, "budget.json"), "utf8")).toBe(before);
   });
 });
