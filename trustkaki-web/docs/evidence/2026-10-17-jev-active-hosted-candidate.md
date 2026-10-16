@@ -159,3 +159,16 @@ and bounded hosted inference remain pending on this corrected candidate. No
 authenticated inspection, new fixture setup or model call was performed during
 this deployment checkpoint. The earlier browser failure is not counted as a pass.
 No promotion; public deployment remains `dpl_4yfi39CYn2gtnHN5r9p7fJrSbCbR`.
+
+### Corrected candidate signed-in demo — passed
+
+Owner signed in on the corrected URL and authorized a read-only dashboard check.
+The browser showed the three expected fictional seniors, selected priority case,
+recommended human action, chronological evidence and contextual preferences.
+Only view controls were used. No case action, message or model request occurred.
+Historical timeline replies do not demonstrate this deployment's Jev inference.
+
+The repeated caregiver fixture procedure is prepared and pinned to `b0fe92f` /
+`dpl_3XCohW5qoqGD9LZh6S1d3CGVeEDm`; it has not been executed. It requires
+separate approval for two temporary Auth users, eight isolated fictional rows,
+API and browser account-switch checks, session revocation and fixture deletion.

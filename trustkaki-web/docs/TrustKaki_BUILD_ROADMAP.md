@@ -11,8 +11,8 @@ Updated: 17 October 2026
   https://trustkaki-4098t3hmj-minxie-ngs-projects.vercel.app. Exact source metadata
   and protected public smoke passed; 1,251 local tests, typecheck/lint/build pass.
   Prior `75f617a` passed demo/API checks but failed browser account switching.
-  Temporary fixtures were removed. Repeat authenticated checks and hosted Jev
-  inference on the corrected candidate before considering promotion.
+  Temporary fixtures were removed. Corrected signed-in demo passed. Repeat ordinary-caregiver isolation checks
+  and hosted Jev inference on this candidate before considering promotion.
   [Current candidate](evidence/2026-10-17-jev-active-hosted-candidate.md).
 - **Local shadow integration prepared:** independently disabled by default;
   observes six Jev routing labels in parallel with Triage and appends a comparison
