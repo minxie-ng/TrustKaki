@@ -38,9 +38,12 @@ Updated: 16 October 2026
   20 flows and at most 110 provider attempts. Worst-case reservation US$0.88409
   under a separate US$1 cap. Mocked failure/budget/isolation checks and independent
   review passed. [Protocol and checks](evidence/2026-10-16-jev-active-evaluation-preparation.md).
-  **Next chunk:** obtain separate spending approval, execute once, and review every
-  selected reply before deciding whether active routing is useful. New paid calls
-  need spending approval; hosted configuration/deployment/promotion remain separate checkpoints.
+  **Active run attempted with owner approval:** first OpenAI response failed
+  validation; runner stopped with one attempt, zero completed flows and
+  US$0.002224 retained reservation. No retry or Jev request occurred.
+  [Failure evidence](evidence/2026-10-16-jev-active-evaluation-stopped.md).
+  **Next chunk:** separately authorize recovery, diagnose the response failure,
+  then complete and review the comparison. No quality conclusion is available; hosted configuration/deployment/promotion remain separate checkpoints.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports

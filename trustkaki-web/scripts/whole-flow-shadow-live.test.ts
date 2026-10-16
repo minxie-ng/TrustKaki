@@ -108,6 +108,25 @@ describe("whole-flow shadow harness (mock transport only)", () => {
     expect(JSON.parse(readFileSync(join(options.directory, "budget.json"), "utf8")).stopped).toBe(true);
   });
 
+  it.each(["response_json", "openai_envelope", "agent_json", "agent_schema"])("retains safe diagnostic stage %s without response text", async stage => {
+    const options = setup();
+    const request = vi.fn<typeof fetch>(async (_url, init) => {
+      if (stage === "response_json") return new Response("private response text", { status: 200 });
+      const data = providerResponse(JSON.parse(init!.body as string));
+      if ("choices" in data) {
+        if (stage === "openai_envelope") data.model = "private model value";
+        if (stage === "agent_json") data.choices![0].message.content = "private non-JSON content";
+        if (stage === "agent_schema") data.choices![0].message.content = "{}";
+      }
+      return Response.json(data);
+    });
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow();
+    expect(request).toHaveBeenCalledTimes(1);
+    const ledger = readFileSync(join(options.directory, "budget.json"), "utf8");
+    expect(JSON.parse(ledger).failureCode).toBe(stage);
+    expect(ledger).not.toMatch(/private|fictional-openai|fictional-router/);
+  });
+
   it("retains a failed parallel request reservation when its companion succeeds", async () => {
     const options = setup();
     let release: (() => void) | undefined;

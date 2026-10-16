@@ -110,20 +110,27 @@ export async function runWholeFlowShadow(options: { directory: string; experimen
             headers: { "Content-Type": "application/json", Authorization: "Bearer " + (url === ROUTER ? routerKey : openaiKey) } });
           stage = "http_" + response.status;
           if (!response.ok) { await response.body?.cancel(); throw new Error(); }
-          stage = "response_validation";
+          stage = "response_json";
           const data = await response.json();
           let costUsd: number, model: string, inputTokens: number, outputTokens: number;
           if (url === OPENAI) {
+            stage = "openai_envelope";
             const value = z.object({ model: z.literal(MODEL), usage: z.object({ prompt_tokens: z.number().int().nonnegative(), completion_tokens: z.number().int().min(0).max(1024) }),
               choices: z.array(z.object({ finish_reason: z.literal("stop"), message: z.object({ content: z.string().min(1) }) })).length(1) }).parse(data);
-            schemas[agentIndex].parse(JSON.parse(value.choices[0].message.content));
+            stage = "agent_json";
+            const output = JSON.parse(value.choices[0].message.content);
+            stage = "agent_schema";
+            schemas[agentIndex].parse(output);
             model = value.model; costUsd = (value.usage.prompt_tokens * 0.15 + value.usage.completion_tokens * 0.60) / 1_000_000;
             inputTokens = value.usage.prompt_tokens; outputTokens = value.usage.completion_tokens;
           } else {
+            stage = "jev_schema";
             const parsed = kind === "social" ? parseJevSocialIntent(data) : parseRoutingShadowResponse(data);
+            stage = "jev_usage";
             const usage = z.object({ input_tokens: z.number().int().min(0).max(262144), output_tokens: z.number().int().nonnegative(), cost: z.number().nonnegative() }).parse(data.usage);
             model = parsed.model; costUsd = usage.cost;
             inputTokens = usage.input_tokens; outputTokens = usage.output_tokens;
+            stage = "jev_model";
             if (!/^typesafe\/jev-1\.14(?:[-.]\d+)*$/.test(model) || (ledger.jevModel && ledger.jevModel !== model)) throw new Error();
             ledger.jevModel = model;
           }
