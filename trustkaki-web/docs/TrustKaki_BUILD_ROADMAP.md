@@ -16,10 +16,13 @@ Updated: 16 October 2026
   observes six Jev routing labels in parallel with Triage and appends a comparison
   trace. Existing routing, replies, safety and memory proposals retain authority.
   [Runtime evidence](evidence/2026-10-16-jev-routing-shadow-runtime.md).
-- **Active next chunk:** capped fictional whole-flow evaluation is prepared and
-  independently reviewed; execution awaits separate US$1 spending approval.
-  Six scenarios, 12 complete flows, at most 66 provider attempts, no database
-  access or writes. [Prepared scope and checks](evidence/2026-10-16-jev-whole-flow-preparation.md).
+- **Full-chat evaluation complete; reply corrections next:** six fictional
+  scenarios, 12 flows, 30 provider calls, US$0.006153858 successful-call cost;
+  no errors, retries, database access or writes. Both unavailable-memory replies
+  failed to acknowledge missing context; one grounded reply offered unsupported
+  breakfast preparation. Mixed care/preference replies also need practical
+  clarification review. Fix these before a broader routing-authority experiment
+  or release. [Results and limits](evidence/2026-10-16-jev-whole-flow-results.md).
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports
