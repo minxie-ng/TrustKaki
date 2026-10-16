@@ -44,6 +44,7 @@ import {
 } from "./prompts";
 import { contextMemoryFallback } from "./fallbacks";
 import { hasSocialActivityCue, jevIsEnabled, runJevSocialDecision } from "./socialDecision";
+import { runJevRoutingShadow, routingShadowTrace } from "./routingShadow";
 
 const contextMemoryTextExclusionPatterns = [
   /^(?:你好|您好|早安|早上好|晚上好|谢谢|谢谢你|好的|好|再见)$/u,
@@ -436,6 +437,7 @@ export async function orchestrate(
   let signals: TriageSignal[] = [];
   let briefing: BriefingOutput | null = null;
   let contextMemoryCandidates: ContextMemoryOutput["candidates"] = [];
+  const routingShadow = runJevRoutingShadow(message, ctx);
 
   // Triage owns primary interpretation, routing and the conversation draft.
   const triageResult: AgentRunResult<TriageOutput> = await runAgent({
@@ -601,6 +603,8 @@ export async function orchestrate(
   }
 
   // ── Build response ──
+  const routingObservation = await routingShadow;
+  if (routingObservation) traces.push(routingShadowTrace(routingObservation, triageResult));
   const response: OrchestrateResponse = {
     messages: responseMessages,
     traces,

@@ -2,9 +2,36 @@
 
 Updated: 16 October 2026
 
-Status: Neon personal memory is live in production; legacy import is reconciled, old personal writes blocked and approved redundant copies removed.
-Signed-in candidate, exact deployment promotion, public smoke and production memory/reply checks passed.
-Agent consolidation `410b6ef` is live: owner-approved exact candidate promoted on 16 October; production health/privacy/data-deletion smoke passed. Remote build, signed-in demo-admin checks and two ordinary-caregiver API/browser isolation checks passed; fixture cleanup independently verified. [Release evidence](evidence/2026-10-16-agent-candidate.md) records precise coverage, runner errors and blank runtime commit-label limitation. Deterministic pending-state acknowledgements and bounded capability replies resolve the unsupported-memory-promise blocker. [Correction evidence](evidence/2026-10-15-capability-replies.md); [earlier comparison](evidence/2026-10-15-agent-live-comparison.md). Next: release the approved Jev normal-chat integration, then UI discovery. Isolated Jev/GPT evaluation completed: both scored 18/18 on reserved fictional cases with zero refusals called interest; Jev cost/latency were lower in this run. Owner subsequently approved normal-chat integration. Jev now selects bounded social replies in local code, reusing the existing AAC slot; local feature enabled, hosted release pending. No additional agent or care-risk/memory authority. [Integration evidence and judge walkthrough](evidence/2026-10-16-jev-runtime-integration.md). Benchmark-only checks: 23 focused tests, typecheck and targeted lint pass. [Pilot results and decision](agents/2026-10-16-jev-social-intent-pilot.md). UI then focuses on priority, evidence and next human action. Evaluate Jev separately only on a bounded task if it adds value. Independent backup and broader historical-copy checks remain pre-pilot work.
+## Current checkpoint
+
+- **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
+  [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
+  [agent release](evidence/2026-10-16-agent-candidate.md).
+- **Hosted candidate:** Jev social-decision integration `9a90107` is enabled on
+  an unpromoted candidate. Build, health, signed-in demo and two ordinary-caregiver
+  API/browser checks passed; all temporary accounts/rows were removed.
+  Hosted inference and promotion remain pending.
+  [Candidate evidence](evidence/2026-10-16-jev-hosted-candidate.md).
+- **Local shadow integration prepared:** independently disabled by default;
+  observes six Jev routing labels in parallel with Triage and appends a comparison
+  trace. Existing routing, replies, safety and memory proposals retain authority.
+  [Runtime evidence](evidence/2026-10-16-jev-routing-shadow-runtime.md).
+- **Active next chunk:** prepare a capped fictional whole-flow evaluation before
+  enabling shadow mode. The completed 36-message screen matched all six labels on 24/36 Jev
+  cases versus 21/36 current Triage cases; Jev missed no labelled positives but
+  overclassified nine flags and handled ambiguity imperfectly. This supports
+  further evaluation, not a production replacement or whole-flow savings claim.
+  [Complete screening evidence](evidence/2026-10-16-jev-routing-results.md).
+  Six independent judgments preserve mixed intents; conversational models
+  still supply replies and policy retains authority.
+  [Design and boundaries](superpowers/specs/2026-10-16-jev-routing-shadow-design.md).
+- **Evidence so far:** earlier social-intent pilot had 18/18 held-out results for
+  both Jev and GPT-4o-mini, with lower measured Jev endpoint cost/latency. This
+  does not establish broader routing quality or whole-flow savings.
+  [Pilot](agents/2026-10-16-jev-social-intent-pilot.md).
+- **After agent decisions:** UI discovery and cleanup, emphasizing priority,
+  evidence and the next human action at one glance. Independent backups and
+  broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.

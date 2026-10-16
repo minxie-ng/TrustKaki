@@ -7,6 +7,7 @@ import type {
   TriageOutput,
 } from "./contracts";
 import type { AgentId } from "@/lib/types";
+import { routingFlags } from "./routingContract";
 
 const runAgentMock = vi.fn();
 
@@ -41,6 +42,106 @@ const context = (currentRiskLevel: AgentRunContext["currentRiskLevel"] = "green"
   },
   messages: [],
   currentRiskLevel,
+});
+
+describe("Jev routing shadow noninterference", () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+  it.each([
+    ["urgent and scam", "I have chest pain and cannot breathe. A caller wants my bank OTP.", {
+      signals: [{ type: "health", category: "emergency_high_risk", severity: "high", description: "Immediate symptoms" },
+        { type: "digital_safety", category: "digital_safety", severity: "high", description: "OTP request" }],
+      riskLevel: "red", humanFollowUpRequired: true, routing: ["digital_safety"],
+    }, false, false],
+    ["mixed care and preference", "My knee hurts today. I always prefer Mandarin voice calls.", {
+      signals: [{ type: "health", severity: "medium", description: "Knee pain" }], routing: ["context_memory"],
+    }, false, false],
+    ["RAG recall", "What breakfast do I prefer?", {}, false, false],
+    ["ambiguity", "That problem happened again. What should I do?", {}, false, false],
+    ["Triage fallback", "I feel worried today.", {}, true, false],
+    ["Jev unavailable", "I feel worried today.", {}, false, true],
+    ["social refusal", "Please stop suggesting group outings.", {
+      signals: [{ type: "social", category: "social_isolation", severity: "low", description: "No outings" }],
+    }, false, false],
+  ] as const)("preserves the whole flow for %s", async (_name, message, overrides, triageFallback, failedJev) => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "false"); vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
+    const ctx = context();
+    ctx.personalMemory = { status: "available", contextJson: "Fictional supplied context: prefers toast." };
+    const candidate: ContextMemoryOutput["candidates"][number] = { targetStore: "memory", contextKey: "language",
+      contextType: "communication_preference", content: "Prefers Mandarin voice calls.", sourceMessageId: "current_message",
+      evidenceExcerpt: "I always prefer Mandarin voice calls.", confidence: 0.95, applicationTags: ["voice_preferred"], retentionClass: "preference" };
+    runAgentMock.mockImplementation(async options => {
+      if (options.agentId === "triage") return { ...result("triage", triageData(overrides as Partial<TriageOutput>)), fallback: triageFallback };
+      return result(options.agentId, options.agentId === "context_memory" ? memoryData({ candidates: [candidate] }) : options.fallback());
+    });
+    const body = { model: "typesafe/jev-1.14-20261014", usage: { input_tokens: 100, output_tokens: 0, cost: 0.0000042 },
+      answers: Object.fromEntries(routingFlags.map(flag => [flag, { type: "choice", choice: "present", confidence: 1,
+        probabilities: { present: 1, absent: 0, unclear: 0 } }])) };
+    const request = failedJev ? vi.fn().mockRejectedValue(new Error("private upstream")) : vi.fn().mockResolvedValue(Response.json(body));
+    vi.stubGlobal("fetch", request);
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "false");
+    const before = await orchestrate(message, ctx);
+    expect(request).not.toHaveBeenCalled();
+    const calls = runAgentMock.mock.calls.map(([o]) => ({ agentId: o.agentId, systemPrompt: o.systemPrompt, userPrompt: o.userPrompt }));
+    runAgentMock.mockClear();
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "true");
+    const after = await orchestrate(message, ctx);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(runAgentMock.mock.calls.map(([o]) => ({ agentId: o.agentId, systemPrompt: o.systemPrompt, userPrompt: o.userPrompt }))).toEqual(calls);
+    for (const key of ["messages", "signals", "policy", "briefing", "alerts", "riskLevel", "riskChange", "contextMemoryCandidates"] as const) {
+      expect(after[key]).toEqual(before[key]);
+    }
+    expect(after.traces).toHaveLength(before.traces.length + 1);
+    const trace = after.traces.at(-1)!;
+    expect(trace.agentName).toBe("Jev Routing Shadow"); expect(trace.stateChanges).toEqual([]);
+    expect(trace.fallback).toBe(failedJev);
+    if (triageFallback) expect(JSON.parse(trace.output).triageJudgment).toBeNull();
+    if (_name === "mixed care and preference") expect(after.contextMemoryCandidates).toEqual([candidate]);
+    if (_name === "RAG recall") expect(after.contextMemoryCandidates).toEqual([]);
+  });
+
+  it("starts observation alongside Triage without making Triage wait for it", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "true"); vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "false");
+    vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
+    let finish!: (response: Response) => void;
+    const request = vi.fn(() => new Promise<Response>(resolve => { finish = resolve; })); vi.stubGlobal("fetch", request);
+    runAgentMock.mockImplementation(async () => {
+      expect(request).toHaveBeenCalledTimes(1);
+      finish(new Response(null, { status: 503 }));
+      return result("triage", triageData());
+    });
+    const response = await orchestrate("hello", context());
+    expect(response.messages[0].text).toBe("Good to hear.");
+    expect(response.traces.at(-1)?.fallback).toBe(true);
+  });
+
+  it("keeps the existing social decision authoritative when both Jev paths are enabled", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true"); vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
+    const request = vi.fn(async (_url, options) => {
+      const social = Boolean(JSON.parse(options.body).questions.social_intent);
+      return Response.json({ model: "typesafe/jev-1.14-20261014", usage: { input_tokens: 100, output_tokens: 0, cost: 0.0000042 },
+        answers: social ? { social_intent: { type: "choice", choice: "declining", confidence: 1,
+          probabilities: { interested: 0, declining: 1, unclear: 0 } } }
+          : Object.fromEntries(routingFlags.map(flag => [flag, { type: "choice", choice: "absent", confidence: 1,
+            probabilities: { present: 0, absent: 1, unclear: 0 } }])) });
+    });
+    vi.stubGlobal("fetch", request);
+    runAgentMock.mockImplementation(async () => result("triage", triageData()));
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "false");
+    const before = await orchestrate("Please stop suggesting group outings.", context());
+    expect(request).toHaveBeenCalledTimes(1);
+    request.mockClear();
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "true");
+    const after = await orchestrate("Please stop suggesting group outings.", context());
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(after.messages).toEqual(before.messages); expect(after.policy).toEqual(before.policy);
+    expect(after.messages[0].text).toContain("leave activities");
+    expect(after.traces.find(trace => trace.agentName === "Jev Social Decision")?.tags).toContain("declining");
+    expect(after.traces.at(-1)?.agentName).toBe("Jev Routing Shadow");
+  });
 });
 
 describe("enabled Jev social reply", () => {

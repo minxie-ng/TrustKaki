@@ -26,3 +26,4 @@ pnpm-debug.log*
 /trustkaki-web/*.pptx
 /trustkaki-web/scripts/create-slide-*.py
 /trustkaki-web/scripts/create-technical-evidence-slides.py
+trustkaki-web/.jev-routing-evaluation/
