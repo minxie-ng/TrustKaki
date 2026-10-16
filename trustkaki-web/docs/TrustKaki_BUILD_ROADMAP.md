@@ -7,14 +7,13 @@ Updated: 17 October 2026
 - **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
   [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
   [agent release](evidence/2026-10-16-agent-candidate.md).
-- **Latest hosted candidate:** active Jev specialist routing `75f617a` is READY,
-  unpromoted. Exact commit/project metadata,41 matching Supabase migrations,
-  protected public smoke, Neon database health and social configuration passed.
-  Signed-in demo and ordinary-caregiver API isolation passed; browser account switching
-  exposed stale prior-account data. Fixtures are fully removed. Promotion blocked
-  pending the session-isolation fix, a fresh candidate and repeated hosted checks.
+- **Latest hosted candidate:** session-isolation recovery `b0fe92f` is READY at
+  https://trustkaki-4098t3hmj-minxie-ngs-projects.vercel.app. Exact source metadata
+  and protected public smoke passed; 1,251 local tests, typecheck/lint/build pass.
+  Prior `75f617a` passed demo/API checks but failed browser account switching.
+  Temporary fixtures were removed. Repeat authenticated checks and hosted Jev
+  inference on the corrected candidate before considering promotion.
   [Current candidate](evidence/2026-10-17-jev-active-hosted-candidate.md).
-  Earlier social-only candidate `9a90107` remains historical evidence.
 - **Local shadow integration prepared:** independently disabled by default;
   observes six Jev routing labels in parallel with Triage and appends a comparison
   trace. Existing routing, replies, safety and memory proposals retain authority.

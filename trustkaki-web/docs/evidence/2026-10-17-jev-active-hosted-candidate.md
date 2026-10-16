@@ -120,3 +120,42 @@ Local recovery verification completed: `npm run validate` exited 0 (1,251
 passed, 38 skipped; typecheck, lint and production build passed).
 `npm audit --omit=dev` found zero vulnerabilities. Independent final diff review
 found no remaining blockers. The corrected code has not been hosted yet.
+
+## Corrected candidate — b0fe92f
+
+Owner separately approved read-only linked-service inspection, deployment of
+`b0fe92fcc44fe15ebe7dbc9899989773199dda50` with existing Production settings and
+`--skip-domain`, metadata inspection and public smoke checks. No configuration
+values changed. All 41 local/remote migrations match; no migration applied.
+
+- Deployment: `dpl_3XCohW5qoqGD9LZh6S1d3CGVeEDm`.
+- URL: https://trustkaki-4098t3hmj-minxie-ngs-projects.vercel.app
+- Source: exact clean Git archive; no local environment files included.
+- API metadata confirms exact SHA, expected project and READY Production target.
+
+```text
+Build Completed in /vercel/output [26s]
+Deployment completed: READY
+PASS source commit metadata
+PASS operational database, Neon memory database and RAG configuration
+PASS /api/health HTTP200
+PASS /privacy HTTP200
+PASS /data-deletion HTTP200
+PASS Jev social configuration (not an inference test)
+PASS /api/agents/aac-nudge HTTP200
+PASS public domain remains on previous verified deployment
+PROTECTED CANDIDATE SMOKE PASSED
+```
+
+Credential-free `npm run release:smoke` received an unexpected status at health
+because this candidate is deployment-protected. Read-only `vercel curl` through
+existing CLI authentication passed the checks above; protection was unchanged.
+Remote build emitted the existing npm cache-dir and install-script warnings,
+without a build failure. Health's automatic Git label may remain blank with this
+archive deployment; exact source and deployment API metadata pin the SHA.
+
+Authenticated demo dashboard, repeated ordinary-caregiver browser/API isolation,
+and bounded hosted inference remain pending on this corrected candidate. No
+authenticated inspection, new fixture setup or model call was performed during
+this deployment checkpoint. The earlier browser failure is not counted as a pass.
+No promotion; public deployment remains `dpl_4yfi39CYn2gtnHN5r9p7fJrSbCbR`.
