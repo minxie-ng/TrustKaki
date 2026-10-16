@@ -10,6 +10,7 @@ import { parseJevSocialIntent } from "../src/lib/agents/socialIntentContract";
 import { reserveSocialIntentRequest } from "./social-intent-budget";
 import type { ComparisonBudget } from "./agent-comparison-budget";
 import { wholeFlowCases, wholeFlowChecks } from "./whole-flow-shadow-cases";
+import { activeFlowCases, activeFlowChecks } from "./whole-flow-active-cases";
 
 const MODEL = "gpt-4o-mini-2024-07-18";
 const OPENAI = "https://api.openai.com/v1/chat/completions", ROUTER = "https://openrouter.ai/api/v1/systemone";
@@ -18,13 +19,16 @@ const schemas = [triageOutputSchema, digitalSafetyOutputSchema, contextMemoryOut
 const envNames = ["TRUSTKAKI_LLM_MODEL", "TRUSTKAKI_LLM_BASE_URL", "TRUSTKAKI_LLM_TIMEOUT_MS", "TRUSTKAKI_JEV_ENABLED", "TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED", "TRUSTKAKI_JEV_ROUTING_ENABLED"] as const;
 interface Ledger extends ComparisonBudget { protocolHash: string; stopped: boolean; failureCode: string | null; inFlight: number[]; completedFlows: number; finished: boolean; jevModel: string | null }
 interface Flow {
-  caseId: string; variant: "baseline" | "shadow"; durationMs: number; costUsd: number; requests: number;
+  caseId: string; variant: "baseline" | "shadow" | "active"; durationMs: number; costUsd: number; requests: number;
   risk: string; reply: { text: string; agentId?: string }; agents: string[]; memoryCandidateCount: number;
-  checks: ReturnType<typeof wholeFlowChecks>; shadow: unknown;
+  checks: Record<string, boolean>; shadow: unknown; routing: unknown; jevOnlyInvocations: string[];
+  signalTypes: string[]; alertCount: number; hasBriefing: boolean;
 }
-interface Report { protocolHash: string; calls: number; reservedUsd: number; successfulCostUsd: number; manualReview: "pending"; flows: Flow[] }
+interface Report { experiment: "shadow" | "active"; protocolHash: string; calls: number; reservedUsd: number; successfulCostUsd: number; manualReview: "pending"; flows: Flow[] }
 
-export function wholeFlowPreflight() {
+export function wholeFlowPreflight(experiment: "shadow" | "active" = "shadow") {
+  if (!["shadow", "active"].includes(experiment)) throw new Error("whole_flow_unknown_experiment");
+  const cases = experiment === "active" ? activeFlowCases : wholeFlowCases;
   const files = ["orchestrator.ts", "runner.ts", "provider.ts", "prompts.ts", "schemas.ts", "policy.ts", "fallbacks.ts",
     "routingContract.ts", "routingShadow.ts", "specialistRouting.ts", "socialDecision.ts", "socialIntentContract.ts"];
   const source = files.map(file => readFileSync(new URL("../src/lib/agents/" + file, import.meta.url), "utf8"));
@@ -34,21 +38,24 @@ export function wholeFlowPreflight() {
     readFileSync(new URL("../src/lib/patterns/patternWatch.ts", import.meta.url), "utf8"),
     readFileSync(new URL("./whole-flow-shadow-live.ts", import.meta.url), "utf8"),
     readFileSync(new URL("./whole-flow-shadow-cases.ts", import.meta.url), "utf8"),
+    readFileSync(new URL("./whole-flow-active-cases.ts", import.meta.url), "utf8"),
     readFileSync(new URL("./agent-comparison-budget.ts", import.meta.url), "utf8"),
     readFileSync(new URL("./social-intent-budget.ts", import.meta.url), "utf8"),
     readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"));
-  const protocolHash = createHash("sha256").update(JSON.stringify({ source, cases: wholeFlowCases, model: MODEL, node: process.version, version: 1 })).digest("hex");
-  // At most four OpenAI agents plus social per flow, plus routing in shadow.
-  const maxAttempts = 6 * 2 * 4 + 6 * 2 + 6;
-  const reservedUsd = (48 * Math.ceil((40000 + 2048) * 0.15 + 1024 * 0.60) + 18 * Math.ceil(262144 * 0.042)) / 1_000_000;
-  if (reservedUsd > 1 || maxAttempts !== 66 || wholeFlowCases.length !== 6) throw new Error("whole_flow_plan_not_bounded");
+  const protocolHash = createHash("sha256").update(JSON.stringify({ source, cases, experiment, model: MODEL, node: process.version, version: 2 })).digest("hex");
+  // Four OpenAI agents and possible social per flow; one routing call per second variant.
+  const count = cases.length, maxAttempts = experiment === "active" ? 110 : 66;
+  const reservedUsd = (count * 8 * Math.ceil((40000 + 2048) * 0.15 + 1024 * 0.60) + count * 3 * Math.ceil(262144 * 0.042)) / 1_000_000;
+  if (reservedUsd > 1 || count * 11 !== maxAttempts) throw new Error("whole_flow_plan_not_bounded");
   return { protocolHash, maxAttempts, reservedUsd };
 }
 
-export async function runWholeFlowShadow(options: { directory: string; approvedCapUsd: number; pricesVerified: boolean; request?: typeof fetch }): Promise<Report> {
+export async function runWholeFlowShadow(options: { directory: string; experiment?: "shadow" | "active"; approvedCapUsd: number; pricesVerified: boolean; request?: typeof fetch }): Promise<Report> {
   const openaiKey = process.env.TRUSTKAKI_LLM_API_KEY?.trim(), routerKey = process.env.OPENROUTER_API_KEY?.trim();
   if (options.approvedCapUsd !== 1 || !options.pricesVerified || !openaiKey || !routerKey) throw new Error("whole_flow_approval_prices_or_keys_missing");
-  const plan = wholeFlowPreflight();
+  const experiment = options.experiment ?? "shadow";
+  const plan = wholeFlowPreflight(experiment);
+  const cases = experiment === "active" ? activeFlowCases : wholeFlowCases;
   mkdirSync(options.directory, { recursive: true, mode: 0o700 });
   const lockPath = resolve(options.directory, "run.lock"), lock = openSync(lockPath, "wx", 0o600);
   const budgetPath = resolve(options.directory, "budget.json"), summaryPath = resolve(options.directory, "summary.json");
@@ -60,7 +67,7 @@ export async function runWholeFlowShadow(options: { directory: string; approvedC
   const logging = { log: console.log, warn: console.warn, error: console.error };
   const pending = new Set<Promise<Response>>();
   const flows: Flow[] = [];
-  let activeCase = "preflight", activeVariant: "baseline" | "shadow" = "baseline", successfulCostUsd = 0;
+  let activeCase = "preflight", activeVariant: Flow["variant"] = "baseline", successfulCostUsd = 0;
   let seen = new Set<string>();
   const stop = (code: string) => { ledger.stopped = true; ledger.failureCode ??= code; save(ledger); };
   try {
@@ -75,7 +82,7 @@ export async function runWholeFlowShadow(options: { directory: string; approvedC
     save(ledger);
     process.env.TRUSTKAKI_LLM_MODEL = MODEL; process.env.TRUSTKAKI_LLM_BASE_URL = "https://api.openai.com/v1";
     process.env.TRUSTKAKI_LLM_TIMEOUT_MS = "15000"; process.env.TRUSTKAKI_JEV_ENABLED = "true";
-    process.env.TRUSTKAKI_JEV_ROUTING_ENABLED = "false"; // This experiment compares shadow only, never active authority.
+    process.env.TRUSTKAKI_JEV_ROUTING_ENABLED = "false"; // Each experiment pins both routing flags before any request.
     console.log = console.warn = console.error = () => {}; // Do not leak framework/provider prose to the CLI.
     globalThis.fetch = (input, init) => {
       const task = (async () => {
@@ -90,11 +97,11 @@ export async function runWholeFlowShadow(options: { directory: string; approvedC
           const kind = url === OPENAI ? "openai_" + agentIndex : body.questions?.social_intent ? "social" : "routing";
           if (url === OPENAI && (agentIndex < 0 || body.messages?.length !== 2 || body.messages[0].role !== "system" || body.messages[1].role !== "user" ||
               body.response_format?.type !== "json_object" || body.max_tokens !== 1024)) throw new Error();
-          if (kind === "routing" && activeVariant !== "shadow") throw new Error();
+          if (kind === "routing" && activeVariant === "baseline") throw new Error();
           if (seen.has(kind)) throw new Error(); // Includes runAgent's internal retries; no second network attempt.
           seen.add(kind);
           const previous = ledger.reservedMicroUsd;
-          ledger = { ...ledger, ...reserveSocialIntentRequest(ledger, url === ROUTER ? "jev" : "openai", body), inFlight: [...ledger.inFlight, ledger.calls + 1] };
+          ledger = { ...ledger, ...reserveSocialIntentRequest(ledger, url === ROUTER ? "jev" : "openai", body, experiment === "active" ? 110 : 72), inFlight: [...ledger.inFlight, ledger.calls + 1] };
           requestId = ledger.calls; const reservation = ledger.reservedMicroUsd - previous;
           save(ledger);
           stage = "transport";
@@ -134,22 +141,31 @@ export async function runWholeFlowShadow(options: { directory: string; approvedC
       return task;
     };
     const { orchestrate } = await import("../src/lib/agents/orchestrator");
-    for (const item of wholeFlowCases) for (const variant of ["baseline", "shadow"] as const) {
+    for (const item of cases) for (const variant of ["baseline", experiment] as const) {
       if (ledger.stopped) throw new Error("whole_flow_stopped");
       activeCase = item.id; activeVariant = variant; seen = new Set();
       process.env.TRUSTKAKI_JEV_ROUTING_SHADOW_ENABLED = String(variant === "shadow");
+      process.env.TRUSTKAKI_JEV_ROUTING_ENABLED = String(variant === "active");
       const start = performance.now(), startCost = successfulCostUsd, startCalls = ledger.calls;
       const result = await orchestrate(item.message, structuredClone(item.context));
       if (ledger.stopped || result.traces.some(trace => trace.fallback)) { stop(ledger.failureCode ?? "application_fallback"); throw new Error("whole_flow_stopped"); }
       const shadow = result.traces.find(trace => trace.agentName === "Jev Routing Shadow");
-      if ((variant === "shadow") !== Boolean(shadow)) { stop("missing_shadow_trace"); throw new Error("whole_flow_stopped"); }
+      const active = result.traces.find(trace => trace.agentName === "Jev Specialist Router");
+      if ((variant === "shadow") !== Boolean(shadow) || (variant === "active") !== Boolean(active)) {
+        stop("missing_routing_trace"); throw new Error("whole_flow_stopped");
+      }
+      const routing = active ? JSON.parse(active.output) : null;
+      const jevOnlyInvocations: string[] = routing ? routing.executedSpecialists.filter((id: string) => !routing.independentTriggers.includes(id)) : [];
       const flow: Flow = { caseId: item.id, variant, durationMs: performance.now() - start, costUsd: successfulCostUsd - startCost,
         requests: ledger.calls - startCalls, risk: result.riskLevel, reply: result.messages[0], agents: result.traces.map(trace => trace.agentId),
-        memoryCandidateCount: result.contextMemoryCandidates.length, checks: wholeFlowChecks(item.id, result), shadow: shadow ? JSON.parse(shadow.output) : null };
+        memoryCandidateCount: result.contextMemoryCandidates.length,
+        checks: experiment === "active" ? activeFlowChecks(item.id, result) : wholeFlowChecks(item.id, result),
+        shadow: shadow ? JSON.parse(shadow.output) : null, routing, jevOnlyInvocations,
+        signalTypes: result.signals.map(signal => signal.type), alertCount: result.alerts.length, hasBriefing: result.briefing !== null };
       flows.push(flow); appendFileSync(resolve(options.directory, "flows.jsonl"), JSON.stringify(flow) + "\n", { mode: 0o600 });
       ledger.completedFlows = flows.length; save(ledger);
     }
-    const report: Report = { protocolHash: plan.protocolHash, calls: ledger.calls, reservedUsd: ledger.reservedMicroUsd / 1_000_000, successfulCostUsd, manualReview: "pending", flows };
+    const report: Report = { experiment, protocolHash: plan.protocolHash, calls: ledger.calls, reservedUsd: ledger.reservedMicroUsd / 1_000_000, successfulCostUsd, manualReview: "pending", flows };
     writeFileSync(summaryPath, JSON.stringify(report, null, 2), { mode: 0o600 });
     ledger.finished = true; save(ledger); return report;
   } finally {
@@ -161,11 +177,14 @@ export async function runWholeFlowShadow(options: { directory: string; approvedC
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
-  if (process.argv.slice(2).join(" ") !== "--confirm-live --cap-usd=1 --prices-verified") {
+  const experiment = process.argv.includes("--active") ? "active" : "shadow";
+  const expected = "--confirm-live --cap-usd=1 --prices-verified" + (experiment === "active" ? " --active" : "");
+  if (process.argv.slice(2).join(" ") !== expected) {
     console.error("Requires separate US$1 owner approval and current price verification. No calls made."); process.exitCode = 1;
   } else {
-    runWholeFlowShadow({ directory: resolve(process.cwd(), ".jev-whole-flow-evaluation"), approvedCapUsd: 1, pricesVerified: true })
-      .then(report => console.log(JSON.stringify({ completedFlows: report.flows.length, calls: report.calls, reservedUsd: report.reservedUsd,
+    runWholeFlowShadow({ directory: resolve(process.cwd(), experiment === "active" ? ".jev-active-routing-evaluation" : ".jev-whole-flow-evaluation"),
+      experiment, approvedCapUsd: 1, pricesVerified: true })
+      .then(report => console.log(JSON.stringify({ experiment: report.experiment, completedFlows: report.flows.length, calls: report.calls, reservedUsd: report.reservedUsd,
         successfulCostUsd: report.successfulCostUsd, manualReview: report.manualReview, failedChecks: report.flows.flatMap(flow => Object.entries(flow.checks).filter(([, passed]) => !passed).map(([check]) => ({ caseId: flow.caseId, variant: flow.variant, check }))) })))
       .catch(() => { console.error("Whole-flow evaluation stopped. Preserve ledger; no automatic retry."); process.exitCode = 1; });
   }

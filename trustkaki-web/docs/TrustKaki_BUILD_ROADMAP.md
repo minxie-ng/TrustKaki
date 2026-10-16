@@ -34,9 +34,13 @@ Updated: 16 October 2026
   Full suite: 1,210 passed, 38 skipped; typecheck/lint/build passed; independent
   review found no blocking issues.
   [Runtime behavior and evidence](evidence/2026-10-16-jev-specialist-routing-runtime.md).
-- **Next chunk:** prepare a separately scoped fictional live evaluation of
-  active routing and the corrected replies. New paid calls need spending
-  approval; hosted configuration/deployment/promotion remain separate checkpoints.
+- **Active evaluation prepared:** ten fictional scenarios, baseline/active pairs,
+  20 flows and at most 110 provider attempts. Worst-case reservation US$0.88409
+  under a separate US$1 cap. Mocked failure/budget/isolation checks and independent
+  review passed. [Protocol and checks](evidence/2026-10-16-jev-active-evaluation-preparation.md).
+  **Next chunk:** obtain separate spending approval, execute once, and review every
+  selected reply before deciding whether active routing is useful. New paid calls
+  need spending approval; hosted configuration/deployment/promotion remain separate checkpoints.
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports

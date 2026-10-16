@@ -6,6 +6,13 @@ const fresh = { capMicroUsd: 1_000_000, reservedMicroUsd: 0, calls: 0 };
 const jev = { ...buildJevSocialIntentRequest("Any activities?"), model: "typesafe/jev-1.14" };
 const openai = { model: "gpt-4o-mini-2024-07-18", messages: [{ role: "user", content: "test" }], max_tokens: 128 };
 describe("separate social-intent budget", () => {
+  it("requires explicit active-evaluation limit 110 and preserves the older default bound", () => {
+    const near = { ...fresh, calls: 109, reservedMicroUsd: 500000 };
+    expect(() => reserveSocialIntentRequest(near, "openai", openai)).toThrow("social_intent_request_limit");
+    const last = reserveSocialIntentRequest(near, "openai", openai, 110);
+    expect(last.calls).toBe(110);
+    expect(() => reserveSocialIntentRequest(last, "openai", openai, 110)).toThrow("social_intent_request_limit");
+  });
   it("reserves a full Jev context before a call, even for short input", () => {
     expect(reserveSocialIntentRequest(fresh, "jev", jev)).toEqual({ ...fresh, calls: 1, reservedMicroUsd: 11011 });
   });

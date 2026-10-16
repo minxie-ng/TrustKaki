@@ -28,3 +28,4 @@ pnpm-debug.log*
 /trustkaki-web/scripts/create-technical-evidence-slides.py
 trustkaki-web/.jev-routing-evaluation/
 trustkaki-web/.jev-whole-flow-evaluation/
+trustkaki-web/.jev-active-routing-evaluation/
