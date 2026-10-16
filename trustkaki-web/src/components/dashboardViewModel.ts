@@ -130,16 +130,14 @@ export function optimisticDashboardForSenior(
     activity: data.activity?.filter((item) => item.seniorId === seniorId),
     senior: {
       name: senior.name,
-      age: senior.age ?? data.senior.age,
+      age: senior.age ?? 0,
       gender: senior.gender ?? null,
       address: senior.address ?? null,
-      livingSituation: senior.livingSituation ?? data.senior.livingSituation,
-      caregiver: senior.primaryCaregiver ?? data.senior.caregiver,
+      livingSituation: senior.livingSituation ?? "Not recorded",
+      caregiver: senior.primaryCaregiver ?? "Not recorded",
       caregiverRelationship:
-        senior.primaryCaregiverRelationship ??
-        data.senior.caregiverRelationship ??
-        null,
-      aacVolunteer: senior.aacVolunteer ?? data.senior.aacVolunteer,
+        senior.primaryCaregiverRelationship ?? null,
+      aacVolunteer: senior.aacVolunteer ?? "Not recorded",
       riskLevel: senior.riskLevel,
       lastCheckIn: senior.lastCheckIn,
     },

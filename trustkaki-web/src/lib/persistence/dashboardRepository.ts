@@ -1,6 +1,5 @@
 import "server-only";
 
-import { uncleTan } from "@/data/demo";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type { AuthenticatedCaregiver } from "@/lib/auth/session";
 import { getPersistenceStatus, type PersistenceStatus } from "@/lib/supabase/config";
@@ -644,18 +643,18 @@ export async function readDashboardState(options: {
     ]);
 
   const selectedNames = caregiverNames.get(selectedSeniorId);
-  const caregiver = selectedNames?.caregiver ?? uncleTan.caregiver;
+  const caregiver = selectedNames?.caregiver ?? "Not recorded";
   const caregiverRelationship =
-    selectedNames?.caregiverRelationship ?? uncleTan.caregiverRelationship ?? null;
-  const aacVolunteer = selectedNames?.aacVolunteer ?? uncleTan.aacVolunteer;
+    selectedNames?.caregiverRelationship ?? null;
+  const aacVolunteer = selectedNames?.aacVolunteer ?? "Not recorded";
 
   const mapped = dashboardSnapshotToData({
     senior: {
       name: senior.display_name,
-      age: senior.age ?? uncleTan.age,
+      age: senior.age ?? 0,
       gender: genderFromSeniorRow(senior),
       address: addressFromSeniorRow(senior),
-      livingSituation: senior.living_situation ?? uncleTan.livingSituation,
+      livingSituation: senior.living_situation ?? "Not recorded",
       caregiver,
       caregiverRelationship,
       aacVolunteer,

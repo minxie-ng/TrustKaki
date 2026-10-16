@@ -172,3 +172,52 @@ The repeated caregiver fixture procedure is prepared and pinned to `b0fe92f` /
 `dpl_3XCohW5qoqGD9LZh6S1d3CGVeEDm`; it has not been executed. It requires
 separate approval for two temporary Auth users, eight isolated fictional rows,
 API and browser account-switch checks, session revocation and fixture deletion.
+
+### Corrected candidate ordinary-caregiver checks — isolation passed
+
+Owner approved the exact corrected build's two temporary accounts, eight
+isolated fictional rows, API/browser checks, session revocation and cleanup.
+Both accounts passed scoped RLS/roster/dashboard reads, empty technical traces,
+foreign senior/context read denial, and admin context-write denial.
+
+Browser checks switched from demo admin to caregiver 1 and then caregiver 2.
+Each ordinary caregiver saw exactly its linked fictional senior; previous
+account senior data cleared on sign-out. Neither ordinary account exposed Live
+system demo or the technical trace controls. Both dashboards loaded successfully.
+An early first-login click detached; the unchanged form was inspected before
+completing sign-in. The second dashboard briefly showed its loading state before
+its assigned senior appeared. Neither intermediate state showed another senior.
+
+Both accounts were signed out and removed. Cleanup verified:
+
+```text
+PASS caregiver 1: scoped RLS/dashboard, empty traces, foreign reads and admin writes denied
+PASS caregiver 2: scoped RLS/dashboard, empty traces, foreign reads and admin writes denied
+PASS browser: assigned senior only, no old senior after account switching, admin controls hidden
+PASS cleanup: eight fixture rows and two Auth users absent; former tokens denied
+```
+
+No model request, outbound message, existing-record edit or promotion occurred.
+Restricted temporary credential/recovery files were removed.
+
+### Additional sparse-profile defect — local correction
+
+The empty fixture profiles revealed that the dashboard repository filled missing
+age, living situation, caregiver relationship and AAC volunteer fields with
+Mr Tan demo defaults. The browser's first fixture showed its correct own name,
+but unrelated default demographics/contact labels. Source inspection confirmed
+static fallback substitution, rather than an unauthorized live senior read.
+Optimistic senior switching had a related path that reused the previous senior's
+missing fields. This is a data-accuracy blocker for promoting this candidate.
+
+The local correction removes these fallback values from live profile reads and
+optimistic switching. Missing strings display Not recorded, relationships remain
+null, and age uses the existing unknown-age value 0 with an Age not recorded
+label. Demo seed data is unchanged. Three regressions failed before and passed
+after the correction; independent review found no blockers. A fresh reviewed
+commit/candidate and hosted verification remain required.
+
+Final local verification: `npm run validate` exited 0: 1,254 tests passed,
+38 skipped; typecheck, lint and production build passed. No dependencies or
+lockfiles changed; the prior zero-vulnerability production dependency audit
+continues to cover this dependency set.

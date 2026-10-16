@@ -284,6 +284,17 @@ describe("dashboard view model", () => {
     expect(dashboardData.activity).toHaveLength(1);
   });
 
+  it("does not borrow the previous senior's profile when switching to a sparse record", () => {
+    const sparse = structuredClone(dashboardData);
+    const target = sparse.seniors!.find(senior => senior.id === "senior-2")!;
+    target.age = null; target.livingSituation = null; target.primaryCaregiver = null;
+    target.primaryCaregiverRelationship = null; target.aacVolunteer = null;
+    expect(optimisticDashboardForSenior(sparse, "senior-2").senior).toMatchObject({
+      age: 0, livingSituation: "Not recorded", caregiver: "Not recorded",
+      caregiverRelationship: null, aacVolunteer: "Not recorded",
+    });
+  });
+
   it("standardises caregiver names with their senior-specific relationship", () => {
     expect(formatCaregiverLabel("Rachel Tan", "Daughter")).toBe(
       "Rachel Tan (daughter)"

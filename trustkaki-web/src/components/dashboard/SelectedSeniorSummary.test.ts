@@ -18,6 +18,11 @@ const senior = {
 } satisfies DashboardData["senior"];
 
 describe("SelectedSeniorSummary", () => {
+  it("shows unknown age without asserting zero years old", () => {
+    const html = renderToStaticMarkup(createElement(SelectedSeniorSummary, { senior: { ...senior, age: 0 } }));
+    expect(html).toContain("Age not recorded");
+    expect(html).not.toContain("0 years old");
+  });
   it("keeps identity and care metadata compact and unframed", () => {
     const html = renderToStaticMarkup(createElement(SelectedSeniorSummary, { senior }));
 

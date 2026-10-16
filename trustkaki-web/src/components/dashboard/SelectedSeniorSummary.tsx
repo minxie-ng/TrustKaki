@@ -20,7 +20,7 @@ export function SelectedSeniorSummary({ senior, selectedSenior }: SelectedSenior
         <div className="min-w-0">
           <h3 className="truncate text-lg font-bold text-[var(--care-ink)]">{senior.name}</h3>
           <div className="text-sm text-gray-700">
-            {[senior.gender, `${senior.age} years old`, senior.livingSituation].filter(Boolean).join(" · ")}
+            {[senior.gender, senior.age > 0 ? `${senior.age} years old` : "Age not recorded", senior.livingSituation].filter(Boolean).join(" · ")}
           </div>
           <div className="break-words text-xs text-gray-600">
             {senior.address ?? selectedSenior?.address ?? "Address not recorded"}

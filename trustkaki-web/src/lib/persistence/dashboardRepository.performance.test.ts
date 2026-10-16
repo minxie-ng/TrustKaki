@@ -28,7 +28,7 @@ function deferred<T>() {
 }
 
 describe("dashboard read latency", () => {
-  it("starts independent overview reads while the active check-in is loading", async () => {
+  it.each([false, true])("starts independent overview reads and preserves missing profile facts (sparse=%s)", async (sparse) => {
     const started: string[] = [];
     const checkIn = deferred<{ data: null; error: null }>();
     const results: Record<string, { data: unknown; error: null }> = {
@@ -38,10 +38,10 @@ describe("dashboard read latency", () => {
           external_ref: "demo_uncle_tan",
           display_name: "Mr Tan Ah Hock",
           organisation_id: "org-1",
-          age: 76,
+          age: sparse ? null : 76,
           gender: "Male",
           address_text: null,
-          living_situation: "Lives alone",
+          living_situation: sparse ? null : "Lives alone",
           risk_level: "yellow",
           last_check_in_at: null,
         }],
@@ -102,7 +102,11 @@ describe("dashboard read latency", () => {
     ].every((table) => started.includes(table));
 
     checkIn.resolve({ data: null, error: null });
-    await read;
+    const result = await read;
+    if (sparse) expect(result?.data.senior).toMatchObject({
+      age: 0, livingSituation: "Not recorded", caregiver: "Not recorded",
+      caregiverRelationship: null, aacVolunteer: "Not recorded",
+    });
 
     expect(overviewStartedBeforeCheckInResolved).toBe(true);
   });
