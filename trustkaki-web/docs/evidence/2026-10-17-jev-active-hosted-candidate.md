@@ -221,3 +221,74 @@ Final local verification: `npm run validate` exited 0: 1,254 tests passed,
 38 skipped; typecheck, lint and production build passed. No dependencies or
 lockfiles changed; the prior zero-vulnerability production dependency audit
 continues to cover this dependency set.
+
+## Profile-corrected candidate — b4174ff
+
+Owner separately approved deployment/inspection/smoke and the subsequent two-
+caregiver fixture procedure, including missing-profile assertions and cleanup.
+
+- Commit: `b4174ff6907569b7b08288f2f1808e9bfbaf4370`.
+- Deployment: `dpl_BpNrn6rwgHtKaxZhHsnqdsy9mR9f`.
+- URL: https://trustkaki-c7wkjsciu-minxie-ngs-projects.vercel.app
+- Exact clean source archive; expected team/project/root and SHA metadata match.
+- READY Production target, `--skip-domain`, existing configuration unchanged.
+- All 41 local/remote migrations match; none applied.
+
+```text
+Build Completed in /vercel/output [43s]
+PASS exact candidate/project/source metadata READY
+PASS /api/health HTTP200
+PASS /privacy HTTP200
+PASS /data-deletion HTTP200
+PASS /api/agents/aac-nudge HTTP200
+PASS public domain unchanged
+PROTECTED CANDIDATE SMOKE PASSED
+```
+
+Smoke used existing authenticated Vercel CLI access without changing protection.
+Health confirms the operational and Neon memory databases are reachable and RAG
+is configured. Jev configuration is enabled/configured; no inference was tested.
+The remote build emitted the existing npm cache-dir/install-script warnings.
+The signed-in demo check and repeated caregiver API/browser checks are in progress.
+No promotion or model calls have occurred.
+
+### b4174ff authenticated verification and cleanup — passed
+
+Owner signed in on the exact URL and approved read-only demo inspection. The
+expected three fictional seniors, selected care case, human action, chronology
+and personal preferences were visible; no dashboard error was present. No case
+action or model request was performed.
+
+Both temporary caregivers passed API/RLS isolation and hidden-trace checks.
+Live API responses preserved missing age as 0, missing living situation/AAC
+contact as Not recorded, missing relationship as null, and each caregiver's own
+linked name. Foreign reads and admin writes were denied.
+
+Browser checks switched demo admin → caregiver 1 → caregiver 2 with sign-out
+between identities. Each roster contained only its own assigned senior, prior
+senior data cleared on sign-out, and admin/technical controls were hidden. Both
+profiles displayed Age not recorded and neutral missing fields; neither showed
+Mr Tan's demo age, living situation, volunteer or relationship. Short locator
+waits expired during dashboard loading, then fresh snapshots confirmed correct
+loaded dashboards without stale data. No network request was retried by the
+fixture runner and no provider call was made.
+
+```text
+PASS caregiver 1: missing profile facts remain unknown
+PASS caregiver 1: scoped RLS/dashboard, empty traces, foreign reads and admin writes denied
+PASS caregiver 2: missing profile facts remain unknown
+PASS caregiver 2: scoped RLS/dashboard, empty traces, foreign reads and admin writes denied
+PASS browser: both assigned rosters, old session data cleared, admin controls hidden
+PASS browser: sparse profile values remain unknown, no demo defaults
+PASS cleanup: eight fixture rows and two Auth users absent; former tokens denied
+```
+
+Both fixture sessions were signed out. Session revocation, ownership-checked
+fixture deletion, absence verification and former-token rejection completed.
+Restricted credentials/recovery files were removed. No fixture remains.
+
+This candidate has passed the bounded signed-in/access checks. Hosted Jev
+inference on the corrected agent replies and actual active-router trace is still
+unverified; configuration GETs and historical replies do not prove it. A bounded
+hosted inference procedure and separate authorization are required before that
+checkpoint. Public promotion remains separately unapproved.

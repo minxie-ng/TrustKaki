@@ -7,15 +7,15 @@ Updated: 17 October 2026
 - **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
   [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
   [agent release](evidence/2026-10-16-agent-candidate.md).
-- **Latest hosted candidate:** session-isolation recovery `b0fe92f` is READY at
-  https://trustkaki-4098t3hmj-minxie-ngs-projects.vercel.app. Exact source metadata
-  and protected public smoke passed; 1,251 local tests, typecheck/lint/build pass.
-  Prior `75f617a` passed demo/API checks but failed browser account switching.
-  Temporary fixtures were removed. Corrected signed-in demo and both caregiver API/browser isolation checks passed;
-  fixture cleanup verified. Sparse profiles exposed static demo-field fallbacks;
-  their local correction requires a fresh candidate. Hosted Jev inference and
+- **Latest hosted candidate:** profile/session corrections `b4174ff` are READY at
+  https://trustkaki-c7wkjsciu-minxie-ngs-projects.vercel.app. Exact source metadata,
+  protected smoke, signed-in demo and both caregiver API/browser checks passed.
+  Sparse fields remain unknown, prior account data clears, admin controls stay
+  hidden; both temporary accounts/eight rows removed and former tokens denied.
+  1,254 local tests, typecheck/lint/build pass. Hosted Jev inference and production
   promotion remain pending.
-  [Current candidate](evidence/2026-10-17-jev-active-hosted-candidate.md).
+  [Current candidate and earlier failures](evidence/2026-10-17-jev-active-hosted-candidate.md).
+
 - **Local shadow integration prepared:** independently disabled by default;
   observes six Jev routing labels in parallel with Triage and appends a comparison
   trace. Existing routing, replies, safety and memory proposals retain authority.
