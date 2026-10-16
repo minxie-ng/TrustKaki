@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -81,6 +81,42 @@ describe("active whole-flow preparation (mock transport)", () => {
     await runWholeFlowShadow({ ...options, request }); expect(request).toHaveBeenCalledTimes(calls);
     await expect(runWholeFlowShadow({ ...options, experiment: "shadow", request })).rejects.toThrow();
     expect(request).toHaveBeenCalledTimes(calls);
+  });
+
+  it("recovers the exact approved failure once, carries its budget and preserves the original bytes", async () => {
+    const options = { ...setup(), recoverFirstValidation: true };
+    const source = JSON.stringify({ capMicroUsd: 1000000, reservedMicroUsd: 2224, calls: 1,
+      protocolHash: "040a7b768fe62165c3abc31e2b170f3ad362441659646dcce6cc2fe2f5e17d68",
+      stopped: true, failureCode: "response_validation", inFlight: [1], completedFlows: 0, finished: false, jevModel: null });
+    const request = vi.fn<typeof fetch>(async (_url, init) => Response.json(response(JSON.parse(init!.body as string))));
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow("whole_flow_recovery_source_missing");
+    expect(request).not.toHaveBeenCalled();
+    writeFileSync(join(options.directory, "budget.json"), source);
+    const report = await runWholeFlowShadow({ ...options, request });
+    expect(report.flows).toHaveLength(20); expect(report.recoveredFirstValidation).toBe(true);
+    expect(report.calls).toBe(request.mock.calls.length + 1);
+    expect(report.reservedUsd).toBeGreaterThan(0.002224);
+    expect(readFileSync(join(options.directory, "first-failed-budget.json"), "utf8")).toBe(source);
+    const count = request.mock.calls.length;
+    await runWholeFlowShadow({ ...options, request }); expect(request).toHaveBeenCalledTimes(count);
+    expect(wholeFlowPreflight("active", true)).toMatchObject({ maxAttempts: 111, reservedUsd: 0.886314 });
+    expect(() => wholeFlowPreflight("shadow", true)).toThrow();
+  });
+
+  it("refuses changed failed budgets and refuses another recovery after a new error", async () => {
+    const options = { ...setup(), recoverFirstValidation: true };
+    const source = { capMicroUsd: 1000000, reservedMicroUsd: 2224, calls: 1,
+      protocolHash: "040a7b768fe62165c3abc31e2b170f3ad362441659646dcce6cc2fe2f5e17d68",
+      stopped: true, failureCode: "response_validation", inFlight: [1], completedFlows: 0, finished: false, jevModel: null };
+    const request = vi.fn<typeof fetch>(async () => new Response(null, { status: 503 }));
+    writeFileSync(join(options.directory, "budget.json"), JSON.stringify({ ...source, reservedMicroUsd: 0 }));
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow(); expect(request).not.toHaveBeenCalled();
+    writeFileSync(join(options.directory, "budget.json"), JSON.stringify(source));
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow(); expect(request).toHaveBeenCalledTimes(1);
+    const ledger = readFileSync(join(options.directory, "budget.json"), "utf8");
+    expect(JSON.parse(ledger).calls).toBe(2); expect(JSON.parse(ledger).reservedMicroUsd).toBeGreaterThan(2224);
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow(); expect(request).toHaveBeenCalledTimes(1);
+    expect(readFileSync(join(options.directory, "budget.json"), "utf8")).toBe(ledger);
   });
 
   it("requires separate approval and stops a failed active request without retry or resumption", async () => {

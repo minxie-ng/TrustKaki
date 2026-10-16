@@ -13,6 +13,11 @@ describe("separate social-intent budget", () => {
     expect(last.calls).toBe(110);
     expect(() => reserveSocialIntentRequest(last, "openai", openai, 110)).toThrow("social_intent_request_limit");
   });
+  it("enforces the separately approved recovery bound of 111", () => {
+    const last = reserveSocialIntentRequest({ ...fresh, calls: 110 }, "openai", openai, 111);
+    expect(last.calls).toBe(111);
+    expect(() => reserveSocialIntentRequest(last, "openai", openai, 111)).toThrow();
+  });
   it("reserves a full Jev context before a call, even for short input", () => {
     expect(reserveSocialIntentRequest(fresh, "jev", jev)).toEqual({ ...fresh, calls: 1, reservedMicroUsd: 11011 });
   });
