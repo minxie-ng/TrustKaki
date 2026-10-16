@@ -402,7 +402,7 @@ function digitalSafetySummary(data?: DigitalSafetyOutput): string | undefined {
   return `${data.isScam ? "Suspected scam" : "Assessment inconclusive; safety is not verified"}; reported confidence=${data.confidence}: ${data.warningMessage}`;
 }
 
-function capabilityReply(message: string, draft: string, memoryRequested: boolean, signals: TriageSignal[], ctx: AgentRunContext): string | null {
+function capabilityReply(message: string, draft: string, memoryRequested: boolean, signals: TriageSignal[], ctx: AgentRunContext, acknowledgeMemory = true): string | null {
   const chinese = /\p{Script=Han}/u.test(message) || /\p{Script=Han}/u.test(draft);
   const careConcern = signals.some(signal => signal.type === "health" || signal.type === "daily_living");
   const displayRequest = /\b(?:large|larger|bigger)\s+(?:text|font)|\b(?:increase|enlarge)\b.{0,20}\b(?:text|font)|\b(?:font|text)\b.{0,12}\b(?:larger|bigger)\b|大字体|大字體|看不清小字|放大.{0,6}(?:字|文字)/iu.test(message);
@@ -444,7 +444,10 @@ function capabilityReply(message: string, draft: string, memoryRequested: boolea
       : "I can discuss food options here, but I can't prepare or deliver meals for you."].filter(Boolean).join(" ");
   }
   // Persistence happens after orchestration, so no save outcome is known here.
-  if (!reply && memoryRequested) reply = chinese ? "谢谢您告诉我。" : "Thank you for telling me.";
+  // Extraction is a side task. A Jev-only request must not erase a recipe or
+  // social response; still replace drafts that imply an unconfirmed save.
+  const claimsMemorySave = /\b(?:I|we)(?:(?:['’](?:ve|ll))|\s+(?:have|will|can))?\s+(?:remember(?:ed)?|sav(?:e|ed)|noted?|stor(?:e|ed)|record(?:ed)?|keep\b.{0,20}\bin mind)\b|\b(?:preference|information|detail|memory)\b.{0,30}\b(?:saved|stored|recorded)\b|我(?:已(?:经|經)?|会|會|可以|将|將)?(?:为您|為您|帮您|幫您)?(?:记住|記住|保存|记下|記下|记录|記錄)/iu.test(draft);
+  if (!reply && memoryRequested && (acknowledgeMemory || claimsMemorySave)) reply = chinese ? "谢谢您告诉我。" : "Thank you for telling me.";
   if (!reply) return null;
   return reply + (careConcern
     ? chinese ? "请向您的照顾者说明您现在的身体状况。您现在需要什么帮助？" : " Please tell your caregiver how you're feeling. What help do you need right now?"
@@ -567,7 +570,8 @@ export async function orchestrate(
     signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message) ||
     routes.requestedSpecialists.includes("digital_safety")
   );
-  const boundedReply = capabilityReply(message, triageResult.data.responseMessage, contextMemoryExecution.input !== null, signals, ctx);
+  const boundedReply = capabilityReply(message, triageResult.data.responseMessage, contextMemoryExecution.input !== null, signals, ctx,
+    routes.independentTriggers.includes("context_memory") && !routes.social);
   const triageCare = signals.some(signal => signal.type === "health" || signal.type === "daily_living");
   const socialEligible = !urgentHealth && !safetyReply && !boundedReply && policyResult.finalRisk !== "red" && !triageCare && routes.social;
   const careClarification = socialEligible && routes.carePause

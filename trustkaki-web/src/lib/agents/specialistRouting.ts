@@ -5,7 +5,7 @@ interface BaselineRouting { digitalSafety: boolean; contextMemory: boolean; soci
 
 export function selectSpecialistRouting(judgment: RoutingJudgment | null, baseline: BaselineRouting, memoryAllowed: boolean) {
   const requestedSpecialists: RoutingSpecialist[] = [];
-  if (judgment && judgment.digital_safety !== "absent") requestedSpecialists.push("digital_safety");
+  if (judgment?.digital_safety === "present") requestedSpecialists.push("digital_safety");
   if (judgment?.durable_context === "present") requestedSpecialists.push("context_memory");
   if (judgment?.social === "present") requestedSpecialists.push("aac_nudge");
   const independentTriggers: RoutingSpecialist[] = [];

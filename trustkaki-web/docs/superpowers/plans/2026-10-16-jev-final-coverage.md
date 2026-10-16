@@ -10,17 +10,17 @@
 
 ## Tasks
 
-- [ ] Add mocked regression coverage for schema-invalid Triage and Jev outputs:
+- [x] Add mocked regression coverage for schema-invalid Triage and Jev outputs:
   all20 flows remain covered, failures visible, fallback exercised, no repeated
   transport per agent/flow. Wrong model, usage, cost or transport stops.
-- [ ] Extend `scripts/whole-flow-shadow-live.ts` with explicit quality mode,
+- [x] Extend `scripts/whole-flow-shadow-live.ts` with explicit quality mode,
   hash-pinned history loading and separate artifacts. Default modes unchanged.
   Add explicit126 attempt bound (16 carried plus110 new), worst reservation
   US$0.942691 under the same cumulative US$1 cap. Update shared budget tests.
-- [ ] Review and verify changes; commit before the authorized paid evaluation.
+- [x] Review and verify changes; commit before the authorized paid evaluation.
   Execute once, record every failure and manually review every selected reply.
   Preserve all old ledgers and add the new artifact directory to `.gitignore`.
-- [ ] Resolve demonstrated product defects locally, with meaningful regression
+- [x] Resolve demonstrated product defects locally, with meaningful regression
   checks. Do not weaken response schemas or describe failed cases as passes.
 - [ ] Run release validation and dependency assessment. Record exact candidate
   SHA and independent review. Prepare judge-facing model roles and limitations.

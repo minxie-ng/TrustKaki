@@ -61,10 +61,17 @@ Updated: 16 October 2026
   did not reproduce and its exact cause remains unknown.16 cumulative attempts,
   US$0.058601 reservation. No deployment or broader reliability claim.
   [Follow-up evidence](evidence/2026-10-16-care-and-jev-follow-up.md).
-  **Next chunk:** approve a revised evaluation protocol that records invalid
-  model outputs/fallback as failed cases without retrying them, then completes
-  coverage while retaining transport/cost stop conditions. No general Jev quality
-  conclusion is available; hosted configuration/deployment/promotion remain separate checkpoints.
+  **Coverage complete; reply corrections verified locally:** all20 flows finished,
+  49 new requests, zero invalid outputs/fallbacks. Active routing failed two
+  automated reply checks; manual review found a third recipe-answer loss.
+  Local regressions now preserve clarification, refusal and recipe replies;
+  independent review found no blockers.1,247 tests passed,38 skipped;
+  typecheck/lint/build passed. Jev-only contextual social work was demonstrated;
+  this sample does not show overall superiority or whole-flow savings.
+  **Next chunk:** inspect linked services with approval, stage a fresh candidate,
+  verify authenticated access and bounded hosted Jev inference, then request
+  promotion. Production remains unchanged.
+  [Completed coverage and corrections](evidence/2026-10-16-jev-final-coverage.md).
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
   overclassified nine flags and handled ambiguity imperfectly. This supports

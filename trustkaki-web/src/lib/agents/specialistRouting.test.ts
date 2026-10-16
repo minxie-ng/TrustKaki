@@ -6,7 +6,7 @@ const absent = Object.fromEntries(routingFlags.map(flag => [flag, "absent"])) as
 const baseline = { digitalSafety: false, contextMemory: false, social: false };
 
 describe("bounded Jev specialist routing", () => {
-  it.each(["present", "unclear"] as const)("routes %s safety to assessment", label => {
+  it.each(["present"] as const)("routes %s safety to assessment", label => {
     expect(selectSpecialistRouting({ ...absent, digital_safety: label }, baseline, true).digitalSafety).toBe(true);
   });
   it("cannot veto any independent trigger", () => {

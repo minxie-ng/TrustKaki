@@ -163,7 +163,7 @@ describe("active Jev specialist routing", () => {
   });
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
-  it.each(["present", "unclear"])("Jev-only %s safety triggers one specialist and selects its cautious reply", async label => {
+  it.each(["present"])("Jev-only %s safety triggers one specialist and selects its cautious reply", async label => {
     const { orchestrate } = await import("./orchestrator");
     const request = vi.fn().mockResolvedValue(Response.json(routingBody({ digital_safety: label }))); vi.stubGlobal("fetch", request);
     const response = await orchestrate("Could you check this request?", context());
@@ -172,6 +172,50 @@ describe("active Jev specialist routing", () => {
     expect(response.messages[0].text).toMatch(/verif|unsure|caution|avoid/i);
     expect(traceOutput(response)).toMatchObject({ requestedSpecialists: ["digital_safety"], executedSpecialists: ["digital_safety"] });
     expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it("uncertain Jev safety alone preserves a clarification instead of inventing a scam topic", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(routingBody({ digital_safety: "unclear" }))));
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: "What happened?" }) : options.fallback()));
+    const response = await orchestrate("That problem happened again. What should I do?", context());
+    expect(runAgentMock.mock.calls.some(([o]) => o.agentId === "digital_safety")).toBe(false);
+    expect(response.messages[0].text).toBe("What happened?");
+  });
+
+  it.each(["Try scrambled eggs with toast.", "Remember to cook the eggs thoroughly.", "This recipe can save time."])("a Jev-only memory request preserves the actual recipe answer: %s", async draft => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(routingBody({ durable_context: "present" }))));
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: draft }) : options.fallback()));
+    const response = await orchestrate("A recipe is enough; I will cook it myself.", context());
+    expect(runAgentMock.mock.calls.some(([o]) => o.agentId === "context_memory")).toBe(true);
+    expect(response.messages[0].text).toBe(draft);
+  });
+
+  it.each(["I saved your preference.", "我记住您的偏好了。"])("Jev-only extraction cannot imply a confirmed save: %s", async draft => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(routingBody({ durable_context: "present" }))));
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ responseMessage: draft }) : options.fallback()));
+    const response = await orchestrate("Phone calls suit me best.", context());
+    expect(response.messages[0].text).not.toMatch(/saved|记住/);
+    expect(response.messages[0].agentId).toBe("policy");
+  });
+
+  it("memory extraction cannot replace the social refusal decision", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
+    vi.stubGlobal("fetch", vi.fn(async (_url, options) => {
+      if (!JSON.parse(options.body).questions.social_intent) return Response.json(routingBody({ durable_context: "present", social: "present" }));
+      return Response.json({ model: "typesafe/jev-1.14-20261014", usage: { input_tokens: 100, output_tokens: 0 },
+        answers: { social_intent: { type: "choice", choice: "declining", confidence: 1,
+          probabilities: { interested: 0, declining: 1, unclear: 0 } } } });
+    }));
+    const response = await orchestrate("Please stop suggesting group outings.", context());
+    expect(response.messages[0].text).toContain("leave activities");
+    expect(traceOutput(response).executedSpecialists).toEqual(expect.arrayContaining(["context_memory", "aac_nudge"]));
   });
 
   it("Jev-only durable context requests the real extractor", async () => {
