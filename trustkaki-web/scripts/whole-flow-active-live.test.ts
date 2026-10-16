@@ -119,6 +119,38 @@ describe("active whole-flow preparation (mock transport)", () => {
     expect(readFileSync(join(options.directory, "budget.json"), "utf8")).toBe(ledger);
   });
 
+  it.each([false, true])("carries all three attempts after diagnosis and blocks repeat recovery (failure=%s)", async fail => {
+    const options = { ...setup(), recoverAfterDiagnostic: true };
+    const first = { capMicroUsd: 1000000, reservedMicroUsd: 2224, calls: 1,
+      protocolHash: "040a7b768fe62165c3abc31e2b170f3ad362441659646dcce6cc2fe2f5e17d68",
+      stopped: true, failureCode: "response_validation", inFlight: [1], completedFlows: 0, finished: false, jevModel: null };
+    const second = { ...first, reservedMicroUsd: 4448, calls: 2,
+      protocolHash: "4204a626c03fb51c614c6ed311164bd44007e72906dae563dd6e5c56fb3e422d", failureCode: "agent_schema", inFlight: [2] };
+    const diagnostic = { capMicroUsd: 1000000, reservedMicroUsd: 6672, calls: 3,
+      previousLedgerHash: "4b52328e91abb64400c3b3bf4ed9d9976c2cb78e872708b58eac5091c2ddadc8",
+      runtimeBaseCommit: "79c3fd7", caseId: "urgent_scam", status: "agent_schema", schemaValid: false,
+      successfulCostUsd: 0.00038114999999999997, issues: [{ code: "invalid_value", path: ["signals", 1, "type"] }] };
+    writeFileSync(join(options.directory, "budget.json"), JSON.stringify(second));
+    writeFileSync(join(options.directory, "first-failed-budget.json"), JSON.stringify(first));
+    writeFileSync(join(options.directory, "triage-diagnostic.json"), "{}");
+    const request = vi.fn<typeof fetch>(async (_url, init) => fail ? new Response(null, { status: 503 }) : Response.json(response(JSON.parse(init!.body as string))));
+    await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow(); expect(request).not.toHaveBeenCalled();
+    writeFileSync(join(options.directory, "triage-diagnostic.json"), JSON.stringify(diagnostic, null, 2));
+    if (fail) await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow();
+    else {
+      const report = await runWholeFlowShadow({ ...options, request });
+      expect(report.flows).toHaveLength(20); expect(report.recoveredAfterDiagnostic).toBe(true);
+      expect(report.calls).toBe(request.mock.calls.length + 3);
+    }
+    expect(readFileSync(join(options.directory, "second-failed-budget.json"), "utf8")).toBe(JSON.stringify(second));
+    const count = request.mock.calls.length;
+    if (fail) await expect(runWholeFlowShadow({ ...options, request })).rejects.toThrow();
+    else await runWholeFlowShadow({ ...options, request });
+    expect(request).toHaveBeenCalledTimes(count);
+    expect(wholeFlowPreflight("active", false, true)).toMatchObject({ maxAttempts: 113, reservedUsd: 0.890762 });
+    expect(() => wholeFlowPreflight("active", true, true)).toThrow();
+  });
+
   it("requires separate approval and stops a failed active request without retry or resumption", async () => {
     const options = setup();
     let failedRoutingCalls = 0;

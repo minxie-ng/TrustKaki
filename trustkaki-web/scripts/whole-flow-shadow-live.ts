@@ -24,11 +24,11 @@ interface Flow {
   checks: Record<string, boolean>; shadow: unknown; routing: unknown; jevOnlyInvocations: string[];
   signalTypes: string[]; alertCount: number; hasBriefing: boolean;
 }
-interface Report { recoveredFirstValidation: boolean; experiment: "shadow" | "active"; protocolHash: string; calls: number; reservedUsd: number; successfulCostUsd: number; manualReview: "pending"; flows: Flow[] }
+interface Report { recoveredAfterDiagnostic: boolean; recoveredFirstValidation: boolean; experiment: "shadow" | "active"; protocolHash: string; calls: number; reservedUsd: number; successfulCostUsd: number; manualReview: "pending"; flows: Flow[] }
 
-export function wholeFlowPreflight(experiment: "shadow" | "active" = "shadow", recoverFirstValidation = false) {
+export function wholeFlowPreflight(experiment: "shadow" | "active" = "shadow", recoverFirstValidation = false, recoverAfterDiagnostic = false) {
   if (!["shadow", "active"].includes(experiment)) throw new Error("whole_flow_unknown_experiment");
-  if (recoverFirstValidation && experiment !== "active") throw new Error("whole_flow_invalid_recovery_mode");
+  if ((recoverFirstValidation && recoverAfterDiagnostic) || ((recoverFirstValidation || recoverAfterDiagnostic) && experiment !== "active")) throw new Error("whole_flow_invalid_recovery_mode");
   const cases = experiment === "active" ? activeFlowCases : wholeFlowCases;
   const files = ["orchestrator.ts", "runner.ts", "provider.ts", "prompts.ts", "schemas.ts", "policy.ts", "fallbacks.ts",
     "routingContract.ts", "routingShadow.ts", "specialistRouting.ts", "socialDecision.ts", "socialIntentContract.ts"];
@@ -43,20 +43,20 @@ export function wholeFlowPreflight(experiment: "shadow" | "active" = "shadow", r
     readFileSync(new URL("./agent-comparison-budget.ts", import.meta.url), "utf8"),
     readFileSync(new URL("./social-intent-budget.ts", import.meta.url), "utf8"),
     readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"));
-  const protocolHash = createHash("sha256").update(JSON.stringify({ source, cases, experiment, recoverFirstValidation, model: MODEL, node: process.version, version: 2 })).digest("hex");
+  const protocolHash = createHash("sha256").update(JSON.stringify({ source, cases, experiment, recoverFirstValidation, recoverAfterDiagnostic, model: MODEL, node: process.version, version: 2 })).digest("hex");
   // Four OpenAI agents and possible social per flow; one routing call per second variant.
-  const carried = recoverFirstValidation ? 1 : 0;
+  const carried = recoverAfterDiagnostic ? 3 : recoverFirstValidation ? 1 : 0;
   const count = cases.length, maxAttempts = (experiment === "active" ? 110 : 66) + carried;
   const reservedUsd = (count * 8 * Math.ceil((40000 + 2048) * 0.15 + 1024 * 0.60) + count * 3 * Math.ceil(262144 * 0.042) + carried * 2224) / 1_000_000;
   if (reservedUsd > 1 || count * 11 + carried !== maxAttempts) throw new Error("whole_flow_plan_not_bounded");
   return { protocolHash, maxAttempts, reservedUsd };
 }
 
-export async function runWholeFlowShadow(options: { directory: string; experiment?: "shadow" | "active"; approvedCapUsd: number; pricesVerified: boolean; recoverFirstValidation?: boolean; request?: typeof fetch }): Promise<Report> {
+export async function runWholeFlowShadow(options: { directory: string; experiment?: "shadow" | "active"; approvedCapUsd: number; pricesVerified: boolean; recoverFirstValidation?: boolean; recoverAfterDiagnostic?: boolean; request?: typeof fetch }): Promise<Report> {
   const openaiKey = process.env.TRUSTKAKI_LLM_API_KEY?.trim(), routerKey = process.env.OPENROUTER_API_KEY?.trim();
   if (options.approvedCapUsd !== 1 || !options.pricesVerified || !openaiKey || !routerKey) throw new Error("whole_flow_approval_prices_or_keys_missing");
   const experiment = options.experiment ?? "shadow";
-  const plan = wholeFlowPreflight(experiment, options.recoverFirstValidation);
+  const plan = wholeFlowPreflight(experiment, options.recoverFirstValidation, options.recoverAfterDiagnostic);
   const cases = experiment === "active" ? activeFlowCases : wholeFlowCases;
   mkdirSync(options.directory, { recursive: true, mode: 0o700 });
   const lockPath = resolve(options.directory, "run.lock"), lock = openSync(lockPath, "wx", 0o600);
@@ -78,18 +78,33 @@ export async function runWholeFlowShadow(options: { directory: string; experimen
       if (old.protocolHash === plan.protocolHash && old.finished && !old.stopped && old.inFlight.length === 0 && existsSync(summaryPath)) {
         return JSON.parse(readFileSync(summaryPath, "utf8"));
       }
-      // One owner-approved recovery of the exact first failed attempt; preserve its bytes before changing state.
-      const failed = z.object({ capMicroUsd: z.literal(1000000), reservedMicroUsd: z.literal(2224), calls: z.literal(1),
-        protocolHash: z.literal("040a7b768fe62165c3abc31e2b170f3ad362441659646dcce6cc2fe2f5e17d68"),
-        stopped: z.literal(true), failureCode: z.literal("response_validation"), inFlight: z.tuple([z.literal(1)]),
-        completedFlows: z.literal(0), finished: z.literal(false), jevModel: z.null() }).strict().safeParse(old);
-      if (!options.recoverFirstValidation || !failed.success || ["requests.jsonl", "flows.jsonl", "summary.json", "first-failed-budget.json"].some(file => existsSync(resolve(options.directory, file)))) {
-        throw new Error("whole_flow_partial_ledger_requires_review");
+      if (options.recoverAfterDiagnostic) {
+        const expected = [
+          ["budget.json", "4b52328e91abb64400c3b3bf4ed9d9976c2cb78e872708b58eac5091c2ddadc8"],
+          ["first-failed-budget.json", "da9a74604a95ef0d2d41dd52cb083158f9800fc4364bbcfa97d6502140569faa"],
+          ["triage-diagnostic.json", "eef2dc25b317fbb595595354f343aa80746e1a51e339afcdcafd75890d1d6ebf"],
+        ];
+        if (expected.some(([file, hash]) => createHash("sha256").update(readFileSync(resolve(options.directory, file))).digest("hex") !== hash) ||
+            ["requests.jsonl", "flows.jsonl", "summary.json", "second-failed-budget.json"].some(file => existsSync(resolve(options.directory, file)))) {
+          throw new Error("whole_flow_diagnostic_recovery_refused");
+        }
+        writeFileSync(resolve(options.directory, "second-failed-budget.json"), readFileSync(budgetPath), { flag: "wx", mode: 0o600 });
+        ledger = { ...ledger, calls: 3, reservedMicroUsd: 6672 };
+      } else {
+        // One owner-approved recovery of the exact first failed attempt; preserve its bytes before changing state.
+        const failed = z.object({ capMicroUsd: z.literal(1000000), reservedMicroUsd: z.literal(2224), calls: z.literal(1),
+          protocolHash: z.literal("040a7b768fe62165c3abc31e2b170f3ad362441659646dcce6cc2fe2f5e17d68"),
+          stopped: z.literal(true), failureCode: z.literal("response_validation"), inFlight: z.tuple([z.literal(1)]),
+          completedFlows: z.literal(0), finished: z.literal(false), jevModel: z.null() }).strict().safeParse(old);
+        if (!options.recoverFirstValidation || !failed.success || ["requests.jsonl", "flows.jsonl", "summary.json", "first-failed-budget.json"].some(file => existsSync(resolve(options.directory, file)))) {
+          throw new Error("whole_flow_partial_ledger_requires_review");
+        }
+        writeFileSync(resolve(options.directory, "first-failed-budget.json"), readFileSync(budgetPath), { flag: "wx", mode: 0o600 });
+        ledger = { ...ledger, calls: old.calls, reservedMicroUsd: old.reservedMicroUsd };
       }
-      writeFileSync(resolve(options.directory, "first-failed-budget.json"), readFileSync(budgetPath), { flag: "wx", mode: 0o600 });
-      ledger = { ...ledger, calls: old.calls, reservedMicroUsd: old.reservedMicroUsd };
     }
-    if (options.recoverFirstValidation && ledger.calls !== 1) throw new Error("whole_flow_recovery_source_missing");
+    const expectedCarried = options.recoverAfterDiagnostic ? 3 : options.recoverFirstValidation ? 1 : 0;
+    if (expectedCarried && ledger.calls !== expectedCarried) throw new Error("whole_flow_recovery_source_missing");
     if (existsSync(resolve(options.directory, "flows.jsonl"))) throw new Error("whole_flow_unexpected_artifacts");
     save(ledger);
     process.env.TRUSTKAKI_LLM_MODEL = MODEL; process.env.TRUSTKAKI_LLM_BASE_URL = "https://api.openai.com/v1";
@@ -113,7 +128,7 @@ export async function runWholeFlowShadow(options: { directory: string; experimen
           if (seen.has(kind)) throw new Error(); // Includes runAgent's internal retries; no second network attempt.
           seen.add(kind);
           const previous = ledger.reservedMicroUsd;
-          ledger = { ...ledger, ...reserveSocialIntentRequest(ledger, url === ROUTER ? "jev" : "openai", body, options.recoverFirstValidation ? 111 : experiment === "active" ? 110 : 72), inFlight: [...ledger.inFlight, ledger.calls + 1] };
+          ledger = { ...ledger, ...reserveSocialIntentRequest(ledger, url === ROUTER ? "jev" : "openai", body, options.recoverAfterDiagnostic ? 113 : options.recoverFirstValidation ? 111 : experiment === "active" ? 110 : 72), inFlight: [...ledger.inFlight, ledger.calls + 1] };
           requestId = ledger.calls; const reservation = ledger.reservedMicroUsd - previous;
           save(ledger);
           stage = "transport";
@@ -189,7 +204,7 @@ export async function runWholeFlowShadow(options: { directory: string; experimen
       flows.push(flow); appendFileSync(resolve(options.directory, "flows.jsonl"), JSON.stringify(flow) + "\n", { mode: 0o600 });
       ledger.completedFlows = flows.length; save(ledger);
     }
-    const report: Report = { recoveredFirstValidation: options.recoverFirstValidation === true, experiment, protocolHash: plan.protocolHash, calls: ledger.calls, reservedUsd: ledger.reservedMicroUsd / 1_000_000, successfulCostUsd, manualReview: "pending", flows };
+    const report: Report = { recoveredAfterDiagnostic: options.recoverAfterDiagnostic === true, recoveredFirstValidation: options.recoverFirstValidation === true, experiment, protocolHash: plan.protocolHash, calls: ledger.calls, reservedUsd: ledger.reservedMicroUsd / 1_000_000, successfulCostUsd, manualReview: "pending", flows };
     writeFileSync(summaryPath, JSON.stringify(report, null, 2), { mode: 0o600 });
     ledger.finished = true; save(ledger); return report;
   } finally {
@@ -203,12 +218,13 @@ export async function runWholeFlowShadow(options: { directory: string; experimen
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const experiment = process.argv.includes("--active") ? "active" : "shadow";
   const recoverFirstValidation = process.argv.includes("--recover-first-validation");
-  const expected = "--confirm-live --cap-usd=1 --prices-verified" + (experiment === "active" ? " --active" : "") + (recoverFirstValidation ? " --recover-first-validation" : "");
+  const recoverAfterDiagnostic = process.argv.includes("--recover-after-diagnostic");
+  const expected = "--confirm-live --cap-usd=1 --prices-verified" + (experiment === "active" ? " --active" : "") + (recoverFirstValidation ? " --recover-first-validation" : "") + (recoverAfterDiagnostic ? " --recover-after-diagnostic" : "");
   if (process.argv.slice(2).join(" ") !== expected) {
     console.error("Requires separate US$1 owner approval and current price verification. No calls made."); process.exitCode = 1;
   } else {
     runWholeFlowShadow({ directory: resolve(process.cwd(), experiment === "active" ? ".jev-active-routing-evaluation" : ".jev-whole-flow-evaluation"),
-      experiment, recoverFirstValidation, approvedCapUsd: 1, pricesVerified: true })
+      experiment, recoverFirstValidation, recoverAfterDiagnostic, approvedCapUsd: 1, pricesVerified: true })
       .then(report => console.log(JSON.stringify({ experiment: report.experiment, completedFlows: report.flows.length, calls: report.calls, reservedUsd: report.reservedUsd,
         successfulCostUsd: report.successfulCostUsd, manualReview: report.manualReview, failedChecks: report.flows.flatMap(flow => Object.entries(flow.checks).filter(([, passed]) => !passed).map(([check]) => ({ caseId: flow.caseId, variant: flow.variant, check }))) })))
       .catch(() => { console.error("Whole-flow evaluation stopped. Preserve ledger; no automatic retry."); process.exitCode = 1; });
