@@ -7,19 +7,21 @@ Updated: 17 October 2026
 - **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
   [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
   [agent release](evidence/2026-10-16-agent-candidate.md).
-- **Latest hosted candidate:** profile/session corrections `b4174ff` are READY at
-  https://trustkaki-c7wkjsciu-minxie-ngs-projects.vercel.app. Exact source metadata,
-  protected smoke, signed-in demo and both caregiver API/browser checks passed.
-  Sparse fields remain unknown, prior account data clears, admin controls stay
-  hidden; both temporary accounts/eight rows removed and former tokens denied.
-  1,254 local tests, typecheck/lint/build pass. Hosted Jev inference and production
-  promotion remain pending.
-  [Three-case hosted inference procedure](operations/2026-10-17-hosted-jev-inference-check.md)
-  stopped on its first POST (HTTP 500); no retry or other case was sent.
-  Cleanup passed with no fixtures remaining. US$0.319795 remains reserved.
-  The cause is unconfirmed. A privacy-safe local diagnostic patch passes
-  1,258 tests/typecheck/lint/build; its deployment and live recovery need
-  separate approval. Production promotion remains blocked.
+- **Latest hosted candidate:** privacy-safe failure-stage diagnostics `3759e42`
+  are READY at https://trustkaki-930uh8xu4-minxie-ngs-projects.vercel.app.
+  Exact source metadata, remote build and protected read-only smoke passed;
+  Supabase/Neon are ready and public domain remains on `410b6ef`. Local checks:
+  1,258 tests, typecheck, lint and build pass; production dependency audit clean.
+  Exact-candidate signed-in demo inspection passed: queue, three-person roster
+  and supporting context load without a visible error. No new fixtures, model
+  retry or promotion authorized in this checkpoint.
+- **Prior candidate `b4174ff`:** signed-in demo and both caregiver API/browser
+  checks passed. Its first hosted full-chat POST returned HTTP 500 after Triage
+  succeeded; failure stage/cause remains unconfirmed. No retry or remaining case
+  was sent. All temporary accounts/data were removed. US$0.319795 remains reserved.
+  [Hosted inference procedure](operations/2026-10-17-hosted-jev-inference-check.md).
+  The new diagnostics add observation, not a claimed fix. Paid recovery and
+  production promotion remain pending separate approval.
   [Current candidate and earlier failures](evidence/2026-10-17-jev-active-hosted-candidate.md).
 
 - **Local shadow integration prepared:** independently disabled by default;
@@ -79,9 +81,10 @@ Updated: 17 October 2026
   typecheck/lint/build passed. Jev-only contextual social work was demonstrated;
   this sample does not show overall superiority or whole-flow savings.
   **Next chunk:** candidate deployment and authenticated access checks passed
-  on `b4174ff`, but the hosted inference attempt returned HTTP 500. Deploy
-  reviewed stage diagnostics with approval, then obtain a bounded live recovery
-  checkpoint to locate the failure. Do not promote an unverified flow.
+  on `b4174ff`, but the hosted inference attempt returned HTTP 500. The
+  stage diagnostics `3759e42` have now passed deployment and read-only smoke.
+  Its signed-in demo dashboard passed; obtain a bounded live recovery checkpoint
+  to locate the failure. Do not promote an unverified flow.
   [Completed coverage and corrections](evidence/2026-10-16-jev-final-coverage.md).
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but

@@ -357,7 +357,7 @@ PASS scoped Supabase cleanup and audit trigger restored
 PASS cleanup: all scoped data and temporary Auth user absent; former token denied
 ```
 
-### Local diagnostic recovery — verified, not deployed
+### Local diagnostic recovery — verified before deployment
 
 Source audit found no reproducible fresh-fixture root cause. The confirmed gap
 was the production route suppressing error details without a safe failure-stage
@@ -373,7 +373,55 @@ non-disclosure. Full `npm run validate` passed (exit 0): **1,258 tests passed,
 38 skipped**, typecheck, lint and Webpack production build. Independent review
 found no blockers. Existing Vite tsconfig-paths deprecation notice remains.
 
-No diagnostic deployment, new fixture, paid retry or promotion has been approved.
+At this earlier checkpoint, no diagnostic deployment, new fixture, paid retry or promotion had been approved.
 Production remains on `410b6ef`; candidate b4174ff remains unpromoted. Next is
 approval for the diagnostic candidate; live recovery requires its own bounded
 checkpoint and retained failed-attempt reservation.
+
+
+### Diagnostic candidate 3759e42 — deployed; read-only smoke passed
+
+Owner separately approved linked-service/candidate metadata inspection, deployment
+of the reviewed diagnostic commit with existing Production settings and
+--skip-domain, and read-only public smoke. No model retry, fixture or promotion
+was included.
+
+- Application commit: `3759e4228f1cc040764f10254db68fe6baf585b0`.
+- Deployment: `dpl_Hadm5cHvGzZVMBKCsyNtebuCotK5`.
+- URL: https://trustkaki-930uh8xu4-minxie-ngs-projects.vercel.app
+- Source: clean Git archive at repository root; approved route source matched;
+  no local environment secrets included.
+- Expected Vercel team/project/root and required Production configuration names
+  verified. No configuration values changed.
+- All 41 Supabase migrations match; none applied.
+- `npm audit --omit=dev`: found 0 vulnerabilities.
+- Remote Webpack production build completed in 35s; exact SHA metadata READY.
+
+```text
+PASS exact candidate/project/source metadata READY
+PASS /api/health HTTP200; operational and Neon memory readiness
+PASS /privacy HTTP200
+PASS /data-deletion HTTP200
+PASS /api/agents/aac-nudge HTTP200; Jev configured (no inference)
+PASS /api/agents/orchestrate GET HTTP200; model configured (no chat call)
+PASS public domain unchanged
+PROTECTED CANDIDATE SMOKE PASSED
+```
+
+Read-only requests used existing authenticated Vercel CLI access to the protected
+candidate. Protection was not changed. As in prior archive deployments, Vercel
+also assigned its generated project alias; the public trustkaki.vercel.app alias
+was independently verified still on `dpl_4yfi39CYn2gtnHN5r9p7fJrSbCbR` (`410b6ef`).
+Existing remote npm cache-dir/install-script warnings remain. No new live fixture,
+model request, outbound message or promotion occurred.
+
+This verifies deployment/readiness of the diagnostics, not resolution of the
+HTTP 500 or successful hosted active routing. Exact-candidate signed-in inspection
+passed after the owner signed in and approved read-only inspection. The authenticated
+queue displayed its priority case, supporting patterns and recommended human
+action; People displayed the expected three fictional seniors; Context displayed
+the selected senior’s supporting care information. No visible loading/auth/data
+error appeared. Returned the view to Queue. No chat request or record edit was
+performed. This demo-admin inspection does not establish ordinary-caregiver
+isolation on this build. Paid recovery and promotion remain separately unapproved.
+The failed attempt's US$0.319795 reservation remains retained.
