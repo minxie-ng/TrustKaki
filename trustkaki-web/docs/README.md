@@ -15,6 +15,8 @@ TrustKaki helps AAC staff turn everyday senior conversations into prioritised, a
 | [Validation](VALIDATION.md) | Selected bounded evidence, observed failures and limits |
 | [Project status](TrustKaki_BUILD_ROADMAP.md) | Implemented capabilities and next-stage work |
 
+[Interactive repository map · GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki) complements the maintained architecture guide. It is an external code-navigation view, not evidence that a workflow is enabled or validated.
+
 ![TrustKaki architecture](media/architecture.svg)
 
 ## Engineering references
@@ -27,4 +29,4 @@ TrustKaki helps AAC staff turn everyday senior conversations into prioritised, a
 - [Diagram assets](media/README.md): editable HTML and SVG exports.
 - [Fictional assets](../public/seniors/README.md): demo portrait usage.
 
-The current tree contains product documentation and selected evidence. Superseded implementation plans, old submission material and intermediate release diaries have been retired from this tree. Git history preserves earlier versions; removing files from the current tree does not erase their history.
+Product guides describe current behaviour; dated evidence records retain their original scope. Earlier versions remain in Git history.

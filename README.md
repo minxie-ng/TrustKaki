@@ -4,7 +4,7 @@
 
 TrustKaki is an AI-assisted check-in and care-coordination system for Active Ageing Centres (AACs). Seniors can converse through Telegram or the WhatsApp integration; TrustKaki interprets their replies, recalls relevant personal context and combines observations across days to flag changes that need human attention. Staff receive a prioritised case with supporting evidence and a suggested next action.
 
-The implemented Telegram check-in workflow can initiate a scheduled message, send one reminder and surface non-response for staff follow-up when an authorised scheduler runs it. Channel availability and deployment requirements are detailed below.
+**Scheduled Telegram outreach is implemented but requires an authorised recurring worker invocation. WhatsApp live delivery depends on external business verification.**
 
 **AI Lodge Hackathon · Solving a Business Problem**
 
@@ -25,13 +25,9 @@ The implemented Telegram check-in workflow can initiate a scheduled message, sen
 
 Singapore's citizen population aged 65 and above reached **21.4% in 2026**. One-person households among people aged 65 and above increased from **42,100 in 2014 to 87,200 in 2024**. These are demographic indicators, not counts of seniors who need assistance. Sources: [National Population and Talent Division](https://www.population.gov.sg/our-population/population-trends/longevity/), [Ministry of Health](https://www.moh.gov.sg/newsroom/addressing-loneliness-and-psychological-distress-among-seniors-living-alone/).
 
-Care demand is growing alongside workforce expansion: MOH projects the healthcare workforce to grow from **129,000 in 2024 to about 156,000 in 2030**, while describing current staffing as broadly adequate. TrustKaki targets the coordination burden on care teams; it does not assume that AI can replace caregivers. [MOH workforce outlook](https://www.moh.gov.sg/newsroom/current-healthcare-workforce-strength-compared-against-projected-service-demand/).
-
 ### The operational problem
 
-AAC staff support many seniors across everyday conversations. A change in appetite, mobility, social contact or digital safety can be easy to miss when messages are scattered and follow-up responsibility is unclear. A message also means more when compared with that person's routine and earlier context.
-
-**TrustKaki turns conversations into a shared, prioritised care workflow:** who needs attention, what changed, and the next human action. Staff can record an outcome, resolve a follow-up and retain its history.
+Scattered conversations make changes in appetite, mobility, social contact or digital safety easy to miss. TrustKaki compares updates with personal context and earlier observations, then makes follow-up ownership and evidence visible to staff.
 
 | For the care organisation | Product mechanism | Outcome to validate in a pilot |
 | --- | --- | --- |
@@ -53,13 +49,21 @@ No registration or extra judge accounts are needed. Use fictional messages only.
 
 ### A three-minute review
 
-1. Open **Explore demo** and follow the guided steps to see a care case through to resolution.
-2. Sign in, choose **Judge workspace**, and select a fictional senior.
-3. Send a message such as “I feel lonely, but I don't want to join a group activity.” Read the reply and expand its decision trail.
-4. Try “Please remember that I prefer quiet one-to-one conversations.” Inspect the **save outcome**; a generated acknowledgement alone does not prove persistence.
-5. Ask a related question later and inspect **personal memory retrieved**. Retrieval is selective; every stored fact will not appear on every turn.
+1. Follow **Explore demo** through a fictional case and resolution.
+2. In **Judge workspace**, try “I feel lonely, but I don't want to join a group activity.” Inspect the reply and decision trail.
+3. Try “Please remember that I prefer quiet one-to-one conversations.” Inspect the **save outcome**, then ask a related question and inspect **personal memory retrieved**. Acknowledgement alone does not prove a save; retrieval is selective.
 
-See the [judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) for outdoor-advice examples and responsible adversarial tests.
+[More scenarios and adversarial tests](trustkaki-web/docs/JUDGE_GUIDE.md).
+
+## Explore the project
+
+| View | Best for |
+| --- | --- |
+| [Live application](https://trustkaki.vercel.app) | Experience the care workflow and authenticated judge workspace |
+| [Interactive repository map · GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki) | Explore the code structure alongside the repository |
+| [Architecture guide](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) | Understand data flow, roles, database access and safety boundaries |
+
+The external GitDiagram view is a navigation aid; use the maintained diagrams and source-linked guides below for implementation details and current limits.
 
 ## Built for a care team
 
@@ -92,18 +96,7 @@ This is an implemented multi-user foundation, not a claim of proven large-scale 
 
 ![TrustKaki care loop: messaging, Telegram check-ins, AI interpretation, saved signals, multi-day patterns and staff follow-up](trustkaki-web/docs/media/architecture.svg)
 
-| Component | Responsibility |
-| --- | --- |
-| Triage | Interpret the message, extract structured care signals and draft a conversational reply. |
-| Jev via OpenRouter | Request relevant specialists through structured routing decisions. Independent safety/context triggers and code exclusions still apply. |
-| Conditional specialists | Review digital safety, personal context and community engagement where relevant; prepare caregiver briefings. |
-| Outdoor conditions tool | Fetch weather and regional air-quality information from data.gov.sg/NEA when outdoor context calls for it. It is a tool, not another LLM agent. |
-| Pattern Watch | Combine saved care signals across multiple days and surface evidence-backed follow-up cases. |
-| Check-in worker | Process configured Telegram check-ins, a reminder and response deadlines when invoked by an authorised scheduler. |
-| Deterministic policy | Validate outputs and enforce final safety rules. A model cannot override policy. |
-| Care team | Review priority, reason and recommended action; record the actual human response. |
-
-The selected reply returns to the conversation. Operational results and follow-up history support the staff dashboard. The diagram groups conditional roles for readability; the [architecture guide](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) expands their responsibilities and boundaries.
+Triage interprets messages and drafts replies; Jev requests relevant specialists. Independent triggers and code policy constrain execution. Saved signals feed Pattern Watch; staff retain care decisions. [Agent responsibilities](trustkaki-web/docs/AGENT_SYSTEM.md) · [Detailed execution flow](trustkaki-web/docs/ARCHITECTURE_GUIDE.md).
 
 ## Technology choices
 
@@ -123,53 +116,48 @@ Each service has a specific role in the care workflow:
 
 ### Why experiment with Jev?
 
-TypeSafe introduced Jev on **15 September 2026** as a System One model designed for fast, structured decisions. TrustKaki uses that approach for specialist routing: the model selects bounded decisions that software can inspect, while conversational models handle interpretation and reply generation. [TypeSafe's introduction](https://typesafe.ai/blog/introducing-system-one-models-and-jev).
+[TypeSafe introduced Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) on **15 September 2026** for fast, structured decisions. TrustKaki experiments with it as an inspectable specialist router, alongside conversational models.
 
-In the **16 October routing screen**, 36 fictional messages produced a **p95 successful-call latency of 859 ms for Jev versus 3,494 ms for the GPT-4o-mini Triage adapter**. All-six-label matches were **24/36 versus 21/36**, with nine false-positive flags each. The adapters performed different work and used different contracts; these observations support exploring a dedicated decision model, not a claim that Jev is generally better or that adding it makes the whole conversation faster. Failed attempts and broader response-quality limits are retained in the [validation record](trustkaki-web/docs/VALIDATION.md) and [raw routing report](trustkaki-web/docs/evidence/2026-10-16-jev-routing-results.json). Structured output still requires validation and can be semantically wrong; code and staff retain safety authority.
+| 16 October routing screen · 36 fictional messages | Jev | GPT-4o-mini Triage adapter |
+| --- | --- | --- |
+| Successful-call p95 latency | **859 ms** | 3,494 ms |
+| All-six-label matches | 24/36 | 21/36 |
+| False-positive flags | 9 | 9 |
+
+The adapters performed different work under different contracts. These results do not establish general superiority or faster overall chat. Structured decisions can still be wrong. [Protocol, failures and limits](trustkaki-web/docs/VALIDATION.md) · [Raw results](trustkaki-web/docs/evidence/2026-10-16-jev-routing-results.json).
 
 ### A Singapore moment behind the outdoor tool
 
-The outdoor-advice feature grew out of the builder's experience of haze disrupting everyday plans in Singapore. Remembering that a senior enjoys a walk is useful; checking the air before encouraging that walk makes the context more practical.
-
-When a conversation calls for outdoor advice, TrustKaki can fetch government weather and regional air-quality data. It distinguishes current readings from future forecasts and states when information is unavailable. It is a contextual advisory tool, not continuous monitoring or a guarantee that an outing is safe.
+Haze disrupting the builder's everyday plans inspired the outdoor tool: remembering that a senior enjoys a walk is useful; checking the air before encouraging it makes the context practical. TrustKaki can fetch government readings when relevant, distinguish current conditions from forecasts and state when data is unavailable.
 
 ## Messaging, automatic check-ins and Pattern Watch
 
-### Two ways a conversation starts
-
-- **Senior starts:** an authenticated channel webhook maps an incoming Telegram/WhatsApp message to the senior. The shared AI pipeline interprets it, records results and sends the selected reply through that channel.
-- **Configured check-in starts:** the Telegram worker processes a staff-configured schedule, observes pause/quiet-hour rules, sends a check-in and waits for a response. It supports one reminder, then a staff follow-up case after the final response deadline. Delivery uncertainty is held for reconciliation rather than blindly resending.
-
-| Capability | Current implementation / availability |
+| Path | Behaviour and availability |
 | --- | --- |
-| Telegram conversation | Inbound webhook, identity mapping, automatic replies, persistence and duplicate-update protection are implemented. A bounded earlier live path was recorded; this documentation update does not retest delivery. |
-| WhatsApp conversation | Inbound webhook/signature checks, automatic reply and delivery-status handling are implemented. Final live delivery remains dependent on external business verification. |
-| Scheduled outbound check-ins | Implemented for **Telegram**. The schedule contract also accepts WhatsApp, but the current outbound check-in worker rejects that transport. |
-| Scheduler activation | A protected due-job endpoint exists. Repository deployment configuration schedules only memory indexing; automatic check-in dispatch requires a separately configured, authorised recurring invocation. No external scheduler was verified in this review. |
-| Multi-day patterns | Persistent Pattern Watch evaluates saved signals and consolidates supporting patterns into a staff follow-up case. |
+| **Senior starts** | Verified Telegram/WhatsApp events resolve the senior, enter the shared pipeline and return the selected reply. Duplicate handling and persistence are implemented. WhatsApp live delivery depends on business verification. |
+| **Telegram check-in starts** | A configured schedule observes pause/quiet-hour rules, sends an initial check-in, supports one reminder and surfaces non-response for staff review. Uncertain sends are held for reconciliation. Proactive WhatsApp is not supported by the worker. |
+| **Worker activation** | The protected due-job endpoint requires recurring authorised invocation. Repository deployment configuration schedules memory indexing only; an external check-in scheduler has not been verified. |
 
 ### How patterns differ from memory
 
-**RAG retrieves relevant facts about the person. Pattern Watch connects observations over time.** AI extracts structured signals; deterministic Pattern Watch rules evaluate supported combinations within a seven-day signal window. Mobility and social-withdrawal patterns need observations on at least two distinct days; a combined wellbeing-decline pattern needs at least three. Existing routine/context records help explain the case to staff.
+**RAG recalls relevant personal facts; Pattern Watch connects observations across days.** Deterministic rules evaluate AI-extracted care signals in a seven-day window: mobility and withdrawal patterns require at least two distinct days; combined wellbeing decline requires at least three.
 
-The public guided demo includes a prepared fictional four-day history. It demonstrates the care workflow; it does not send Telegram/WhatsApp messages or wait through a real schedule. [Messaging and pattern implementation](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns).
+The public walkthrough uses a prepared fictional four-day history, without sending channel messages or running a real schedule. [Messaging and pattern details](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns).
 
 ## Personal memory with RAG
 
 ![Personal-memory lifecycle: evidence validation, Neon source records, embeddings, scoped retrieval and source revalidation](trustkaki-web/docs/media/memory-lifecycle.svg)
 
-**RAG is the retrieval method; Neon is the personal-memory database.** The app saves selected durable facts with evidence rather than treating every message as permanent personal memory.
+The app saves selected durable facts with evidence, rather than treating every message as permanent memory. Recent dialogue is supplied separately.
 
-- **Neon Postgres + pgvector:** personal facts, versions, evidence references, lifecycle and vector search in one database.
-- **Pinecone inference:** creates embeddings using `llama-text-embed-v2` (1,024 dimensions). The current path does not use the historical Pinecone vector index.
-- **Supabase:** authentication, access relationships, conversation messages and operational care records. Essential care/accessibility and verified contact routing remain operational data.
-- **Recent conversation:** supplied separately from long-term retrieval, so ordinary follow-up messages can refer to the current conversation.
+| Retrieval safeguard | Current bound |
+| --- | --- |
+| Authorised search | Organisation + senior scope; up to **20 candidates** |
+| Current evidence | Re-read sources; exclude expired, deleted, superseded, conflicting or stale-version facts |
+| Bounded context | Up to **six facts**, **4,000-character JSON envelope**, **two-second deadline** |
+| Explicit failure state | Empty retrieval and unavailable retrieval are distinct; neither proves that no memories exist |
 
-Retrieval searches only the authorised organisation/senior scope, considers up to **20 candidates**, then re-reads current sources. It excludes expired, deleted, superseded, conflicting or stale-version facts. At most **six facts** enter a **4,000-character JSON envelope**, with a **two-second retrieval deadline**. Empty and unavailable results are distinct; neither proves that the person has no stored memories.
-
-Changing the chat model does not require moving the memory database. Changing the embedding model requires compatible dimensions and reindexing; vectors from different models are not interchangeable.
-
-[Detailed RAG implementation](trustkaki-web/docs/PERSONAL_MEMORY_RAG_GUIDE.md) · [Presentation notes and failure paths](trustkaki-web/docs/ARCHITECTURE_GUIDE.md)
+Chat models can change without moving the memory database. Embedding-model changes require compatible dimensions and reindexing. [Detailed RAG lifecycle](trustkaki-web/docs/PERSONAL_MEMORY_RAG_GUIDE.md) · [Storage and failure paths](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#2-personal-memory-rag-lifecycle).
 
 ## Safety and practical limits
 
@@ -178,7 +166,6 @@ Changing the chat model does not require moving the memory database. Changing th
 - Human care decisions remain with staff. TrustKaki does not diagnose, prescribe or replace emergency services.
 - Weather/air-quality data have timestamps and geographic limits. Regional readings are not street-level measurements or guarantees about future conditions.
 - Models can misunderstand language, routing can fail, and prompt-injection defences are not a guarantee. This is a working hackathon prototype, not a clinically validated care service.
-- Messaging adapters exist; final WhatsApp delivery remains dependent on external business verification. The authenticated browser demo is the recommended judging path.
 
 ## Run locally
 
