@@ -163,3 +163,25 @@ Supabase tool request was recovered by the idempotent guarded cleanup. No residu
 remains. No diagnostic logs were needed after the successful chat/verification.
 Exact-candidate signed-in demo and remaining release checks are still pending;
 the earlier `708f9cf` checks do not establish those on this deployment.
+
+## Final-candidate authenticated checks — API passed; browser blocked; cleanup complete
+
+Owner signed in on exact candidate `6992b79` and approved read-only demo
+inspection plus the documented two-caregiver/eight-row setup, checks and cleanup.
+The demo UI displayed the three expected fictional seniors, priority ordering,
+selected identity, case reason and recommended human action. Chrome then reported
+that an extension panel blocked automation; owner was asked to close it. No
+inference, case action or demo mutation was submitted.
+
+Both temporary ordinary caregivers passed API and Supabase RLS assertions:
+assigned senior only, cross-senior dashboard/context HTTP 403, own context 200,
+admin-context POSTs 403 and technical traces absent. Fixtures contain no messages,
+check-ins, contacts, schedules or Neon memories. Browser sign-in/account-switch
+checks remain pending while Chrome is blocked. No promotion.
+
+With browser automation still blocked, scoped cleanup was completed rather than
+retaining live fixtures: all eight public rows and both Auth users absent, both
+former tokens HTTP 401, restricted credential/recovery manifest removed. No
+unresolved fixture residue. Normal-UI sign-in/account switching on this exact
+commit was not completed; earlier `708f9cf` browser results remain earlier-build
+evidence only. Owner's original candidate tab was retained.

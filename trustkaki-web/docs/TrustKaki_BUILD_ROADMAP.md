@@ -14,9 +14,12 @@ Updated: 17 October 2026
   traces saved, ordinary-caregiver traces hidden. Exact cause of the prior
   conflict remains unconfirmed; no write guard was relaxed. Both attempts are
   fully cleaned, tokens denied; US$0.639590 reserved under the same US$1 cap.
-  **Next:** exact-candidate authenticated release gates and explicit promotion
-  approval. Earlier dashboard/isolation checks passed on `708f9cf`; public domain
-  still serves `410b6ef`.
+  **Authenticated follow-up:** exact-candidate demo roster/case and two-caregiver
+  API/RLS isolation passed; all eight rows/two accounts cleaned, tokens denied.
+  Chrome extension panel blocked remaining browser sign-in/account switching.
+  **Next:** resume that browser check after the panel is closed, then explicit
+  promotion approval. Earlier complete browser checks passed on `708f9cf`;
+  public domain still serves `410b6ef`.
   [Candidate evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 
