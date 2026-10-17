@@ -1,5 +1,10 @@
 # Final hosted memory confirmation
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Status: original attempt failed with a memory conflict; owner-approved diagnostic
 retry passed on `6992b79`. Both attempts fully cleaned. Owner subsequently
 approved promotion with no additional testing; completed successfully. See

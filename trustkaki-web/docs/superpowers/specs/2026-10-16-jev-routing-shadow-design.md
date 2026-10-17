@@ -1,5 +1,10 @@
 # Jev central routing assessment
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 ## Intent and approval
 
 Owner accepted the proposal to assess Jev alongside existing Triage, then asked

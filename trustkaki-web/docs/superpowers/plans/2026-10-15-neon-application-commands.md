@@ -1,5 +1,10 @@
 # Neon application memory commands
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 > **For agentic workers:** Execute inline using executing-plans; keep the existing feature checkout. Follow test-driven-development and verification-before-completion.
 
 **Goal:** Adapt caregiver corrections and accepted extraction to Neon's canonical command lifecycle without breaking exact retries.

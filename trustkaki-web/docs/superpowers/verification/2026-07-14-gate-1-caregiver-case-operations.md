@@ -1,5 +1,10 @@
 # Gate 1 Caregiver Case Operations Verification
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 **Date:** 2026-07-14
 **Status:** Ready for independent Gate 1 re-audit; not a deployment approval.
 

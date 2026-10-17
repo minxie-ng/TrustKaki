@@ -1,5 +1,10 @@
 # Neon memory metadata and runtime credential plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 > Execute inline as the next bounded prerequisite to the approved external-memory migration. Continue the existing feature branch; no production cutover.
 
 **Goal:** Preserve editing/extraction metadata in Neon and replace the local runtime's database-owner login with a verified restricted login.

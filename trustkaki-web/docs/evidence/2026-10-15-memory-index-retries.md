@@ -1,5 +1,10 @@
 # Scheduled memory indexing retries — 15 October 2026
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 ## Scope and source
 
 Owner requested the next memory reliability slice: scheduled indexing retries with

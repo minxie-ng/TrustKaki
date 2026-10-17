@@ -1,5 +1,10 @@
 # Fictional live agent comparison
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 15 October 2026, Singapore. **Release decision: NO-GO. Production unchanged.**
 
 Historical decision at this comparison stage. The specific blocker was subsequently

@@ -1,5 +1,10 @@
 # Hosted Jev inference check
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Status: owner approved the bounded checkpoint; execution stopped after the first
 hosted POST returned HTTP 500. No retry or remaining case was dispatched. Scoped
 cleanup passed. A further live attempt needs renewed approval; this procedure

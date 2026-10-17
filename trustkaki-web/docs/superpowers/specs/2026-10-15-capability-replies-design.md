@@ -1,5 +1,10 @@
 # Capability-safe replies
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 User approved proceeding after the failed comparison on 15 October 2026.
 
 The reply is generated and bound for retry before memory persistence returns.

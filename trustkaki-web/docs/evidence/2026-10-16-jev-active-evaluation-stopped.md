@@ -1,5 +1,10 @@
 # Active-routing evaluation stopped on first response
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Date: 16 October 2026. Source: `c30b3f8`.
 Owner approved US$1 total, 20 fictional flows, maximum110 attempts and no automatic retries.
 

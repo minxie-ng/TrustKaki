@@ -1,5 +1,10 @@
 # Gate 4 Audit Remediation Implementation Plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:test-driven-development and execute each task in order. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close the four Gate 4 reliability blockers without changing the approved check-in policy or adding a generic workflow framework.

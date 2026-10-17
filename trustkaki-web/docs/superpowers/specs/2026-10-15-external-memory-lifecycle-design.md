@@ -1,5 +1,10 @@
 # External personal memory: source storage and lifecycle
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Date: 15 October 2026
 Status: updated architecture approved by owner: Neon Postgres with pgvector.
 Supersedes the original Neon + Pinecone proposal.

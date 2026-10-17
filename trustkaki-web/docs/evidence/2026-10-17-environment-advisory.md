@@ -1,5 +1,10 @@
 # Outdoor conditions tool — local implementation
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Status: released to https://trustkaki.vercel.app on 17 October 2026 with the owner's deployment and promotion approval.
 
 - Runtime commit: `88572778d28e7eb2d899ab26c6845d4d58a63d7f`.

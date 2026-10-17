@@ -1,5 +1,10 @@
 # Jev full-chat evaluation: completed, reply corrections needed
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 16 October 2026. Evaluated source **8ca2be2**. Owner approved a separate US$1
 cap. No database access, persisted memory, messages, production changes or
 deployment. [Preparation and protocol](2026-10-16-jev-whole-flow-preparation.md).

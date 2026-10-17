@@ -1,5 +1,10 @@
 # Jev specialist routing authority
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Status: **owner approved for local implementation on 16 October 2026**.
 Base: local reply corrections `f3b34e1`. Production remains `410b6ef`;
 the existing social-decision candidate is still unpromoted.

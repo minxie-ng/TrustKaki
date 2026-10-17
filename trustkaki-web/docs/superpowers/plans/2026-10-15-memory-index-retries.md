@@ -1,5 +1,10 @@
 # Scheduled memory indexing implementation plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 **Goal:** Recover pending personal-memory embeddings without waiting for a new chat.
 **Architecture:** Durable retry/lease state in Neon, shared foreground/background
 claims, scoped publication and one protected daily Vercel job.

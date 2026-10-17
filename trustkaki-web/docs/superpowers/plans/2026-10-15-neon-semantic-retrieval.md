@@ -1,5 +1,10 @@
 # Neon semantic retrieval slice
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Approved continuation of the Neon memory foundation. No production memory cutover.
 
 ## Scope

@@ -1,5 +1,10 @@
 # Jev Social Decision Implementation Plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 > **For agentic workers:** Execute inline with superpowers:executing-plans. User approved normal-chat integration; no further design checkpoint is needed.
 
 **Goal:** Make Jev select bounded social-support behavior in ordinary chat with honest demo traces.

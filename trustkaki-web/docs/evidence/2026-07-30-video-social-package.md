@@ -1,5 +1,10 @@
 # TrustKaki Video And Social Package
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Status: MP4 exported and verified but intentionally unpublished. The qualifying
 Rednote project post is public and verified.
 

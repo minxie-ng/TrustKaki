@@ -10,3 +10,5 @@ HTML files are editable, self-contained diagram sources with inline SVG. SVG exp
 Designed using [Cathryn Lavery’s diagram-design skill](https://github.com/cathrynlavery/diagram-design), following the existing TrustKaki visual identity: forest green `#164f3e`, sage `#e6f1e8`, paper `#f2f6f3`, white cards and muted green-grey labels. Typography uses Manrope and DM Sans, with system sans-serif fallback if fonts are unavailable. Google Fonts require network access; meaning and layout remain available without them.
 
 Arrows show information flow, not exhaustive scheduling. Limits and failure paths are explained in the accompanying guide to avoid overcrowding the diagrams. The diagram tooling retains its MIT license; application source terms remain in the root README.
+
+Compact Mermaid views in the RAG and agent guides cover retrieval outcomes, memory eligibility and routing authority. These complement the exported overview diagrams rather than adding more detail to the same canvas.

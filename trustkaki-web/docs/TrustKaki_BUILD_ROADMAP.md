@@ -1,8 +1,41 @@
-# TrustKaki — Active Roadmap
+# TrustKaki project status and roadmap
+
+Updated: 17 October 2026 · AI Lodge Hackathon · Solving a Business Problem
+
+[Documentation](README.md) · [Architecture](ARCHITECTURE_GUIDE.md) · [Personal memory](PERSONAL_MEMORY_RAG_GUIDE.md)
+
+## Implemented capabilities
+
+| Area | Implemented behaviour | Practical limit |
+| --- | --- | --- |
+| Personal memory | Neon source records and pgvector retrieval, evidence, versions, corrections, archive and bounded indexing recovery | RAG bounds prompt context; it does not remove retention or scaling work |
+| Agent system | Structured Triage, active Jev routing, conditional specialist reviews and deterministic policy | Models can misunderstand language; policy and human review retain authority |
+| Outdoor advice | Chat-triggered government weather and regional air-quality information | Public-data freshness, place/time resolution and regional coverage constrain advice |
+| Staff experience | Focused care desk, follow-up history, setup controls and relevant personal context | Usability and care outcomes are not validated through a real AAC pilot |
+| Judge experience | No-login walkthrough plus authenticated live workspace using the shared fictional demo account | Live AI is authenticated and stateful; no public live-AI sandbox |
+| Documentation | AI Lodge overview, architecture/RAG diagrams and access instructions | Dated evidence remains build-specific |
+
+## Submission baseline
+
+GitHub `main` and the connected Vercel production deployment include documentation/access release `bd6e885`. The latest conversational continuity changes preceding that release are in `b30f4d5`. This page describes capabilities rather than asserting every historical evaluation was repeated on that build.
+
+## Next-stage work
+
+1. Validate staff workflow usefulness with AAC users and measure review/follow-up effort.
+2. Evaluate multi-turn conversation faithfulness and multilingual routing on a broader dataset.
+3. Complete independent backup, post-restore erasure and retention requirements before real senior use.
+4. Measure scoped memory search under realistic corpus sizes; evaluate ANN indexing where justified.
+5. Replace in-process rate limits with distributed enforcement for multi-instance operation.
+6. Establish verified event sources before claiming current community-event availability or automated enrolment.
+
+## Historical delivery log
+
+The following dated entries preserve implementation and release history. Statements such as “prepared locally,” approval checkpoints and old deployment IDs describe their recorded stage; they do not supersede the current overview above.
+
 
 Updated: 17 October 2026
 
-## Current checkpoint
+## Recorded checkpoint at the time of the log
 
 - **Released:** owner approved GitHub main push of routing correction
   `09afd8c6653414e204babccf4855900cb48ea5bc` on 17 October 2026 (Singapore).

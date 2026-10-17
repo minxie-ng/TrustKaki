@@ -1,5 +1,10 @@
 # Active Jev comparison — incomplete results
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Date:16 October 2026. Source:`474382f`; runtime prompt correction:`2703405`.
 Status:**stopped after three completed flows, not a completed evaluation**.
 Owner authorized proceeding with the corrected comparison under the same US$1

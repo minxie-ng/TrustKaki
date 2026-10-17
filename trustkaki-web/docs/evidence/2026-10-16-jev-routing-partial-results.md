@@ -1,5 +1,10 @@
 # Jev routing: incomplete screening results
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 16 October 2026. **Incomplete; no runtime adoption or production change.**
 
 Historical checkpoint: the owner later approved continuation and the experiment

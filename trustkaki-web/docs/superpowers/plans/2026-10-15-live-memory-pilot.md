@@ -1,5 +1,10 @@
 # Fictional live retrieval pilot
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 **Goal:** Measure candidate Pinecone/llama retrieval using the approved fictional
 corpus and gates. User authorised up to USD 1 with provider controls and saved
 an existing key locally. Console verified Starter/free current. Official limits

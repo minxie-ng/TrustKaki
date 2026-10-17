@@ -1,5 +1,10 @@
 # Gate 6 Organisation Tenancy Foundation Design
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 **Date:** 2026-07-17  
 **Status:** Approved for implementation planning
 

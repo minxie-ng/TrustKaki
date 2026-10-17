@@ -1,5 +1,10 @@
 # Full-chat findings: local reply corrections
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 16 October 2026. Follow-up to the
 [approved full-chat evaluation](2026-10-16-jev-whole-flow-results.md).
 Implemented locally; not deployed and no new paid provider calls.

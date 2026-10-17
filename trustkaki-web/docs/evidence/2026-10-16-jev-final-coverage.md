@@ -1,5 +1,10 @@
 # Jev active routing: completed coverage and reply corrections
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 ## Completed paid evaluation
 
 Runtime/harness commit: `1e68ad7`. Protocol hash:

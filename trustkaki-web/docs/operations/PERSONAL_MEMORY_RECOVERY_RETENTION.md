@@ -1,5 +1,10 @@
 # Personal-memory recovery and retention
 
+<!-- documentation-context -->
+> **Operator reference.** This document defines controlled procedures and prerequisites. It is not a product tour or an instruction to run live commands during judging. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Updated 15 October 2026. Recovery drill passed; owner approved the exact cleanup and it was applied.
 Production verification passed; remaining backup/erasure limits below still apply. [Evidence](../evidence/2026-10-15-memory-recovery-retention.md).
 

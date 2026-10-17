@@ -1,5 +1,10 @@
 # Agent consolidation implementation plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 **Goal:** Implement the approved leaner conversation flow and correct memory/fallback/briefing defects without changing storage or adding a provider.
 
 **Architecture:** Triage owns routing and the primary response, including optional grounded social suggestions. Digital Safety and Context Memory run conditionally; deterministic policy selects one senior reply before an optional Briefing. Existing standalone endpoints and historical trace identifiers remain compatible.

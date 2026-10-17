@@ -1,5 +1,10 @@
 # Capability Replies Implementation Plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 **Goal:** Remove unsupported memory/action promises from bounded reply paths.
 **Architecture:** One shared deterministic reply selector in orchestration, before
 briefing and persistence; use neutral acknowledgement while save status is unknown.

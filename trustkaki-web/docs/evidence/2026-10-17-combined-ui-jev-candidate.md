@@ -1,5 +1,10 @@
 # Combined UI, Jev and memory candidate
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 **Final release status:** selected-tab correction `e6c1153` promoted successfully on 17 October
 2026 (Singapore); see the final promotion entry below. Earlier checkpoint notes
 record their status at execution time.

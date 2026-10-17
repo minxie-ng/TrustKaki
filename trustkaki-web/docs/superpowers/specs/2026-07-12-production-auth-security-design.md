@@ -1,5 +1,10 @@
 # TrustKaki Production Authentication and Security Design
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 ## Objective
 
 Make TrustKaki safe to deploy as a real caregiver product while preserving a smooth, credible judge demonstration. Every request involving senior data or privileged work must be authenticated, authorized for a specific caregiver-to-senior relationship, validated, and bounded.

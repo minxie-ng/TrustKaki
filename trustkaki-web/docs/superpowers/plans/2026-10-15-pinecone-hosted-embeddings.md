@@ -1,5 +1,10 @@
 # Pinecone-hosted embeddings implementation plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 > Execute inline with executing-plans; review before completion.
 
 **Goal:** Support the user's dedicated 1,024-dimensional pilot index with Pinecone

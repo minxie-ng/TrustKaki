@@ -1,5 +1,10 @@
 # Gate 5 Memory Operationalisation Implementation Plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Implementation status on 2026-07-17: Tasks 1-8 are implemented and live
 verified. The final evidence covers real Telegram extraction and later bounded
 use, production admin correction/archive, authenticated Supabase sharing and

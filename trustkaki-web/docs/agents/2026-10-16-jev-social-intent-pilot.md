@@ -1,5 +1,10 @@
 # Jev social-intent pilot
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 16 October 2026, Singapore. Owner approved the bounded evaluation approach.
 Evaluation completed after one owner-approved corrected retry: 72 successful
 classifications, 73 total attempts. Decision: keep Jev as an experimental

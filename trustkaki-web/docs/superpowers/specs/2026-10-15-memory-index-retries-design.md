@@ -1,5 +1,10 @@
 # Scheduled personal-memory indexing retries
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Owner approved protected scheduling, bounded batches, backoff, attempt caps and
 version checks. Execute this slice inline; retain Vercel, Neon and the current
 embedding provider. A separate queue service would add an unnecessary dependency;

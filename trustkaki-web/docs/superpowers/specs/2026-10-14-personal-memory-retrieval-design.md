@@ -1,5 +1,10 @@
 # Personal memory retrieval — first slice
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Date: 14 October 2026
 Status: proposed design; acceptance targets defined, implementation not started.
 Owner roadmap: [current roadmap](../../TrustKaki_BUILD_ROADMAP.md).

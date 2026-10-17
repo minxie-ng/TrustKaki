@@ -1,5 +1,10 @@
 # Capability reply correction
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 15 October 2026, Singapore. Runtime candidate `2a70f29`; production unchanged.
 The specific unsupported-memory-promise blocker from the previous comparison is
 resolved on the bounded paths below. Ready for candidate release approval, not

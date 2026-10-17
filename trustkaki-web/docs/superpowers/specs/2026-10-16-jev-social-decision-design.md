@@ -1,5 +1,10 @@
 # Jev social-decision integration
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Status: owner approved normal-chat integration on 16 October 2026. The owner wants
 Jev included in the final judge demonstration. Benchmark-only inclusion does not
 satisfy that request. Runtime integration is implemented and enabled locally;

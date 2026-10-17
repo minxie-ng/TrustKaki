@@ -1,5 +1,10 @@
 # Neon personal-memory cutover — 15 October 2026
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 ## Owner authorization and boundary
 
 Owner requested completing migration, retrieval checks and production cutover today.

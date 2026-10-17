@@ -1,5 +1,10 @@
 # Jev specialist routing: locally implemented
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 16 October 2026. Owner approved the
 [authority design](../superpowers/specs/2026-10-16-jev-specialist-routing-design.md).
 Implementation follows the [plan](../superpowers/plans/2026-10-16-jev-specialist-routing.md).

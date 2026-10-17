@@ -1,5 +1,10 @@
 # Neon memory migration and cutover
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 > Execute inline; independently review migration and release changes before promotion.
 
 **Goal:** Make Neon authoritative for personal memory while retaining essential care context in Supabase.

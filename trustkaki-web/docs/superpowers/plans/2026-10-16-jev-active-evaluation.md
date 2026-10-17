@@ -1,5 +1,10 @@
 # Active Jev Evaluation Preparation Plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 > **For agentic workers:** Execute inline using existing test-driven-development and requesting-code-review workflows.
 
 **Goal:** Prepare a separately capped fictional baseline/active-routing comparison without making paid requests.

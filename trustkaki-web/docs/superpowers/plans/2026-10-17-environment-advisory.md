@@ -1,5 +1,10 @@
 # Environment advisory implementation plan
 
+<!-- documentation-context -->
+> **Historical design / evaluation record.** This document preserves the plan and decisions at its recorded stage. Proposed work and approval checkpoints are not claims about the current deployed product. Start with the [documentation index](../../README.md) or [current architecture](../../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Approved scope: chat-triggered government weather and air-quality advice; no new agent, scheduler, notification, storage or provider call.
 
 1. Add a bounded server tool using four fixed data.gov.sg endpoints, Zod response validation, 5-minute shared response cache, timeouts and freshness/validity checks.

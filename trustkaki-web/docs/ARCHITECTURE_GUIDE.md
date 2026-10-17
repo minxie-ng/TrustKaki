@@ -1,12 +1,12 @@
-# TrustKaki architecture — presentation guide
+# TrustKaki system architecture
 
-Use the overview for the story, then the memory diagram for the technical explanation. Both have editable HTML and standalone SVG versions in [media](media/).
+TrustKaki combines language models, scoped personal memory, public-data tools and a staff workflow. The overview describes the message-to-care path; the memory diagram expands the evidence and retrieval lifecycle. Editable HTML and standalone SVG versions are available in [media](media/).
 
 ## 1. Message to human follow-up
 
 ![Authenticated care workflow](media/architecture.svg)
 
-**Pitch explanation:** “TrustKaki turns an everyday message into a traceable care workflow. Triage interprets the message, Jev requests relevant specialists, and code enforces the final safety policy. Staff see who needs attention, why, and what they should do next.”
+TrustKaki turns an everyday message into a traceable care workflow. Triage interprets the message, Jev requests relevant specialists, and code enforces the final safety policy. Staff see who needs attention, why, and the recommended human action.
 
 ### What runs and why
 
@@ -32,7 +32,7 @@ Source: [`orchestrator.ts`](../src/lib/agents/orchestrator.ts), [`prompts.ts`](.
 
 ![Evidence-backed save and retrieval lifecycle](media/memory-lifecycle.svg)
 
-**Pitch explanation:** “Neon holds the personal facts and their evidence. Embeddings help find relevant candidates, but similarity is only a search signal. We re-read the current source record before giving a fact to the model.”
+Neon holds personal facts and their evidence. Embeddings identify relevant candidates, but similarity is only a search signal. The application re-reads the current source record before supplying a fact to the model.
 
 ### Write path
 
@@ -76,8 +76,8 @@ Source: [`retrieval.ts`](../src/lib/memory/retrieval.ts), [`postgresStore.ts`](.
 - **Failure isolation:** empty/unavailable retrieval lets the application avoid inventing recalled facts. It does not guarantee a good conversational answer; recent dialogue and response composition must also work correctly.
 - **Practical scale:** scoped vector retrieval avoids passing a whole personal history into the model. This is an architectural benefit, not a claim of measured million-user capacity.
 
-## 3. What judges can verify
+## 3. Inspectability and evaluation
 
-Use the authenticated [judge guide](JUDGE_GUIDE.md). Compare requested versus executed specialists, retrieved versus stored facts, and proposed versus accepted memory writes. The trail exposes actual recorded outcomes rather than a prewritten explanation.
+The authenticated judge workspace distinguishes requested from executed specialists, retrieved from stored facts, and proposed from accepted memory writes. Its decision trail exposes actual recorded outcomes. The [review guide](JUDGE_GUIDE.md) describes access and example scenarios.
 
-Dated tests and evaluation reports are evidence for their documented cases and builds. Avoid presenting a unit-test count as a measure of clinical safety, live response quality or prompt-injection immunity.
+Dated tests and evaluation reports are evidence for their documented cases and builds. A unit-test count does not measure clinical safety, live response quality or prompt-injection immunity.

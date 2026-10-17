@@ -1,5 +1,10 @@
 # Active Jev routing evaluation — preparation
 
+<!-- documentation-context -->
+> **Dated evidence / release record.** Results and operational details apply to the recorded build, scope and date. They do not establish current deployment health or supersede the public architecture guides. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+<!-- /documentation-context -->
+
+
 Date: 16 October 2026. Runtime base: `e19435b`.
 Status: prepared locally; separate paid-run approval pending. No provider calls,
 database access, deployment or hosted configuration changes during preparation.
