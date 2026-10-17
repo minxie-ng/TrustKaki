@@ -61,6 +61,33 @@ No registration or extra judge accounts are needed. Use fictional messages only.
 
 See the [judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) for outdoor-advice examples and responsible adversarial tests.
 
+## Built for a care team
+
+TrustKaki supports multiple seniors and caregivers, with organisation membership and senior-specific access relationships. Each authorised profile brings together its own conversations, care signals, personal context and follow-up history.
+
+```mermaid
+flowchart LR
+    A[Staff signs in] --> B[Session + access checks]
+    B --> C[Authorised senior profiles]
+    C --> D[Supabase: care records]
+    C --> E[Neon: personal memory]
+    D --> F[Staff actions + history]
+    classDef access fill:#e6f1e8,stroke:#164f3e,color:#1d342b
+    classDef records fill:#ffffff,stroke:#587065,color:#1d342b
+    class A,B,C access
+    class D,E,F records
+```
+
+| Foundation | Implemented behaviour | Care-team value |
+| --- | --- | --- |
+| **Identity** | Supabase Auth verifies the session; a caregiver profile is required | Associates protected requests with a recognised user |
+| **Access** | Organisation roles and caregiver links determine visible seniors; API checks and database row policies enforce access | Supports staff reviewing several seniors and caregivers linked to specific people |
+| **Separated permissions** | Organisation administration and demo-admin controls are distinct | Ordinary care access does not grant judge tools or administrative powers |
+| **Scoped memory** | The server resolves organisation + senior scope before Neon retrieval and writes | Keeps personal context tied to the authorised person |
+| **Continuity** | Cases, recorded actions and resolution history persist | Preserves follow-up context across sessions and staff handovers |
+
+This is an implemented multi-user foundation, not a claim of proven large-scale production readiness. [Database and access design](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#5-database-and-access-design) · [Validation and limits](trustkaki-web/docs/VALIDATION.md).
+
 ## How the system works
 
 ![TrustKaki care loop: messaging, Telegram check-ins, AI interpretation, saved signals, multi-day patterns and staff follow-up](trustkaki-web/docs/media/architecture.svg)
@@ -146,7 +173,6 @@ Changing the chat model does not require moving the memory database. Changing th
 
 ## Safety and practical limits
 
-- Authentication and scoped access separate staff permissions; demo controls require the appropriate role.
 - Typed schemas validate model outputs. Retrieved facts are marked as **untrusted evidence, not instructions**.
 - Source/version checks prevent the vector index alone from authorising stale facts. Evidence validation and persistence receipts distinguish proposed memory from accepted writes.
 - Human care decisions remain with staff. TrustKaki does not diagnose, prescribe or replace emergency services.

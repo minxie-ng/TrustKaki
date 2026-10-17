@@ -123,3 +123,43 @@ After an orchestration result is saved, the repository re-evaluates that senior'
 The window is anchored to the latest supplied signal. The rules inspect structured signal types and terms in their descriptions; they are not a learned forecasting model or proof of clinical deterioration. AI interpretation errors can propagate into pattern inputs. Routine context helps explain the comparison; RAG retrieval and pattern evaluation remain distinct mechanisms. Closing a staff case does not itself change the senior's assessed risk.
 
 Sources: [Pattern Watch rules](../src/lib/patterns/patternWatch.ts), [persistent pattern updates](../src/lib/persistence/patternRepository.ts), [queue consolidation](../src/lib/patterns/queueConsolidation.ts).
+
+## 5. Database and access design
+
+Authentication establishes identity; authorisation determines which senior and operation that identity may access. The browser's selected senior is a request parameter, not an access grant.
+
+### Identity and relationship model
+
+```mermaid
+erDiagram
+    AUTH_USER ||--o| CAREGIVER : maps_to
+    ORGANISATION ||--o{ MEMBERSHIP : has
+    CAREGIVER ||--o{ MEMBERSHIP : holds
+    ORGANISATION ||--o{ SENIOR : groups
+    CAREGIVER ||--o{ SENIOR_CAREGIVER_LINK : has
+    SENIOR ||--o{ SENIOR_CAREGIVER_LINK : has
+    SENIOR ||--o{ CARE_RECORD : owns
+    SENIOR ||--o{ PERSONAL_MEMORY : scopes
+```
+
+This is a conceptual relationship view, not a complete schema. Supabase holds identity/access relationships and operational care records; Neon holds personal-memory records. The relationship across stores is resolved by application code, not a cross-database foreign key.
+
+| Access path | Current rule |
+| --- | --- |
+| Staff / organisation administrator | Active organisation and membership allow access to seniors in that organisation |
+| Family caregiver | A caregiver link permits access to its specific senior |
+| Volunteer | Active volunteer membership plus a matching senior assignment is required |
+| Organisation administration | Requires the appropriate organisation-admin membership; ordinary read access is insufficient |
+| Demo administration | Uses trusted application metadata and separate endpoint checks; it does not substitute for senior access or organisation administration |
+
+### Enforcement and storage boundaries
+
+1. The server verifies the bearer token with Supabase Auth and requires a matching caregiver profile. Missing identity/profile or failed access lookups deny the request.
+2. A user-scoped Supabase client obtains row-policy-filtered seniors and active memberships. The server derives accessible and administrable senior IDs and checks the requested operation.
+3. For personal memory, the application resolves organisation + senior from the stored senior record. It does not accept a caller-supplied organisation as authority.
+4. Neon transactions set the restricted memory runtime role and organisation/senior scope. Scoped SQL and database row policies constrain memory records and vectors; current-source checks additionally govern what reaches the model.
+5. Operational cases and staff actions remain persistent records. Resolving a follow-up retains its history and does not itself rewrite the senior's assessed risk.
+
+The no-login Explore demo uses browser-local fictional state. Authenticated judge tools are a separate experience; their shared fictional account is not an example of individual staff-account management.
+
+Sources: [session and access checks](../src/lib/auth/session.ts), [organisation and senior access policies](../supabase/migrations/20260717173000_gate_6_organisation_tenancy_foundation.sql), [memory scope resolution](../src/lib/memory/applicationRepository.ts), [Neon transaction role and scope](../src/lib/memory/neonDatabase.ts). [Validation](VALIDATION.md) distinguishes recorded checks from unverified production scale and real-world outcomes.
