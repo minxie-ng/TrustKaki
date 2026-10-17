@@ -44,7 +44,23 @@ model requests, outbound messages, database mutations or promotion occurred.
 
 ## Pending
 
-Exact-candidate signed-in dashboard and ordinary-caregiver checks; remaining
+Ordinary-caregiver checks; remaining
 hosted preference-memory example; explicit promotion approval. Candidate
 readiness does not establish those results. Earlier active Jev hosted checks
 remain evidence for their earlier build only. No final-demo readiness claim yet.
+
+## Signed-in demo dashboard — passed
+
+Owner signed in and approved read-only inspection on the exact candidate.
+Laptop inspection confirmed three fictional seniors, selected identity, labelled
+priority, case reason, recommended action and sourced/dated personal context.
+Manrope computed styling and refreshed green controls/panels render on the hosted
+build. Judge workspace opens with a disabled empty-message submit control and
+historical recorded traces; it explicitly requires a new message to show that
+request's retrieval/save outcome. No inference or write was submitted.
+
+The session later returned to sign-in after these checks. Inspection used a
+separate tab after the original view changed during review. Temporary viewport
+was reset and the review tab closed; the owner's tab was retained. This account
+has demo-admin controls, so this check does not establish ordinary-caregiver
+restrictions. Screenshot evidence is local and excluded from the release record.
