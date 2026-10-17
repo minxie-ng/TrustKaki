@@ -9,6 +9,12 @@ Open [TrustKaki](https://trustkaki.vercel.app).
 
 Do not publish the password. The authenticated demo is shared and stateful; use fictional messages only. Live chat calls AI providers and saves results. Public Explore demo does neither.
 
+## See the whole care loop
+
+Start with **Explore demo** to inspect a prepared fictional four-day pattern, its contributing observations and the resulting human follow-up. Then use **Judge workspace** for a new live AI conversation and decision trail. These experiences answer different questions: how staff act on changes over time, and how the AI handles an individual conversation.
+
+Telegram/WhatsApp adapters connect senior conversations to the same underlying care pipeline. The browser walkthrough does not send external messages. Scheduled check-ins are implemented for Telegram and need an authorised recurring worker invocation; WhatsApp live delivery has separate business-verification requirements. See [messaging and pattern architecture](ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns). Review the staff schedule/status interface without enabling schedules or sending messages during an ordinary walkthrough.
+
 ## Suggested review
 
 | Try | What to inspect |

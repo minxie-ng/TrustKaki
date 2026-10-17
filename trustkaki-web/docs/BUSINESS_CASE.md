@@ -22,11 +22,11 @@ flowchart LR
     D --> E[Recorded outcome and retained history]
 ```
 
-The operational pain is fragmented context: reading many messages, recognising changes relative to routine, deciding which concern needs review, and knowing whether another staff member acted. TrustKaki connects these steps in a shared care workspace.
+The operational pain includes repeated manual check-ins and fragmented context: reading many messages, recognising changes relative to routine, deciding which concern needs review, and knowing whether another staff member acted. TrustKaki connects these steps in a shared care workspace. Messaging adapters support conversational updates, the Telegram check-in workflow supports scheduled outreach when dispatched, and Pattern Watch combines observations across days before presenting evidence for staff review. [Implementation and activation boundaries](ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns).
 
 ## Why AI is useful
 
-Senior messages can be indirect, multilingual and conversational. Models interpret meaning and select relevant specialist reviews; semantic retrieval supplies bounded personal context. Deterministic code controls data access, validates evidence, enforces policy and records outcomes.
+Senior messages can be indirect, multilingual and conversational. A change may also emerge over several check-ins rather than in one alarming message. Models interpret meaning and select relevant specialist reviews; semantic retrieval supplies bounded personal context. Deterministic code controls data access, validates evidence, enforces policy and records outcomes.
 
 A practical example is a senior mentioning that they have stopped going downstairs and have missed meals. TrustKaki can surface those concerns together with relevant known preferences. It supports a staff decision about a check-in; it cannot establish the senior's actual condition from messages alone or guarantee the correct urgency.
 

@@ -81,3 +81,45 @@ Source: [`retrieval.ts`](../src/lib/memory/retrieval.ts), [`postgresStore.ts`](.
 The authenticated judge workspace distinguishes requested from executed specialists, retrieved from stored facts, and proposed from accepted memory writes. Its decision trail exposes actual recorded outcomes. The [review guide](JUDGE_GUIDE.md) describes access and example scenarios.
 
 Dated tests and evaluation reports are evidence for their documented cases and builds. A unit-test count does not measure clinical safety, live response quality or prompt-injection immunity.
+
+## 4. Messaging, check-ins and multi-day patterns
+
+### Reactive messaging
+
+Telegram and WhatsApp adapters parse verified inbound events, resolve a mapped senior, call the shared conversation pipeline, persist results and send the selected reply through the originating channel. Event handling includes duplicate protection and bounded processing/recovery. WhatsApp additionally verifies webhook signatures and records delivery status. Provider acceptance is distinct from confirmed delivery.
+
+Sources: [Telegram service](../src/lib/telegram/service.ts), [WhatsApp service](../src/lib/whatsapp/service.ts).
+
+### Proactive Telegram check-ins
+
+```mermaid
+flowchart TD
+    A[Authorised scheduler invokes protected worker] --> B[Claim due jobs and check pause / quiet hours]
+    B --> C[Send configured Telegram check-in]
+    C --> D{Senior replies before deadline?}
+    D -->|Yes| E[Record reply and stop pending follow-up]
+    D -->|No| F[Send one reminder]
+    F --> G{Reply before final deadline?}
+    G -->|Yes| E
+    G -->|No| H[Create staff follow-up case]
+```
+
+This is the logical state progression; each stage requires a worker invocation when due. The worker uses approved context tags to adjust configured wording, records send intent/provider acceptance, and holds uncertain sends for reconciliation. It is bounded workflow code, not an agent deciding to repeatedly contact someone.
+
+**Deployment boundary:** [vercel.json](../vercel.json) currently declares the memory-indexing cron only. Scheduled senior check-ins require a separately authorised recurring caller to `/api/internal/check-ins/process-due`, configured senior schedules, verified Telegram identities and provider credentials. The current worker supports Telegram only, despite a broader schedule schema. This guide does not claim an externally configured scheduler or current live channel health.
+
+Sources: [check-in processor](../src/lib/checkins/service.ts), [timing policy](../src/lib/checkins/policy.ts), [protected endpoint](../src/app/api/internal/check-ins/process-due/route.ts), [schedule repository](../src/lib/persistence/proactiveCheckInRepository.ts).
+
+### Persistent Pattern Watch
+
+After an orchestration result is saved, the repository re-evaluates that senior's saved signals and operational routine/context records. Pattern candidates retain their contributing signal IDs. Related open patterns are consolidated into a staff case, with the reason, change from usual, recommended action and evidence timeline.
+
+| Rule | Required evidence within the seven-day signal window |
+| --- | --- |
+| Mobility and frailty | Mobility discomfort plus reduced movement; at least two observations on two distinct dates |
+| Social withdrawal | Reduced participation plus missed/delayed check-in signals; at least two observations on two distinct dates |
+| Combined wellbeing decline | Appetite disruption plus mobility/reduced-movement and withdrawal/non-response signals; at least three observations on three distinct dates |
+
+The window is anchored to the latest supplied signal. The rules inspect structured signal types and terms in their descriptions; they are not a learned forecasting model or proof of clinical deterioration. AI interpretation errors can propagate into pattern inputs. Routine context helps explain the comparison; RAG retrieval and pattern evaluation remain distinct mechanisms. Closing a staff case does not itself change the senior's assessed risk.
+
+Sources: [Pattern Watch rules](../src/lib/patterns/patternWatch.ts), [persistent pattern updates](../src/lib/persistence/patternRepository.ts), [queue consolidation](../src/lib/patterns/queueConsolidation.ts).

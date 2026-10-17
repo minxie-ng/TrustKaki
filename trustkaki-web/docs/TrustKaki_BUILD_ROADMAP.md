@@ -14,7 +14,9 @@ AI Lodge Hackathon · Solving a Business Problem · Updated 17 October 2026
 | Contextual tools | Government weather and regional air-quality data for relevant outdoor plans | Geographic, freshness and timing limits apply |
 | Public access | No-login fictional walkthrough | No live model calls or care-record writes |
 | Judge access | Authenticated live chat and recorded decision trail | Shared fictional demo state; credentials supplied privately |
-| Channel adapters | Telegram and WhatsApp integration code | Final WhatsApp delivery depends on external business verification |
+| Channel conversations | Telegram/WhatsApp inbound handling, automatic replies and persistence | Current channel delivery requires configured providers; final WhatsApp delivery depends on business verification |
+| Proactive check-ins | Telegram initial message, one reminder, response tracking and non-response case | Requires an authorised recurring caller; current repository cron schedules memory indexing only |
+| Multi-day patterns | Saved-signal Pattern Watch and consolidated evidence-backed follow-up cases | Defined deterministic combinations; not clinical prediction |
 
 ## Submission priorities
 

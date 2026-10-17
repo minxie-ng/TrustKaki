@@ -1,12 +1,25 @@
 # TrustKaki
 
-### Everyday conversations. Clearer human care.
+### Check in with seniors. Spot changes over time. Help staff act.
 
-TrustKaki helps Active Ageing Centre (AAC) staff turn senior check-ins into prioritised, context-rich follow-ups. It brings together conversation signals, personal memory and a record of what caregivers did next.
+TrustKaki is an AI-assisted check-in and care-coordination system for Active Ageing Centres (AACs). Seniors can converse through Telegram or the WhatsApp integration; TrustKaki interprets their replies, recalls relevant personal context and combines observations across days to flag changes that need human attention. Staff receive a prioritised case with supporting evidence and a suggested next action.
+
+The implemented Telegram check-in workflow can initiate a scheduled message, send one reminder and surface non-response for staff follow-up when an authorised scheduler runs it. Channel availability and deployment requirements are detailed below.
 
 **AI Lodge Hackathon · Solving a Business Problem**
 
 [Open TrustKaki](https://trustkaki.vercel.app) · [Judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) · [Technical setup](trustkaki-web/README.md) · [Architecture explained](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) · [Documentation](trustkaki-web/docs/README.md)
+
+## TrustKaki at a glance
+
+| Step | What TrustKaki does | Why it matters to the care team |
+| --- | --- | --- |
+| **1 · Check in** | Receive senior messages and send replies through messaging adapters; support scheduled Telegram check-ins | Collect everyday updates through familiar messaging channels |
+| **2 · Understand** | Interpret care and digital-safety signals; retrieve relevant personal memory | Read the message in the person's context |
+| **3 · Connect the dots** | Combine saved signals across days: mobility changes, reduced participation, appetite disruption and missed check-ins | Surface supported patterns that a single message may hide |
+| **4 · Follow up** | Present a priority case, evidence and recommended human action; retain staff responses and resolution history | Make the next human action clear and accountable |
+
+**Example:** knee discomfort on one day, fewer downstairs trips on another, then missed meals and withdrawal can form a supported wellbeing pattern. Staff can inspect the contributing observations and decide how to follow up. Pattern detection supports review; it does not establish a diagnosis.
 
 ## Why this matters in Singapore
 
@@ -58,10 +71,33 @@ See the [judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) for outdoor-advice exam
 | Jev via OpenRouter | Request relevant specialists through structured routing decisions. Independent safety/context triggers and code exclusions still apply. |
 | Conditional specialists | Review digital safety, personal context and community engagement where relevant; prepare caregiver briefings. |
 | Outdoor conditions tool | Fetch weather and regional air-quality information from data.gov.sg/NEA when outdoor context calls for it. It is a tool, not another LLM agent. |
+| Pattern Watch | Combine saved care signals across multiple days and surface evidence-backed follow-up cases. |
+| Check-in worker | Process configured Telegram check-ins, a reminder and response deadlines when invoked by an authorised scheduler. |
 | Deterministic policy | Validate outputs and enforce final safety rules. A model cannot override policy. |
 | Care team | Review priority, reason and recommended action; record the actual human response. |
 
 The selected reply returns to the conversation. Operational results and follow-up history support the staff dashboard. The diagram groups conditional roles for readability; the [architecture guide](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) expands their responsibilities and boundaries.
+
+## Messaging, automatic check-ins and Pattern Watch
+
+### Two ways a conversation starts
+
+- **Senior starts:** an authenticated channel webhook maps an incoming Telegram/WhatsApp message to the senior. The shared AI pipeline interprets it, records results and sends the selected reply through that channel.
+- **Configured check-in starts:** the Telegram worker processes a staff-configured schedule, observes pause/quiet-hour rules, sends a check-in and waits for a response. It supports one reminder, then a staff follow-up case after the final response deadline. Delivery uncertainty is held for reconciliation rather than blindly resending.
+
+| Capability | Current implementation / availability |
+| --- | --- |
+| Telegram conversation | Inbound webhook, identity mapping, automatic replies, persistence and duplicate-update protection are implemented. A bounded earlier live path was recorded; this documentation update does not retest delivery. |
+| WhatsApp conversation | Inbound webhook/signature checks, automatic reply and delivery-status handling are implemented. Final live delivery remains dependent on external business verification. |
+| Scheduled outbound check-ins | Implemented for **Telegram**. The schedule contract also accepts WhatsApp, but the current outbound check-in worker rejects that transport. |
+| Scheduler activation | A protected due-job endpoint exists. Repository deployment configuration schedules only memory indexing; automatic check-in dispatch requires a separately configured, authorised recurring invocation. No external scheduler was verified in this review. |
+| Multi-day patterns | Persistent Pattern Watch evaluates saved signals and consolidates supporting patterns into a staff follow-up case. |
+
+### How patterns differ from memory
+
+**RAG retrieves relevant facts about the person. Pattern Watch connects observations over time.** AI extracts structured signals; deterministic Pattern Watch rules evaluate supported combinations within a seven-day signal window. Mobility and social-withdrawal patterns need observations on at least two distinct days; a combined wellbeing-decline pattern needs at least three. Existing routine/context records help explain the case to staff.
+
+The public guided demo includes a prepared fictional four-day history. It demonstrates the care workflow; it does not send Telegram/WhatsApp messages or wait through a real schedule. [Messaging and pattern implementation](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns).
 
 ## Personal memory with RAG
 
