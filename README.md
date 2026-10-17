@@ -63,7 +63,7 @@ No registration or extra judge accounts are needed. Use fictional messages only.
 | [Interactive repository map · GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki) | Explore the code structure alongside the repository |
 | [Architecture guide](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) | Understand data flow, roles, database access and safety boundaries |
 
-<details>
+<details open>
 <summary><strong>Explore the codebase · generated repository map</strong></summary>
 
 [![Generated GitDiagram repository map of TrustKaki](trustkaki-web/docs/media/generated-repository-map.png)](https://gitdiagram.com/minxie-ng/trustkaki)
