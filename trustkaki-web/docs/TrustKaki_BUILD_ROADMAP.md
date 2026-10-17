@@ -5,9 +5,9 @@ Updated: 17 October 2026
 ## Current checkpoint
 
 - **Released:** owner approved promotion of runtime commit
-  `e0de97810e7640bcc70b24ae9ac62a422044df00` on 17 October 2026 (Singapore).
+  `e6c115340eed281dbc1e44c65e3dde4be00e19af` on 17 October 2026 (Singapore).
   Vercel promotion completed successfully for
-  `dpl_Et75RwkCXREbpEAzALTdV6dBv5Xy`. Public app: https://trustkaki.vercel.app.
+  `dpl_EQmM3iLThLDFBdHkmLhuJCHmmLoT`. Public app: https://trustkaki.vercel.app.
 - **Included:** Neon personal memory with RAG retrieval, active Jev routing and
   specialist decisions, and the refreshed care dashboard/judge workspace.
 - **UI correction:** empty follow-up states now reuse the active case card’s
@@ -15,7 +15,10 @@ Updated: 17 October 2026
   rounded secondary style. Required Vercel build passed (34 seconds), promotion
   succeeded. Sidebar context now uses full-width text with actions underneath,
   wrapping metadata and rounded controls/panel. Its required Vercel build passed
-  in 38 seconds and promotion succeeded. No additional testing, as requested.
+  in 38 seconds and promotion succeeded. Selected setup/workspace tabs now use
+  soft green shading and green text instead of curved red underlines; required
+  build passed in 40 seconds and promotion succeeded. No additional testing,
+  as requested.
 - **Prior functionality evidence:** 1,275 local tests passed; typecheck, lint and build
   passed. Hosted Jev/refusal and accepted Neon preference check passed, with no
   Supabase personal-memory copy. Demo roster/case review and ordinary-caregiver

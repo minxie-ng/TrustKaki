@@ -1,6 +1,6 @@
 # Combined UI, Jev and memory candidate
 
-**Final release status:** sidebar correction `e0de978` promoted successfully on 17 October
+**Final release status:** selected-tab correction `e6c1153` promoted successfully on 17 October
 2026 (Singapore); see the final promotion entry below. Earlier checkpoint notes
 record their status at execution time.
 
@@ -238,6 +238,22 @@ Exact-source archive deployed using existing Production settings and
 `--skip-domain`; required Vercel build passed in 38 seconds. Deployment
 `dpl_Et75RwkCXREbpEAzALTdV6dBv5Xy` reached READY at
 https://trustkaki-63zgggr8x-minxie-ngs-projects.vercel.app. Approved promotion
+exited 0 and reported success in 3 seconds. Public app: https://trustkaki.vercel.app.
+No additional tests, browser inspection, inference, fixtures or post-promotion
+smoke checks were run, as requested.
+
+## Selected-tab styling correction — released
+
+Owner requested removal of curved red selection underlines and approved
+deployment/promotion of commit `e6c115340eed281dbc1e44c65e3dde4be00e19af`.
+Care setup tabs and mobile workspace tabs now use soft green selected backgrounds
+and green text, with spacing between rounded tabs. Selection semantics, keyboard
+interaction and care logic remain unchanged.
+
+Exact-source archive deployed using existing Production settings and
+`--skip-domain`; required Vercel build passed in 40 seconds. Deployment
+`dpl_EQmM3iLThLDFBdHkmLhuJCHmmLoT` reached READY at
+https://trustkaki-57d19kf0a-minxie-ngs-projects.vercel.app. Approved promotion
 exited 0 and reported success in 3 seconds. Public app: https://trustkaki.vercel.app.
 No additional tests, browser inspection, inference, fixtures or post-promotion
 smoke checks were run, as requested.
