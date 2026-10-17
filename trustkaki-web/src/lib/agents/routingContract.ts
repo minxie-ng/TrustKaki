@@ -36,8 +36,23 @@ const answersSchema = z.object({ health: answerSchema, daily_living: answerSchem
   social: answerSchema, durable_context: answerSchema, urgent: answerSchema }).strict();
 
 export function buildRoutingShadowRequest(message: string, context: AgentRunContext) {
-  const state = { current_message: z.string().trim().min(1).max(1000).parse(message), context };
-  if (Buffer.byteLength(JSON.stringify(state), "utf8") > 12000) throw new Error("routing_shadow_context_too_large");
+  const state: { current_message: string; context: AgentRunContext;
+    historyWindow?: { omittedMessages: number } } = {
+    current_message: z.string().trim().min(1).max(1000).parse(message), context,
+  };
+  const stateBytes = () => Buffer.byteLength(JSON.stringify(state), "utf8");
+  if (stateBytes() > 12000 && context.messages.length > 2) {
+    // Trim only the routing copy, oldest first. Preserve the latest exchange,
+    // current message, profile and retrieved facts; never truncate their text/JSON.
+    state.context = { ...context, messages: [...context.messages] };
+    state.historyWindow = { omittedMessages: 0 };
+    while (stateBytes() > 12000 && state.context.messages.length > 2) {
+      state.context.messages.shift();
+      state.historyWindow.omittedMessages++;
+    }
+  }
+  // Oversized profile/memory or latest exchange still fails closed.
+  if (stateBytes() > 12000) throw new Error("routing_shadow_context_too_large");
   return { model: "typesafe/jev-1.14", state,
     questions: Object.fromEntries(routingFlags.map(flag => [flag, {
       type: "choice" as const,

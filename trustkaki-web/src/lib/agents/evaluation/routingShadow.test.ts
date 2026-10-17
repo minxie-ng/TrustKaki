@@ -31,6 +31,23 @@ describe("routing shadow preparation (no provider calls)", () => {
     expect(() => buildRoutingShadowRequest("hello", context)).toThrow("routing_shadow_context_too_large");
   });
 
+  it.each(["ordinary history ", "过去的对话内容"])("keeps recent references when a long %s history exceeds the routing budget", text => {
+    const context = fictionalRoutingContext();
+    context.messages = Array.from({ length: 40 }, (_, i) => ({ id: `old-${i}`, sender: "senior" as const,
+      text: text.repeat(100), timestamp: "2026-10-17T01:00:00Z" }));
+    context.messages.push({ id: "plan", sender: "senior", text: "Going to Clementi to meet friends and play tai chi later.", timestamp: "2026-10-18T01:00:00Z" },
+      { id: "reply", sender: "trustkaki", text: "Take it easy with your knee.", timestamp: "2026-10-18T01:01:00Z" });
+    context.personalMemory = { status: "available", contextJson: '{"facts":["Prefers short walks"]}' };
+    const original = JSON.stringify(context);
+    const request = buildRoutingShadowRequest("I just told you my plans.", context);
+    expect(Buffer.byteLength(JSON.stringify(request.state), "utf8")).toBeLessThanOrEqual(12000);
+    expect(request.state.current_message).toBe("I just told you my plans.");
+    expect(request.state.context.messages.slice(-2)).toEqual(context.messages.slice(-2));
+    expect(request.state.context.personalMemory).toEqual(context.personalMemory);
+    expect(JSON.stringify(context)).toBe(original);
+    expect(JSON.stringify(request.state)).toContain('"omittedMessages":');
+  });
+
   it("parses complete probability distributions and retains per-question uncertainty", () => {
     const parsed = parseRoutingShadowResponse(response());
     expect(parsed.judgment).toEqual(none());

@@ -45,6 +45,17 @@ describe("Jev routing shadow observer", () => {
     expect(request).not.toHaveBeenCalled();
   });
 
+  it("dispatches routing with a long stored conversation rather than falling back before fetch", async () => {
+    const context = fictionalRoutingContext();
+    context.messages = Array.from({ length: 30 }, (_, i) => ({ id: `message-${i}`, sender: "senior" as const,
+      text: "Fictional conversation history. ".repeat(30), timestamp: "2026-10-17T00:00:00Z" }));
+    const request = vi.fn().mockResolvedValue(Response.json(response())); vi.stubGlobal("fetch", request);
+    const observation = await runJevRoutingShadow("My knee pain today. Walking feels uncomfortable.", context);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(observation?.errorMessage).toBeNull();
+    expect(observation?.modelUsed).toBe("typesafe/jev-1.14-20261014");
+  });
+
   it("records six decisions and differences without recording private context or changing state", async () => {
     const request = vi.fn().mockResolvedValue(Response.json(response())); vi.stubGlobal("fetch", request);
     const context = fictionalRoutingContext(); context.senior.name = "Private Fictional Name";
