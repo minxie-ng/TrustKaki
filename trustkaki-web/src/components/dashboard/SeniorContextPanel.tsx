@@ -235,7 +235,7 @@ export function SeniorContextPanel(props: Props) {
   return (
     <details
       open={open}
-      className="group overflow-hidden rounded-[2px] border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
+      className="group overflow-hidden rounded-xl border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary className="cursor-pointer list-none bg-[var(--care-surface-muted)] px-4 py-3 transition-colors hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)]">
@@ -275,23 +275,25 @@ export function SeniorContextPanel(props: Props) {
                     const editing = editingId === item.id;
                     return (
                       <div key={item.id} className="py-3">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
+                        <div className="grid min-w-0 gap-3">
+                          <div className="min-w-0 [overflow-wrap:anywhere]">
                             <p className="text-sm text-gray-900">{summary.content}</p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              {sourceLabel(item.source)} | Confirmed {displayDate(item.lastConfirmedAt)} | {item.expiresAt ? `Expires ${displayDate(item.expiresAt)}` : "No expiry"}
-                            </p>
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                              <span>{sourceLabel(item.source)}</span>
+                              <span>Confirmed {displayDate(item.lastConfirmedAt)}</span>
+                              <span>{item.expiresAt ? `Expires ${displayDate(item.expiresAt)}` : "No expiry"}</span>
+                            </div>
                             {item.safeUseNotes && (
                               <p className="mt-1 text-xs text-gray-600">{item.safeUseNotes}</p>
                             )}
                           </div>
                           {view.canManage && !editing && (
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <button
                                 type="button"
                                 disabled={busy}
                                 onClick={() => beginCorrection(item)}
-                                className="text-xs font-semibold text-[var(--care-brand)] hover:text-[var(--care-brand-hover)] disabled:opacity-50"
+                                className="care-secondary-button whitespace-nowrap text-xs disabled:opacity-50"
                               >
                                 Edit / confirm
                               </button>
@@ -305,7 +307,7 @@ export function SeniorContextPanel(props: Props) {
                                   setMessage(null);
                                   commandRef.current = null;
                                 }}
-                                className="text-xs font-semibold text-red-700 disabled:opacity-50"
+                                className="min-h-11 whitespace-nowrap rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
                               >
                                 Archive
                               </button>
