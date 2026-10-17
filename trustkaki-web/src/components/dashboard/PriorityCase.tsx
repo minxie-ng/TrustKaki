@@ -77,7 +77,7 @@ export function PriorityCase({
         <button
           type="button"
           onClick={() => setRecentActivityOpen((current) => !current)}
-          className="mt-6 min-h-10 border-b border-[var(--care-coral)] text-sm font-semibold text-[var(--care-coral-hover)] hover:text-[var(--care-evergreen)]"
+          className="mt-6 min-h-10 border-b border-[var(--care-coral)] text-sm font-semibold text-[var(--care-brand)] hover:text-[var(--care-evergreen)]"
         >
           {recentActivityOpen ? "Hide recent activity" : "View recent activity"}
         </button>
@@ -138,10 +138,10 @@ function PriorityCaseCard({
   }, [openTimelineRequest]);
 
   return (
-    <section className={`border-t-2 bg-white py-5 ${risk.border}`}>
+    <section className="care-case">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h3 className="font-display text-[28px] leading-tight font-semibold text-gray-950">
+          <h3 className="font-display text-[25px] leading-tight font-bold text-gray-950">
             {riskHeadlineText(item.headline)}
           </h3>
           <StatusIndicator
@@ -160,23 +160,23 @@ function PriorityCaseCard({
             type="button"
             onClick={() => setDetailsOpen((current) => !current)}
             aria-expanded={detailsOpen}
-            className="min-h-10 border border-[var(--care-evergreen)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)] hover:bg-[var(--care-mist)]"
+            className="care-secondary-button text-sm"
           >
             {detailsOpen ? "Hide timeline" : "View timeline"}
           </button>
         </div>
       </div>
       <section className="mt-5" aria-label="Why this case was surfaced">
-          <h4 className="text-sm font-semibold text-gray-500">
+          <h4 className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--care-muted)]">
             Why this case was surfaced
           </h4>
-          <div className="mt-1 text-lg font-bold leading-snug text-gray-950">{fields.reason}</div>
+          <div className="mt-2 text-base leading-7 text-gray-800">{fields.reason}</div>
         </section>
       <section
         aria-label="Recommended human action"
-        className="mt-5 border-l-[3px] border-[var(--care-coral)] bg-[var(--care-mist)] px-5 py-5"
+        className="care-action-panel mt-5"
       >
-        <h4 className="text-sm font-semibold text-[var(--care-coral-hover)]">
+        <h4 className="text-sm font-semibold text-[var(--care-brand)]">
           Recommended human action
         </h4>
         <div className="mt-1 text-base font-semibold text-gray-950">{fields.recommendedAction}</div>
@@ -195,15 +195,15 @@ function PriorityCaseCard({
       </section>
       <div className="mt-5 grid gap-4 border-t border-[var(--care-line)] pt-4 text-sm sm:grid-cols-3">
         <div>
-          <div className="text-sm font-semibold text-gray-500">Change</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--care-muted)]">Change</div>
           <div className="mt-1 text-gray-800">{fields.changeFromUsual}</div>
         </div>
         <div>
-          <div className="text-sm font-semibold text-gray-500">Last response</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--care-muted)]">Last response</div>
           <div className="text-gray-900">{formatDate(fields.lastResponseAt)}</div>
         </div>
         <div>
-          <div className="text-sm font-semibold text-gray-500">Assigned</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--care-muted)]">Assigned</div>
           <div className="text-gray-900">{fields.assignedTo ?? "Unassigned"}</div>
         </div>
       </div>

@@ -25,26 +25,30 @@ weight, with its recommended human action visible above deeper evidence.
 The distinctive element is the existing care thread: dated observations aligned
 on one chronological line, showing how a change emerged over time.
 
-Palette, reusing existing tokens:
+## Visual refinement approved after the first implementation
+
+The owner requested a more visible change to fonts, buttons and colours after
+finding the first pass too similar. This supersedes the initial Source font,
+square-corner and coral-primary direction.
 
 | Role | Value |
 | --- | --- |
-| Evergreen navigation/selection | #1D3C35 |
-| Ink primary text | #18231E |
+| Evergreen brand | #164F3E |
+| Ink primary text | #1D342B |
 | Paper working surface | #FFFFFF |
-| Mist supporting surface | #F2F4F3 |
-| Hairline dividers | #B8C1BD |
-| Coral primary human action | #C04E40 |
+| Mist canvas | #F2F6F3 |
+| Sage identity surface | #E6F1E8 |
+| Selected roster row | #DCEEE1 |
+| Primary action / hover | #216548 / #174F37 |
+| Hairline dividers | #D9E4DC |
 
-Retain existing green/amber/red status colours, always with text. Use dark text
-for readable labels rather than relying on pale or coloured small text. Reserve
-coral for the selected case's main action. No new imagery or font dependency.
-
-Source Sans 3: body 16px, compact labels 14px, controls 14–16px.
-Source Serif 4: restrained 26–30px page/case headings only.
-Existing monospace: expandable technical values only.
-Use consistent spacing, few structural borders, restrained corners and no
-ornamental animation. Keyboard focus stays prominent; reduced motion respected.
+Manrope headings, DM Sans body; both font variables live on the root html element
+so theme aliases resolve correctly. Body 15px, supporting labels 12–14px, case
+heading 25px and selected senior 30–34px. Green primary buttons, quiet bordered
+secondary controls, 8px control corners and 12–16px panel corners. White navigation,
+sage identity panel and a softly highlighted action section establish hierarchy.
+Retain labelled green/amber/red statuses and visible keyboard focus. No shadows,
+gradients, ornamental animation or new imagery.
 
 Self-critique: another set of equal-weight cards would retain the current
 scanning problem. Use one working surface and a clear action section instead.
@@ -70,7 +74,7 @@ Selected row    [Update case]                           [View all context]
 - Roster about 240–260px. One heading; priority groups and status words.
 - Main case is the largest region. Senior identity appears once; remove duplicate
   risk, last-response, address and contact summaries around the same case.
-- Right context region about 260–280px when space permits. Contacts appear here
+- Right context region about 292px when space permits. Contacts appear here
   rather than being repeated in the main identity block.
 - At narrower laptop widths, context becomes an expandable section under the
   selected case; preserve enough width for reading and completing case updates.
@@ -141,7 +145,7 @@ step using the existing APIs. Do not display stale prior-account content.
    one final build/release batch and remaining chat-preference hosted check.
 
 Reuse Dashboard, SelectedSeniorSummary, PriorityCase, SeniorCoverage,
-SeniorContextPanel, ChatSimulation, AgentTracePanel, existing fonts and portraits.
+SeniorContextPanel, ChatSimulation, AgentTracePanel, existing portraits and component behavior.
 Preserve forms, persistence and permissions. No new dashboard analytics, event
 integrations, role model, storage service or autonomous outreach in this sprint.
 

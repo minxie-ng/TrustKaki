@@ -86,9 +86,9 @@ function controlRadiusViolations(input: SourceFile[]): string[] {
         rawValue.at(-1) === quote;
       const value = isStaticString ? rawValue.slice(1, -1) : rawValue;
       const isAllowed = source.path.endsWith(".css")
-        ? value === "0" || value === "0px" || value === "2px"
+        ? ["0", "0px", "2px", "8px", "12px", "16px"].includes(value)
         : isStaticString
-          ? value === "0" || value === "0px" || value === "2px"
+          ? ["0", "0px", "2px", "8px", "12px", "16px"].includes(value)
           : value === "0" || value === "2";
       if (isAllowed) return [];
 
@@ -562,9 +562,13 @@ describe("care desk visual system", () => {
     );
   });
 
-  test("uses only square or 2px control geometry", () => {
+  test.each(["8px", "12px", "16px"])("accepts refreshed geometry token %s", radius => {
+    expect(controlRadiusViolations([fixture("theme.css", `.surface { border-radius: ${radius}; }`)])).toEqual([]);
+  });
+
+  test("uses the approved 2/8/12/16px geometry scale", () => {
     expectNoViolations(
-      "Use rounded-[2px] or no radius for controls.",
+      "Use the approved geometry scale for controls and surfaces.",
       controlRadiusViolations(sources)
     );
   });

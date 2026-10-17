@@ -451,7 +451,7 @@ export function CaseUpdateForm({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="min-h-11 bg-[var(--care-coral)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--care-coral-hover)] disabled:opacity-50"
+        className="care-primary-button text-sm"
         disabled={disabled || pending}
       >
         {open ? "Close update" : "Update case"}
@@ -710,7 +710,7 @@ export function CaseUpdateForm({
                 conflictControls.saveBlocked ||
                 !canSaveCaseAction(action, note, assignedCaregiverId)
               }
-              className="min-h-11 rounded-[2px] bg-[var(--care-coral-hover)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--care-evergreen)] disabled:opacity-50"
+              className="care-primary-button text-sm"
             >
               {pending ? "Saving..." : "Save"}
             </button>

@@ -147,7 +147,7 @@ describe("PriorityCase", () => {
 
     expect(html).toContain('data-status-dot="true"');
     expect(html).toContain("font-display");
-    expect(html).toContain("text-[var(--care-coral-hover)]");
+    expect(html).toContain("care-action-panel");
     expect(html).not.toContain("text-[var(--care-coral)]");
     expect(html).not.toMatch(/shadow-|rounded-lg|bg-(?:amber|yellow|red|emerald)-(?:50|100)/);
   });

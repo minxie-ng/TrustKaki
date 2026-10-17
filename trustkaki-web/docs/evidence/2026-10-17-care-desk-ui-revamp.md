@@ -64,3 +64,30 @@ confirmation. Target-user five-second usability has not been measured.
 Batch the UI, Jev and validator fix into one final release candidate. Follow the
 existing release runbook for live checks and promotion; do not claim this local
 UI is already the public release.
+
+## Owner-requested visual refresh (after the first pass)
+
+The owner found the first pass visually too similar and explicitly requested
+nicer fonts, buttons and colours. The current design supersedes the initial
+font/palette/geometry choices described above:
+
+- Manrope headings and DM Sans body; font variables moved to html so the root
+  theme aliases resolve to the intended fonts. Browser computed style confirms
+  Manrope on the selected senior heading.
+- White navigation with a green speech mark; sage selected-senior panel, pale
+  canvas, white case/context cards and softer borders. Green primary actions,
+  quiet bordered secondary buttons; 8px controls and 12–16px panel corners.
+- Roster/context columns now 240px/292px. Existing forms, permissions and handlers
+  remain unchanged. Updated visual guards allow the approved geometry scale.
+- 68 focused tests passed; typecheck, lint and final production build passed.
+  Build output excludes the temporary preview route. Initial sandboxed font
+  download failed DNS; the network-enabled build succeeded.
+- Browser inspection of a fictional local fixture confirmed desktop rendering,
+  mobile wrapping without horizontal page overflow and mobile Context navigation.
+  Computed font and screenshot were checked. No save/model request was submitted.
+  The temporary route, generated rules and local server were removed/stopped.
+- Independent review of the visual diff found no actionable regression.
+  `git diff --check` passed. No hosted configuration or deployment changed.
+
+Screenshot: `/private/tmp/trustkaki-visual-refresh-2026-10-17.jpg` (local evidence,
+not a production screenshot). Target-user usability remains unmeasured.

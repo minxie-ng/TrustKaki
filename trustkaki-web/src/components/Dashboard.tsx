@@ -108,9 +108,9 @@ export default function Dashboard({
 
   return (
     <>
-      <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] lg:overflow-hidden">
+      <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-mist)] text-[var(--care-ink)] lg:overflow-hidden">
         <MobileWorkspaceTabs selected={mobileView} onSelect={setMobileView} />
-        <div className="mx-auto grid min-h-0 w-full flex-1 lg:grid-cols-[248px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[248px_minmax(0,1fr)_272px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
+        <div className="mx-auto grid min-h-0 w-full flex-1 lg:grid-cols-[240px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[240px_minmax(0,1fr)_292px] xl:grid-rows-1 xl:overflow-hidden ">
         <aside
           id="care-workspace-people-panel"
           role={mobileTabsActive ? "tabpanel" : undefined}
@@ -133,11 +133,11 @@ export default function Dashboard({
           aria-labelledby={
             mobileTabsActive ? "care-workspace-queue-tab" : undefined
           }
-          className={`${mobileView === "queue" ? "block" : "hidden"} min-w-0 space-y-4 bg-white p-3 sm:p-4 lg:col-start-2 lg:row-start-1 lg:block xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:p-5`}
+          className={`${mobileView === "queue" ? "block" : "hidden"} min-w-0 space-y-5 p-4 sm:p-6 lg:col-start-2 lg:row-start-1 lg:block xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:p-6`}
         >
           <WorkspaceLabel
-            eyebrow="Today’s care desk"
-            title="Focus on the next step"
+            eyebrow="Your care desk"
+            title="Review changes and plan your next check-in."
             actionLabel="Activity"
             onAction={onViewActivity}
           />
@@ -161,7 +161,7 @@ export default function Dashboard({
           aria-labelledby={
             mobileTabsActive ? "care-workspace-context-tab" : undefined
           }
-          className={`${mobileView === "context" ? "block" : "hidden"} min-w-0 space-y-3 bg-[var(--care-surface-muted)] p-3 sm:p-4 lg:col-start-2 lg:row-start-2 lg:block lg:border-t lg:border-[var(--care-line)] xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:p-5`}
+          className={`${mobileView === "context" ? "block" : "hidden"} min-w-0 space-y-4 p-4 sm:p-5 lg:col-start-2 lg:row-start-2 lg:block lg:border-t lg:border-[var(--care-line)] xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-t-0 xl:p-6`}
         >
           <ContextPreview
             key={selectedSeniorId}
@@ -183,7 +183,7 @@ export default function Dashboard({
               initiallyOpen
             />
           </ContextPreview>
-          <h2 className="pt-4 text-sm font-semibold text-[var(--care-ink)]">Care contacts</h2>
+          <h2 className="pt-2 text-sm font-semibold text-[var(--care-ink)]">Care contacts</h2>
           <dl className="divide-y divide-[var(--care-line)] border-y border-[var(--care-line)] text-sm">
             <ContextRow label="Primary caregiver" value={selectedSenior?.primaryCaregiver ?? data.senior.caregiver} />
             <ContextRow label="AAC contact" value={selectedSenior?.aacVolunteer ?? data.senior.aacVolunteer} />
@@ -294,9 +294,9 @@ function WorkspaceLabel({
   onAction?: () => void;
 }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-3 border-b border-[var(--care-line)] pb-3">
+    <div className="mb-1 flex items-center justify-between gap-3 py-2">
       <div>
-        <div className="text-sm font-semibold text-[var(--care-brand)]">
+        <div className="font-display text-xl font-bold text-[var(--care-brand)]">
           {eyebrow}
         </div>
         <h2 className="mt-1 text-sm text-gray-600">{title}</h2>

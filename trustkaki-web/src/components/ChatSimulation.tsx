@@ -73,7 +73,7 @@ export default function ChatSimulation({ messages, seniorId, isSeniorLoading = f
         <textarea id="judge-message" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={5000} rows={3} disabled={busy || isSeniorLoading} className="mt-2 w-full resize-y border border-[var(--care-line)] p-3 text-base disabled:opacity-50" placeholder="Type a fictional message…" />
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <button type="button" disabled={busy} onClick={() => setDraft(messages.find((message) => message.sender === "senior")?.text ?? "I prefer quiet one-to-one chats. Please do not suggest group activities today.")} className="min-h-11 text-sm font-semibold text-[var(--care-brand)] hover:underline">Use a check-in example</button>
-          <button type="submit" disabled={busy || !seniorId || !authToken || isSeniorLoading || !draft.trim()} className="min-h-11 bg-[var(--care-brand)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Running…" : isSeniorLoading ? "Loading senior…" : "Send fictional message"}</button>
+          <button type="submit" disabled={busy || !seniorId || !authToken || isSeniorLoading || !draft.trim()} className="care-primary-button text-sm">{busy ? "Running…" : isSeniorLoading ? "Loading senior…" : "Send fictional message"}</button>
         </div>
       </form>
     </section>

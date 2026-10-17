@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { DM_Sans, Manrope } from "next/font/google";
 import "./globals.css";
 
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
+const bodyFont = DM_Sans({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
-const sourceSerif = Source_Serif_4({
-  variable: "--font-source-serif",
+const headingFont = Manrope({
+  variable: "--font-heading",
   subsets: ["latin"],
 });
 
@@ -24,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className={`${sourceSans.variable} ${sourceSerif.variable} flex h-full flex-col`}>
+    <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} h-full antialiased`}>
+      <body className="flex h-full flex-col">
         {children}
       </body>
     </html>

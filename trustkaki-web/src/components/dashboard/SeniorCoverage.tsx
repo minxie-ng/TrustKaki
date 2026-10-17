@@ -36,12 +36,12 @@ export function SeniorCoverage({
   return (
     <nav aria-label="Senior priority coverage" className="min-w-0">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-bold text-[var(--care-ink)]">Seniors</h3>
+        <h3 className="font-display text-lg font-bold text-[var(--care-brand)]">Seniors</h3>
         <span className="text-sm text-gray-600">
           {seniors.length} {seniors.length === 1 ? "senior" : "seniors"}
         </span>
       </div>
-      <div className="min-w-0 border-y border-[var(--care-line)] bg-[var(--care-surface-muted)]">
+      <div className="min-w-0 ">
         {coverage.map((item, index) => {
           const selected = item.senior.id === selectedSeniorId;
           const showSeparator = monitoringIndex === index;
@@ -62,7 +62,7 @@ export function SeniorCoverage({
                 aria-pressed={selected}
                 aria-current={selected ? "true" : undefined}
                 aria-label={`Select ${item.senior.name}${selected ? " (selected)" : ""}`}
-                className={`min-h-11 w-full min-w-0 border-b border-[var(--care-line)] px-3 py-3 text-left hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] disabled:cursor-not-allowed disabled:opacity-50 ${selected ? "border-l-2 border-l-[var(--care-brand)] bg-white pl-[10px]" : ""}`}
+                className={`min-h-11 w-full min-w-0 my-2 px-3 py-4 text-left hover:bg-[var(--care-soft-teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] disabled:cursor-not-allowed disabled:opacity-50 ${selected ? "bg-[var(--care-selected)]" : ""}`}
               >
                 <div className="flex items-center gap-3">
                   <SeniorAvatar name={item.senior.name} src={item.portraitSrc} size="sm" />
@@ -80,7 +80,7 @@ export function SeniorCoverage({
                     {item.position}
                   </div>
                 </div>
-                {item.reason && <div className="mt-2 truncate text-sm text-gray-600">{item.reason}</div>}
+                {item.reason && <div className="mt-2 truncate text-xs leading-5 text-[var(--care-muted)]">{item.reason}</div>}
               </button>
             </div>
           );

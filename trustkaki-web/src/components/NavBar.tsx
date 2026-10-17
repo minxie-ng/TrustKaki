@@ -35,20 +35,21 @@ export default function NavBar({
   };
   const status = riskStatus[riskLevel];
   const navigationClass =
-    "flex min-h-11 flex-1 shrink-0 items-center justify-center border-b-2 border-transparent px-3 py-2 text-center text-sm font-semibold text-white/80 hover:text-white md:flex-none";
+    "flex min-h-11 flex-1 shrink-0 items-center justify-center px-3 py-2 text-center text-sm font-medium text-[var(--care-muted)] hover:bg-[var(--care-mist)] hover:text-[var(--care-brand)] md:flex-none";
   const activeNavigationClass =
-    "flex min-h-11 flex-1 shrink-0 items-center justify-center border-b-2 border-white px-3 py-2 text-center text-sm font-semibold text-white md:flex-none";
+    "flex min-h-11 flex-1 shrink-0 items-center justify-center bg-[var(--care-sage)] px-3 py-2 text-center text-sm font-semibold text-[var(--care-brand)] md:flex-none";
 
   return (
-    <header className="relative z-10 flex shrink-0 flex-wrap items-center gap-x-6 border-b border-emerald-950/30 bg-[var(--care-evergreen)] px-4 sm:px-5">
-      <div className="flex min-h-16 min-w-0 items-center">
-        <span className="font-display text-xl font-semibold text-white">TrustKaki</span>
+    <header className="relative z-10 flex shrink-0 flex-wrap items-center gap-x-6 border-b border-[var(--care-line)] bg-white px-4 sm:px-6">
+      <div className="flex min-h-[76px] min-w-0 items-center gap-3">
+        <span className="care-brand-mark" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M5 5.5h14v10H11l-5 4v-4H5v-10Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M9 9.5h6M9 12.5h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span>
+        <span className="font-display text-[23px] font-bold text-[var(--care-brand)]">TrustKaki</span>
       </div>
 
       {!suppressWorkflowNavigation && (
         <nav
           aria-label="Primary"
-          className="order-3 flex w-full items-stretch overflow-x-auto border-t border-white/20 md:order-none md:min-h-16 md:w-auto md:overflow-visible md:border-t-0"
+          className="order-3 flex w-full items-stretch overflow-x-auto gap-1 border-t border-[var(--care-line)] py-2 md:order-none md:min-h-[76px] md:w-auto md:overflow-visible md:border-t-0"
         >
         <button
           type="button"
@@ -76,16 +77,16 @@ export default function NavBar({
       )}
 
       <div className="ml-auto flex min-h-16 items-center gap-3">
-        {publicDemo && <span className="border border-white/50 px-2 py-1 text-xs font-bold uppercase text-white">Demo data</span>}
+        {publicDemo && <span className="border border-[var(--care-line)] px-2 py-1 text-xs font-semibold text-[var(--care-brand)]">Demo data</span>}
         <StatusIndicator
           tone={status.tone}
           label={status.label}
-          className="text-white"
+          className="text-[var(--care-muted)]"
         />
         <button
           onClick={onSignOut}
           type="button"
-          className="min-h-11 border border-white/40 px-3 py-2 text-sm font-semibold text-white hover:border-white"
+          className="care-secondary-button text-sm"
         >
           {publicDemo ? "Exit demo" : "Sign out"}
         </button>

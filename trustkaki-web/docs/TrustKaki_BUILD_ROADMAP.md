@@ -4,6 +4,12 @@ Updated: 17 October 2026
 
 ## Current checkpoint
 
+- **Visual refresh implemented locally:** owner-requested Manrope/DM Sans fonts,
+  forest-green primary buttons, sage identity panels, softer borders and rounded
+  surfaces supersede the first pass's visual tokens. Font-variable root scope is
+  corrected. Desktop/mobile fixture inspection passed; release remains pending.
+  See the visual refresh section in the implementation evidence below.
+
 - **UI revamp implemented locally:** narrower senior roster, focused identity and
   case, prominent next human action, compact sourced personal context and a
   separate demo-admin judge workspace. The judge view shows actual request
