@@ -8,6 +8,8 @@ TrustKaki personalises conversations with selected, evidence-backed facts about 
 
 ![Personal-memory lifecycle from validated statements to scoped, source-checked retrieval](media/memory-lifecycle.svg)
 
+[See RAG in the live workspace](PRODUCT_TOUR.md#4-rag-personalisation): the captured reply uses two retrieved preferences, with source and confirmation date visible beside it.
+
 ## Storage architecture
 
 **Neon replaces Supabase as the application's personal-memory store. RAG is the

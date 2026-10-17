@@ -1,5 +1,7 @@
 # Agent and tool design
 
+[See a live Jev routing example](PRODUCT_TOUR.md#3-jev-routes-a-payment-concern): requested and executed specialists are visible beside the senior conversation.
+
 [Documentation](README.md) · [Architecture](ARCHITECTURE_GUIDE.md) · [RAG](PERSONAL_MEMORY_RAG_GUIDE.md)
 
 TrustKaki uses models for language interpretation and bounded specialist decisions. Application code controls identity, validation, persistence and final safety policy. Each role has a defined output contract; adding more agents is not itself a product benefit.

@@ -15,6 +15,8 @@ Start with **Explore demo** to inspect a prepared fictional four-day pattern, it
 
 Telegram/WhatsApp adapters connect senior conversations to the same underlying care pipeline. The browser walkthrough does not send external messages. Scheduled check-ins are implemented for Telegram and need an authorised recurring worker invocation; WhatsApp live delivery has separate business-verification requirements. See [messaging and pattern architecture](ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns). Review the staff schedule/status interface without enabling schedules or sending messages during an ordinary walkthrough.
 
+[See the screenshot tour](PRODUCT_TOUR.md) for examples of the care desk, multi-day evidence, successful Jev routing and retrieved personal memory.
+
 ## Suggested review
 
 | Try | What to inspect |

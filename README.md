@@ -21,6 +21,14 @@ TrustKaki is an AI-assisted check-in and care-coordination system for Active Age
 
 **Example:** knee discomfort on one day, fewer downstairs trips on another, then missed meals and withdrawal can form a supported wellbeing pattern. Staff can inspect the contributing observations and decide how to follow up. Pattern detection supports review; it does not establish a diagnosis.
 
+## The care desk in action
+
+[![Care workspace showing Mr Tan’s priority case, recommended human action and relevant personal context](trustkaki-web/docs/media/care-workspace.png)](trustkaki-web/docs/media/care-workspace.png)
+
+**Who needs attention → what changed → what staff should do next.** The left column prioritises seniors; the centre explains the follow-up; the right panel brings together relevant personal context. Fictional demo records shown.
+
+[**View the screenshot tour: four-day patterns, live Jev safety routing and RAG personalisation →**](trustkaki-web/docs/PRODUCT_TOUR.md)
+
 ## Why this matters in Singapore
 
 Singapore's citizen population aged 65 and above reached **21.4% in 2026**. One-person households among people aged 65 and above increased from **42,100 in 2014 to 87,200 in 2024**. These are demographic indicators, not counts of seniors who need assistance. Sources: [National Population and Talent Division](https://www.population.gov.sg/our-population/population-trends/longevity/), [Ministry of Health](https://www.moh.gov.sg/newsroom/addressing-loneliness-and-psychological-distress-among-seniors-living-alone/).

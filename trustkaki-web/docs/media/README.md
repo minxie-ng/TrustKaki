@@ -1,4 +1,4 @@
-# Diagram assets
+# Documentation media
 
 Two complementary views keep the README readable without hiding implementation details:
 
@@ -15,8 +15,21 @@ Compact Mermaid views in the RAG and agent guides cover retrieval outcomes, memo
 
 ## Repository map and walkthrough video
 
-`generated-repository-map.png` is the unmodified PNG exported from [GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki), generated 17 October 2026 and downloaded 18 October. It is embedded in a collapsed **Explore the codebase** section in the root README, with an interactive link. The export contains the generator's attribution.
+`generated-repository-map.png` is the unmodified PNG exported from [GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki), generated 17 October 2026 and downloaded 18 October. It is embedded in an expanded-by-default **Explore the codebase** section in the root README, with an interactive link. The export contains the generator's attribution.
 
 The generator reports 26 components and 28 connections, with only three connections supported by its sampled source evidence. Review found that channel adapters call the shared orchestrator directly, not the browser orchestration API, and specialists execute internally rather than through the standalone route used to label their group. These limitations are stated beside the image. It omits details such as authentication, storage internals and parts of the runtime; it is not a complete call graph or deployment-status check. Curated SVG diagrams remain the source-linked explanation of behaviour and boundaries.
 
 For a walkthrough video, place a small linked thumbnail in **Explore the project**, directly before its table, once the video is published. Host the recording externally and use the same video URL in Devpost; keep the full video out of Git to avoid repository bloat. Add a screenshot thumbnail here only when an actual recording exists, and label any prepared fictional sequence clearly. A code-map tour complements a product demonstration but does not replace showing the senior message, staff case and decision trail.
+
+## Product screenshots
+
+Captured from the authenticated fictional demo on **18 October 2026 (SGT)**. These PNGs are unmodified captures: captions and callout tables explain the visible evidence without changing the interface or model output. Click images in the [product tour](../PRODUCT_TOUR.md) to inspect their original resolution.
+
+| Asset | Capture | Visible evidence |
+| --- | --- | --- |
+| `care-workspace.png` | 01:47 | Priority queue, follow-up reason, next human action and personal context |
+| `four-day-pattern.png` | 01:52 | Cropped timeline of prepared fictional observations across four days |
+| `jev-safety-routing.png` | 02:04 | Actual Jev model, digital-safety request and specialist execution |
+| `rag-personalisation.png` | 02:09 | Retrieved preferences, source/date and a reply using those facts |
+
+The four images total about **1.68 MiB**. They are documentation evidence, not application assets or exhaustive test results. The timeline includes prepared fictional history; live-model screenshots show individual observed runs, not guaranteed responses. No credentials are included. Source identifiers in the RAG capture belong to fictional demo records.

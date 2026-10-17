@@ -8,6 +8,7 @@ TrustKaki helps AAC staff turn everyday senior conversations into prioritised, a
 | --- | --- |
 | [Project overview](../../README.md) | Problem, product, demo access and architecture |
 | [Business case](BUSINESS_CASE.md) | Singapore context, users, value hypotheses and pilot measures |
+| [Product screenshot tour](PRODUCT_TOUR.md) | Care desk, four-day evidence, live Jev routing and source-linked RAG |
 | [Judge guide](JUDGE_GUIDE.md) | No-login walkthrough and authenticated live review |
 | [System architecture](ARCHITECTURE_GUIDE.md) | Message-to-care data flow and authority boundaries |
 | [Personal-memory RAG](PERSONAL_MEMORY_RAG_GUIDE.md) | Evidence-backed storage, retrieval, correction and failure handling |
