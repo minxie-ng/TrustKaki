@@ -462,3 +462,51 @@ Supabase cleanup completed with audit trigger restored, Auth fixture absent and
 former token denied. Restricted response/credential/runtime-log files removed.
 No fixtures remain. This recovery retains US$0.319795; the earlier checkpoint's
 US$0.319795 remains independently retained. Production remains unchanged.
+
+
+### Corrected timing candidate 21f4152 — hosted Jev works; preference check incomplete
+
+Owner approved one combined corrected deployment, read-only checks, two fresh
+fictional flows and scoped cleanup within the remaining diagnostic US$1 budget.
+
+- Commit: `21f4152edfe054a55fb53a3ae31098944734fd59`.
+- Deployment: `dpl_D913hpx1Vus2PNRjx32SDVkoroaC`.
+- URL: https://trustkaki-72gigstgp-minxie-ngs-projects.vercel.app
+- All 41 migrations align; none applied. Exact project/team/root/SHA confirmed.
+- Remote build completed in 28s. Health/privacy/deletion/config GET checks passed;
+  Supabase/Neon ready, Jev configured, public trustkaki.vercel.app unchanged.
+- Both fictional POSTs returned HTTP 200. The ambiguous case passed automated
+  screens and manual selected-reply review, requesting missing information.
+- Refusal case: actual active Jev router requested/executed context_memory and
+  aac_nudge; actual Jev social decision was declining. No model fallback/error,
+  no alert, final policy green. Selected reply respected refusal and made no
+  unconfirmed save claim. Manual reply review passed.
+- Read-only scoped inspection verified both inbound/outbound pairs (four messages)
+  and actual Jev traces persisted; all stored durations were integers. The prior
+  trace-saving HTTP 500 did not recur.
+
+The second case did NOT pass the complete checkpoint: memory attempted=1,
+accepted=0, rejected=1, failed=0. Scoped audit category was unsupported_evidence;
+extraction summary category communication_preference. No personal copy appeared
+in Supabase, and no scoped Neon memory record was created. The private proposal's
+raw excerpt is deliberately not retained, so its precise mismatch cannot be
+read back. Source investigation found a reproducible vocabulary gap: the
+communication evidence matcher accepted calls/texts/messages but not “chats.”
+A new exact-source chat-preference regression failed before adding chats? to that
+matcher; it now passes and still rejects a fabricated calls excerpt. Confidence,
+source, substring and sensitive-data guards are unchanged. Independent review
+found no blockers; 67 focused tests and typecheck passed. This local follow-up is
+not on candidate 21f4152; confirm the example with the final UI build.
+
+No recipe POST was sent. No automatic retry or additional model request followed
+the rejection. Do not claim all hosted memory acceptance criteria passed.
+Cumulative diagnostic reservation: US$0.959385 (including failed earlier
+3759e42 attempt). The separate b4174ff US$0.319795 remains retained. Actual provider
+cost is not inferred from these worst-case reservations.
+
+Cleanup passed: sessions revoked, scoped Neon rows absent, Supabase parent/audit/
+private-receipt fixtures removed with append-only trigger restored, exact Auth
+fixture deleted, former token denied, credentials/responses removed. A transient
+MCP request-state error required reissuing the same guarded idempotent cleanup;
+it did not trigger a model retry or expand deletion scope. All fixtures absent.
+No public promotion or real transport message occurred.

@@ -7,25 +7,25 @@ Updated: 17 October 2026
 - **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
   [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
   [agent release](evidence/2026-10-16-agent-candidate.md).
-- **Latest hosted candidate:** privacy-safe failure-stage diagnostics `3759e42`
-  are READY at https://trustkaki-930uh8xu4-minxie-ngs-projects.vercel.app.
-  Exact source metadata, remote build and protected read-only smoke passed;
-  Supabase/Neon are ready and public domain remains on `410b6ef`. Local checks:
-  1,258 tests, typecheck, lint and build pass; production dependency audit clean.
-  Exact-candidate signed-in demo inspection passed: queue, three-person roster
-  and supporting context load without a visible error. No new fixtures, model
-  retry or promotion authorized in this checkpoint.
-- **Prior candidate `b4174ff`:** signed-in demo and both caregiver API/browser
-  checks passed. Its first hosted full-chat POST returned HTTP 500 after Triage
-  succeeded; failure stage/cause remains unconfirmed. No retry or remaining case
-  was sent. All temporary accounts/data were removed. US$0.319795 remains reserved.
+- **Latest hosted candidate:** timing persistence correction `21f4152` is READY
+  at https://trustkaki-72gigstgp-minxie-ngs-projects.vercel.app. Exact metadata,
+  28-second remote build, protected smoke and both hosted chat requests passed
+  HTTP 200. Actual active Jev routing and social refusal classification ran
+  without fallback; four messages and Jev traces persisted with integer timings.
+  Public domain remains on `410b6ef`; no promotion yet.
+- **Remaining memory example:** the refusal/preference proposal was rejected as
+  unsupported evidence, so the combined acceptance check is not fully passed.
+  Its extracted category was communication_preference; the local validator
+  omitted “chats” from communication vocabulary. A narrow fix plus regression
+  now passes (67 focused tests and typecheck); independent review found no
+  blockers. Confirm this example on the final UI candidate; no more model calls
+  during this checkpoint. No unsupported memory was saved.
+- **Cleanup and budget:** all temporary accounts, scoped Supabase/Neon records
+  and restricted responses/credentials are removed. The diagnostic US$1 budget
+  retains US$0.959385 across its failed attempt and two corrected-build attempts.
+  Earlier b4174ff retains its separate US$0.319795 reservation. Amounts are
+  conservative reservations, not measured provider bills.
   [Hosted inference procedure](operations/2026-10-17-hosted-jev-inference-check.md).
-  The diagnostic retry isolated the failure to agent-run persistence. Fractional
-  Jev timings cannot decode into the integer duration column; a regression
-  reproduces it, and the shared upsert now rounds timings. Focused tests and
-  independent review pass; corrected hosted verification remains pending. All
-  diagnostic fixtures are removed. Both failed checkpoints retain US$0.319795
-  each. Production promotion remains pending separate approval.
   [Current candidate and earlier failures](evidence/2026-10-17-jev-active-hosted-candidate.md).
 
 - **Local shadow integration prepared:** independently disabled by default;
@@ -89,7 +89,8 @@ Updated: 17 October 2026
   stage diagnostics `3759e42` have now passed deployment and read-only smoke.
   Its signed-in demo dashboard passed; the diagnostic retry located the failing
   agent-run upsert and exposed fractional timings against an integer column.
-  Verify the minimal rounding correction on a candidate, then move to UI.
+  Both hosted chat requests now persist successfully with the rounding correction.
+  Move to UI; batch the remaining chat-preference confirmation into final release.
   [Completed coverage and corrections](evidence/2026-10-16-jev-final-coverage.md).
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but

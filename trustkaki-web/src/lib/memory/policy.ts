@@ -123,7 +123,7 @@ const contextEvidenceMatchers: Record<
 > = {
   communication_preference: (value) =>
     hasAllPatterns(value, [
-      /\b(?:voice|calls?|texts?|messages?|language|mandarin|english|short|concise)\b/i,
+      /\b(?:voice|calls?|texts?|messages?|chats?|language|mandarin|english|short|concise)\b/i,
       /\b(?:prefer|would rather|keep|use|send|short|concise|hard to follow|cannot follow|can't follow)\b/i,
     ]),
   food_preference: (value) =>

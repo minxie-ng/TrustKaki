@@ -275,3 +275,11 @@ HTTP retry. Stop on any error, inspect only scoped fixed-label diagnostics, and
 finish cleanup. No existing-record edits, real transport message or promotion.
 Do not request another manual demo sign-in for this persistence-only correction;
 reserve final authenticated release checks for the final UI build.
+
+
+Corrected checkpoint result: candidate21f4152 deployed; both POSTs HTTP200 and
+actual Jev routing/social traces persisted. Ambiguity passed; refusal handling
+passed but its preference proposal was rejected unsupported_evidence. Overall
+acceptance remains incomplete. All fixtures cleaned; cumulative reserved budget
+US$0.959385. Local chat-vocabulary correction is prepared for final UI batch;
+no additional inference approved by this procedure. See candidate evidence.

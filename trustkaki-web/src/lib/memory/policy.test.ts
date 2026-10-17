@@ -37,6 +37,21 @@ describe("memory eligibility policy", () => {
     });
   });
 
+  it("accepts an explicitly stated one-to-one chat preference", () => {
+    const text = "No thanks, I don't want to join any activities today. Please remember that I prefer quiet one-to-one chats.";
+    const candidate: MemoryCandidate = {
+      ...validPreference,
+      contextKey: "communication_style",
+      content: "Prefers quiet one-to-one chats",
+      evidenceExcerpt: "I prefer quiet one-to-one chats",
+      applicationTags: ["gentle_one_to_one"],
+    };
+    expect(evaluateMemoryCandidate(candidate, { ...sourceMessage, text }))
+      .toMatchObject({ accepted: true, candidate: { content: candidate.evidenceExcerpt } });
+    expect(evaluateMemoryCandidate({ ...candidate, evidenceExcerpt: "I prefer quiet one-to-one calls" }, { ...sourceMessage, text }))
+      .toEqual({ accepted: false, reason: "unsupported_evidence" });
+  });
+
   it("rejects a candidate below the confidence threshold", () => {
     expect(
       evaluateMemoryCandidate(
