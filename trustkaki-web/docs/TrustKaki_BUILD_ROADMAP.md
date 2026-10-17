@@ -4,25 +4,28 @@ Updated: 17 October 2026
 
 ## Current checkpoint
 
-- **Latest candidate:** diagnostic commit `6992b79` is READY at
-  https://trustkaki-bvkiopp8f-minxie-ngs-projects.vercel.app. It includes refreshed
-  UI, active Jev routing and Neon personal memory. All 1,275 tests pass;
-  typecheck/lint/build pass; all 41 migrations match; read-only smoke passes.
-  The original `708f9cf` hosted case hit a memory-write conflict. Its explicitly
-  approved single retry on `6992b79` passed: actual Jev routing/refusal handling,
-  accepted Neon preference, no Supabase personal copy, conversation and Jev
-  traces saved, ordinary-caregiver traces hidden. Exact cause of the prior
-  conflict remains unconfirmed; no write guard was relaxed. Both attempts are
-  fully cleaned, tokens denied; US$0.639590 reserved under the same US$1 cap.
-  **Authenticated follow-up:** exact-candidate demo roster/case and two-caregiver
-  API/RLS isolation passed; all eight rows/two accounts cleaned, tokens denied.
-  Chrome extension panel blocked remaining browser sign-in/account switching.
-  **Next:** resume that browser check after the panel is closed, then explicit
-  promotion approval. Earlier complete browser checks passed on `708f9cf`;
-  public domain still serves `410b6ef`.
-  [Candidate evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
+- **Released:** owner approved promotion of runtime commit
+  `6992b79f18a93c26689523fd205a44600e0aa246` on 17 October 2026 (Singapore).
+  Vercel promotion completed successfully for
+  `dpl_FyG8szAcZgYYiqt7tXbCL2iFKp8Y`. Public app: https://trustkaki.vercel.app.
+- **Included:** Neon personal memory with RAG retrieval, active Jev routing and
+  specialist decisions, and the refreshed care dashboard/judge workspace.
+- **Completed evidence:** 1,275 local tests passed; typecheck, lint and build
+  passed. Hosted Jev/refusal and accepted Neon preference check passed, with no
+  Supabase personal-memory copy. Demo roster/case review and ordinary-caregiver
+  API/RLS isolation passed. All temporary accounts/data removed, tokens denied.
+- **Owner decision:** skip remaining browser account-switching checks and stop
+  further testing. Owner then explicitly approved this exact promotion. No
+  additional tests or post-promotion smoke checks were run.
+- **Known limit:** the earlier memory conflict did not recur on the approved
+  retry; its originating cause remains unconfirmed. Two attempts retain
+  US$0.639590 reserved under the US$1 cap, not measured provider billing.
+- **Wrap-up:** release complete; no further changes scheduled.
+  [Release evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
-
+The entries below preserve earlier implementation checkpoints. References to
+pending deployment, browser verification or promotion describe those earlier
+states; the release status above supersedes them.
 
 - **Visual refresh included in candidate:** owner-requested Manrope/DM Sans fonts,
   forest-green primary buttons, sage identity panels, softer borders and rounded

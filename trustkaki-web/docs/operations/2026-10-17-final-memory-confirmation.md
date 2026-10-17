@@ -1,7 +1,9 @@
 # Final hosted memory confirmation
 
 Status: original attempt failed with a memory conflict; owner-approved diagnostic
-retry passed on `6992b79`. Both attempts fully cleaned. No promotion.
+retry passed on `6992b79`. Both attempts fully cleaned. Owner subsequently
+approved promotion with no additional testing; completed successfully. See
+[final release evidence](../evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 ## Execution result
 

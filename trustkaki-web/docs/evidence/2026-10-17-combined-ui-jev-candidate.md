@@ -1,5 +1,9 @@
 # Combined UI, Jev and memory candidate
 
+**Final release status:** runtime `6992b79` promoted successfully on 17 October
+2026 (Singapore); see the final promotion entry below. Earlier checkpoint notes
+record their status at execution time.
+
 17 October 2026 (Singapore). Owner approved exact commit `708f9cf`, linked-service
 inspection, candidate deployment and read-only smoke. This does not authorize
 model calls, authenticated account use, fixture writes or promotion.
@@ -185,3 +189,21 @@ former tokens HTTP 401, restricted credential/recovery manifest removed. No
 unresolved fixture residue. Normal-UI sign-in/account switching on this exact
 commit was not completed; earlier `708f9cf` browser results remain earlier-build
 evidence only. Owner's original candidate tab was retained.
+
+## Owner-approved promotion — complete
+
+Owner explicitly chose to stop further testing and skip the remaining browser
+checks, then approved promoting runtime commit
+`6992b79f18a93c26689523fd205a44600e0aa246` to trustkaki.vercel.app with no additional
+testing. This supersedes the remaining browser-check release gate for this
+hackathon release; it is not a claim that those checks passed.
+
+Executed `vercel promote dpl_FyG8szAcZgYYiqt7tXbCL2iFKp8Y --yes --scope
+minxie-ngs-projects`. CLI exited 0 and reported:
+
+> Success! trustkaki was promoted to trustkaki-bvkiopp8f-minxie-ngs-projects.vercel.app (dpl_FyG8szAcZgYYiqt7tXbCL2iFKp8Y) [3s]
+
+Public app: https://trustkaki.vercel.app. No additional model calls, fixtures,
+configuration changes, browser checks or post-promotion smoke tests were run.
+The earlier memory conflict's originating cause remains unconfirmed despite
+the passing approved retry. Release work is wrapped up.
