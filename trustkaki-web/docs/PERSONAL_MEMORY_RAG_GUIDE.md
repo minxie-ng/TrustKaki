@@ -112,38 +112,15 @@ consolidation, deduplication, pagination and archival still control growth. Exac
 cosine search currently grows with each senior's corpus; ANN indexing and production
 load measurements are future work.
 
-## Migration and verification evidence
+## Migration and verification
 
-Five legacy personal rows were imported as four canonical records and one revision.
-A family contact route remains operational in Supabase. Three active canonical
-facts initially lacked original provenance and were excluded from AI retrieval.
-On 15 October, the project owner approved retaining all three as fictional demo
-facts. They were confirmed through the authenticated caregiver correction flow,
-with explicit fictional provenance in each audit reason; current embeddings were
-verified for all three. This is not verification about real seniors. Migration
-itself never invents evidence or confirmation.
+Personal-memory records were migrated from Supabase to Neon with source/version reconciliation. Operational routing context remained in Supabase. Legacy personal-memory rows were frozen at cutover and subsequently removed through a reviewed, scoped migration. New personal-memory reads and writes use Neon without silently falling back to the old store.
 
-The five legacy Supabase personal rows were frozen at cutover, then removed after
-owner approval on 15 October. Four related audit events were scrubbed while keeping
-metadata. The operational contact route remains intact. Neon is the canonical store.
-A historical-branch recovery drill passed: facts, vectors, revisions, receipts and
-access isolation matched. Current Neon history is six hours; independent backup
-and post-restore erasure replay remain unverified. See the
-[recovery/retention runbook](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md).
-The approved legacy cleanup is complete. Old pilot vectors and provider historical
-copies still require separate review. Historical
-Supabase command identities were not imported as Neon receipts; old in-flight edits
-may need a dashboard refresh and reviewed reissue.
+Some migrated fictional facts initially lacked usable source provenance and were excluded from retrieval until confirmed through the caregiver correction flow. Migration does not manufacture evidence or turn demo facts into verified information about real seniors.
 
-Latest bounded semantic benchmark: **30/30 questions**, 10/10 each English,
-Mandarin and Singlish; zero forbidden facts, warm p95 **460 ms**. This synthetic
-benchmark does not establish broad language quality, real-user usefulness or scale.
+Bounded multilingual retrieval runs used 30 frozen questions across English, Mandarin and Singlish. Separate warm p95 measurements were 501 ms and 460 ms; neither run measured production scale or general conversation quality. [Results and limitations](VALIDATION.md).
 
-See [cutover record](evidence/2026-10-15-neon-memory-cutover.md) for the exact deployed
-commit, generated-response results, failed gates and production status. Historical
-[Pinecone pilot](evidence/2026-10-15-memory-live-pilot.md) and
-[Neon semantic benchmark](evidence/2026-10-15-neon-semantic-retrieval.md) remain evidence
-for their respective earlier stages.
+Correction, archive, source-version and isolation checks are covered by the maintained tests. Independent-backup and post-restore erasure checks remain prerequisites for real-user deployment. [Recovery and retention](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md).
 
 ## Retrieval outcomes
 
@@ -195,7 +172,7 @@ The state view summarises retrieval eligibility rather than literal database sta
 
 - [Active roadmap](TrustKaki_BUILD_ROADMAP.md)
 - [Neon setup and safe commands](NEON_MEMORY_SETUP.md)
-- [Lifecycle design](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md)
+- [System architecture](ARCHITECTURE_GUIDE.md)
 - [Retrieval](../src/lib/memory/retrieval.ts)
 - [Authenticated integration](../src/lib/memory/applicationRepository.ts)
 - [Transactions and RLS scope](../src/lib/memory/neonDatabase.ts)

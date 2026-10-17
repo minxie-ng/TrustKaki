@@ -1,3 +1,4 @@
+// Executable policy reference for unit tests; production recipient selection is enforced by the database RPC.
 import type {
   ContactKind,
   EvaluatedRecipientCandidate,

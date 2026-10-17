@@ -1,3 +1,4 @@
+-- Supabase operational-store baseline only; Neon personal memory is a separate database.
 -- Aggregate-only inspection. Run SELECT statements separately in the linked
 -- TrustKaki project. No message bodies, identifiers, keys, or payloads returned.
 -- Exact counts/averages scan tables; inspect size first on larger databases.

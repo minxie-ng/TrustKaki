@@ -45,7 +45,7 @@ it("distinguishes the incoming question from superseded first-person historical 
   const prompt = triageUserPrompt("What breakfast do I prefer?", { ...context,
     messages: [{id:"old",sender:"senior",text:"I always prefer porridge",timestamp:"2026-10-14T00:00:00Z"}], personalMemory: memory });
   expect(prompt).toContain("Current incoming message");
-  expect(prompt).toContain("Historical conversation (background only; preferences may be superseded)");
+  expect(prompt).toContain("Recent conversation (use for continuity and references; older preferences may be superseded)");
   expect(TRIAGE_PROMPT).toContain("Only the separately supplied current incoming message");
   expect(TRIAGE_PROMPT).toContain("answer using the latest confirmed retrieved fact");
   expect(TRIAGE_PROMPT).toContain("or present the confirmed preference merely as a new suggestion");

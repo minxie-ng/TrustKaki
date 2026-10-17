@@ -1,7 +1,5 @@
 // ─── LLM Provider Abstraction ───
-// OpenAI-compatible API client. Works with OpenAI, Azure OpenAI,
-// Together AI, Tencent Cloud, and any provider that implements the
-// OpenAI Chat Completions API format.
+// Server-side client for providers implementing the OpenAI Chat Completions format.
 
 export interface LLMCallParams {
   systemPrompt: string;

@@ -59,7 +59,11 @@ function controlRadiusViolations(input: SourceFile[]): string[] {
       ].flatMap((match) => {
         const token = match[0];
         const utility = token.slice(token.lastIndexOf(":") + 1);
-        return utility === "rounded-none" ||
+        const standardRadius = ["rounded-lg", "rounded-xl", "rounded-2xl"].includes(utility);
+        const conversationTail = source.path === "src/components/ChatSimulation.tsx" &&
+          ["rounded-br-md", "rounded-bl-md"].includes(utility);
+        const entryCard = source.path === "src/components/SignInForm.tsx" && utility === "rounded-3xl";
+        return standardRadius || conversationTail || entryCard || utility === "rounded-none" ||
           utility === "rounded-[2px]" ||
           utility === "rounded-full"
           ? []
@@ -566,7 +570,18 @@ describe("care desk visual system", () => {
     expect(controlRadiusViolations([fixture("theme.css", `.surface { border-radius: ${radius}; }`)])).toEqual([]);
   });
 
-  test("uses the approved 2/8/12/16px geometry scale", () => {
+  test("keeps special radii scoped to conversation tails and the sign-in card", () => {
+    expect(controlRadiusViolations([
+      fixture("src/components/ChatSimulation.tsx", '<div className="rounded-2xl rounded-br-md rounded-bl-md" />'),
+      fixture("src/components/SignInForm.tsx", '<div className="rounded-3xl" />'),
+      fixture("src/components/Card.tsx", '<div className="rounded-lg rounded-xl rounded-2xl" />'),
+    ])).toEqual([]);
+    expect(controlRadiusViolations([
+      fixture("src/components/Card.tsx", '<div className="rounded-br-md rounded-3xl rounded-[27px]" />'),
+    ])).toHaveLength(3);
+  });
+
+  test("uses standard geometry with the existing conversation-tail and entry-card exceptions", () => {
     expectNoViolations(
       "Use the approved geometry scale for controls and surfaces.",
       controlRadiusViolations(sources)

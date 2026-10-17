@@ -52,4 +52,4 @@ Prompts influence probabilistic behaviour; they do not guarantee faithful conver
 
 The authenticated judge workspace exposes retrieved memory, agent/model results, routing decisions, actual execution, final policy and save outcomes. Ordinary staff receive the focused care workflow rather than needing technical traces.
 
-Dated [agent experiments](agents/) and [evidence records](evidence/) document bounded comparisons, errors and recovery attempts. These are not clinical validation, exhaustive language coverage or proof of prompt-injection immunity. Laya was considered during exploration; the current documented integration uses Jev through OpenRouter.
+The [validation summary](VALIDATION.md) and selected [machine-readable reports](evidence/) document bounded comparisons, errors and partial results. These are not clinical validation, exhaustive language coverage or proof of prompt-injection immunity. Laya was considered during exploration; the current documented integration uses Jev through OpenRouter.

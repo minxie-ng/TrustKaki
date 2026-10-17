@@ -79,7 +79,7 @@ npm run validate
 
 Live checks require the corresponding environment, budget and fixture scope approvals. Fixture tools operate on isolated fictional scopes and verify cleanup. They are separate from the standard local development path.
 
-`/api/health` reports sanitised readiness booleans. It does not prove live embeddings, response faithfulness or conversational quality. Recorded migration, retrieval and retry results are available in the [cutover](evidence/2026-10-15-neon-memory-cutover.md), [semantic retrieval](evidence/2026-10-15-neon-semantic-retrieval.md), [runtime credentials](evidence/2026-10-15-neon-memory-metadata-and-credentials.md) and [index recovery](evidence/2026-10-15-memory-index-retries.md) reports.
+`/api/health` reports sanitised readiness booleans. It does not prove live embeddings, response faithfulness or conversational quality. The [validation summary](VALIDATION.md) records the scope and limitations of the retained retrieval and integration evidence.
 
 ## Rollback and data lifecycle
 

@@ -7,7 +7,7 @@ describe("SeniorAvatar", () => {
   it("renders a fixed decorative portrait with an initials fallback", () => {
     const html = renderToStaticMarkup(createElement(SeniorAvatar, {
       name: "Mr Tan Ah Hock",
-      src: "/seniors/mr-tan-ah-hock.webp",
+      src: "/seniors/mr-tan-ah-hock-photo.webp",
       size: "md",
     }));
     expect(html).toContain('alt=""');

@@ -8,11 +8,25 @@ TrustKaki helps Active Ageing Centre (AAC) staff turn senior check-ins into prio
 
 [Open TrustKaki](https://trustkaki.vercel.app) · [Judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) · [Technical setup](trustkaki-web/README.md) · [Architecture explained](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) · [Documentation](trustkaki-web/docs/README.md)
 
-## The business problem
+## Why this matters in Singapore
 
-A care team supports many seniors. A brief message about appetite, mobility, loneliness or a suspicious payment can matter more when compared with earlier conversations and the person's usual routine. Reading every message manually makes it difficult to decide who needs attention and track whether someone followed up.
+Singapore's citizen population aged 65 and above reached **21.4% in 2026**. One-person households among people aged 65 and above increased from **42,100 in 2014 to 87,200 in 2024**. These are demographic indicators, not counts of seniors who need assistance. Sources: [National Population and Talent Division](https://www.population.gov.sg/our-population/population-trends/longevity/), [Ministry of Health](https://www.moh.gov.sg/newsroom/addressing-loneliness-and-psychological-distress-among-seniors-living-alone/).
 
-TrustKaki gives staff a focused care desk: **who needs attention, why the case surfaced, and the next human action**. Staff record outcomes and close follow-ups while retaining activity history. Time savings and care outcomes have not yet been measured in a real AAC pilot.
+Care demand is growing alongside workforce expansion: MOH projects the healthcare workforce to grow from **129,000 in 2024 to about 156,000 in 2030**, while describing current staffing as broadly adequate. TrustKaki targets the coordination burden on care teams; it does not assume that AI can replace caregivers. [MOH workforce outlook](https://www.moh.gov.sg/newsroom/current-healthcare-workforce-strength-compared-against-projected-service-demand/).
+
+### The operational problem
+
+AAC staff support many seniors across everyday conversations. A change in appetite, mobility, social contact or digital safety can be easy to miss when messages are scattered and follow-up responsibility is unclear. A message also means more when compared with that person's routine and earlier context.
+
+**TrustKaki turns conversations into a shared, prioritised care workflow:** who needs attention, what changed, and the next human action. Staff can record an outcome, resolve a follow-up and retain its history.
+
+| For the care organisation | Product mechanism | Outcome to validate in a pilot |
+| --- | --- | --- |
+| Reduce manual review effort | Structured signals and a focused priority queue | Time spent reviewing each case |
+| Preserve personal context across staff handovers | Evidence-backed memory with correction history | Staff-reported context usefulness and factual accuracy |
+| Make follow-up accountable | Recorded actions, status and retained history | Time to human response and unresolved follow-ups |
+
+These are intended benefits, not measured savings or clinical outcomes. [Business case and pilot measures](trustkaki-web/docs/BUSINESS_CASE.md).
 
 ## Try it
 
@@ -102,7 +116,7 @@ This runs tests, type checking, lint and a production build. Paid model evaluati
 | [`trustkaki-web/docs/media`](trustkaki-web/docs/media/) | Editable diagram sources and README exports |
 | [`Judge guide`](trustkaki-web/docs/JUDGE_GUIDE.md) | Access, review steps and expected boundaries |
 | [`Architecture guide`](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) | Judge-facing technical explanation and source links |
-| [`docs/evidence`](trustkaki-web/docs/evidence/) · [`docs/operations`](trustkaki-web/docs/operations/) | Dated checks and operational records; historical results describe their specific build, not every later version |
+| [`Validation`](trustkaki-web/docs/VALIDATION.md) · [`Operations`](trustkaki-web/docs/operations/) | Selected bounded evaluation evidence and controlled operational procedures |
 
 ## Source use
 

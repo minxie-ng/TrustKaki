@@ -30,3 +30,6 @@ trustkaki-web/.jev-routing-evaluation/
 trustkaki-web/.jev-whole-flow-evaluation/
 trustkaki-web/.jev-active-routing-evaluation/
 trustkaki-web/.jev-active-coverage-evaluation/
+
+# Local-only audit snapshots of retired submission and development artifacts
+/.repo-cleanup-archive/
