@@ -15,7 +15,11 @@ Updated: 17 October 2026
   1,254 local tests, typecheck/lint/build pass. Hosted Jev inference and production
   promotion remain pending.
   [Three-case hosted inference procedure](operations/2026-10-17-hosted-jev-inference-check.md)
-  is prepared; its separate live checkpoint approval is pending.
+  stopped on its first POST (HTTP 500); no retry or other case was sent.
+  Cleanup passed with no fixtures remaining. US$0.319795 remains reserved.
+  The cause is unconfirmed. A privacy-safe local diagnostic patch passes
+  1,258 tests/typecheck/lint/build; its deployment and live recovery need
+  separate approval. Production promotion remains blocked.
   [Current candidate and earlier failures](evidence/2026-10-17-jev-active-hosted-candidate.md).
 
 - **Local shadow integration prepared:** independently disabled by default;
@@ -75,8 +79,9 @@ Updated: 17 October 2026
   typecheck/lint/build passed. Jev-only contextual social work was demonstrated;
   this sample does not show overall superiority or whole-flow savings.
   **Next chunk:** candidate deployment and authenticated access checks passed
-  on `b4174ff`. Run the prepared bounded hosted Jev inference procedure after
-  separate approval, then request promotion. Production remains unchanged.
+  on `b4174ff`, but the hosted inference attempt returned HTTP 500. Deploy
+  reviewed stage diagnostics with approval, then obtain a bounded live recovery
+  checkpoint to locate the failure. Do not promote an unverified flow.
   [Completed coverage and corrections](evidence/2026-10-16-jev-final-coverage.md).
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but

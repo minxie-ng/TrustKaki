@@ -1,7 +1,9 @@
 # Hosted Jev inference check
 
-Status: prepared; live inspection, fixture writes, inference and cleanup await
-approval for this checkpoint. This procedure does not approve promotion.
+Status: owner approved the bounded checkpoint; execution stopped after the first
+hosted POST returned HTTP 500. No retry or remaining case was dispatched. Scoped
+cleanup passed. A further live attempt needs renewed approval; this procedure
+does not approve promotion.
 
 ## Goal and target
 
@@ -95,7 +97,11 @@ setup, three hosted POSTs and the scoped cleanup below.
 - Confirm hosted provider is OpenAI and embeddings are Pinecone
   llama-text-embed-v2. A configuration name is not proof of its value; use a
   credential-safe operator check of only model and endpoint configuration under
-  this checkpoint's approval. Never emit keys or complete environment files.
+  this checkpoint's approval. For Vercel write-only settings, verify unchanged
+  creation/update timestamps against the documented successful cutover and
+  matching local non-secret config; explicitly record provenance verification,
+  not a value read-back claim. Stop on changed or untraceable configuration.
+  Never emit keys or complete environment files.
 - Compare candidate source for the bounds below. Stop if source or model differs.
 - Persist a separate private ledger, create it exclusively, and reserve a whole
   flow *before* each POST. Never refund an error/timeout or reserve more than

@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  let stage: "request" | "context" | "orchestration" | "persistence" = "request";
   try {
     const parsed = await parseJsonBody(request, agentMessageRequestSchema);
     if (!parsed.ok) {
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    stage = "context";
     const context = await loadAuthorizedAgentContext({
       auth: authResult.auth,
       seniorId,
@@ -58,7 +60,9 @@ export async function POST(request: NextRequest) {
       messages: [...context.messages, inboundMessage],
     };
 
+    stage = "orchestration";
     const result = await orchestrate(message, contextWithInbound);
+    stage = "persistence";
     const persistence = await persistOrchestrationResult({
       seniorId,
       message,
@@ -69,6 +73,20 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ...result, persistence });
   } catch (error) {
+    // Log fixed labels only: errors can contain senior data or provider payloads.
+    const operations = [
+      "bind orchestration persistence", "select active check-in", "insert active check-in",
+      "upsert inbound message", "select replayed inbound message",
+      "upsert messages with client IDs", "insert messages without client IDs",
+      "upsert agent runs", "insert detected signals", "insert policy risk event",
+      "update check-in risk", "update senior risk", "insert policy alerts", "insert brief",
+    ];
+    const operation = stage === "persistence" && error instanceof Error
+      ? operations.find(label => error.message.startsWith(`${label}:`)) ?? "unknown"
+      : "unknown";
+    console.error("[TrustKaki:orchestrate] Request failed", {
+      stage, kind: error instanceof TypeError ? "type_error" : "error", operation,
+    });
     return jsonError("Orchestration failed", { error, status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
 import type { AgentRunContext } from "@/lib/agents/contracts";
 
@@ -57,6 +57,11 @@ function request(body: unknown): NextRequest {
 }
 
 describe("/api/agents/orchestrate", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -129,4 +134,45 @@ describe("/api/agents/orchestrate", () => {
     );
     expect(JSON.stringify(json)).not.toContain("verified-access-token");
   });
+
+  it.each([
+    ["context", loadAuthorizedAgentContextMock, "unknown"],
+    ["orchestration", orchestrateMock, "unknown"],
+    ["persistence", persistOrchestrationResultMock, "bind orchestration persistence"],
+  ])("logs only fixed diagnostics when %s fails", async (stage, failingCall, operation) => {
+    vi.stubEnv("NODE_ENV", "production");
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const secret = "PRIVATE_PROVIDER_PAYLOAD_AND_SENIOR_MESSAGE";
+    failingCall.mockRejectedValueOnce(new Error(`bind orchestration persistence: ${secret}`));
+    const { POST } = await import("./route");
+
+    const response = await POST(request({ seniorId, message: secret }));
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Orchestration failed" });
+    expect(log).toHaveBeenCalledExactlyOnceWith("[TrustKaki:orchestrate] Request failed", {
+      stage, kind: "error", operation,
+    });
+    expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
+    expect(JSON.stringify(log.mock.calls)).not.toContain(seniorId);
+    expect(JSON.stringify(log.mock.calls)).not.toContain(auth.userId);
+  });
+
+
+  it("never logs an unrecognized raw TypeError or its stack", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const secret = "PRIVATE_DETAIL_CANARY";
+    persistOrchestrationResultMock.mockRejectedValueOnce(new TypeError(secret));
+    const { POST } = await import("./route");
+
+    const response = await POST(request({ seniorId, message: "Hello" }));
+
+    expect(response.status).toBe(500);
+    expect(log).toHaveBeenCalledExactlyOnceWith("[TrustKaki:orchestrate] Request failed", {
+      stage: "persistence", kind: "type_error", operation: "unknown",
+    });
+    expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
+  });
+
 });

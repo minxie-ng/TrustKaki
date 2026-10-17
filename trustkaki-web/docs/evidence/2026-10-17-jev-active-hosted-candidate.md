@@ -312,3 +312,68 @@ promotion was performed while preparing the procedure. Separate approval for
 this live checkpoint remains pending. The operator must inspect/test concrete
 generated commands before executing the approved procedure; a new executable
 runner has not been claimed complete.
+
+
+### Hosted inference attempt — stopped; cleanup passed
+
+Owner approved the three-case checkpoint, US$1 cap and scoped cleanup. Exact
+candidate metadata, health, configured OpenAI model/base URL and Jev flags passed.
+Vercel treats the embedding model/endpoint settings as write-only; their unchanged
+15 October creation/update timestamps matched the successful cutover provenance
+and local non-secret configuration. These two values were not read back. The
+initial preflight checker mistook omitted values for a mismatch; no model or
+environment setting was changed. Independent review accepted the provenance check.
+
+The operator runner was kept outside the repository. Before live use, review
+caught and corrected duplicate-dispatch locking and an overly strict recipe
+screen. Offline self-checks passed for persistent reservations, no resend after
+failure, exclusive operation lock, recipe/fallback validation and SQL ownership
+rollback, unrelated-row preservation, trigger restoration and idempotent cleanup.
+Runner SHA256: `f61276cd3e610586d6621b7fcd1641b93fd4fc1a9931fa2a482ec4159ff35c79`.
+
+One ordinary temporary account and eight public setup rows were created. Its
+roster contained exactly the three intended fictional seniors. The first
+orchestration POST returned HTTP 500; successful response count is zero. The
+runner stopped without retrying or sending either remaining case. A narrow
+request-log inspection confirmed Triage started and succeeded, but no error
+stage was recorded. This does not establish a Jev failure or an inference pass.
+The underlying cause is unconfirmed.
+
+One whole-flow reservation remains charged to the ledger: **US$0.319795**.
+Actual provider billing is not measured; this is not a claim that the reserved
+amount was spent. No additional model request was made for diagnosis.
+
+Cleanup completed at 2026-10-17T01:24:28Z. The conservative in-flight completion
+window was enforced before deletion. Session revocation, scoped Neon deletion,
+guarded Supabase private-receipt/audit/parent cleanup and restored audit trigger
+passed. The temporary Auth user was removed; former token received 401. Scoped
+absence was verified again, credentials/recovery/response artifacts and the
+restricted request-log capture were removed. No fixture remains.
+
+```text
+PASS preflight and setup: one ordinary Auth user, eight public rows, scoped roster
+FAIL hosted case 0: HTTP 500; zero successful flows; no retries or remaining cases
+PASS scoped Supabase cleanup and audit trigger restored
+PASS cleanup: all scoped data and temporary Auth user absent; former token denied
+```
+
+### Local diagnostic recovery — verified, not deployed
+
+Source audit found no reproducible fresh-fixture root cause. The confirmed gap
+was the production route suppressing error details without a safe failure-stage
+log. The local patch now records fixed request/context/orchestration/persistence
+stage labels, type_error/error kind and an allowlisted persistence-operation
+label. It never logs raw errors, identifiers, message text, payloads or stacks;
+the generic production HTTP 500 response is unchanged. This adds observation,
+not a claimed fix for the hosted failure.
+
+Three new tests failed before implementation because no diagnostic was logged.
+All seven route tests now pass, including injected private payload and TypeError
+non-disclosure. Full `npm run validate` passed (exit 0): **1,258 tests passed,
+38 skipped**, typecheck, lint and Webpack production build. Independent review
+found no blockers. Existing Vite tsconfig-paths deprecation notice remains.
+
+No diagnostic deployment, new fixture, paid retry or promotion has been approved.
+Production remains on `410b6ef`; candidate b4174ff remains unpromoted. Next is
+approval for the diagnostic candidate; live recovery requires its own bounded
+checkpoint and retained failed-attempt reservation.
