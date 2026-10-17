@@ -10,6 +10,7 @@ import {
   canAccessSenior,
   requireAuthenticatedCaregiver,
 } from "@/lib/auth/session";
+import { personalMemoryPreview } from "@/lib/memory/agentContext";
 import { orchestrate } from "@/lib/agents/orchestrator";
 import { getLLMProvider } from "@/lib/agents/provider";
 import { loadAuthorizedAgentContext } from "@/lib/persistence/seniorContextRepository";
@@ -71,7 +72,9 @@ export async function POST(request: NextRequest) {
       result,
     });
 
-    return NextResponse.json({ ...result, persistence });
+    return NextResponse.json({ ...result, persistence,
+      ...(authResult.auth.role === "demo_admin" ? { retrieval: personalMemoryPreview(context.personalMemory) } : {}),
+    });
   } catch (error) {
     // Log fixed labels only: errors can contain senior data or provider payloads.
     const operations = [

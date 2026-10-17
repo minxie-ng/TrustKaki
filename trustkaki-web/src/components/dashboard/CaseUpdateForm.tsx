@@ -451,7 +451,7 @@ export function CaseUpdateForm({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="min-h-11 border border-[var(--care-hairline)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)] hover:border-[var(--care-evergreen)]"
+        className="min-h-11 bg-[var(--care-coral)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--care-coral-hover)] disabled:opacity-50"
         disabled={disabled || pending}
       >
         {open ? "Close update" : "Update case"}

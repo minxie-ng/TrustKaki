@@ -61,6 +61,7 @@ export default function NavBar({
         <button type="button" onClick={onOpenSetup} className={navigationClass}>
           Care setup
         </button>
+        {canShowDemoMode && <button type="button" onClick={() => onViewChange("demo")} aria-current={activeView === "demo" ? "page" : undefined} className={activeView === "demo" ? activeNavigationClass : navigationClass}>Judge workspace</button>}
         {canShowDemoMode && (
           <button
             onClick={() => onDemoModeChange?.(!demoMode)}

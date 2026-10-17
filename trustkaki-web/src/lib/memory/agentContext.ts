@@ -25,3 +25,14 @@ export function contextItemsForMemory(ctx: AgentRunContext): KnownContextItem[] 
         content: item.content, safeUseNotes: item.safeUseNotes?.slice(0, 280) ?? null, applicationTags: [] })) : [];
   return [...items, ...(ctx.knownContext?.items ?? [])];
 }
+
+/** Bounded evidence from this request, rather than the profile's full context. */
+export function personalMemoryPreview(memory: AgentRunContext["personalMemory"]) {
+  if (!memory) return { status: "not_recorded" as const, items: [] };
+  const parsed = agentPersonalMemorySchema.safeParse(memory);
+  if (!parsed.success) return { status: "unavailable" as const, items: [] };
+  const envelope = envelopeSchema.parse(JSON.parse(parsed.data.contextJson));
+  return { status: parsed.data.status, items: envelope.items.map(item => ({
+    content: item.content, source: item.sourceRef, confirmedAt: item.confirmedAt,
+  })) };
+}

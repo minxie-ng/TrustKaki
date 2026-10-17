@@ -66,7 +66,7 @@ export default function SignInForm({
             Live backend access
           </h2>
           <p className="mt-1 text-sm text-gray-600">
-            Use the temporary judge credentials from the submitted deck. After signing in, choose <strong>Live system demo</strong> in the top navigation.
+            Use the temporary judge credentials from the submitted deck. After signing in, choose <strong>Judge workspace</strong> to try live chat and inspect its decisions, or <strong>Live system demo</strong> for the guided care walkthrough.
           </p>
 
         <label className="mt-4 block text-sm font-semibold text-gray-700">

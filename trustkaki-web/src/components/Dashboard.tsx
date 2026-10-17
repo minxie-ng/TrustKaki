@@ -13,6 +13,8 @@ import {
 import { PriorityCase } from "./dashboard/PriorityCase";
 import { SelectedSeniorSummary } from "./dashboard/SelectedSeniorSummary";
 import { SeniorCoverage } from "./dashboard/SeniorCoverage";
+import { SeniorContextPanel } from "./dashboard/SeniorContextPanel";
+import { ContextPreview } from "./dashboard/ContextPreview";
 import { CareSetupDrawer } from "./dashboard/CareSetupDrawer";
 import {
   mobileTabsActiveForDesktopMatch,
@@ -108,7 +110,7 @@ export default function Dashboard({
     <>
       <main className="flex h-full min-h-0 flex-col overflow-y-auto bg-[var(--care-paper)] text-[var(--care-ink)] lg:overflow-hidden">
         <MobileWorkspaceTabs selected={mobileView} onSelect={setMobileView} />
-        <div className="mx-auto grid min-h-0 w-full flex-1 lg:grid-cols-[320px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[320px_minmax(0,1fr)_294px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
+        <div className="mx-auto grid min-h-0 w-full flex-1 lg:grid-cols-[248px_minmax(0,1fr)] lg:overflow-y-auto xl:grid-cols-[248px_minmax(0,1fr)_272px] xl:grid-rows-1 xl:overflow-hidden xl:border-x xl:border-[var(--care-line)] xl:bg-white">
         <aside
           id="care-workspace-people-panel"
           role={mobileTabsActive ? "tabpanel" : undefined}
@@ -117,7 +119,6 @@ export default function Dashboard({
           }
           className={`${mobileView === "people" ? "block" : "hidden"} min-w-0 bg-[var(--care-surface-muted)] p-3 lg:row-span-2 lg:block lg:border-r lg:border-[var(--care-line)] lg:p-4 xl:row-span-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain`}
         >
-          <WorkspaceLabel eyebrow="Coverage" title="Senior roster" />
           <SeniorCoverage
             seniors={seniors}
             queue={data.followUpQueue}
@@ -135,8 +136,8 @@ export default function Dashboard({
           className={`${mobileView === "queue" ? "block" : "hidden"} min-w-0 space-y-4 bg-white p-3 sm:p-4 lg:col-start-2 lg:row-start-1 lg:block xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:p-5`}
         >
           <WorkspaceLabel
-            eyebrow="Today"
-            title="Care workspace"
+            eyebrow="Today’s care desk"
+            title="Focus on the next step"
             actionLabel="Activity"
             onAction={onViewActivity}
           />
@@ -162,9 +163,28 @@ export default function Dashboard({
           }
           className={`${mobileView === "context" ? "block" : "hidden"} min-w-0 space-y-3 bg-[var(--care-surface-muted)] p-3 sm:p-4 lg:col-start-2 lg:row-start-2 lg:block lg:border-t lg:border-[var(--care-line)] xl:col-start-3 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:p-5`}
         >
-          <WorkspaceLabel eyebrow="Selected senior" title="Supporting care" />
+          <ContextPreview
+            key={selectedSeniorId}
+            context={seniorContext}
+            seniorId={selectedSeniorId}
+            loading={seniorContextLoading}
+            error={seniorContextError}
+          >
+            <SeniorContextPanel
+              key={selectedSeniorId}
+              context={seniorContext?.seniorId === selectedSeniorId ? seniorContext : null}
+              loading={seniorContextLoading}
+              error={seniorContextError}
+              isAdmin={isDemoAdmin && !guideLocked}
+              seniorId={selectedSeniorId}
+              authToken={authToken ?? ""}
+              onChanged={(context) => onSeniorContextChanged?.(context)}
+              onUnauthorized={unauthorized}
+              initiallyOpen
+            />
+          </ContextPreview>
+          <h2 className="pt-4 text-sm font-semibold text-[var(--care-ink)]">Care contacts</h2>
           <dl className="divide-y divide-[var(--care-line)] border-y border-[var(--care-line)] text-sm">
-            <ContextRow label="Living situation" value={selectedSenior?.livingSituation ?? data.senior.livingSituation} />
             <ContextRow label="Primary caregiver" value={selectedSenior?.primaryCaregiver ?? data.senior.caregiver} />
             <ContextRow label="AAC contact" value={selectedSenior?.aacVolunteer ?? data.senior.aacVolunteer} />
           </dl>
@@ -198,7 +218,7 @@ export default function Dashboard({
 function ContextRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1 py-3">
-      <dt className="text-xs font-semibold text-gray-500">{label}</dt>
+      <dt className="text-sm font-semibold text-gray-600">{label}</dt>
       <dd className="text-gray-900">{value}</dd>
     </div>
   );
@@ -276,16 +296,16 @@ function WorkspaceLabel({
   return (
     <div className="mb-3 flex items-end justify-between gap-3 border-b border-[var(--care-line)] pb-3">
       <div>
-        <div className="text-[10px] font-bold uppercase text-[var(--care-brand)]">
+        <div className="text-sm font-semibold text-[var(--care-brand)]">
           {eyebrow}
         </div>
-        <h2 className="mt-1 text-sm font-extrabold text-[var(--care-ink)]">{title}</h2>
+        <h2 className="mt-1 text-sm text-gray-600">{title}</h2>
       </div>
       {actionLabel && onAction && (
         <button
           type="button"
           onClick={onAction}
-          className="text-xs font-bold text-[var(--care-coral-hover)] hover:text-[var(--care-evergreen)]"
+          className="min-h-11 text-sm font-semibold text-[var(--care-brand)] hover:underline"
         >
           {actionLabel}
         </button>

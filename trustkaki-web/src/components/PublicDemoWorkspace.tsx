@@ -65,7 +65,7 @@ export default function PublicDemoWorkspace({
     const current = documentRef.current;
     update({ ...current, phase: nextPhase, activeView: nextPhase === "complete" ? "activity" : current.activeView });
   }, [update]);
-  const changeView = useCallback((view: AppView) => update({ ...documentRef.current, activeView: view }), [update]);
+  const changeView = useCallback((view: AppView) => { if (view !== "demo") update({ ...documentRef.current, activeView: view }); }, [update]);
   const data: DashboardData = document.data;
 
   return (

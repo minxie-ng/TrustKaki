@@ -1,175 +1,81 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { authHeader } from "@/lib/auth/client";
-import type { Message, RiskLevel } from "@/lib/types";
+import type { Message } from "@/lib/types";
+import { judgeRunSchema, type JudgeRun } from "./judgeRunViewModel";
 
-interface ChatSimulationProps {
+export interface ChatSimulationProps {
   messages: Message[];
   seniorId: string | null;
   isSeniorLoading?: boolean;
   onComplete: () => void;
   authToken: string | null;
   onUnauthorized?: () => void;
+  onResult?: (result: JudgeRun) => void;
 }
 
-interface OrchestrateResult {
-  messages: Array<{ text: string; agentId?: Message["agentId"] }>;
-  riskLevel: RiskLevel;
-}
+export default function ChatSimulation({ messages, seniorId, isSeniorLoading = false, onComplete, authToken, onUnauthorized, onResult }: ChatSimulationProps) {
+  const [conversation, setConversation] = useState<Message[]>([]);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => requestRef.current?.abort(), []);
 
-function formatTime(ts: string) {
-  return new Date(ts).toLocaleTimeString("en-SG", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export default function ChatSimulation({
-  messages,
-  seniorId,
-  isSeniorLoading = false,
-  onComplete,
-  authToken,
-  onUnauthorized,
-}: ChatSimulationProps) {
-  const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const completionCalledRef = useRef(false);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [visibleMessages]);
-
-  useEffect(() => {
-    if (!isRunning || currentIndex >= messages.length) return;
-
-    const delay = messages[currentIndex].sender === "senior" ? 1200 : 1800;
-    const timer = setTimeout(() => {
-      setVisibleMessages((prev) => [...prev, messages[currentIndex]]);
-      setCurrentIndex((i) => i + 1);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [isRunning, currentIndex, messages]);
-
-  async function runRealOrchestration(seedMessages: Message[]) {
-    if (!seniorId || isSeniorLoading) return;
-    const seniorMessage =
-      seedMessages.find((message) => message.sender === "senior") ??
-      messages.find((message) => message.sender === "senior");
-    if (!seniorMessage) return;
-
-    const response = await fetch("/api/agents/orchestrate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader(authToken) },
-      body: JSON.stringify({
-        seniorId,
-        message: seniorMessage.text,
-        clientMessageId: seniorMessage.id,
-      }),
-    });
-    if (response.status === 401) {
-      onUnauthorized?.();
-      throw new Error("Unauthorized");
+  async function send(event: FormEvent) {
+    event.preventDefault();
+    if (busy || !seniorId || !authToken || isSeniorLoading || !draft.trim()) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const inbound: Message = { id: crypto.randomUUID(), sender: "senior", text: draft.trim(), timestamp: new Date().toISOString() };
+    setConversation((current) => [...current, inbound]);
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/agents/orchestrate", {
+        method: "POST", signal: controller.signal,
+        headers: { "Content-Type": "application/json", ...authHeader(authToken) },
+        body: JSON.stringify({ seniorId, message: inbound.text, clientMessageId: inbound.id }),
+      });
+      if (response.status === 401) onUnauthorized?.();
+      if (!response.ok) throw new Error("request_failed");
+      const result = judgeRunSchema.parse(await response.json());
+      if (controller.signal.aborted) return;
+      setConversation((current) => [...current, ...result.messages.map((message, index) => ({ ...message, id: `${inbound.id}:reply:${index}`, sender: "trustkaki" as const, timestamp: new Date().toISOString() }))]);
+      setDraft("");
+      onResult?.(result);
+      onComplete();
+    } catch {
+      if (!controller.signal.aborted) setError("The request did not complete successfully. Check Activity before sending again; a server-side save may have occurred.");
+    } finally {
+      if (!controller.signal.aborted) setBusy(false);
     }
-    if (!response.ok) throw new Error("Orchestration request failed");
-    const result = (await response.json()) as OrchestrateResult;
-    const now = Date.now();
-    const agentMessages: Message[] = result.messages.map((message, index) => ({
-      id: `agent_${now}_${index}`,
-      sender: "trustkaki",
-      text: message.text,
-      timestamp: new Date(now + index * 1000).toISOString(),
-      agentId: message.agentId,
-    }));
-    setVisibleMessages((prev) => [...prev, ...agentMessages]);
   }
 
-  const handleStart = () => {
-    if (!seniorId || isSeniorLoading) return;
-    completionCalledRef.current = false;
-    setIsComplete(false);
-    const seed = messages.slice(0, 2);
-    setVisibleMessages(seed);
-    setCurrentIndex(messages.length);
-    setIsRunning(true);
-    void runRealOrchestration(seed)
-      .catch(() => {
-        setVisibleMessages(messages);
-      })
-      .finally(() => {
-        if (!completionCalledRef.current) {
-          completionCalledRef.current = true;
-          setIsComplete(true);
-          setIsRunning(false);
-          onComplete();
-        }
-      });
-  };
-
   return (
-    <div className="flex h-full flex-col bg-[var(--care-paper)] text-[var(--care-ink)]">
-      <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--care-line)] px-4 py-3">
-        <div>
-          <div className="text-sm font-bold">Fictional demo conversation</div>
-          <div className="mt-0.5 text-xs text-gray-500">Selected senior check-in</div>
-        </div>
-        <div className="pt-0.5 text-xs font-semibold text-gray-600" aria-live="polite">
-          {isComplete ? "Complete" : isRunning ? "Running" : "Ready"}
-        </div>
+    <section aria-label="Fictional demo conversation" className="flex h-full min-h-0 flex-col bg-white">
+      <div className="shrink-0 border-b border-[var(--care-line)] px-5 py-4">
+        <h2 className="text-base font-semibold">Try a fictional conversation</h2>
+        <p className="mt-1 text-sm text-gray-600">Send as the selected senior. This runs the live system and saves the result.</p>
       </div>
-
-      <div className="flex-1 overflow-y-auto">
-        {!isRunning && visibleMessages.length === 0 && (
-          <div className="flex h-full items-center justify-center px-4">
-            <button
-              type="button"
-              onClick={handleStart}
-              disabled={!seniorId || isSeniorLoading}
-              className="min-h-11 border border-[var(--care-evergreen)] px-4 py-2 text-sm font-semibold text-[var(--care-evergreen)] hover:bg-[var(--care-mist)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--care-brand)] disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400"
-            >
-              {isSeniorLoading
-                ? "Loading senior..."
-                : seniorId
-                  ? "Run morning check-in"
-                  : "Select a senior first"}
-            </button>
-          </div>
-        )}
-
-        <div className="divide-y divide-[var(--care-line)]">
-        {visibleMessages.map((msg) => (
-          <div
-            key={msg.id}
-            className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 px-4 py-3 text-sm"
-          >
-            <div className="text-xs font-semibold text-gray-500">
-              {msg.sender === "senior"
-                ? "Senior"
-                : msg.sender === "system"
-                  ? "Demo note"
-                  : "TrustKaki"}
-            </div>
-            <div className="min-w-0">
-              <div className="leading-relaxed text-gray-800">{msg.text}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-gray-500">
-                <span>{formatTime(msg.timestamp)}</span>
-                {msg.agentId && (
-                  <code className="font-mono text-[10px] text-[var(--care-brand)]">
-                    {msg.agentId}
-                  </code>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-        </div>
-        <div ref={bottomRef} />
+      <div className="min-h-0 flex-1 overflow-y-auto px-5" role="log" aria-label="Demo messages" aria-live="polite" aria-busy={busy}>
+        {conversation.length === 0 && <p className="py-6 text-base leading-7 text-gray-600">Try a preference, a suspicious message, or an invitation. Compare the selected specialists with the final reply.</p>}
+        {conversation.map((message) => <article key={message.id} className="border-b border-[var(--care-line)] py-5">
+          <h3 className="text-sm font-semibold text-[var(--care-brand)]">{message.sender === "senior" ? "Senior" : "TrustKaki"}</h3>
+          <p className="mt-2 whitespace-pre-wrap break-words text-base leading-7">{message.text}</p>
+        </article>)}
+        {busy && <p role="status" className="py-4 text-sm text-gray-600">Reviewing context and preparing one reply…</p>}
+        {error && <p role="alert" className="my-4 border-l-2 border-[var(--care-coral)] pl-3 text-sm leading-6">{error}</p>}
       </div>
-    </div>
+      <form onSubmit={send} className="shrink-0 border-t border-[var(--care-line)] p-5">
+        <label htmlFor="judge-message" className="text-sm font-semibold">Senior’s message</label>
+        <textarea id="judge-message" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={5000} rows={3} disabled={busy || isSeniorLoading} className="mt-2 w-full resize-y border border-[var(--care-line)] p-3 text-base disabled:opacity-50" placeholder="Type a fictional message…" />
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <button type="button" disabled={busy} onClick={() => setDraft(messages.find((message) => message.sender === "senior")?.text ?? "I prefer quiet one-to-one chats. Please do not suggest group activities today.")} className="min-h-11 text-sm font-semibold text-[var(--care-brand)] hover:underline">Use a check-in example</button>
+          <button type="submit" disabled={busy || !seniorId || !authToken || isSeniorLoading || !draft.trim()} className="min-h-11 bg-[var(--care-brand)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Running…" : isSeniorLoading ? "Loading senior…" : "Send fictional message"}</button>
+        </div>
+      </form>
+    </section>
   );
 }

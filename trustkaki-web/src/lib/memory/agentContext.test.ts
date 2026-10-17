@@ -57,3 +57,10 @@ it("separates canonical personal data from embedded instructions", () => {
   expect(TRIAGE_PROMPT).not.toContain("optional personal context");
   expect(prompt.indexOf("For remembered preferences, answer from the latest personal record above")).toBeGreaterThan(prompt.indexOf(memory.contextJson));
 });
+
+it("exposes only validated retrieval evidence for the current request", async () => {
+  const { personalMemoryPreview } = await import("./agentContext");
+  expect(personalMemoryPreview(memory)).toEqual({ status: "available", items: [{ content: item.content, source: item.sourceRef, confirmedAt: item.confirmedAt }] });
+  expect(personalMemoryPreview(undefined)).toEqual({ status: "not_recorded", items: [] });
+  expect(personalMemoryPreview({ status: "available", contextJson: "invalid" })).toEqual({ status: "unavailable", items: [] });
+});

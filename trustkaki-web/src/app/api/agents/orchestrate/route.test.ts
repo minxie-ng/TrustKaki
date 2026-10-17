@@ -76,6 +76,15 @@ describe("/api/agents/orchestrate", () => {
     persistOrchestrationResultMock.mockResolvedValue({ persisted: true });
   });
 
+  it.each(["demo_admin", "caregiver"])("exposes request retrieval only to demo admin (%s)", async role => {
+    requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth: { ...auth, role } });
+    const { POST } = await import("./route");
+    const response = await POST(request({ seniorId, message: "Hello" }));
+    const json = await response.json();
+    if (role === "demo_admin") expect(json.retrieval).toEqual({ status: "not_recorded", items: [] });
+    else expect(json).not.toHaveProperty("retrieval");
+  });
+
   it("returns 401 before loading context or running models", async () => {
     requireAuthenticatedCaregiverMock.mockResolvedValue({
       ok: false,

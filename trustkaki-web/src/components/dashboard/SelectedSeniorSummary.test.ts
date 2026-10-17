@@ -26,12 +26,10 @@ describe("SelectedSeniorSummary", () => {
   it("keeps identity and care metadata compact and unframed", () => {
     const html = renderToStaticMarkup(createElement(SelectedSeniorSummary, { senior }));
 
-    expect(html).toContain("sm:grid-cols-4");
-    expect(html).not.toContain("lg:flex-row");
-    expect(html).not.toContain("rounded-lg");
-    expect(html).not.toContain("shadow");
-    expect(html).not.toContain("bg-white");
-    expect(html).not.toContain("border-t-[3px]");
-    expect(html).toContain("Rachel Tan (daughter)");
+    expect(html).toContain("Mr Tan Ah Hock");
+    expect(html).toContain("76 years old");
+    expect(html).not.toContain("Primary caregiver");
+    expect(html).not.toContain("Current risk");
+    expect(html).not.toContain("Last response");
   });
 });

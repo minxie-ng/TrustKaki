@@ -29,7 +29,7 @@ describe("Gate 0 structural regression", () => {
     const caseUpdateForm = read("src/components/dashboard/CaseUpdateForm.tsx");
     expect(caseUpdateForm).toContain('"Save"');
     expect(caseUpdateForm).toContain("bg-[var(--care-coral-hover)]");
-    expect(caseUpdateForm).not.toContain("bg-[var(--care-coral)]");
+    expect(caseUpdateForm).toContain("text-white");
     expect(read("src/components/dashboard/CaseDetails.tsx")).toContain(
       "Chronological evidence timeline"
     );

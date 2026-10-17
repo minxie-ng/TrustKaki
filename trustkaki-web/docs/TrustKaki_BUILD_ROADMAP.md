@@ -4,6 +4,19 @@ Updated: 17 October 2026
 
 ## Current checkpoint
 
+- **UI revamp implemented locally:** narrower senior roster, focused identity and
+  case, prominent next human action, compact sourced personal context and a
+  separate demo-admin judge workspace. The judge view shows actual request
+  retrieval, Jev requested/executed specialists, model/fallback, policy and save
+  outcome. No scripted success after a failed chat request. 1,270 tests passed,
+  38 skipped; typecheck, lint and build passed. Desktop/mobile local fixture
+  inspection and independent review completed. Not deployed or promoted.
+  [Approved design](superpowers/specs/2026-10-17-priority-first-ui-revamp.md) ·
+  [Implementation evidence](evidence/2026-10-17-care-desk-ui-revamp.md).
+  **Next:** one final release candidate combining UI, Jev and the narrow memory
+  validator fix; confirm the remaining hosted preference example, then promote
+  after the required release checks and owner approval.
+
 - **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
   [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
   [agent release](evidence/2026-10-16-agent-candidate.md).
@@ -104,9 +117,8 @@ Updated: 17 October 2026
   both Jev and GPT-4o-mini, with lower measured Jev endpoint cost/latency. This
   does not establish broader routing quality or whole-flow savings.
   [Pilot](agents/2026-10-16-jev-social-intent-pilot.md).
-- **After agent decisions:** UI discovery and cleanup, emphasizing priority,
-  evidence and the next human action at one glance. Independent backups and
-  broader historical-copy checks remain pre-pilot work.
+- **After local UI implementation:** final hosted release checkpoint. Independent
+  backups and broader historical-copy checks remain pre-pilot work.
 
 Approved next-slice architecture: [external personal-memory storage and lifecycle](superpowers/specs/2026-10-15-external-memory-lifecycle-design.md).
 Neon with pgvector holds canonical personal memory and vector search together.

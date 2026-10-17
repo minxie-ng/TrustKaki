@@ -54,6 +54,7 @@ export function memoryPanelPresentation(
 }
 
 interface Props {
+  initiallyOpen?: boolean;
   context: SeniorContextReadModel | null;
   loading: boolean;
   error: string | null;
@@ -153,7 +154,7 @@ export function SeniorContextPanel(props: Props) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(props.initiallyOpen ?? false);
   const commandRef = useRef<{ fingerprint: string; id: string } | null>(null);
 
   if (!props.seniorId || !view.visible) return null;
@@ -233,6 +234,7 @@ export function SeniorContextPanel(props: Props) {
 
   return (
     <details
+      open={open}
       className="group overflow-hidden rounded-[2px] border border-[var(--care-line)] border-l-[3px] border-l-[var(--care-brand)] bg-white transition-colors hover:border-[var(--care-teal-line)] hover:border-l-[var(--care-brand)]"
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
@@ -291,7 +293,7 @@ export function SeniorContextPanel(props: Props) {
                                 onClick={() => beginCorrection(item)}
                                 className="text-xs font-semibold text-[var(--care-brand)] hover:text-[var(--care-brand-hover)] disabled:opacity-50"
                               >
-                                Confirm details
+                                Edit / confirm
                               </button>
                               <button
                                 type="button"

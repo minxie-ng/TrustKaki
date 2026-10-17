@@ -5,7 +5,7 @@ import type { RiskLevel } from "@/lib/types";
 import type { DemoPhase } from "./dashboard/demoGuideState";
 import NavBar from "./NavBar";
 
-export type AppView = "workspace" | "activity";
+export type AppView = "workspace" | "activity" | "demo";
 
 interface AppShellProps {
   activeView: AppView;

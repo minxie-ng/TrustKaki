@@ -138,16 +138,10 @@ function PriorityCaseCard({
   }, [openTimelineRequest]);
 
   return (
-    <section className={`border-y border-l-4 bg-white py-5 pl-5 pr-1 sm:pr-5 ${risk.border}`}>
-      <div className="flex items-center justify-between border-b border-[var(--care-line)] pb-3">
-        <div className="text-xs font-bold uppercase text-[var(--care-evergreen)]">
-          Priority case
-        </div>
-        <StatusIndicator tone={risk.tone} label="Needs attention" className="text-xs" />
-      </div>
+    <section className={`border-t-2 bg-white py-5 ${risk.border}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="pt-5">
-          <h3 className="font-display text-2xl font-semibold text-gray-950">
+        <div className="min-w-0">
+          <h3 className="font-display text-[28px] leading-tight font-semibold text-gray-950">
             {riskHeadlineText(item.headline)}
           </h3>
           <StatusIndicator
@@ -156,11 +150,11 @@ function PriorityCaseCard({
             className="mt-2 font-semibold"
           />
         </div>
-        <div className="flex shrink-0 items-center gap-4 pt-5">
+        <div className="flex shrink-0 items-center gap-4">
           <StatusIndicator
             tone={statusTone[item.status]}
             label={statusLabel[item.status]}
-            className="text-xs font-semibold"
+            className="text-sm font-semibold"
           />
           <button
             type="button"
@@ -172,41 +166,20 @@ function PriorityCaseCard({
           </button>
         </div>
       </div>
-      <div className="mt-6 grid gap-5 text-sm md:grid-cols-2">
-        <section aria-label="Why this case was surfaced">
-          <h4 className="text-xs font-bold uppercase text-gray-500">
+      <section className="mt-5" aria-label="Why this case was surfaced">
+          <h4 className="text-sm font-semibold text-gray-500">
             Why this case was surfaced
           </h4>
           <div className="mt-1 text-lg font-bold leading-snug text-gray-950">{fields.reason}</div>
         </section>
-        <div>
-          <div className="text-xs font-bold uppercase text-gray-500">Change</div>
-          <div className="mt-1 text-gray-800">{fields.changeFromUsual}</div>
-        </div>
-        <div>
-          <div className="text-xs font-semibold text-gray-500">Last response</div>
-          <div className="text-gray-900">{formatDate(fields.lastResponseAt)}</div>
-        </div>
-        <div>
-          <div className="text-xs font-semibold text-gray-500">Assigned</div>
-          <div className="text-gray-900">{fields.assignedTo ?? "Unassigned"}</div>
-        </div>
-      </div>
       <section
         aria-label="Recommended human action"
-        className="mt-5 border-y border-l-[3px] border-[var(--care-line)] border-l-[var(--care-coral)] px-4 py-4"
+        className="mt-5 border-l-[3px] border-[var(--care-coral)] bg-[var(--care-mist)] px-5 py-5"
       >
-        <h4 className="text-xs font-bold uppercase text-[var(--care-coral-hover)]">
+        <h4 className="text-sm font-semibold text-[var(--care-coral-hover)]">
           Recommended human action
         </h4>
         <div className="mt-1 text-base font-semibold text-gray-950">{fields.recommendedAction}</div>
-      </section>
-      {item.relatedPatterns.length > 0 && (
-        <div className="mt-3 text-xs text-gray-600">
-          <span className="font-semibold text-gray-500">Supporting patterns:</span>{" "}
-          {item.relatedPatterns.map((pattern) => labelPattern(pattern.type)).join(", ")}
-        </div>
-      )}
       {!guideLocked && <div className="mt-4">
         <CaseUpdateForm
           item={item}
@@ -219,6 +192,27 @@ function PriorityCaseCard({
           onUnauthorized={onUnauthorized}
         />
       </div>}
+      </section>
+      <div className="mt-5 grid gap-4 border-t border-[var(--care-line)] pt-4 text-sm sm:grid-cols-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-500">Change</div>
+          <div className="mt-1 text-gray-800">{fields.changeFromUsual}</div>
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-gray-500">Last response</div>
+          <div className="text-gray-900">{formatDate(fields.lastResponseAt)}</div>
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-gray-500">Assigned</div>
+          <div className="text-gray-900">{fields.assignedTo ?? "Unassigned"}</div>
+        </div>
+      </div>
+      {item.relatedPatterns.length > 0 && (
+        <div className="mt-3 text-xs text-gray-600">
+          <span className="font-semibold text-gray-500">Supporting patterns:</span>{" "}
+          {item.relatedPatterns.map((pattern) => labelPattern(pattern.type)).join(", ")}
+        </div>
+      )}
       {detailsOpen && (
         <div ref={timelineRef} tabIndex={-1} className="scroll-mt-4 outline-none">
           <CaseDetails item={item} data={data} briefing={briefing} />

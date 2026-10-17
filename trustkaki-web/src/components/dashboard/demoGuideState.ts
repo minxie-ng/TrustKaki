@@ -13,7 +13,7 @@ export type DemoPhase =
   | "complete"
   | "exited";
 
-type DemoAppView = "workspace" | "activity";
+type DemoAppView = "workspace" | "activity" | "demo";
 
 export function demoGuideComposition(args: {
   activeView: DemoAppView;

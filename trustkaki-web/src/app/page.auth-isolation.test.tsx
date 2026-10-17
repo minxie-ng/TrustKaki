@@ -13,12 +13,13 @@ vi.mock("@/lib/supabase/browser", () => ({ createTrustKakiBrowserClient: () => (
   signOut: auth.signOut,
 } }) }));
 vi.mock("@/lib/supabase/dashboardRealtime", () => ({ subscribeToDashboardChanges: () => null }));
-vi.mock("@/components/AppShell", () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
+vi.mock("@/components/AppShell", () => ({ default: ({ children, onViewChange, isDemoAdmin }: { children: React.ReactNode; onViewChange: (view: string) => void; isDemoAdmin: boolean }) => createElement("div", null, isDemoAdmin && createElement("button", { onClick: () => onViewChange("demo") }, "Judge workspace"), children) }));
 vi.mock("@/components/Dashboard", () => ({ default: (props: { data: { senior: { name: string } }; contactPlan: unknown; seniorContext: unknown }) => { views.dashboard = props as unknown as typeof views.dashboard; const { data, contactPlan, seniorContext } = props; return createElement("div", { "data-senior": data.senior.name }, data.senior.name, JSON.stringify({ contactPlan, seniorContext })); } }));
 vi.mock("@/components/dashboard/DemoGuide", () => ({ DemoGuide: (props: { children: React.ReactNode }) => { views.guide = props as unknown as typeof views.guide; return props.children; } }));
 vi.mock("@/components/SignInForm", () => ({ default: () => createElement("div", null, "Sign in") }));
 vi.mock("@/components/ChatSimulation", () => ({ default: () => null }));
 vi.mock("@/components/AgentTracePanel", () => ({ default: () => null }));
+vi.mock("@/components/JudgeWorkspace", () => ({ default: ({ traces }: { traces: { agentName: string }[] }) => createElement("div", { "data-judge-traces": true }, traces.map(trace => trace.agentName).join(", ")) }));
 import Home from "./page";
 
 let dom: JSDOM, root: Root, container: HTMLDivElement;
@@ -106,4 +107,31 @@ it("ignores callbacks retained by children of a previous account", async () => {
   expect(auth.signOut).not.toHaveBeenCalled();
   expect(container.querySelector("[data-senior]")?.getAttribute("data-senior")).toBe("caregiver");
   expect(container.textContent).not.toContain("admin");
+});
+
+it("clears judge evidence on senior switch and recovers a failed load", async () => {
+  let finish!: (response: Response) => void;
+  let secondCalls = 0;
+  const state = (selected: string) => Response.json({ data: { senior: { name: selected, riskLevel: "green" }, selectedSeniorId: selected, activeSessions: [], seniors: [{ id: "one", name: "One" }, { id: "two", name: "Two" }], followUpQueue: [] }, traces: [{ agentName: `${selected} evidence` }], briefing: null });
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    if (url.startsWith("/api/dashboard/state")) {
+      if (url.includes("seniorId=two")) {
+        secondCalls++;
+        if (secondCalls === 1) return new Promise<Response>(resolve => { finish = resolve; });
+        return state("two");
+      }
+      return state("one");
+    }
+    return Response.json({ contactPlan: null, context: null, schedule: null });
+  }));
+  await act(async () => root.render(createElement(Home))); await flush();
+  await act(async () => Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Judge workspace")!.click());
+  expect(container.querySelector("[data-judge-traces]")?.textContent).toBe("one evidence");
+  await act(async () => { const select = container.querySelector("select")!; select.value = "two"; select.dispatchEvent(new Event("change", { bubbles: true })); });
+  expect(container.querySelector("[data-judge-traces]")?.textContent).toBe("");
+  await act(async () => finish(new Response(null, { status: 500 })));
+  expect(container.querySelector("select")!.disabled).toBe(false);
+  expect(container.textContent).toContain("Retry loading senior");
+  await act(async () => Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Retry loading senior")!.click()); await flush();
+  expect(container.querySelector("[data-judge-traces]")?.textContent).toBe("two evidence");
 });

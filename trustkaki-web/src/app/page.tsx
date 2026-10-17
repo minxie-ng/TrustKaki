@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import AppShell, { type AppView } from "@/components/AppShell";
-import ChatSimulation from "@/components/ChatSimulation";
+import JudgeWorkspace from "@/components/JudgeWorkspace";
 import Dashboard from "@/components/Dashboard";
 import { CareActivity } from "@/components/dashboard/CareActivity";
 import { DemoGuide } from "@/components/dashboard/DemoGuide";
@@ -11,7 +11,6 @@ import {
   demoGuideComposition,
   type DemoPhase,
 } from "@/components/dashboard/demoGuideState";
-import AgentTracePanel from "@/components/AgentTracePanel";
 import OperationalState from "@/components/OperationalState";
 import SignInForm from "@/components/SignInForm";
 import PublicDemoWorkspace from "@/components/PublicDemoWorkspace";
@@ -61,7 +60,6 @@ export default function Home() {
   const [demoPhase, setDemoPhase] = useState<DemoPhase>("orientation");
   const [demoError, setDemoError] = useState<string | null>(null);
   const [demoTimelineRequest, setDemoTimelineRequest] = useState(0);
-  const [reasoningVisible, setReasoningVisible] = useState(false);
   const [liveDashboardData, setLiveDashboardData] =
     useState<DashboardData | null>(null);
   const [liveTraces, setLiveTraces] = useState<AgentTrace[]>([]);
@@ -89,14 +87,14 @@ export default function Home() {
   const role = publicUserRole(user);
   const isDemoAdmin = canShowDemoControls({ role });
   const guideActive = Boolean(
-    isDemoAdmin && demoMode && demoPhase !== "exited"
+    isDemoAdmin && activeView !== "demo" && demoMode && demoPhase !== "exited"
   );
   const guideComposition = demoGuideComposition({
     activeView,
     enabled: guideActive,
     phase: demoPhase,
   });
-  const surface = appShellSurface({ isDemoAdmin, demoMode, guideActive });
+  const surface = appShellSurface({ isDemoAdmin, demoMode: activeView === "demo", guideActive });
   const latestSession = liveDashboardData?.activeSessions[0];
   const chatMessages = latestSession?.messages ?? [];
   const selectedSeniorId = liveDashboardData?.selectedSeniorId ?? null;
@@ -144,7 +142,6 @@ export default function Home() {
       setDemoError(null);
       setActiveView("workspace");
       setCareSetupOpen(false);
-      setReasoningVisible(false);
       sessionTokenRef.current = nextToken;
     }
     setSession(nextSession);
@@ -197,6 +194,7 @@ export default function Home() {
       console.error("Failed to hydrate dashboard state:", error);
       if (requestId === dashboardRequestSeq.current) {
         setDashboardError("TrustKaki could not load the caregiver dashboard. Please retry.");
+        setLoadingSeniorId(null);
       }
       throw error;
     }
@@ -485,6 +483,7 @@ export default function Home() {
       onViewChange={(view) => {
         setCareSetupOpen(false);
         setActiveView(view);
+        if (view === "demo") setDemoMode(false);
       }}
       onOpenSetup={() => {
         setActiveView("workspace");
@@ -499,36 +498,31 @@ export default function Home() {
         setDemoError(null);
         setActiveView("workspace");
         setCareSetupOpen(false);
-        if (!enabled) setReasoningVisible(false);
       }}
     >
-      <div className="flex h-full overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden">
         {surface.showChatSimulator && (
-          <div className="hidden flex-1 flex-col border-r border-[var(--care-line)] md:flex md:max-w-md">
-            <div className="min-h-0 flex-1">
-              <ChatSimulation
-                key={chatState.instanceKey}
-                messages={chatMessages}
-                seniorId={chatState.submissionSeniorId}
-                isSeniorLoading={!chatState.canSubmit && Boolean(selectedSeniorId)}
-                onComplete={requestDashboardRefresh}
-                authToken={authToken}
-                onUnauthorized={handleUnauthorized}
-              />
+          <section aria-label="Judge workspace" className="flex min-h-0 flex-1 flex-col bg-white">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--care-line)] px-5 py-4">
+              <div><h1 className="font-display text-2xl font-semibold">See how TrustKaki decides</h1><p className="mt-1 text-sm text-gray-600">Fictional messages · live model calls · actual recorded decisions</p></div>
+              <label className="text-sm font-semibold">Fictional senior
+                <select value={selectedSeniorId ?? ""} disabled={!liveDashboardData} onChange={(event) => selectSenior(event.target.value)} className="ml-3 min-h-11 max-w-full border border-[var(--care-line)] bg-white px-3 text-sm font-normal">
+                  {(liveDashboardData?.seniors ?? []).map((senior) => <option key={senior.id} value={senior.id}>{senior.name}</option>)}
+                </select>
+              </label>
             </div>
-            {surface.showReasoningRail && (
-              <div className="max-h-[45%] shrink-0">
-                <AgentTracePanel
-                  traces={liveTraces}
-                  visible={reasoningVisible}
-                  onToggle={() => setReasoningVisible((current) => !current)}
-                />
-              </div>
-            )}
-          </div>
+            {dashboardError && <div role="alert" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-[var(--care-line)] px-5 py-3 text-sm"><p>{dashboardError}</p><button type="button" onClick={() => requestDashboardRefresh(selectedSeniorId)} className="min-h-11 font-semibold text-[var(--care-brand)] hover:underline">Retry loading senior</button></div>}
+            <JudgeWorkspace key={chatState.instanceKey}
+              messages={chatMessages} traces={loadedSeniorId === selectedSeniorId ? liveTraces : []}
+              seniorId={chatState.submissionSeniorId}
+              isSeniorLoading={!chatState.canSubmit && Boolean(selectedSeniorId)}
+              onComplete={requestDashboardRefresh} authToken={authToken}
+              onUnauthorized={handleUnauthorized}
+            />
+          </section>
         )}
 
-        <div className="relative min-w-0 flex-1">
+        <div className={surface.showChatSimulator ? "hidden" : "relative min-h-0 min-w-0 flex-1"}>
           {liveDashboardData ? (
             <OperationalState
               kind={dashboardError ? "refresh-error" : "ready"}
@@ -537,7 +531,7 @@ export default function Home() {
               onAction={dashboardError ? requestDashboardRefresh : undefined}
             >
               <DemoGuide
-                enabled={Boolean(isDemoAdmin && demoMode)}
+                enabled={Boolean(isDemoAdmin && demoMode && activeView !== "demo")}
                 variant="live"
                 phase={demoPhase}
                 error={demoError}
