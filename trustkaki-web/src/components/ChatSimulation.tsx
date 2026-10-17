@@ -59,11 +59,13 @@ export default function ChatSimulation({ messages, seniorId, isSeniorLoading = f
         <h2 className="text-base font-semibold">Try a fictional conversation</h2>
         <p className="mt-1 text-sm text-gray-600">Send as the selected senior. This runs the live system and saves the result.</p>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5" role="log" aria-label="Demo messages" aria-live="polite" aria-busy={busy}>
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--care-surface-muted)] px-4 py-5 sm:px-5" role="log" aria-label="Demo messages" aria-live="polite" aria-busy={busy}>
         {conversation.length === 0 && <p className="py-6 text-base leading-7 text-gray-600">Try a preference, a suspicious message, or an invitation. Compare the selected specialists with the final reply.</p>}
-        {conversation.map((message) => <article key={message.id} className="border-b border-[var(--care-line)] py-5">
+        {conversation.map((message) => <article key={message.id} className={`mb-5 flex ${message.sender === "senior" ? "justify-end" : "justify-start"}`}>
+          <div className={`min-w-0 max-w-[90%] rounded-2xl border border-[var(--care-line)] px-4 py-3 sm:max-w-[85%] ${message.sender === "senior" ? "rounded-br-md bg-[var(--care-sage)]" : "rounded-bl-md bg-white"}`}>
           <h3 className="text-sm font-semibold text-[var(--care-brand)]">{message.sender === "senior" ? "Senior" : "TrustKaki"}</h3>
           <p className="mt-2 whitespace-pre-wrap break-words text-base leading-7">{message.text}</p>
+          </div>
         </article>)}
         {busy && <p role="status" className="py-4 text-sm text-gray-600">Reviewing context and preparing one reply…</p>}
         {error && <p role="alert" className="my-4 border-l-2 border-[var(--care-coral)] pl-3 text-sm leading-6">{error}</p>}

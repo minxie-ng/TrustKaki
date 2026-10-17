@@ -594,7 +594,7 @@ describe("orchestrate", () => {
     );
     expect(response.contextMemoryCandidates).toEqual([candidate]);
     expect(response.messages).toEqual([
-      { text: "Thank you for telling me.", agentId: "policy" },
+      { text: "Good to hear.", agentId: "triage" },
     ]);
   });
 
@@ -1177,7 +1177,7 @@ describe("capability-safe selected replies", () => {
       fallback: options.agentId === "context_memory" && failed }));
     const response = await orchestrate(message, context());
     expect(response.messages).toEqual([{ text: expect.any(String), agentId: "policy" }]);
-    expect(response.messages[0].text).not.toMatch(/remember|saved|记住|保存/);
+    expect(response.messages[0].text).toMatch(/can't confirm|无法确认/);
     expect(response.contextMemoryCandidates).toEqual([]);
   });
 
@@ -1206,7 +1206,7 @@ describe("capability-safe selected replies", () => {
       }) : options.agentId === "briefing" ? briefingData() : options.fallback()));
     const response = await orchestrate(message, context());
     expect(response.messages[0]).toEqual({ text: expect.stringMatching(/tell your caregiver how you're feeling/), agentId: "policy" });
-    expect(response.messages[0].text).not.toMatch(/saved|fine/);
+    expect(response.messages[0].text).not.toMatch(/Saved your|will be fine/);
     const brief = runAgentMock.mock.calls.find(call => call[0].agentId === "briefing")![0];
     expect(brief.userPrompt).toContain(response.messages[0].text);
   });
@@ -1303,4 +1303,18 @@ describe("mayContainDurableContext", () => {
       expect(mayContainDurableContext(message)).toBe(false);
     }
   );
+});
+
+
+describe("memory conversation honesty", () => {
+  it.each([
+    ["remember that I had surgery last year", "You mentioned having surgery last year."],
+    ["did you save that into my rag memory?", "I can't verify a long-term save from here."],
+  ])("preserves the direct answer to %s", async (message, draft) => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockImplementation(async options => result(options.agentId,
+      options.agentId === "triage" ? triageData({ routing: ["context_memory"], responseMessage: draft }) : options.fallback()));
+    const response = await orchestrate(message, context());
+    expect(response.messages[0].text).toBe(draft);
+  });
 });
