@@ -9,8 +9,9 @@ Updated: 17 October 2026
   active Jev routing and narrow memory fix are included. 1,273 tests pass;
   typecheck/lint/build pass; zero production dependency vulnerabilities. All 41
   migrations match. Protected read-only smoke passed, including Neon and Jev
-  readiness. Public domain unchanged. Signed-in demo dashboard passed. Ordinary-caregiver checks, remaining hosted
-  memory example and promotion pending.
+  readiness. Public domain unchanged. Signed-in demo dashboard and two ordinary-caregiver API/browser checks passed;
+  all temporary fixtures removed and tokens denied. Remaining hosted memory
+  example and promotion pending.
   [Candidate evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 
