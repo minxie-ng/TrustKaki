@@ -5,12 +5,16 @@ Updated: 17 October 2026
 ## Current checkpoint
 
 - **Released:** owner approved promotion of runtime commit
-  `6992b79f18a93c26689523fd205a44600e0aa246` on 17 October 2026 (Singapore).
+  `f07c4c86bcb888673816d61be24615f6fb9d1c12` on 17 October 2026 (Singapore).
   Vercel promotion completed successfully for
-  `dpl_FyG8szAcZgYYiqt7tXbCL2iFKp8Y`. Public app: https://trustkaki.vercel.app.
+  `dpl_8iFV5HXkHqrywXePJBzadnWmkvzV`. Public app: https://trustkaki.vercel.app.
 - **Included:** Neon personal memory with RAG retrieval, active Jev routing and
   specialist decisions, and the refreshed care dashboard/judge workspace.
-- **Completed evidence:** 1,275 local tests passed; typecheck, lint and build
+- **UI correction:** empty follow-up states now reuse the active case card’s
+  16px radius, full border and padding; activity button uses the standard
+  rounded secondary style. Required Vercel build passed (34 seconds), promotion
+  succeeded. No additional testing, as requested.
+- **Prior functionality evidence:** 1,275 local tests passed; typecheck, lint and build
   passed. Hosted Jev/refusal and accepted Neon preference check passed, with no
   Supabase personal-memory copy. Demo roster/case review and ordinary-caregiver
   API/RLS isolation passed. All temporary accounts/data removed, tokens denied.

@@ -1,6 +1,6 @@
 # Combined UI, Jev and memory candidate
 
-**Final release status:** runtime `6992b79` promoted successfully on 17 October
+**Final release status:** UI correction `f07c4c8` promoted successfully on 17 October
 2026 (Singapore); see the final promotion entry below. Earlier checkpoint notes
 record their status at execution time.
 
@@ -207,3 +207,20 @@ Public app: https://trustkaki.vercel.app. No additional model calls, fixtures,
 configuration changes, browser checks or post-promotion smoke tests were run.
 The earlier memory conflict's originating cause remains unconfirmed despite
 the passing approved retry. Release work is wrapped up.
+
+## Rounded follow-up card correction — released
+
+Owner reported square empty follow-up cards for two fictional seniors and
+approved deployment/promotion of commit
+`f07c4c86bcb888673816d61be24615f6fb9d1c12`. The empty branch of PriorityCase now
+reuses `care-case` (16px radius, full border and responsive padding), and its
+activity button uses `care-secondary-button` (8px radius). Two class changes;
+no care logic, storage or permissions changed.
+
+Deployed from an archive of the approved commit with existing Production
+settings and `--skip-domain`; Vercel’s required build passed in 34 seconds.
+Deployment `dpl_8iFV5HXkHqrywXePJBzadnWmkvzV` reached READY at
+https://trustkaki-uwi4dp057-minxie-ngs-projects.vercel.app.
+The explicitly approved promotion exited 0 and reported success in 3 seconds.
+Public app: https://trustkaki.vercel.app. No additional tests, browser inspection,
+provider requests, fixtures or post-promotion smoke checks were run, as requested.
