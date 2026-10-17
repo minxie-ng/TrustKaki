@@ -20,8 +20,12 @@ Updated: 17 October 2026
   succeeded; failure stage/cause remains unconfirmed. No retry or remaining case
   was sent. All temporary accounts/data were removed. US$0.319795 remains reserved.
   [Hosted inference procedure](operations/2026-10-17-hosted-jev-inference-check.md).
-  The new diagnostics add observation, not a claimed fix. Paid recovery and
-  production promotion remain pending separate approval.
+  The diagnostic retry isolated the failure to agent-run persistence. Fractional
+  Jev timings cannot decode into the integer duration column; a regression
+  reproduces it, and the shared upsert now rounds timings. Focused tests and
+  independent review pass; corrected hosted verification remains pending. All
+  diagnostic fixtures are removed. Both failed checkpoints retain US$0.319795
+  each. Production promotion remains pending separate approval.
   [Current candidate and earlier failures](evidence/2026-10-17-jev-active-hosted-candidate.md).
 
 - **Local shadow integration prepared:** independently disabled by default;
@@ -83,8 +87,9 @@ Updated: 17 October 2026
   **Next chunk:** candidate deployment and authenticated access checks passed
   on `b4174ff`, but the hosted inference attempt returned HTTP 500. The
   stage diagnostics `3759e42` have now passed deployment and read-only smoke.
-  Its signed-in demo dashboard passed; obtain a bounded live recovery checkpoint
-  to locate the failure. Do not promote an unverified flow.
+  Its signed-in demo dashboard passed; the diagnostic retry located the failing
+  agent-run upsert and exposed fractional timings against an integer column.
+  Verify the minimal rounding correction on a candidate, then move to UI.
   [Completed coverage and corrections](evidence/2026-10-16-jev-final-coverage.md).
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but

@@ -282,7 +282,8 @@ export async function upsertAgentRuns(
     output: run.output,
     output_json: run.outputJson as TableInsert<"agent_runs">["output_json"],
     tags: run.tags,
-    duration_ms: run.durationMs ?? null,
+    // performance.now() timings are fractional; PostgREST requires int4 JSON input.
+    duration_ms: run.durationMs == null ? null : Math.round(run.durationMs),
     model_used: run.modelUsed ?? null,
     fallback: run.fallback,
     input_summary: run.inputSummary ?? null,

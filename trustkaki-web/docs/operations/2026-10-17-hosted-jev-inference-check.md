@@ -217,3 +217,61 @@ SHA/deployment, UTC time, completed case count, active-router and social-decisio
 pass/fail counts, persistence/Neon/scoped-cleanup status, reserved budget, and
 whether any stop condition occurred. Do not mark hosted inference passed from
 this plan or from local tests. Keep production promotion pending separately.
+
+
+## Diagnostic recovery checkpoint — prepared 17 October 2026
+
+Target diagnostic commit `3759e4228f1cc040764f10254db68fe6baf585b0`, deployment
+`dpl_Hadm5cHvGzZVMBKCsyNtebuCotK5`, URL
+https://trustkaki-930uh8xu4-minxie-ngs-projects.vercel.app. Build, public smoke
+and signed-in demo inspection passed. The first failure is not yet fixed.
+
+Proposed recovery reuses the three cases, acceptance criteria, eight-row/one-Auth
+setup and guarded cleanup above, with a new isolated manifest and ledger. It
+allows one explicit retry of the earlier ambiguous case, then the two remaining
+cases only if each preceding case passes. The new checkpoint has a separate
+US$1 cap (maximum reservation US$0.959385); the earlier failed US$0.319795
+reservation is preserved unchanged, never refunded or reset. No automatic HTTP
+retries, existing-record edits, transport messages or promotion. Stop after any
+failure and complete scoped cleanup.
+
+Read-only preflight rechecks this exact deployment, required configuration and
+linked services. Capture only this candidate's narrow request-time runtime logs
+in a restricted temporary file; report only the fixed stage/kind/operation
+labels, status and counts. Remove that capture after extracting diagnostics.
+The route's diagnostic labels distinguish context, orchestration and persistence
+failures without emitting message content or raw provider errors.
+
+Recovery runner is outside the repository; exact target/source substitutions,
+preserved prior-checkpoint metadata and failed HTTP status recording are its
+only changes. Offline budget, no-resend, fallback/recipe, ownership rollback,
+unrelated-row preservation, append-only-trigger restoration and idempotent
+cleanup checks pass. Execution requires the owner's renewed paid/fixture
+approval because the previous protocol explicitly prohibited retries.
+
+
+## Corrected-candidate checkpoint — proposed after timing fix
+
+Diagnostic recovery stopped at the first HTTP 500 and fully cleaned up. Its
+US$0.319795 reservation remains charged to that checkpoint's US$1 cap. The
+reviewed correction rounds duration_ms in the shared trace upsert; its targeted
+PostgreSQL regression passed after failing before the fix. Full validation:
+1,259 passed, 38 skipped, typecheck/lint/build passed.
+
+Propose one combined approval for exact corrected-source metadata inspection,
+Production-settings deployment with --skip-domain, public smoke, and two fresh
+fictional flows: ambiguous content and refusal/durable preference. These cover
+normal active Jev routing and both Jev social routing and Neon persistence.
+Use the same one-account/three-senior/eight-row setup and guarded cleanup; the
+third senior receives no chat. Recipe behavior retains local test coverage and
+is not claimed as hosted-tested in this reduced deadline checkpoint.
+
+Carry the diagnostic failed reservation into the continued ledger. Reserve
+US$0.319795 before each of at most two additional POSTs: cumulative maximum
+US$0.959385 within the same approved US$1 cap, with no refund of the failed call.
+The earlier b4174ff checkpoint remains separate and unchanged. Use a fresh
+manifest after validating prior cleanup; retain all prior ledgers. No automatic
+HTTP retry. Stop on any error, inspect only scoped fixed-label diagnostics, and
+finish cleanup. No existing-record edits, real transport message or promotion.
+Do not request another manual demo sign-in for this persistence-only correction;
+reserve final authenticated release checks for the final UI build.

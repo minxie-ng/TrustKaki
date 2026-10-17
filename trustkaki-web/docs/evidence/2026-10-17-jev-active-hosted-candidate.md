@@ -425,3 +425,40 @@ error appeared. Returned the view to Queue. No chat request or record edit was
 performed. This demo-admin inspection does not establish ordinary-caregiver
 isolation on this build. Paid recovery and promotion remain separately unapproved.
 The failed attempt's US$0.319795 reservation remains retained.
+
+
+### Diagnostic recovery on 3759e42 — failure isolated; cleanup passed
+
+Owner approved the three-case recovery, separate US$1 cap, temporary fixtures,
+narrow diagnostic inspection and scoped cleanup. Exact candidate/source/team and
+priced configuration checks passed. One ordinary account/eight public setup rows
+were created and its roster contained only its three fictional seniors.
+
+The single explicitly approved ambiguous-case retry returned HTTP 500. No other
+case or automatic retry was sent. The new production diagnostic identified:
+
+```text
+stage: persistence
+kind: error
+operation: upsert agent runs
+```
+
+The failure is consistent with a concrete source/schema mismatch: Jev routing and
+social timings use fractional `performance.now()` differences, while
+`agent_runs.duration_ms` is PostgreSQL integer. A read-only typed JSON conversion
+on the linked database rejects `12.5` with SQLSTATE 22P02. The new regression also
+failed before the fix with that exact integer-input rejection. The shared trace
+upsert now rounds non-null timings to integer milliseconds; no schema or auth
+change. This addresses the reproduced defect, but hosted success is still pending.
+
+Focused verification: four test files, 48 tests passed, including PostgreSQL JSON
+conversion of the actual upsert payload for fractional/submillisecond/integer/
+missing timings. Independent code review found no blockers. Full `npm run validate` passed:
+1,259 tests passed, 38 skipped; typecheck, lint and production build passed. Initial sandbox full-test run hit localhost-listen
+EPERM in release-smoke tests; rerun outside the sandbox rather than change code.
+
+Cleanup passed: temporary sessions revoked, scoped Neon rows absent, guarded
+Supabase cleanup completed with audit trigger restored, Auth fixture absent and
+former token denied. Restricted response/credential/runtime-log files removed.
+No fixtures remain. This recovery retains US$0.319795; the earlier checkpoint's
+US$0.319795 remains independently retained. Production remains unchanged.
