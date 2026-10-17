@@ -49,6 +49,8 @@ Follow [Neon memory setup](docs/NEON_MEMORY_SETUP.md) for database roles, migrat
 - `src/lib/agents/`: prompts, typed contracts, schemas, runners, Jev routing and final policy.
 - `src/lib/memory/`: canonical store, validation, embeddings, indexing and retrieval guards.
 - `src/lib/persistence/`: operational persistence and application repository adapters.
+- `src/lib/telegram/`, `src/lib/whatsapp/`: inbound events, automatic replies and channel delivery handling.
+- `src/lib/checkins/`, `src/lib/patterns/`: configured Telegram outreach and multi-day signal rules.
 - `src/app/api/`: authenticated application routes, channel webhooks and protected workers.
 - `scripts/`: migration, evaluation and release tooling; read each procedure before running live commands.
 

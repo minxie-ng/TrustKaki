@@ -63,7 +63,7 @@ See the [judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) for outdoor-advice exam
 
 ## How the system works
 
-![TrustKaki architecture: messages, Triage, Jev, conditional specialists, personal memory, policy and human care](trustkaki-web/docs/media/architecture.svg)
+![TrustKaki care loop: messaging, Telegram check-ins, AI interpretation, saved signals, multi-day patterns and staff follow-up](trustkaki-web/docs/media/architecture.svg)
 
 | Component | Responsibility |
 | --- | --- |

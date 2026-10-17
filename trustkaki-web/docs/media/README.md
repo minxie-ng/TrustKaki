@@ -2,7 +2,7 @@
 
 Two complementary views keep the README readable without hiding implementation details:
 
-- `architecture.html` / `architecture.svg`: authenticated message-to-care workflow, with specialist detail in [the architecture guide](../ARCHITECTURE_GUIDE.md).
+- `architecture.html` / `architecture.svg`: eight grouped components covering messaging, configured Telegram check-ins, AI interpretation/policy, multi-day Pattern Watch, staff follow-up, memory, operational storage and outdoor data. Dashed paths mark configured/conditional inputs; channel and scheduler limitations are stated in the figure. Specialist detail remains in [the architecture guide](../ARCHITECTURE_GUIDE.md).
 - `memory-lifecycle.html` / `memory-lifecycle.svg`: validated memory writes, scoped retrieval and source revalidation.
 
 HTML files are editable, self-contained diagram sources with inline SVG. SVG exports are embedded in the README; open them separately for presentation. Both use a 1280 × 720 canvas and accessible titles/descriptions.

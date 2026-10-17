@@ -1,10 +1,10 @@
 # TrustKaki system architecture
 
-TrustKaki combines language models, scoped personal memory, public-data tools and a staff workflow. The overview describes the message-to-care path; the memory diagram expands the evidence and retrieval lifecycle. Editable HTML and standalone SVG versions are available in [media](media/).
+TrustKaki combines messaging, configured Telegram check-ins, language models, multi-day pattern rules, scoped personal memory and a staff workflow. The overview shows how conversations become observations and human follow-up; the memory diagram expands the evidence and retrieval lifecycle. Editable HTML and standalone SVG versions are available in [media](media/).
 
 ## 1. Message to human follow-up
 
-![Authenticated care workflow](media/architecture.svg)
+![Messaging, configured check-ins, AI interpretation, saved signals, multi-day patterns and human follow-up](media/architecture.svg)
 
 TrustKaki turns an everyday message into a traceable care workflow. Triage interprets the message, Jev requests relevant specialists, and code enforces the final safety policy. Staff see who needs attention, why, and the recommended human action.
 
@@ -24,7 +24,7 @@ TrustKaki turns an everyday message into a traceable care workflow. Triage inter
 | Policy and persistence | Applies final rules; records operational results and accepted memory writes. | Care records go to Supabase; personal memory goes to Neon. |
 | Human workflow | Prioritise, follow up, record an outcome, resolve and retain history. | Staff remain accountable for actual care decisions. |
 
-The overview compresses specialist execution into one node. It shows information dependencies, not exact parallel scheduling or every network request. Authentication precedes access to both stores. The selected reply returns to the senior; the care team receives operational results rather than needing to read every model trace.
+The overview groups Triage, Jev, conditional specialist reviews and code policy in one interpretation/control node. Saved operational signals feed Pattern Watch; a direct route also reaches staff for concerns that do not require a multi-day pattern. The return arrow represents the selected channel reply, while staff actions return to operational history. The diagram shows information dependencies rather than every request or exact scheduling. Authentication precedes access to both stores.
 
 Source: [`orchestrator.ts`](../src/lib/agents/orchestrator.ts), [`prompts.ts`](../src/lib/agents/prompts.ts), [`policy.ts`](../src/lib/agents/policy.ts), [`specialistRouting.ts`](../src/lib/agents/specialistRouting.ts).
 

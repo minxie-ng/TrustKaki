@@ -17,6 +17,8 @@ TrustKaki uses models for language interpretation and bounded specialist decisio
 | AAC Nudge and social intent | Support respectful community engagement, including refusal | Cannot invent event availability or enrol/contact anyone |
 | Briefing | Present relevant information for caregiver review | Staff decide and record the human action |
 | Outdoor conditions tool | Retrieve government weather and air-quality data | An API tool, not an additional LLM agent; freshness and geography limit advice |
+| Pattern Watch | Combine persisted care signals across days and retain supporting evidence | Deterministic rules over model-extracted signals; not clinical prediction |
+| Telegram check-in worker | Process configured check-ins, one reminder and response deadlines | Requires a recurring authorised invocation; not another LLM agent |
 | Policy layer | Apply final deterministic safety rules | Model output and retrieved memory cannot override it |
 
 ## Routing versus authority

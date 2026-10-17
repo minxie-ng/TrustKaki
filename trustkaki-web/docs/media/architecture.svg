@@ -1,11 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="architecture-title architecture-desc" id="architecture-root"><title id="architecture-title">From a senior message to a human next step</title><desc id="architecture-desc">A senior message and retrieved personal context reach Triage; Jev routes specialists, public tools add facts, and policy governs the selected reply and care-team workflow.</desc><defs>
-      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
-      #architecture-root { color: #1d342b; font-family: 'DM Sans',sans-serif; }
-      #architecture-root .diagram-container { width:100%;overflow-x:auto;max-width:100%;min-width:0 }
-      #architecture-root .name { font:600 19px 'Manrope',sans-serif;fill:#1d342b }
-      #architecture-root .sub { font:400 14px 'DM Sans',sans-serif;fill:#587065 }
-      #architecture-root .tag { font:600 11px 'DM Sans',sans-serif;letter-spacing:1px;fill:#164f3e }
-      #architecture-root .title { font:700 32px 'Manrope',sans-serif;fill:#164f3e }
-      #architecture-root .lead { font:400 17px 'DM Sans',sans-serif;fill:#587065 }
-      #architecture-root .diagram-container { overflow-x:visible }</style><marker id="architecture-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#587065"/></marker></defs><rect width="1280" height="720" fill="#f2f6f3"/><text x="40" y="48" class="title">From a senior message to a human next step</text><text x="40" y="80" class="lead">Authenticated care workflow · selected specialists run only when relevant</text><path d="M 220 340 H 280" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><path d="M 480 340 H 540" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><path d="M 760 340 H 820" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><path d="M 1000 340 H 1060" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><path d="M 380 228 V 240 Q 380 248 388 248 H 604 Q 612 248 612 256 V 280" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><path d="M 650 228 V 280" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><path d="M 380 480 V 408" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><path d="M 908 408 V 480" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/><g><rect x="40" y="280" width="180" height="128" rx="8" fill="#ffffff" stroke="#d9e4dc"/><text x="56" y="304" class="tag">INPUT</text><text x="56" y="336" class="name">Senior message</text><text x="56" y="360" class="sub">Current message</text><text x="56" y="380" class="sub">+ recent chat</text></g><g><rect x="280" y="280" width="200" height="128" rx="8" fill="#ffffff" stroke="#d9e4dc"/><text x="296" y="304" class="tag">MODEL</text><text x="296" y="336" class="name">Triage</text><text x="296" y="360" class="sub">Interpret meaning</text><text x="296" y="380" class="sub">Draft a reply</text></g><g><rect x="280" y="120" width="200" height="108" rx="8" fill="#ffffff" stroke="#d9e4dc"/><text x="296" y="144" class="tag">MODEL</text><text x="296" y="176" class="name">Jev router</text><text x="296" y="200" class="sub">Specialist decisions</text></g><g><rect x="280" y="480" width="200" height="128" rx="8" fill="#e6f1e8" stroke="#164f3e"/><text x="296" y="504" class="tag">PERSONAL MEMORY</text><text x="296" y="536" class="name">Neon + pgvector</text><text x="296" y="560" class="sub">Scoped personal facts</text><text x="296" y="580" class="sub">Validated retrieval</text></g><g><rect x="540" y="120" width="220" height="108" rx="8" fill="#ffffff" stroke="#d9e4dc"/><text x="556" y="144" class="tag">PUBLIC DATA</text><text x="556" y="176" class="name">Outdoor conditions</text><text x="556" y="200" class="sub">data.gov.sg / NEA</text></g><g><rect x="540" y="280" width="220" height="128" rx="8" fill="#ffffff" stroke="#d9e4dc"/><text x="556" y="304" class="tag">CONDITIONAL</text><text x="556" y="336" class="name">Specialists / tools</text><text x="556" y="360" class="sub">Safety · context</text><text x="556" y="380" class="sub">Activities · conditions</text></g><g><rect x="820" y="280" width="180" height="128" rx="8" fill="#e6f1e8" stroke="#164f3e"/><text x="836" y="304" class="tag">CODE</text><text x="836" y="336" class="name">Policy + result</text><text x="836" y="360" class="sub">Final safety rules</text><text x="836" y="380" class="sub">Selected reply</text></g><g><rect x="1060" y="280" width="180" height="128" rx="8" fill="#ffffff" stroke="#d9e4dc"/><text x="1076" y="304" class="tag">HUMAN</text><text x="1076" y="336" class="name">Care team</text><text x="1076" y="360" class="sub">Priority · reason</text><text x="1076" y="380" class="sub">Next human action</text></g><g><rect x="820" y="480" width="180" height="128" rx="8" fill="#ffffff" stroke="#d9e4dc"/><text x="836" y="504" class="tag">OPERATIONS</text><text x="836" y="536" class="name">Supabase</text><text x="836" y="560" class="sub">Auth · care records</text><text x="836" y="580" class="sub">Actions · history</text></g><line x1="40" y1="656" x2="1240" y2="656" stroke="#d9e4dc"/><text x="40" y="688" class="sub">MODEL = probabilistic interpretation   ·   CODE = enforced rules   ·   HUMAN = care decisions remain with people</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="architecture-title architecture-desc" id="architecture-root">
+<title id="architecture-title">Daily check-ins to clear human follow-up</title>
+<desc id="architecture-desc">Telegram and WhatsApp conversations feed AI interpretation and policy, saved observations feed multi-day Pattern Watch, and staff review evidence and record follow-up; Telegram check-ins require a configured scheduler.</desc>
+<defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&amp;family=Manrope:wght@700&amp;display=swap');
+      #architecture-root { color: #1d342b; font-family: 'DM Sans', sans-serif; }
+      #architecture-root .diagram-container { width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; }
+      #architecture-root .title { font: 700 32px 'Manrope', sans-serif; fill: #164f3e; }
+      #architecture-root .lead { font: 400 17px 'DM Sans', sans-serif; fill: #587065; }
+      #architecture-root .name { font: 700 20px 'Manrope', sans-serif; fill: #1d342b; }
+      #architecture-root .sub { font: 400 14px 'DM Sans', sans-serif; fill: #587065; }
+      #architecture-root .tag { font: 700 11px 'DM Sans', sans-serif; letter-spacing: 1px; fill: #164f3e; }
+      #architecture-root .note { font: 400 14px 'DM Sans', sans-serif; fill: #587065; }
+      #architecture-root .diagram-container { overflow-x: visible; }</style><marker id="architecture-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#587065"/></marker></defs>
+<rect width="1280" height="720" fill="#f2f6f3"/>
+<text x="40" y="48" class="title">Daily check-ins to clear human follow-up</text>
+<text x="40" y="80" class="lead">Conversations become supported observations, patterns and accountable staff action.</text>
+<path d="M 152 220 V 268" fill="none" stroke="#587065" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#architecture-arrow)"/>
+<path d="M 264 312 H 328" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<path d="M 328 372 H 264" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<path d="M 576 292 H 600 Q 608 292 608 284 V 248 Q 608 240 616 240 H 1100 Q 1108 240 1108 248 V 268" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<path d="M 640 164 H 528 Q 520 164 520 172 V 268" fill="none" stroke="#587065" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#architecture-arrow)"/>
+<path d="M 388 488 V 408" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<path d="M 520 408 V 448 Q 520 456 528 456 H 608 Q 616 456 616 464 V 540 Q 616 548 624 548 H 640" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<path d="M 776 488 V 408" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<path d="M 912 340 H 976" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<path d="M 1108 408 V 540 Q 1108 548 1100 548 H 912" fill="none" stroke="#587065" stroke-width="2" marker-end="url(#architecture-arrow)"/>
+<g data-node-id="checkins">
+<rect x="40" y="108" width="224" height="112" rx="8" fill="#ffffff" stroke="#d9e4dc"/>
+<text x="56" y="132" class="tag">CONFIGURED WORKFLOW</text>
+<text x="56" y="164" class="name">Telegram check-ins</text>
+<text x="56" y="188" class="sub">Scheduler + verified identity</text>
+<text x="56" y="208" class="sub">Check-in → reminder → case</text>
+</g>
+<g data-node-id="conditions">
+<rect x="640" y="108" width="272" height="112" rx="8" fill="#ffffff" stroke="#d9e4dc"/>
+<text x="656" y="132" class="tag">CONDITIONAL API TOOL</text>
+<text x="656" y="164" class="name">Outdoor conditions</text>
+<text x="656" y="188" class="sub">Weather + regional air quality</text>
+<text x="656" y="208" class="sub">data.gov.sg / NEA</text>
+</g>
+<g data-node-id="messaging">
+<rect x="40" y="268" width="224" height="140" rx="8" fill="#ffffff" stroke="#d9e4dc"/>
+<text x="56" y="292" class="tag">SENIOR ↔ TRUSTKAKI</text>
+<text x="56" y="324" class="name">Senior messaging</text>
+<text x="56" y="348" class="sub">Telegram / WhatsApp</text>
+<text x="56" y="368" class="sub">Receive updates · send replies</text>
+<text x="56" y="388" class="sub">Shared conversation pipeline</text>
+</g>
+<g data-node-id="interpretation">
+<rect x="328" y="268" width="248" height="140" rx="8" fill="#ffffff" stroke="#d9e4dc"/>
+<text x="344" y="292" class="tag">MODELS + CODE</text>
+<text x="344" y="324" class="name">Triage + Jev</text>
+<text x="344" y="348" class="sub">Interpret · route specialists</text>
+<text x="344" y="368" class="sub">Draft a contextual reply</text>
+<text x="344" y="388" class="sub">Code retains safety authority</text>
+</g>
+<g data-node-id="patterns">
+<rect x="640" y="268" width="272" height="140" rx="8" fill="#e6f1e8" stroke="#164f3e"/>
+<text x="656" y="292" class="tag">DETERMINISTIC RULES</text>
+<text x="656" y="324" class="name">Multi-day Pattern Watch</text>
+<text x="656" y="348" class="sub">Saved signals · 7-day window</text>
+<text x="656" y="368" class="sub">Mobility · appetite · withdrawal</text>
+<text x="656" y="388" class="sub">Contributing evidence retained</text>
+</g>
+<g data-node-id="staff">
+<rect x="976" y="268" width="264" height="140" rx="8" fill="#e6f1e8" stroke="#164f3e"/>
+<text x="992" y="292" class="tag">HUMAN DECISIONS</text>
+<text x="992" y="324" class="name">Care team follow-up</text>
+<text x="992" y="348" class="sub">Priority · reason · next action</text>
+<text x="992" y="368" class="sub">Review evidence · record action</text>
+<text x="992" y="388" class="sub">Resolve with history retained</text>
+</g>
+<g data-node-id="memory">
+<rect x="328" y="488" width="248" height="120" rx="8" fill="#ffffff" stroke="#d9e4dc"/>
+<text x="344" y="512" class="tag">PERSONAL MEMORY / RAG</text>
+<text x="344" y="544" class="name">Neon + pgvector</text>
+<text x="344" y="568" class="sub">Relevant facts + source checks</text>
+<text x="344" y="588" class="sub">Pinecone creates embeddings</text>
+</g>
+<g data-node-id="operations">
+<rect x="640" y="488" width="272" height="120" rx="8" fill="#ffffff" stroke="#d9e4dc"/>
+<text x="656" y="512" class="tag">OPERATIONAL RECORDS</text>
+<text x="656" y="544" class="name">Supabase</text>
+<text x="656" y="568" class="sub">Auth · messages · care signals</text>
+<text x="656" y="588" class="sub">Patterns · schedules · actions</text>
+</g>
+<line x1="40" y1="640" x2="1240" y2="640" stroke="#d9e4dc"/>
+<text x="40" y="664" class="note">Check-ins require an authorised recurring worker invocation. WhatsApp live delivery requires business verification.</text>
+<text x="40" y="688" class="note">Solid arrows = data / replies / actions · Dashed = configured or conditional inputs · Grouped overview; see guide for exact execution.</text>
+</svg>
