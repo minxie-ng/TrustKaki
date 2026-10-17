@@ -1,6 +1,13 @@
 # Outdoor conditions tool — local implementation
 
-Status: implemented locally, not deployed. Existing public release remains e6c1153.
+Status: released to https://trustkaki.vercel.app on 17 October 2026 with the owner's deployment and promotion approval.
+
+- Runtime commit: `88572778d28e7eb2d899ab26c6845d4d58a63d7f`.
+- Deployment: `dpl_z9yzarBvXz7jbRF8NZuycegCnfUk`, READY, production target.
+- Candidate: https://trustkaki-lfzi7s4s6-minxie-ngs-projects.vercel.app.
+- Required Vercel build: passed, `Build Completed in /vercel/output [41s]`.
+- Promotion: CLI confirmed success for that deployment in 3 seconds.
+- No additional tests, paid chats, fixtures or public smoke calls during release, as agreed. Hosted full-chat operation has not been demonstrated; promotion confirms deployment, not that additional behavioural check.
 
 ## Behaviour
 
@@ -34,4 +41,4 @@ Generating static pages (24/24)
 
 Independent code review found timing/forecast-coverage and refusal gaps. These were fixed with regression cases; the final refusal follow-up now shares the same refusal predicate before either routing branch. No Critical findings. The reviewer's unconfirmed concern about a national PSI metadata entry was resolved by the actual five-region public payload read during implementation.
 
-No broad suite, paid inference, live database writes, authenticated browser checks or hosted full-chat demonstration were performed. Local fixtures do not prove hosted chat operation. Deployment and promotion require the owner's exact release approval under HACKATHON_RELEASE_RUNBOOK.md.
+No broad suite, paid inference, live database writes, authenticated browser checks or hosted full-chat demonstration were performed. Local fixtures do not prove hosted chat operation. Owner explicitly approved this commit's deployment and promotion with only Vercel's required build; both are complete.

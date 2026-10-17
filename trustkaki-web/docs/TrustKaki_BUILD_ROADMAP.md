@@ -5,11 +5,12 @@ Updated: 17 October 2026
 ## Current checkpoint
 
 - **Released:** owner approved promotion of runtime commit
-  `e6c115340eed281dbc1e44c65e3dde4be00e19af` on 17 October 2026 (Singapore).
+  `88572778d28e7eb2d899ab26c6845d4d58a63d7f` on 17 October 2026 (Singapore).
   Vercel promotion completed successfully for
-  `dpl_EQmM3iLThLDFBdHkmLhuJCHmmLoT`. Public app: https://trustkaki.vercel.app.
+  `dpl_z9yzarBvXz7jbRF8NZuycegCnfUk`. Public app: https://trustkaki.vercel.app.
 - **Included:** Neon personal memory with RAG retrieval, active Jev routing and
-  specialist decisions, and the refreshed care dashboard/judge workspace.
+  specialist decisions, the refreshed care dashboard/judge workspace, and
+  chat-triggered government weather/air-quality advice.
 - **UI correction:** empty follow-up states now reuse the active case card’s
   16px radius, full border and padding; activity button uses the standard
   rounded secondary style. Required Vercel build passed (34 seconds), promotion
@@ -29,7 +30,7 @@ Updated: 17 October 2026
 - **Known limit:** the earlier memory conflict did not recur on the approved
   retry; its originating cause remains unconfirmed. Two attempts retain
   US$0.639590 reserved under the US$1 cap, not measured provider billing.
-- **New local feature (not deployed):** chat-triggered outdoor conditions tool
+- **Outdoor advisory released:** chat-triggered outdoor conditions tool
   uses data.gov.sg 2-hour/24-hour forecasts, regional PSI and 1-hour PM2.5.
   Replies and the judge decision trail include source, area, issue time and
   forecast validity. Home area is used only when explicitly requested; otherwise
@@ -40,9 +41,11 @@ Updated: 17 October 2026
   street-level exposure claim. English official area names and 12 Mandarin
   aliases supported; unparsed future departure times receive no timed forecast.
   37 focused offline checks, changed-file lint, typecheck and local build passed;
-  no hosted full-chat demonstration or production release yet. No broad suite.
+  no hosted full-chat demonstration. Required Vercel build passed in 41 seconds;
+  approved promotion succeeded in 3 seconds. No additional tests or smoke calls
+  during release. No broad suite.
   [Feature plan](superpowers/plans/2026-10-17-environment-advisory.md).
-- **Wrap-up:** previous release complete; outdoor advisory awaits release approval.
+- **Wrap-up:** approved outdoor advisory deployment and promotion complete.
   [Release evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 The entries below preserve earlier implementation checkpoints. References to
