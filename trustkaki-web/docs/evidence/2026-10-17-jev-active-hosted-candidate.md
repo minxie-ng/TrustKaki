@@ -292,3 +292,23 @@ inference on the corrected agent replies and actual active-router trace is still
 unverified; configuration GETs and historical replies do not prove it. A bounded
 hosted inference procedure and separate authorization are required before that
 checkpoint. Public promotion remains separately unapproved.
+
+### Hosted inference procedure prepared — execution pending
+
+[Three-case procedure](../operations/2026-10-17-hosted-jev-inference-check.md)
+now defines ambiguous-content clarification, social refusal with a durable
+preference, and useful recipe reply checks on the exact b4174ff candidate.
+Independent review found no Critical or Important gaps in its runtime bounds,
+acceptance criteria or scoped cleanup. No application endpoint or deployment
+change is needed.
+
+Offline reservation arithmetic passed: at most three flows reserve
+US$0.959385 against a proposed US$1 incremental-provider cap, including the
+application's bounded internal retries and five-attempt embedding index cap.
+This is a worst-case reservation, not measured usage or a live inference pass.
+
+No new linked-service inspection, fixture creation, model call, cleanup or
+promotion was performed while preparing the procedure. Separate approval for
+this live checkpoint remains pending. The operator must inspect/test concrete
+generated commands before executing the approved procedure; a new executable
+runner has not been claimed complete.

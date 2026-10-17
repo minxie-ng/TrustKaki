@@ -14,6 +14,8 @@ Updated: 17 October 2026
   hidden; both temporary accounts/eight rows removed and former tokens denied.
   1,254 local tests, typecheck/lint/build pass. Hosted Jev inference and production
   promotion remain pending.
+  [Three-case hosted inference procedure](operations/2026-10-17-hosted-jev-inference-check.md)
+  is prepared; its separate live checkpoint approval is pending.
   [Current candidate and earlier failures](evidence/2026-10-17-jev-active-hosted-candidate.md).
 
 - **Local shadow integration prepared:** independently disabled by default;
@@ -72,9 +74,9 @@ Updated: 17 October 2026
   independent review found no blockers.1,247 tests passed,38 skipped;
   typecheck/lint/build passed. Jev-only contextual social work was demonstrated;
   this sample does not show overall superiority or whole-flow savings.
-  **Next chunk:** inspect linked services with approval, stage a fresh candidate,
-  verify authenticated access and bounded hosted Jev inference, then request
-  promotion. Production remains unchanged.
+  **Next chunk:** candidate deployment and authenticated access checks passed
+  on `b4174ff`. Run the prepared bounded hosted Jev inference procedure after
+  separate approval, then request promotion. Production remains unchanged.
   [Completed coverage and corrections](evidence/2026-10-16-jev-final-coverage.md).
   The completed 36-message screen matched all six labels on 24/36 Jev
   cases versus 21/36 current Triage cases; Jev missed no labelled positives but
