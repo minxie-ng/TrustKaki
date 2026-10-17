@@ -203,8 +203,8 @@ export async function environmentAdvisory(message: string, homeAddress?: string 
           : "The latest short-term air reading for the wider area is in NEA's normal range. Check again if you head out later, as conditions can change.");
       } else missing.push(kind);
     }
-    if (future) parts.push(chinese ? "现在的空气读数不能预测您出门时的情况，出门前请再查一下。" : "Today's air readings don't tell us what it will be like when you leave, so check again before heading out.");
-    if (missing.some(value => /forecast/.test(value))) parts.push(chinese ? "我暂时查不到适合您出门时间的最新预报，请出门前再核对一下。" : "I couldn't get an up-to-date forecast for your departure time. Please check again before you go.");
+    if (future && !missing.some(value => /forecast/.test(value))) parts.push(chinese ? "现在的空气读数不能预测您出门时的情况，出门前请再查一下。" : "Today's air readings don't tell us what it will be like when you leave, so check again before heading out.");
+    if (missing.some(value => /forecast/.test(value))) parts.push(chinese ? "我暂时查不到适合您出门时间的最新预报，请出门前再核对一下。" : "I can't confirm the weather or air conditions for your departure time yet. Please check again before you go.");
     if (missing.some(value => /PSI|PM2.5/.test(value))) parts.push(chinese ? "部分空气读数暂时查不到或已过期，请出门前查看 NEA 的最新消息。" : "Some air readings are unavailable or out of date. Please check NEA's latest update before you go.");
   }
   const reply = parts.join(" ");

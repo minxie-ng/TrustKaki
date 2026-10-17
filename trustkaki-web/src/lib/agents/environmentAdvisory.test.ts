@@ -97,14 +97,14 @@ it("does not use immediate conditions for an unsupported future time", async () 
   const result = await environmentAdvisory("Walking in Bedok in three hours", null, now);
   expect(result.reply).not.toContain("forecast for Bedok is thundery showers");
   expect(result.reply).not.toContain("avoid all outdoor activities");
-  expect(result.reply).toContain("forecast for your departure time");
+  expect(result.reply).toContain("conditions for your departure time");
 });
 it("rejects tomorrow's outlook when it ends before the requested departure", async () => {
   mockApi();
   const { environmentAdvisory } = await import("./environmentAdvisory");
   const result = await environmentAdvisory("Walking in Bedok tomorrow at 8pm", null, now);
   expect(result.reply).not.toContain("cloudy");
-  expect(result.reply).toContain("forecast for your departure time");
+  expect(result.reply).toContain("conditions for your departure time");
 });
 it.each(["I don't want to walk in Bedok", "I don’t feel like walking in Bedok", "Stop suggesting outdoor activities", "我不想散步"])('respects refusal: %s', async message => {
   const { hasOutdoorPlan } = await import("./environmentAdvisory");

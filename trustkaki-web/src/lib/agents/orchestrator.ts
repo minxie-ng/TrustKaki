@@ -487,7 +487,7 @@ export async function orchestrate(
 
   // Triage owns semantic eligibility; preserve timing when answering an area clarification.
   const outdoorMessage = triageResult.data.outdoorContext === "check"
-    ? outdoorRequest(message, ctx.messages) ?? message : null;
+    ? triageResult.data.outdoorQuery ?? outdoorRequest(message, ctx.messages) ?? message : null;
   signals = triageResult.data.signals;
   const activeObservation = activeRouting ? await routingRun : null;
   const routes = selectSpecialistRouting(activeObservation?.judgment ?? null, {
@@ -590,9 +590,9 @@ export async function orchestrate(
   const environment = !urgentHealth && !safetyReply && !boundedReply &&
       policyResult.finalRisk !== "red" && outdoorMessage !== null
     ? await environmentAdvisory(outdoorMessage!, ctx.senior.address) : null;
-  const environmentReply = environment && (triageCare || routes.carePause)
+  const environmentReply = environment
     ? `${careClarification ?? triageResult.data.responseMessage}\n\n${environment.reply}`
-    : environment?.reply;
+    : undefined;
   if (environment) {
     if (triageCare || routes.carePause) environment.trace.tags.push("care_reply_preserved");
     traces.push(environment.trace);
