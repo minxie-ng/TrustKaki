@@ -84,15 +84,21 @@ Each service has a specific role in the care workflow:
 
 | Technology | Role in TrustKaki | Reason for the choice |
 | --- | --- | --- |
-| **OpenAI models** | Interpret messages, extract care signals and draft replies | Turn everyday language into structured information that staff can review. |
-| **Jev via OpenRouter** | Request relevant specialists through structured decisions | Give specialist routing a dedicated, inspectable role, while code retains final safety authority. |
-| **Neon Postgres + pgvector** | Store personal facts, evidence, versions and searchable vectors | Keep canonical memory and vector retrieval together; preserve personal context independently of the chat model. |
-| **Pinecone Inference** | Generate text embeddings for memory search | Support similarity search. Neon stores the vectors; the current path does not use Pinecone as its vector database. |
-| **Supabase** | Authenticate users and store operational messages, signals, schedules, cases and actions | Keep access control and the staff workflow together, separate from the personal-memory store. |
-| **data.gov.sg / NEA** | Supply weather and regional air-quality readings | Ground outdoor advice in timestamped external data instead of model guesses. |
-| **Vercel** | Host the Next.js application and rebuild releases from GitHub | Publish the dashboard and API routes through a repeatable deployment workflow. |
+| **[OpenAI models](https://platform.openai.com/docs/overview)** | Interpret messages, extract care signals and draft replies | Turn everyday language into structured information that staff can review. |
+| **[Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) via [OpenRouter](https://openrouter.ai/typesafe/jev)** | Request relevant specialists through structured decisions | Give specialist routing a dedicated, inspectable role, while code retains final safety authority. |
+| **[Neon Postgres + pgvector](https://neon.com/docs/extensions/pgvector)** | Store personal facts, evidence, versions and searchable vectors | Keep canonical memory and vector retrieval together; preserve personal context independently of the chat model. |
+| **[Pinecone Inference](https://docs.pinecone.io/guides/inference/generate-embeddings)** | Generate text embeddings for memory search | Support similarity search. Neon stores the vectors; the current path does not use Pinecone as its vector database. |
+| **[Supabase](https://supabase.com/docs/guides/auth)** | Authenticate users and store operational messages, signals, schedules, cases and actions | Keep access control and the staff workflow together, separate from the personal-memory store. |
+| **[data.gov.sg](https://data.gov.sg/) / [NEA](https://www.nea.gov.sg/our-services/pollution-control/air-pollution/air-quality)** | Supply weather and regional air-quality readings | Ground outdoor advice in timestamped external data instead of model guesses. |
+| **[Vercel](https://vercel.com/docs/git)** | Host the Next.js application and rebuild releases from GitHub | Publish the dashboard and API routes through a repeatable deployment workflow. |
 
-Telegram and WhatsApp connect this workflow to familiar messaging channels; their availability is described below. Pattern Watch and the final safety policy are deterministic code, not extra LLM agents. These choices describe the prototype's responsibilities, not measured cost or performance advantages.
+[Telegram](https://core.telegram.org/bots/api) and [WhatsApp](https://developers.facebook.com/docs/whatsapp/cloud-api/overview) connect this workflow to familiar messaging channels; their availability is described below. Pattern Watch and the final safety policy are deterministic code, not extra LLM agents. These choices describe the prototype's responsibilities, not measured cost or performance advantages.
+
+### Why experiment with Jev?
+
+TypeSafe introduced Jev on **15 September 2026** as a System One model designed for fast, structured decisions. TrustKaki uses that approach for specialist routing: the model selects bounded decisions that software can inspect, while conversational models handle interpretation and reply generation. [TypeSafe's introduction](https://typesafe.ai/blog/introducing-system-one-models-and-jev).
+
+In the **16 October routing screen**, 36 fictional messages produced a **p95 successful-call latency of 859 ms for Jev versus 3,494 ms for the GPT-4o-mini Triage adapter**. All-six-label matches were **24/36 versus 21/36**, with nine false-positive flags each. The adapters performed different work and used different contracts; these observations support exploring a dedicated decision model, not a claim that Jev is generally better or that adding it makes the whole conversation faster. Failed attempts and broader response-quality limits are retained in the [validation record](trustkaki-web/docs/VALIDATION.md) and [raw routing report](trustkaki-web/docs/evidence/2026-10-16-jev-routing-results.json). Structured output still requires validation and can be semantically wrong; code and staff retain safety authority.
 
 ### A Singapore moment behind the outdoor tool
 
