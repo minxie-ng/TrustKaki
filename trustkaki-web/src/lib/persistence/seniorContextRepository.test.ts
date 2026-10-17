@@ -226,6 +226,7 @@ describe("senior context repository", () => {
         name: "Mr Tan Ah Hock",
         age: 78,
         livingSituation: "Lives alone in Toa Payoh",
+        address: null,
         caregiver: "Rachel Tan",
         aacVolunteer: "Mei Ling",
       },

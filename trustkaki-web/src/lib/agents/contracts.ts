@@ -30,6 +30,7 @@ export interface AgentRunContext {
     name: string;
     age: number;
     livingSituation: string;
+    address?: string | null;
     caregiver: string;
     aacVolunteer: string;
   };

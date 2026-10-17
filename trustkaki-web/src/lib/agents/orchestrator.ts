@@ -46,6 +46,7 @@ import { contextMemoryFallback } from "./fallbacks";
 import { hasSocialActivityCue, jevIsEnabled, runJevSocialDecision } from "./socialDecision";
 import { runJevRoutingShadow, routingShadowTrace } from "./routingShadow";
 import { selectSpecialistRouting } from "./specialistRouting";
+import { environmentAdvisory, outdoorRequest } from "./environmentAdvisory";
 
 const contextMemoryTextExclusionPatterns = [
   /^(?:你好|您好|早安|早上好|晚上好|谢谢|谢谢你|好的|好|再见)$/u,
@@ -464,6 +465,7 @@ export async function orchestrate(
   let signals: TriageSignal[] = [];
   let briefing: BriefingOutput | null = null;
   let contextMemoryCandidates: ContextMemoryOutput["candidates"] = [];
+  const outdoorMessage = outdoorRequest(message, ctx.messages);
   const activeRouting = process.env.TRUSTKAKI_JEV_ROUTING_ENABLED === "true";
   const routingRun = runJevRoutingShadow(message, ctx);
 
@@ -487,7 +489,7 @@ export async function orchestrate(
     digitalSafety: triageResult.data.routing.includes("digital_safety") ||
       signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message),
     contextMemory: triageResult.data.routing.includes("context_memory") || mayContainDurableContext(message),
-    social: hasSocialActivityCue(message) || signals.some(signal => signal.type === "social") || triageResult.data.routing.includes("aac_nudge"),
+    social: outdoorMessage !== null || hasSocialActivityCue(message) || signals.some(signal => signal.type === "social") || triageResult.data.routing.includes("aac_nudge"),
   }, !shouldExcludeContextMemory(message));
 
   const runDigitalSafety: Promise<AgentRunResult<DigitalSafetyOutput> | null> =
@@ -579,7 +581,11 @@ export async function orchestrate(
       ? "在讨论活动之前，您现在需要什么帮助？"
       : "Before discussing activities, what help do you need right now?"
     : null;
-  const socialDecision = jevIsEnabled() && socialEligible && !routes.carePause
+  const environment = !urgentHealth && !safetyReply && !boundedReply && !triageCare &&
+      policyResult.finalRisk !== "red" && !routes.carePause && outdoorMessage !== null
+    ? await environmentAdvisory(outdoorMessage!, ctx.senior.address) : null;
+  if (environment) traces.push(environment.trace);
+  const socialDecision = !environment && jevIsEnabled() && socialEligible && !routes.carePause
       ? await runJevSocialDecision(message) : null;
   if (socialDecision) {
     socialDecision.tags.push("reply_selected");
@@ -598,6 +604,8 @@ export async function orchestrate(
         ? { text: boundedReply, agentId: "policy" }
         : careClarification
           ? { text: careClarification, agentId: "policy" }
+        : environment
+          ? { text: environment.reply, agentId: "aac_nudge" }
         : socialDecision
           ? { text: socialDecision.data.nudgeMessage, agentId: "aac_nudge" }
         : { text: triageResult.data.responseMessage, agentId: "triage" });
@@ -652,12 +660,12 @@ export async function orchestrate(
   if (routingObservation) traces.push(routingShadowTrace(routingObservation, triageResult, {
     requestedSpecialists: routes.requestedSpecialists, independentTriggers: routes.independentTriggers,
     executedSpecialists: [...(digitalSafetyResult ? ["digital_safety" as const] : []),
-      ...(contextMemoryResult ? ["context_memory" as const] : []), ...(socialDecision ? ["aac_nudge" as const] : [])],
+      ...(contextMemoryResult ? ["context_memory" as const] : []), ...(socialDecision || environment ? ["aac_nudge" as const] : [])],
     carePause: routes.carePause,
     blockedReasons: {
       ...(!routes.contextMemory && (routes.requestedSpecialists.includes("context_memory") || routes.independentTriggers.includes("context_memory"))
         ? { context_memory: "memory_exclusion" } : {}),
-      ...(routes.social && !socialDecision ? { aac_nudge: urgentHealth ? "urgent_priority" : safetyReply ? "safety_priority"
+      ...(routes.social && !socialDecision && !environment ? { aac_nudge: urgentHealth ? "urgent_priority" : safetyReply ? "safety_priority"
         : boundedReply ? "capability_priority" : policyResult.finalRisk === "red" ? "red_risk"
           : triageCare || routes.carePause ? "care_priority" : "social_disabled" } : {}),
     },

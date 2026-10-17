@@ -29,7 +29,20 @@ Updated: 17 October 2026
 - **Known limit:** the earlier memory conflict did not recur on the approved
   retry; its originating cause remains unconfirmed. Two attempts retain
   US$0.639590 reserved under the US$1 cap, not measured provider billing.
-- **Wrap-up:** release complete; no further changes scheduled.
+- **New local feature (not deployed):** chat-triggered outdoor conditions tool
+  uses data.gov.sg 2-hour/24-hour forecasts, regional PSI and 1-hour PM2.5.
+  Replies and the judge decision trail include source, area, issue time and
+  forecast validity. Home area is used only when explicitly requested; otherwise
+  an unknown/ambiguous area prompts clarification. Urgent, safety and care gates
+  retain priority. No new agent, paid provider, database, scheduler or key.
+  Current air readings are explicitly not forecasts for later/tomorrow. Regional
+  air coverage is approximated from the nearest published region label; no
+  street-level exposure claim. English official area names and 12 Mandarin
+  aliases supported; unparsed future departure times receive no timed forecast.
+  37 focused offline checks, changed-file lint, typecheck and local build passed;
+  no hosted full-chat demonstration or production release yet. No broad suite.
+  [Feature plan](superpowers/plans/2026-10-17-environment-advisory.md).
+- **Wrap-up:** previous release complete; outdoor advisory awaits release approval.
   [Release evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 The entries below preserve earlier implementation checkpoints. References to

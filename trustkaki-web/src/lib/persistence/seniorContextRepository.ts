@@ -253,6 +253,7 @@ async function loadContext(
       name: senior.display_name,
       age: senior.age ?? 0,
       livingSituation: senior.living_situation ?? "Not recorded",
+      address: senior.address_text ?? null,
       caregiver: displayNameFor("caregiver"),
       aacVolunteer: displayNameFor("aac_volunteer"),
     },
@@ -282,7 +283,7 @@ async function loadSeniorById(
 ): Promise<SeniorRow> {
   const { data, error } = await client
     .from("seniors")
-    .select("id, organisation_id, display_name, age, living_situation, risk_level")
+    .select("id, organisation_id, display_name, age, address_text, living_situation, risk_level")
     .eq("id", seniorId)
     .maybeSingle();
   throwIfQueryFailed(error);
@@ -316,7 +317,7 @@ export async function loadSeniorContextByVerifiedPhone(args: {
   const client = requireClient();
   const { data, error } = await client
     .from("seniors")
-    .select("id, organisation_id, display_name, age, living_situation, risk_level")
+    .select("id, organisation_id, display_name, age, address_text, living_situation, risk_level")
     .eq("phone_e164", phone)
     .maybeSingle();
   throwIfQueryFailed(error);

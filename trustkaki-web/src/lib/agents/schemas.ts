@@ -51,6 +51,7 @@ export const agentRunContextSchema = z.object({
     name: z.string().min(1).max(120),
     age: z.number(),
     livingSituation: z.string().min(1).max(500),
+    address: z.string().max(500).nullable().optional(),
     caregiver: z.string().min(1).max(120),
     aacVolunteer: z.string().min(1).max(120),
   }),

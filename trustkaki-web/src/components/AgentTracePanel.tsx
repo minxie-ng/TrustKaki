@@ -1,6 +1,7 @@
 "use client";
 
 import { recordedRouting, type JudgeRun } from "./judgeRunViewModel";
+import { z } from "zod";
 import type { AgentTrace } from "@/lib/types";
 import {
   formatAgentInputForCaregiver,
@@ -75,6 +76,7 @@ export default function AgentTracePanel({ traces, run, visible, onToggle }: Agen
 
               <div className="divide-y divide-[var(--care-hairline)]">
                 {recordedRouting(trace) && <RoutingDetails trace={trace} />}
+                <EnvironmentSources trace={trace} />
                 <div className="py-2">
                   <div className="font-semibold text-gray-600">What it reviewed</div>
                   <p className="mt-1 leading-relaxed text-gray-700">
@@ -139,4 +141,29 @@ function RoutingDetails({ trace }: { trace: AgentTrace }) {
   return <dl className="grid gap-3 py-4 text-sm">
     {[["Mode", routing.mode], ["Jev requested", routing.requested], ["Actually executed", routing.executed], ["Blocked by policy or exclusions", routing.blocked], ["Independent safety/context triggers", routing.overrides]].map(([label, value]) => <div key={label}><dt className="font-semibold text-gray-600">{label}</dt><dd className="mt-1">{value}</dd></div>)}
   </dl>;
+}
+
+
+const environmentEvidenceSchema = z.object({ evidence: z.array(z.object({
+  source: z.string().regex(/^https:\/\/api-open\.data\.gov\.sg\/v2\/real-time\/api\/(?:two-hr-forecast|twenty-four-hr-forecast|psi|pm25)$/),
+  area: z.string(), issuedAt: z.string(), validFrom: z.string().optional(), validUntil: z.string().optional(), value: z.string(),
+})).max(4) });
+function EnvironmentSources({ trace }: { trace: AgentTrace }) {
+  if (trace.agentName !== "Outdoor Conditions Tool") return null;
+  let evidence: z.infer<typeof environmentEvidenceSchema>["evidence"] = [];
+  try {
+    const parsed = environmentEvidenceSchema.safeParse(JSON.parse(trace.output));
+    if (parsed.success) evidence = parsed.data.evidence;
+  } catch { return null; }
+  if (!evidence.length) return null;
+  const time = (value: string) => new Date(value).toLocaleString("en-SG", { timeZone: "Asia/Singapore" }) + " SGT";
+  return <details className="py-3">
+    <summary className="cursor-pointer font-semibold text-[var(--care-brand)]">Government sources and coverage</summary>
+    <ul className="mt-3 space-y-3">{evidence.map(item => <li key={item.source} className="break-words border-l-2 border-[var(--care-line)] pl-3">
+      <a href={item.source} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{item.source.split("/").at(-1)?.replaceAll("-", " ")}</a>
+      <p className="mt-1">{item.area} · {item.value}</p>
+      <p className="mt-1 text-xs text-gray-600">Issued {time(item.issuedAt)}{item.validUntil ? ` · Valid ${item.validFrom ? time(item.validFrom) + " to " : "until "}${time(item.validUntil)}` : " · Observed air reading, not a forecast"}</p>
+    </li>)}</ul>
+    <a href="https://www.haze.gov.sg/" target="_blank" rel="noopener noreferrer" className="mt-3 inline-block underline underline-offset-4">NEA air-quality guidance</a>
+  </details>;
 }
