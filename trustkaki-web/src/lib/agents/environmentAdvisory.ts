@@ -52,14 +52,14 @@ async function get<T>(url: string, schema: z.ZodType<T>): Promise<T | null> {
 }
 
 function refusesOutdoor(message: string): boolean {
-  return /\b(?:(?:don['’]t|do not) (?:want to|feel like)|(?:stop|don['’]t|do not) (?:suggest(?:ing)?|recommend(?:ing)?|discuss(?:ing)?))\b.{0,40}\b(?:walk|walking|outdoor|outing|weather)|(?:不想|不愿|不願|别推荐|別推薦|不要推荐|不要推薦).{0,12}(?:散步|户外|戶外|活动|活動)/iu.test(message) ||
-    /\b(?:not going|won't go|will not go|don't want to go|do not want to go|staying (?:home|indoors)|stay indoors|cancel(?:l?ed|l?ing)? (?:my |the )?(?:walk|outing))\b|不(?:想|会|會|打算)?(?:出门|出門|外出|去散步)|待在家|留在家/iu.test(message);
+  return /\b(?:(?:don['’]t|do not) (?:want to|feel like)|(?:stop|don['’]t|do not) (?:suggest(?:ing)?|recommend(?:ing)?|discuss(?:ing)?))\b.{0,40}\b(?:walk|walking|fishing|outdoor|outing|weather)|(?:不想|不愿|不願|别推荐|別推薦|不要推荐|不要推薦).{0,12}(?:散步|钓鱼|釣魚|户外|戶外|活动|活動)/iu.test(message) ||
+    /\b(?:not going|won't go|will not go|don't want to go|do not want to go|staying (?:home|indoors)|stay indoors|cancel(?:l?ed|l?ing)? (?:my |the )?(?:walk|fishing trip|outing))\b|不(?:想|会|會|打算)?(?:出门|出門|外出|去散步)|待在家|留在家/iu.test(message);
 }
 
 export function hasOutdoorPlan(message: string): boolean {
   if (/^(?:the )?(?:(?:nice|lovely|good|hot|rainy) weather|weather is (?:nice|lovely|good|hot|rainy))(?: today)?(?:,? isn['’]t it)?[.!? ]*$/iu.test(message.trim())) return false;
   if (refusesOutdoor(message)) return false;
-  return /\b(?:weather|forecast|air quality|haze|psi|pm\s?2\.?5|going (?:out|outside|for a walk)|go (?:out|outside|for a walk)|head(?:ing)? (?:out|outside)|outdoor|walk(?:ing)?|jogg?ing|picnic|cycling)\b|空气质量|空氣質量|天气|天氣|雾霾|霧霾|出门|出門|外出|散步|户外|戶外/iu.test(message);
+  return /\b(?:weather|forecast|air quality|haze|psi|pm\s?2\.?5|going (?:out|outside|for a walk)|go (?:out|outside|for a walk)|head(?:ing)? (?:out|outside)|outdoor|walk(?:ing)?|jogg?ing|picnic|cycling|fishing)\b|空气质量|空氣質量|天气|天氣|雾霾|霧霾|出门|出門|外出|散步|钓鱼|釣魚|户外|戶外/iu.test(message);
 }
 function isFuturePlan(message: string): boolean {
   return /\b(?:tomorrow|next|later|tonight|this (?:morning|afternoon|evening)|on (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|at \d|in (?:\d+|an?|one|two|three|four|five|six|half)(?: a)? (?:minutes?|hours?|days?)|\d{1,2}(?::\d{2})?\s*(?:am|pm))\b|明天|后天|後天|下周|下週|今晚|早上|上午|下午|晚上|点|點|小时后|小時後|分钟后|分鐘後|\d{1,2}[:：]\d{2}|\d{4}-\d{2}-\d{2}/iu.test(message);

@@ -148,3 +148,14 @@ it("answers an explicit air-quality question even below the advisory threshold",
   expect(result.reply).not.toContain("µg");
   expect(result.reply).not.toMatch(/safe to|perfect|nothing to worry/);
 });
+
+
+it("recognises the park fishing plan and respects fishing refusals", async () => {
+  const { outdoorRequest } = await import("./environmentAdvisory");
+  const plan = "i want go pasir ris park do fishing today";
+  expect(outdoorRequest(plan, [])).toBe(plan);
+  expect(outdoorRequest("I don't want to go fishing", [])).toBeNull();
+  expect(outdoorRequest("Stop suggesting fishing", [])).toBeNull();
+  expect(outdoorRequest("我想去钓鱼", [])).not.toBeNull();
+  expect(outdoorRequest("我不想钓鱼", [])).toBeNull();
+});
