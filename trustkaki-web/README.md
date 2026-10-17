@@ -1,363 +1,82 @@
-# TrustKaki
+# TrustKaki — developer guide
 
-TrustKaki is a hackathon MVP for helping AAC staff and caregivers notice when an older adult may need human follow-up. It is not only a senior chatbot: the main operational view is a caregiver follow-up queue backed by persisted messages, structured agent runs, deterministic safety policy, Pattern Watch, and caregiver action history.
+AI-assisted care coordination for AAC staff. Start with the [project overview](../README.md), [judge guide](docs/JUDGE_GUIDE.md) and [architecture explanation](docs/ARCHITECTURE_GUIDE.md).
 
-## Current development
+## Runtime stack
 
-Personal-memory retrieval is implemented as an isolated, locally tested module.
-The first fictional live retrieval pilot passed; production migration remains open. See the
-[RAG architecture and presentation guide](docs/PERSONAL_MEMORY_RAG_GUIDE.md) and
-[active roadmap](docs/TrustKaki_BUILD_ROADMAP.md). Run `npm run benchmark:memory`
-for the fictional offline guard evaluation.
+| Layer | Implementation |
+| --- | --- |
+| Web application | Next.js, React, TypeScript; Node.js server routes |
+| Conversational agents | OpenAI-compatible chat adapter; configured model `gpt-4o-mini` |
+| Specialist routing | Jev through OpenRouter, gated by server flags and deterministic policy |
+| Personal memory | Neon Postgres, `pg`, pgvector; canonical facts and vectors |
+| Embeddings | Pinecone inference, `llama-text-embed-v2`, 1,024 dimensions |
+| Authentication and operations | Supabase Auth/Postgres; scoped staff access and care records |
+| Outdoor information | data.gov.sg/NEA weather and regional air-quality APIs |
+| Hosting | Vercel, connected to GitHub |
 
-The approved target is Neon Postgres + pgvector for personal-memory source records
-and search. The new repository and optional health check are wired; production
-agents still use transitional Supabase memory. See [Neon setup](docs/NEON_MEMORY_SETUP.md)
-for migration/smoke commands and remaining cutover gates.
-
-## Live Product
-
-- Public no-login demo: https://trustkaki.vercel.app
-- Tencent EdgeOne deployment: https://trustkaki.edgeone.dev
-- Rednote project post: https://xhslink.com/o/3OS90gWOeN7
-
-The public demo uses fictional browser-only state and cannot call Supabase, the
-LLM, messaging providers, schedulers, or processors.
-
-## Product Focus
-
-TrustKaki watches ordinary senior check-ins for practical changes that are easy to miss:
-
-- reduced appetite
-- mobility or frailty signals
-- social hesitation or withdrawal
-- suspicious digital-safety messages
-- repeated patterns across days
-
-The product is designed for AAC staff and family caregivers. A reviewer can use
-the no-login Explore demo to inspect one consolidated follow-up case, understand
-why it was surfaced, record an outcome, resolve it, and verify that the active
-queue clears while history remains.
-
-## Core Features
-
-- Multi-agent orchestration with typed Triage, AAC Nudge, Digital Safety, and Briefing agents.
-- Deterministic policy layer for final safety-critical risk decisions.
-- Supabase persistence for messages, agent runs, detected signals, risk events, alerts, briefs, Pattern Watch output, caregiver queue items, and caregiver actions.
-- Isolated Explore demo that seeds a fictional four-day history in browser-only state.
-- Restricted Live system demo backed by a bounded transactional Supabase reset.
-- Telegram webhook, durable inbox, idempotent processing, and verified outbound reply.
-- Meta WhatsApp Cloud API webhook foundation with durable Supabase inbox, deduplication, async `after()` fast path, and protected retry processor.
-- Care workspace with a concise priority case and progressive detail disclosure.
-
-## Architecture
-
-```text
-Senior message / demo history
-  -> Orchestrator and specialist agents
-  -> validated structured outputs
-  -> deterministic policy and Pattern Watch
-  -> Supabase persistence
-  -> caregiver queue and dashboard state
-  -> caregiver action history
-```
-
-Important boundaries:
-
-- React components call API routes, not Supabase directly.
-- Supabase service-role access stays server-side.
-- LLM provider calls stay server-side.
-- WhatsApp tokens and Meta secrets stay server-side.
-- `NEXT_PUBLIC_*` values are the only browser-exposed environment variables.
-
-## Local Setup
-
-Install dependencies:
+## Local setup
 
 ```bash
-npm install
-```
-
-Create local environment values:
-
-```bash
+npm ci
 cp .env.example .env.local
-```
-
-Fill in `.env.local` with TrustKaki Supabase and LLM values. Do not commit `.env.local`.
-
-Run the app:
-
-```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. The no-login **Explore demo** uses fictional browser state. Authenticated **Judge workspace** makes live provider calls and saves demo results; it requires configured services and an existing authorised account.
 
-Run the complete local quality gate:
+### Environment configuration
+
+Use [`.env.example`](.env.example) as the full reference. Do not commit secrets.
+
+| Capability | Settings |
+| --- | --- |
+| Authentication/operations | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
+| Chat provider | `TRUSTKAKI_LLM_API_KEY`, `TRUSTKAKI_LLM_BASE_URL`, `TRUSTKAKI_LLM_MODEL`, timeout |
+| Active Jev routing | `OPENROUTER_API_KEY`, `TRUSTKAKI_JEV_ROUTING_ENABLED=true` |
+| Jev social decisions | `TRUSTKAKI_JEV_ENABLED=true`; separate from routing |
+| Neon memory | `TRUSTKAKI_PERSONAL_MEMORY_BACKEND=neon`, pooled `DATABASE_URL`, embedding configuration and calibrated minimum score |
+| Migrations | `DATABASE_URL_UNPOOLED`; restricted runtime credentials must not be migration-owner credentials |
+| Messaging/schedulers | Optional channel credentials and processor secrets documented in the environment template |
+
+Only `NEXT_PUBLIC_*` configuration is intended for the browser. Service-role, model, OpenRouter and database credentials remain server-side. The template retains conservative opt-in defaults; copying it alone does not reproduce production services.
+
+Follow [Neon memory setup](docs/NEON_MEMORY_SETUP.md) for database roles, migrations and indexing. Review Supabase migrations under `supabase/migrations/` against the intended project before applying them. Do not seed or reset an unrelated or real-care database. Embedding model changes require a compatible index and reindexing.
+
+## Code navigation
+
+- `src/components/`: care workspace, setup, public walkthrough and authenticated judge conversation.
+- `src/lib/agents/`: prompts, typed contracts, schemas, runners, Jev routing and final policy.
+- `src/lib/memory/`: canonical store, validation, embeddings, indexing and retrieval guards.
+- `src/lib/persistence/`: operational persistence and application repository adapters.
+- `src/app/api/`: authenticated application routes, channel webhooks and protected workers.
+- `scripts/`: migration, evaluation and release tooling; read each procedure before running live commands.
+
+## Verification
 
 ```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+# Or all four:
 npm run validate
 ```
 
-This runs all unit tests, TypeScript checking, ESLint, and the production build.
-The live two-user Supabase suite remains separately opt-in because it creates
-and removes temporary Auth users and database rows.
+Tests include deterministic agent/policy checks, memory retrieval guards and local Postgres/pgvector tests. Live database suites create fixtures and remain opt-in. Paid evaluations require explicit budgets; neither is part of the default quickstart.
 
-## Project Documentation
-
-- [Active roadmap](docs/TrustKaki_BUILD_ROADMAP.md) is the source of truth for
-  memory/RAG, agent behaviour, UI improvements, and current delivery status.
-- [Project closeout](docs/PROJECT_CLOSEOUT.md) records the historical hackathon
-  release and outstanding operational items.
-- `docs/superpowers/specs/` records approved security and feature designs.
-- `docs/superpowers/verification/` records completed gate evidence.
-- `docs/superpowers/plans/` preserves historical implementation plans.
-- `docs/operations/HACKATHON_RELEASE_RUNBOOK.md` is the bounded hackathon release,
-  rollback, incident, and go/no-go checklist.
-
-The roadmap sets current development priorities. Dated verification records
-preserve completed evidence; historical plans do not override the active roadmap.
-
-## Environment Variables
-
-Required for authenticated Live system access:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `TRUSTKAKI_LLM_API_KEY`
-- `TRUSTKAKI_LLM_BASE_URL`
-- `TRUSTKAKI_LLM_MODEL`
-- `TRUSTKAKI_LLM_TIMEOUT_MS`
-
-Required for live WhatsApp:
-
-- `WHATSAPP_ACCESS_TOKEN`
-- `WHATSAPP_PHONE_NUMBER_ID`
-- `WHATSAPP_BUSINESS_ACCOUNT_ID`
-- `WHATSAPP_VERIFY_TOKEN`
-- `WHATSAPP_GRAPH_API_VERSION`
-- `META_APP_SECRET`
-- `TRUSTKAKI_DEMO_SENIOR_PHONE`
-- `WHATSAPP_INTERNAL_PROCESSOR_SECRET`
-
-Required for live Telegram demo continuity:
-
-- `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_WEBHOOK_SECRET`
-- `TELEGRAM_INTERNAL_PROCESSOR_SECRET`
-
-Development-only:
-
-- `ENABLE_WHATSAPP_DEV_SIMULATOR`
-- `ENABLE_TELEGRAM_DEV_SIMULATOR`
-
-Optional:
-
-- `ENABLE_FULL_AGENT_REPLAY=true` allows the slow Full Agent Replay in production. Leave it unset for the primary live-demo deployment.
-
-Notes:
-
-- All secrets are server-side unless prefixed with `NEXT_PUBLIC_`.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` is browser-safe public Supabase configuration; it is not the service-role key.
-- Meta temporary access tokens are development-only. A production WhatsApp setup should use an appropriate durable Meta credential.
-- Telegram secrets are server-side. `TELEGRAM_WEBHOOK_SECRET` must contain only `A-Z`, `a-z`, `0-9`, `_`, and `-`, as required by Telegram's `setWebhook` secret-token parameter.
-- WorkBuddy can later replace or extend the LLM provider through `src/lib/agents/provider.ts` without rewriting Pattern Watch, Supabase persistence, or the caregiver queue.
-
-## Supabase
-
-Apply migrations to the TrustKaki Supabase project:
+For read-only deployment checks:
 
 ```bash
-supabase db push
+npm run release:smoke -- https://trustkaki.vercel.app
 ```
 
-Then apply `supabase/seed.sql` through the Supabase SQL editor or your preferred `psql` workflow for the TrustKaki project.
+Use the [release runbook](docs/operations/HACKATHON_RELEASE_RUNBOOK.md) for deployment, approval and rollback procedures. GitHub is the source of truth; pushes to the connected production branch trigger Vercel builds. Keep API routes on the supported Node.js runtime.
 
-If using the Supabase dashboard instead of CLI, apply the SQL files under:
+## Access and limitations
 
-```text
-supabase/migrations/
-supabase/seed.sql
-```
+Judges use the existing `demo@trustkaki.com` account with a privately supplied password. Public registration is not exposed. Authorisation uses verified identity and trusted role metadata, not browser-submitted caregiver IDs. There is no public unauthenticated live-AI endpoint.
 
-Do not point deployment environment variables at unrelated Supabase projects.
+The browser walkthrough is isolated; the shared authenticated judge workspace is stateful and uses fictional records. Keep real personal information out. Model output remains fallible, the in-process rate limiter is not a distributed quota system, and the application is not clinically validated. WhatsApp final delivery requires external business verification.
 
-### Supabase Integration Tests
-
-The caregiver isolation suite is opt-in because it creates temporary Auth users
-and database rows in the configured TrustKaki Supabase project:
-
-```bash
-TRUSTKAKI_RUN_DB_INTEGRATION=1 ./node_modules/.bin/vitest run src/lib/security/rls.integration.test.ts
-```
-
-It uses the existing Supabase URL, anon key, and service-role key from the test
-process environment. Privileged access is limited to fixture setup, assertions,
-and cleanup. The tested operations run as two real authenticated caregivers.
-Temporary rows and Auth users are removed after the suite, including when setup
-or an assertion fails. Generated credentials and database rows are never logged.
-
-### Supabase Auth Setup
-
-Public sign-up is intentionally not exposed. Create caregiver and judge users in Supabase Auth through an administrator-controlled process.
-
-For the judge account:
-
-1. Create the Supabase Auth user privately.
-2. Set trusted `app_metadata.role` to `demo_admin`.
-3. Link that Auth user UUID to Rachel Tan:
-
-```sql
-update public.caregivers
-set auth_user_id = '<judge-auth-user-uuid>'
-where external_ref = 'demo_rachel_tan';
-```
-
-Do not use `user_metadata` for authorization. Do not commit judge credentials or Auth UUIDs.
-
-## Health Check
-
-The deployment smoke check is:
-
-```bash
-export TRUSTKAKI_RELEASE_URL=https://trustkaki.vercel.app
-npm run release:smoke -- "$TRUSTKAKI_RELEASE_URL"
-```
-
-The smoke command checks `/api/health`, `/privacy`, and `/data-deletion` without
-credentials or mutation. The direct `/api/health` response is sanitized and
-only reports booleans plus non-sensitive version metadata. It does not call the
-LLM, call Meta, send WhatsApp messages, expose phone numbers, or mutate data.
-See the [hackathon release runbook](docs/operations/HACKATHON_RELEASE_RUNBOOK.md)
-for approval checkpoints, rollback ordering, and bounded release records.
-
-## Test Commands
-
-```bash
-./node_modules/.bin/vitest run
-./node_modules/.bin/tsc --noEmit
-npm run lint
-npm run build
-```
-
-The fictional [memory retrieval baseline](docs/evidence/2026-10-14-memory-retrieval-baseline.md)
-is reproducible without a live database or LLM:
-
-```bash
-./node_modules/.bin/vitest run src/lib/persistence/seniorContextRepository.test.ts --reporter=verbose
-```
-
-Passing baseline tests reproduce documented gaps; they do not mean all retrieval
-targets or reply-quality checks pass.
-
-Scheduler retry limits and quiet-hour remediation are recorded in
-[local verification and release steps](docs/evidence/2026-10-14-bounded-proactive-retries.md).
-The database migration must precede application rollout; app deployment alone
-will not enforce terminal retry limits.
-
-## Vercel Deployment
-
-Vercel is the primary production target and operates the live messaging path.
-
-1. Import the GitHub repository into Vercel.
-2. Configure the environment variables above in Vercel Project Settings.
-3. Deploy without changing Meta callback settings.
-4. Check `/api/health`.
-5. Run the restricted Live system demo.
-6. Only after the app is verified, configure provider callback URLs for bounded
-   live-channel testing.
-
-All TrustKaki API routes are intended for the Node.js runtime. Do not move them to Edge runtime.
-
-## WhatsApp Webhook Overview
-
-Current flow:
-
-```text
-Meta webhook
-  -> /api/whatsapp/webhook
-  -> signature verification when META_APP_SECRET is configured
-  -> Supabase webhook inbox
-  -> after() fast-path processor
-  -> orchestration and persistence
-  -> outbound WhatsApp reply
-```
-
-Recovery flow:
-
-```text
-POST /api/internal/whatsapp/process-pending
-Authorization: Bearer <WHATSAPP_INTERNAL_PROCESSOR_SECRET>
-```
-
-This endpoint processes a bounded number of received or failed events and returns non-sensitive counts. It is a recovery path; it does not replace immediate `after()` processing.
-
-## Telegram Channel
-
-Telegram is the verified live messaging channel. WhatsApp uses the same
-orchestrator, specialist agents, deterministic policy authority, Supabase care
-records, and caregiver dashboard, but final WhatsApp delivery is externally
-blocked until formal Meta business verification.
-
-Current Telegram flow:
-
-```text
-Telegram webhook
-  -> /api/telegram/webhook
-  -> X-Telegram-Bot-Api-Secret-Token verification
-  -> service-role-only Supabase Telegram inbox
-  -> after() fast-path processor
-  -> existing orchestration and policy persistence
-  -> one concise Telegram reply
-```
-
-Recovery flow:
-
-```text
-POST /api/internal/telegram/process-pending
-Authorization: Bearer <TELEGRAM_INTERNAL_PROCESSOR_SECRET>
-```
-
-The webhook returns success only after durable inbox acceptance. Duplicate `update_id` values are acknowledged without rerunning orchestration. The development simulator is disabled in production, requires an authenticated `demo_admin`, and injects a fake outbound client so it cannot contact Telegram.
-
-## Tencent EdgeOne Deployment
-
-Tencent EdgeOne hosts a verified secondary full-stack deployment at
-https://trustkaki.edgeone.dev. It serves the public and authenticated product
-experience, server route handlers, orchestration, and Supabase-backed reads.
-Messaging, scheduler, and processor credentials remain intentionally absent so
-the secondary host cannot create duplicate provider sends or scheduled work.
-
-## WorkBuddy Portability
-
-The current LLM provider uses an OpenAI-compatible Chat Completions interface. WorkBuddy integration should be added as a provider adapter that preserves the existing runner contract:
-
-```ts
-chat({ systemPrompt, userPrompt, model, temperature, maxTokens })
-```
-
-Do not bypass deterministic policy, Pattern Watch, or Supabase persistence when adding a WorkBuddy provider.
-
-## Security Notes
-
-- Do not expose `.env.local` or secret values.
-- Do not put server secrets in client components.
-- Do not expose service-role Supabase keys to the browser.
-- Do not expose raw provider responses or stack traces from API routes in production.
-- Keep the WhatsApp dev simulator disabled in production.
-- Keep the Telegram dev simulator disabled in production.
-- Keep demo reset scoped to TrustKaki demo data.
-- The MVP rate limiter is in-process and single-instance only. Replace it with Redis or a platform rate-limit service before multi-instance production scaling.
-- API routes derive caregiver identity from the verified Supabase Auth user, not from browser-submitted caregiver IDs.
-
-## Known Limitations
-
-- Public self-service registration, password reset, and organization administration are intentionally out of scope.
-- Full Agent Replay is slow and is not the primary production demo path.
-- Meta permanently restricts the current WhatsApp Business Account from
-  messaging until formal business verification is completed.
-- WorkBuddy provider integration is not implemented yet.
-- The in-process rate limiter must be replaced before multi-instance production
-  scaling.
+Dated operational and evaluation documents preserve the conditions under which checks ran. Historical plans or release records do not imply that every current deployment has repeated every live evaluation.

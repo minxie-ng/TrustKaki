@@ -13,9 +13,9 @@ const headingFont = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "TrustKaki — AI Last-Mile Engagement for Seniors",
+  title: "TrustKaki — AI Care Coordination",
   description:
-    "Proactive AI check-ins for isolated seniors. Built for SMU AI Club × Tencent Cloud 'AI CAN DO IT / Age Well' Hackathon.",
+    "Help community care teams turn senior conversations into prioritised, context-rich human follow-ups. AI Lodge Hackathon · Solving a Business Problem.",
 };
 
 export default function RootLayout({

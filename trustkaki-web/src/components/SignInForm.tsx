@@ -27,7 +27,7 @@ export default function SignInForm({
     <main className="flex min-h-screen items-center justify-center bg-[var(--care-mist)] p-6">
       <form
         onSubmit={submit}
-        className="w-full max-w-md border-t-4 border-t-[var(--care-evergreen)] bg-[var(--care-paper)] px-6 py-8"
+        className="w-full max-w-xl rounded-3xl border border-[var(--care-line)] border-t-4 border-t-[var(--care-evergreen)] bg-[var(--care-paper)] px-6 py-8"
       >
         <div className="font-display text-xl font-semibold text-[var(--care-evergreen)]">
           TrustKaki
@@ -36,12 +36,12 @@ export default function SignInForm({
           Explore the care workspace
         </h1>
         <p className="mt-2 text-sm text-gray-600">
-          Choose the guided walkthrough or enter the live, Supabase-backed system.
+          Turn senior conversations into clear, accountable care follow-ups. Choose a no-login experience or sign in as care staff.
         </p>
 
         <section className="mt-6 border-l-4 border-l-[var(--care-coral)] pl-4">
           <p className="text-xs font-bold uppercase text-[var(--care-coral)]">
-            Recommended for reviewers
+            See the staff workflow
           </p>
           <h2 className="font-display mt-1 text-lg font-semibold text-[var(--care-ink)]">
             Explore demo
@@ -63,10 +63,10 @@ export default function SignInForm({
 
         <section aria-labelledby="live-backend-heading">
           <h2 id="live-backend-heading" className="font-display text-lg font-semibold text-[var(--care-ink)]">
-            Live backend access
+            Judge & staff sign-in
           </h2>
           <p className="mt-1 text-sm text-gray-600">
-            Use the temporary judge credentials from the submitted deck. After signing in, choose <strong>Judge workspace</strong> to try live chat and inspect its decisions, or <strong>Live system demo</strong> for the guided care walkthrough.
+            Judges: use demo@trustkaki.com and the password provided privately with the submission. No registration is needed. After signing in, choose <strong>Judge workspace</strong> to try live chat and inspect its decisions, or <strong>Live system demo</strong> for the guided care walkthrough.
           </p>
 
         <label className="mt-4 block text-sm font-semibold text-gray-700">
@@ -109,7 +109,7 @@ export default function SignInForm({
           {disabled ? "Signing in..." : "Sign in to live system"}
         </button>
           <p className="mt-3 text-center text-xs text-gray-500">
-            Live access is restricted to the fictional demo senior.
+            Use fictional messages only. Live chat calls AI providers and saves demo results; the public walkthrough stays in your browser.
           </p>
         </section>
       </form>

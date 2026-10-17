@@ -11,10 +11,10 @@ describe("public demo entry", () => {
       onExploreDemo: () => undefined,
     }));
 
-    expect(html).toContain("Recommended for reviewers");
+    expect(html).toContain("See the staff workflow");
     expect(html).toContain("Explore demo - no login");
-    expect(html).toContain("Live backend access");
-    expect(html).toContain("temporary judge credentials from the submitted deck");
+    expect(html).toContain("Judge &amp; staff sign-in");
+    expect(html).toContain("demo@trustkaki.com");
     expect(html).toContain("After signing in, choose");
     expect(html).toContain("Live system demo");
     expect(html).toContain("Sign in to live system");
