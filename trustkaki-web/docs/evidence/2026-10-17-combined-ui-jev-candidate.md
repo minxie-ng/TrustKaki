@@ -1,6 +1,6 @@
 # Combined UI, Jev and memory candidate
 
-**Final release status:** UI correction `f07c4c8` promoted successfully on 17 October
+**Final release status:** sidebar correction `e0de978` promoted successfully on 17 October
 2026 (Singapore); see the final promotion entry below. Earlier checkpoint notes
 record their status at execution time.
 
@@ -224,3 +224,20 @@ https://trustkaki-uwi4dp057-minxie-ngs-projects.vercel.app.
 The explicitly approved promotion exited 0 and reported success in 3 seconds.
 Public app: https://trustkaki.vercel.app. No additional tests, browser inspection,
 provider requests, fixtures or post-promotion smoke checks were run, as requested.
+
+## Sidebar context layout correction — released
+
+Owner reported overlapping actions and cramped, narrow context text and approved
+deployment/promotion of commit `e0de97810e7640bcc70b24ae9ac62a422044df00`.
+SeniorContextPanel now gives text the full available width, puts Edit/Archive
+actions below with wrapping, separates source/confirmation/expiry metadata into
+wrapping items, and uses rounded panel/controls. No care logic, persistence or
+permissions changed.
+
+Exact-source archive deployed using existing Production settings and
+`--skip-domain`; required Vercel build passed in 38 seconds. Deployment
+`dpl_Et75RwkCXREbpEAzALTdV6dBv5Xy` reached READY at
+https://trustkaki-63zgggr8x-minxie-ngs-projects.vercel.app. Approved promotion
+exited 0 and reported success in 3 seconds. Public app: https://trustkaki.vercel.app.
+No additional tests, browser inspection, inference, fixtures or post-promotion
+smoke checks were run, as requested.
