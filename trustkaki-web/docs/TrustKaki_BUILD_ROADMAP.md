@@ -4,19 +4,21 @@ Updated: 17 October 2026
 
 ## Current checkpoint
 
-- **Combined candidate deployed:** `708f9cf` is READY at
-  https://trustkaki-902kzg48v-minxie-ngs-projects.vercel.app. Reviewed refreshed UI,
-  active Jev routing and narrow memory fix are included. 1,273 tests pass;
-  typecheck/lint/build pass; zero production dependency vulnerabilities. All 41
-  migrations match. Protected read-only smoke passed, including Neon and Jev
-  readiness. Public domain unchanged. Signed-in demo dashboard and two ordinary-caregiver API/browser checks passed;
-  all temporary fixtures removed and tokens denied. Final hosted chat passed
-  active Jev/refusal handling, but memory save failed with an RPC conflict
-  (attempted 1, accepted 0, failed 1). Its fixtures/accounts and generated data
-  are fully removed; one US$0.319795 reservation remains under its separate US$1
-  cap. Local diagnostic labels distinguish application-layer conflicts; exact
-  hosted cause remains unconfirmed. Resolve this blocker before promotion.
+- **Latest candidate:** diagnostic commit `6992b79` is READY at
+  https://trustkaki-bvkiopp8f-minxie-ngs-projects.vercel.app. It includes refreshed
+  UI, active Jev routing and Neon personal memory. All 1,275 tests pass;
+  typecheck/lint/build pass; all 41 migrations match; read-only smoke passes.
+  The original `708f9cf` hosted case hit a memory-write conflict. Its explicitly
+  approved single retry on `6992b79` passed: actual Jev routing/refusal handling,
+  accepted Neon preference, no Supabase personal copy, conversation and Jev
+  traces saved, ordinary-caregiver traces hidden. Exact cause of the prior
+  conflict remains unconfirmed; no write guard was relaxed. Both attempts are
+  fully cleaned, tokens denied; US$0.639590 reserved under the same US$1 cap.
+  **Next:** exact-candidate authenticated release gates and explicit promotion
+  approval. Earlier dashboard/isolation checks passed on `708f9cf`; public domain
+  still serves `410b6ef`.
   [Candidate evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
+
 
 
 - **Visual refresh included in candidate:** owner-requested Manrope/DM Sans fonts,

@@ -1,7 +1,7 @@
 # Final hosted memory confirmation
 
-Status: executed with owner approval; stopped on memory-write conflict. Cleanup
-fully verified. No retry or promotion.
+Status: original attempt failed with a memory conflict; owner-approved diagnostic
+retry passed on `6992b79`. Both attempts fully cleaned. No promotion.
 
 ## Execution result
 
@@ -110,7 +110,7 @@ No raw reply, trace payload, credentials or Auth identifiers in tracked evidence
 This confirms one regression example; it is not a semantic-recall benchmark or
 a general model-quality claim. Promotion needs its separate owner approval.
 
-## Prepared diagnostic recovery — not authorized or executed
+## Approved diagnostic recovery — passed; cleanup complete
 
 Deploy the reviewed conflict-label change with existing Production settings and
 `--skip-domain`, after read-only linked-service/configuration and exact-source
@@ -129,3 +129,36 @@ Do not print raw log lines, source payloads, identifiers or provider errors.
 Apply the same guarded cleanup, token/account absence and Neon zero-count checks
 even on failure. No existing-record edits, real messages or promotion. Separate
 authenticated release gates remain required before any later promotion.
+
+Owner approved commit `6992b79` deployment and one explicit retry under the same
+US$1 cap. READY deployment `dpl_FyG8szAcZgYYiqt7tXbCL2iFKp8Y` at
+https://trustkaki-bvkiopp8f-minxie-ngs-projects.vercel.app contains the exact source.
+Remote build completed in 36 seconds; local validation passed 1,275 tests,
+38 skipped, typecheck, lint and build. All 41 migration versions align. Metadata
+and variable-name inspection passed; no configuration was changed. Credential-free
+health returned 200; protected health/privacy/deletion smoke passed. Public domain
+was verified on its prior release.
+
+The single retry passed HTTP 200, actual active Jev routing and declining social
+intent, reviewed refusal reply, green final policy, no alerts/fallbacks/trace
+errors, persisted conversation and accepted Neon personal preference. Scoped
+verification found no personal-memory copy in Supabase, two persisted messages
+and actual stored Jev traces; ordinary caregiver dashboard suppressed traces.
+The verifier initially used a nonexistent senior_id on agent_runs (42703);
+corrected to the check_ins foreign-key join and completed read-only verification.
+No chat was repeated to correct that verifier defect.
+
+The prior memory conflict did not recur. No originating cause is established and
+no conflict rule was relaxed. This is one passing regression example, not proof
+of general model reliability or a recall benchmark. Two attempts total retain
+US$0.639590 in reservations against the existing US$1 cap; provider bill unmeasured.
+No promotion was performed.
+
+Cleanup completed: scoped Neon records/revisions/commands and Supabase fixtures,
+generated records, private receipts and audit events removed; context-event
+trigger restored and verified. Auth account absence and former-token HTTP 401
+confirmed, Neon counts zero again. Private response/credential/cleanup files
+removed; budget retained. First Supabase cleanup tool request returned an expired
+request-state error; the repeated guarded cleanup completed successfully. No
+unresolved fixture residue remains. No further chat request or diagnostic-log
+inspection was needed after successful verification.

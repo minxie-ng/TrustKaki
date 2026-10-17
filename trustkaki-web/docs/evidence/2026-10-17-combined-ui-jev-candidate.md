@@ -44,8 +44,9 @@ model requests, outbound messages, database mutations or promotion occurred.
 
 ## Pending
 
-The hosted preference-memory example failed with an RPC conflict (details below).
-Resolve that failure before requesting promotion. No final-demo readiness claim yet.
+The original hosted preference-memory example failed with an RPC conflict.
+The approved diagnostic retry passed on `6992b79` (details below). Exact-candidate
+authenticated release gates and explicit promotion approval remain pending.
 
 ## Signed-in demo dashboard — passed
 
@@ -125,3 +126,40 @@ actionable issues. No relaxation of conflict checks,
 new deployment, paid retry or public promotion occurred.
 
 [Exact procedure and outcome](../operations/2026-10-17-final-memory-confirmation.md).
+
+## Diagnostic candidate and explicit retry — passed; cleanup complete
+
+Owner approved reviewed commit `6992b79f18a93c26689523fd205a44600e0aa246`,
+linked-service inspection, candidate deployment, one explicit fictional retry
+under the existing US$1 cap, scoped diagnostic inspection and cleanup.
+
+- READY deployment `dpl_FyG8szAcZgYYiqt7tXbCL2iFKp8Y`:
+  https://trustkaki-bvkiopp8f-minxie-ngs-projects.vercel.app.
+  Exact source archive with no local env files, Production settings, `--skip-domain`.
+  Remote build 36 seconds. Existing configuration unchanged.
+- Local validation: 1,275 tests passed, 38 skipped; typecheck/lint/build passed.
+  All 41 migration versions match; expected project and configuration names.
+- Credential-free health returned HTTP 200. Authenticated Vercel CLI health,
+  privacy and deletion reads passed. Public domain verified on `410b6ef`.
+- One retry, HTTP 200. Actual active Jev routing and declining social intent;
+  source-reviewed refusal reply, green final policy, no alerts/fallbacks/errors.
+- Conversation persisted. Memory attempted 1, accepted 1, rejected 0, failed 0.
+  Scoped Neon preference confirmed, no Supabase personal copy, two saved messages
+  and actual Jev traces. Ordinary-caregiver dashboard hides technical traces.
+- Verifier corrected its nonexistent agent_runs.senior_id filter to the check_ins
+  foreign-key join after 42703. Read-only verification completed; no extra chat.
+- Two total attempts retain US$0.639590 reserved under the original US$1 cap.
+  This is not measured billing. No automatic HTTP retries or promotion.
+
+The prior conflict did not recur; its cause remains unconfirmed. Static diagnostic
+labels do not fix model semantics or relax concurrency rules. This confirms one
+regression example, not general memory reliability or semantic recall.
+
+Full scoped cleanup verified: Neon records/revisions/commands, Supabase setup and
+generated rows, private receipts/audit events and temporary Auth account absent.
+Context-event trigger restored, former token HTTP 401, Neon zero counts rechecked.
+Private response/credential/cleanup files removed; budget retained. An expired
+Supabase tool request was recovered by the idempotent guarded cleanup. No residue
+remains. No diagnostic logs were needed after the successful chat/verification.
+Exact-candidate signed-in demo and remaining release checks are still pending;
+the earlier `708f9cf` checks do not establish those on this deployment.
