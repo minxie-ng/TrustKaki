@@ -164,7 +164,7 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
         <div
           role="tablist"
           aria-label="Care setup sections"
-          className="grid grid-cols-3 border-b border-[var(--care-line)] bg-white"
+          className="grid grid-cols-3 gap-1 border-b border-[var(--care-line)] bg-white p-2"
         >
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
@@ -182,10 +182,10 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
                 tabIndex={selected ? 0 : -1}
                 onClick={() => setActiveTab(tab.id)}
                 onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
-                className={`min-h-11 border-b-2 px-3 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
+                className={`min-h-11 rounded-lg px-3 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
                   selected
-                    ? "border-[var(--care-coral)] text-gray-950"
-                    : "border-transparent text-gray-600"
+                    ? "bg-[var(--care-sage)] text-[var(--care-brand)]"
+                    : "bg-transparent text-gray-600 hover:bg-[var(--care-mist)]"
                 }`}
               >
                 {tab.label}

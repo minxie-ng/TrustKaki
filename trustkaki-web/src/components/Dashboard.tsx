@@ -235,7 +235,7 @@ function MobileWorkspaceTabs({
     <div
       role="tablist"
       aria-label="Care workspace views"
-      className="grid shrink-0 grid-cols-3 border-b border-[var(--care-line)] bg-white lg:hidden"
+      className="grid shrink-0 grid-cols-3 gap-1 border-b border-[var(--care-line)] bg-white p-2 lg:hidden"
     >
       {mobileCareWorkspaceViews.map((view) => {
         const active = selected === view.id;
@@ -253,10 +253,10 @@ function MobileWorkspaceTabs({
             onKeyDown={(event) =>
               handleMobileWorkspaceTabKeyDown(event, view.id, onSelect)
             }
-            className={`min-h-11 border-b-2 px-3 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
+            className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)] ${
               active
-                ? "border-b-[var(--care-coral)] text-[var(--care-ink)]"
-                : "border-b-transparent text-gray-600"
+                ? "bg-[var(--care-sage)] text-[var(--care-brand)]"
+                : "bg-transparent text-gray-600 hover:bg-[var(--care-mist)]"
             }`}
           >
             {view.label}
