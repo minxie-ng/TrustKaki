@@ -12,8 +12,9 @@ function payloads(pm = 160, timestamp = issued) {
     pm25: { code: 0, data: { regionMetadata: [{ name: "east", labelLocation: location }], items: [{ timestamp, readings: { pm25_one_hourly: { east: pm } } }] } },
   };
 }
-function mockApi(pm = 160, timestamp = issued) {
+function mockApi(pm = 160, timestamp = issued, forecast = "Thundery Showers") {
   const bodies = payloads(pm, timestamp);
+  bodies["two-hr-forecast"].data.items[0].forecasts[0].forecast = forecast;
   const request = vi.fn(async (url: string) => Response.json(bodies[url.split("/").at(-1) as keyof typeof bodies]));
   vi.stubGlobal("fetch", request);
   return request;
@@ -25,9 +26,9 @@ it("resolves a destination, uses regional guidance and records real source evide
   const request = mockApi();
   const { environmentAdvisory } = await import("./environmentAdvisory");
   const result = await environmentAdvisory("Going for a walk in Bedok", "Private address in Bishan", now);
-  expect(result.reply).toContain("Bedok: Thundery Showers");
+  expect(result.reply).toContain("forecast for Bedok is thundery showers");
   expect(result.reply).toContain("avoid all outdoor activities for the next hour");
-  expect(result.reply).toContain("approximate, not street-level");
+  expect(result.reply).toContain("wider area");
   const evidence = JSON.parse(result.trace.output).evidence;
   expect(evidence).toHaveLength(3);
   expect(evidence[0].validUntil).toBe("2026-10-17T12:00:00Z");
@@ -48,22 +49,22 @@ it("asks for an area rather than silently assuming the home address", async () =
   expect(result.reply).toContain("Which area");
   expect(JSON.parse(result.trace.output).evidence).toEqual([]);
   const home = await environmentAdvisory("Going for a walk near my home", "Bedok", now);
-  expect(home.reply).toContain("Bedok:");
+  expect(home.reply).toContain("forecast for Bedok");
 });
 it("rejects old readings and invalid forecast periods without reassuring the senior", async () => {
   mockApi(160, "2026-10-15T10:00:00Z");
   const { environmentAdvisory } = await import("./environmentAdvisory");
   const result = await environmentAdvisory("Weather in Bedok", null, now);
   expect(JSON.parse(result.trace.output).evidence).toHaveLength(0);
-  expect(result.reply).toContain("Unavailable or out of date");
+  expect(result.reply).toContain("unavailable or out of date");
   expect(result.reply).not.toContain("Thundery Showers");
 });
 it("uses the national outlook for tomorrow and never applies current air advice to tomorrow", async () => {
   mockApi();
   const { environmentAdvisory } = await import("./environmentAdvisory");
   const result = await environmentAdvisory("Walk in Bedok tomorrow", null, now);
-  expect(result.reply).toContain("Available national outlook for tomorrow (may cover only part of the day): Cloudy");
-  expect(result.reply).toContain("do not predict conditions later or tomorrow");
+  expect(result.reply).toContain("Tomorrow's national outlook is cloudy, though it may cover only part of the day");
+  expect(result.reply).toContain("don't tell us what it will be like when you leave");
   expect(result.reply).not.toContain("avoid all outdoor activities");
 });
 it("handles invalid API data without exposing upstream content", async () => {
@@ -77,7 +78,7 @@ it("handles Mandarin areas and shared public caching", async () => {
   const request = mockApi();
   const { environmentAdvisory } = await import("./environmentAdvisory");
   const result = await environmentAdvisory("我要去勿洛散步", null, now);
-  expect(result.reply).toContain("Bedok 的两小时");
+  expect(result.reply).toContain("Bedok 的最新短期预报是有雷阵雨");
   await environmentAdvisory("Weather in Bedok", null, now);
   expect(request).toHaveBeenCalledTimes(4);
 });
@@ -94,16 +95,16 @@ it("does not use immediate conditions for an unsupported future time", async () 
   mockApi();
   const { environmentAdvisory } = await import("./environmentAdvisory");
   const result = await environmentAdvisory("Walking in Bedok in three hours", null, now);
-  expect(result.reply).not.toContain("Bedok: Thundery Showers");
+  expect(result.reply).not.toContain("forecast for Bedok is thundery showers");
   expect(result.reply).not.toContain("avoid all outdoor activities");
-  expect(result.reply).toContain("forecast for the intended departure time");
+  expect(result.reply).toContain("forecast for your departure time");
 });
 it("rejects tomorrow's outlook when it ends before the requested departure", async () => {
   mockApi();
   const { environmentAdvisory } = await import("./environmentAdvisory");
   const result = await environmentAdvisory("Walking in Bedok tomorrow at 8pm", null, now);
-  expect(result.reply).not.toContain("Cloudy");
-  expect(result.reply).toContain("forecast for the intended departure time");
+  expect(result.reply).not.toContain("cloudy");
+  expect(result.reply).toContain("forecast for your departure time");
 });
 it.each(["I don't want to walk in Bedok", "I don’t feel like walking in Bedok", "Stop suggesting outdoor activities", "我不想散步"])('respects refusal: %s', async message => {
   const { hasOutdoorPlan } = await import("./environmentAdvisory");
@@ -115,4 +116,35 @@ it("does not reinterpret refusal as a destination after asking for an area", asy
   const messages = [{ sender: "senior", text: "Going for a walk" }, { sender: "trustkaki", text: "Which area will you be in, and when are you heading out?" }];
   expect(outdoorRequest("I don’t feel like walking in Bedok", messages)).toBeNull();
   expect(outdoorRequest("I don't want to walk in Bedok", messages)).toBeNull();
+});
+
+it("gives concise advice for the reported cloudy/elevated-air example and keeps readings in the trail", async () => {
+  mockApi(139, issued, "Cloudy");
+  const { environmentAdvisory } = await import("./environmentAdvisory");
+  const result = await environmentAdvisory("I want to go Bedok for a walk today", null, now);
+  expect(result.reply).toContain("forecast for Bedok is cloudy");
+  expect(result.reply).toContain("avoid strenuous outdoor activities for the next hour");
+  expect(result.reply).not.toMatch(/PSI|PM2.5|µg|SGT|street-level|NEA advises/);
+  expect(result.reply).not.toContain("\n\n");
+  expect(result.reply.split(/\s+/).length).toBeLessThan(65);
+  const evidence = JSON.parse(result.trace.output).evidence;
+  expect(evidence).toEqual(expect.arrayContaining([expect.objectContaining({ value: "1-hour PM2.5: 139 µg/m³", area: "east", issuedAt: issued })]));
+});
+it("still provides exact air readings when the senior asks for them", async () => {
+  mockApi(139, issued, "Cloudy");
+  const { environmentAdvisory } = await import("./environmentAdvisory");
+  const result = await environmentAdvisory("What are the PSI and PM2.5 readings in Bedok?", null, now);
+  expect(result.reply).toContain("24-hour PSI: 120");
+  expect(result.reply).toContain("1-hour PM2.5: 139 µg/m³");
+});
+
+it("answers an explicit air-quality question even below the advisory threshold", async () => {
+  mockApi(30, issued, "Cloudy");
+  const { environmentAdvisory, hasOutdoorPlan } = await import("./environmentAdvisory");
+  const question = "How is the air quality in Bedok?";
+  expect(hasOutdoorPlan(question)).toBe(true);
+  const result = await environmentAdvisory(question, null, now);
+  expect(result.reply).toContain("NEA's normal range");
+  expect(result.reply).not.toContain("µg");
+  expect(result.reply).not.toMatch(/safe to|perfect|nothing to worry/);
 });

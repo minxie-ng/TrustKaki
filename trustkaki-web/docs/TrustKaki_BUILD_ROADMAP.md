@@ -4,10 +4,11 @@ Updated: 17 October 2026
 
 ## Current checkpoint
 
-- **Released:** owner approved promotion of runtime commit
-  `88572778d28e7eb2d899ab26c6845d4d58a63d7f` on 17 October 2026 (Singapore).
-  Vercel promotion completed successfully for
-  `dpl_z9yzarBvXz7jbRF8NZuycegCnfUk`. Public app: https://trustkaki.vercel.app.
+- **Released:** owner approved GitHub main push of routing correction
+  `09afd8c6653414e204babccf4855900cb48ea5bc` on 17 October 2026 (Singapore).
+  GitHub's Vercel status reported success / deployment completed. Public app:
+  https://trustkaki.vercel.app. The preceding direct release was `8857277`,
+  deployment `dpl_z9yzarBvXz7jbRF8NZuycegCnfUk`.
 - **Included:** Neon personal memory with RAG retrieval, active Jev routing and
   specialist decisions, the refreshed care dashboard/judge workspace, and
   chat-triggered government weather/air-quality advice.
@@ -45,15 +46,25 @@ Updated: 17 October 2026
   approved promotion succeeded in 3 seconds. No additional tests or smoke calls
   during release. No broad suite.
   [Feature plan](superpowers/plans/2026-10-17-environment-advisory.md).
-- **Outdoor routing correction prepared locally:** the reported walking message
+- **Outdoor routing correction released:** the reported walking message
   could skip government data whenever Triage supplied nonurgent care context or
   Jev paused activities. The weather tool now retains care text first and adds
   factual conditions for an already stated outdoor plan; urgent/safety/capability
   and red-risk gates remain. Seven orchestration regressions plus 18 tool tests
   pass (25 total), changed-file lint and production build pass; independent review
   found no Important blockers. No hosted inference or live records used.
-  Release will use a GitHub main push / Vercel automatic deployment after approval.
-- **Wrap-up:** previous deployment complete; routing correction awaits release approval.
+  Owner approved the main push; Vercel reported success. The owner's subsequent
+  screenshot shows weather and air advice being included alongside care text.
+- **Conversational reply correction prepared locally:** numeric air reports,
+  timestamps and sources stay in the decision trail; ordinary chat uses brief
+  weather and practical air advice. Exact readings are supplied when requested.
+  Mandarin forecast categories are translated. Triage prompt now discourages
+  repetitive praise/name use, generic help questions and converting background
+  conditions into current symptoms. No new model calls, thresholds or policy
+  changes. 52 focused tests, changed-file lint and production build pass.
+  No paid evaluation or hosted conversation check for this wording change.
+- **Wrap-up:** deployed routing fix works in the owner's screenshot; concise
+  reply/prompt correction awaits approval for the next GitHub main push.
   [Release evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 The entries below preserve earlier implementation checkpoints. References to

@@ -59,7 +59,7 @@ function refusesOutdoor(message: string): boolean {
 export function hasOutdoorPlan(message: string): boolean {
   if (/^(?:the )?(?:(?:nice|lovely|good|hot|rainy) weather|weather is (?:nice|lovely|good|hot|rainy))(?: today)?(?:,? isn['’]t it)?[.!? ]*$/iu.test(message.trim())) return false;
   if (refusesOutdoor(message)) return false;
-  return /\b(?:weather|forecast|haze|psi|pm\s?2\.?5|going (?:out|outside|for a walk)|go (?:out|outside|for a walk)|head(?:ing)? (?:out|outside)|outdoor|walk(?:ing)?|jogg?ing|picnic|cycling)\b|天气|天氣|雾霾|霧霾|出门|出門|外出|散步|户外|戶外/iu.test(message);
+  return /\b(?:weather|forecast|air quality|haze|psi|pm\s?2\.?5|going (?:out|outside|for a walk)|go (?:out|outside|for a walk)|head(?:ing)? (?:out|outside)|outdoor|walk(?:ing)?|jogg?ing|picnic|cycling)\b|空气质量|空氣質量|天气|天氣|雾霾|霧霾|出门|出門|外出|散步|户外|戶外/iu.test(message);
 }
 function isFuturePlan(message: string): boolean {
   return /\b(?:tomorrow|next|later|tonight|this (?:morning|afternoon|evening)|on (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|at \d|in (?:\d+|an?|one|two|three|four|five|six|half)(?: a)? (?:minutes?|hours?|days?)|\d{1,2}(?::\d{2})?\s*(?:am|pm))\b|明天|后天|後天|下周|下週|今晚|早上|上午|下午|晚上|点|點|小时后|小時後|分钟后|分鐘後|\d{1,2}[:：]\d{2}|\d{4}-\d{2}-\d{2}/iu.test(message);
@@ -99,6 +99,17 @@ function fresh(timestamp: string, now: number, hours: number): boolean {
 function covers(valid: z.infer<typeof period>, time: number): boolean {
   return Date.parse(valid.start) <= time && time < Date.parse(valid.end);
 }
+function chineseForecast(value: string): string {
+  if (/thunder/i.test(value)) return "有雷阵雨";
+  if (/rain|shower/i.test(value)) return "有雨";
+  if (/partly cloudy/i.test(value)) return "局部多云";
+  if (/cloudy/i.test(value)) return "多云";
+  if (/hazy/i.test(value)) return "有烟霾";
+  if (/fair/i.test(value)) return "晴朗";
+  if (/windy/i.test(value)) return "有风";
+  if (/mist/i.test(value)) return "有薄雾";
+  return value;
+}
 function stamp(value: string): string {
   return new Date(value).toLocaleString("en-SG", { timeZone: "Asia/Singapore", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }) + " SGT";
 }
@@ -129,6 +140,8 @@ export async function environmentAdvisory(message: string, homeAddress?: string 
   const area = matches.length === 1 ? matches[0] : null;
   const tomorrow = /\btomorrow\b|明天/iu.test(message);
   const future = isFuturePlan(message);
+  const airQuestion = /\b(?:air quality|haze|psi|pm\s?2\.?5)\b|空气质量|空氣質量|雾霾|霧霾/iu.test(message);
+  const readingsRequested = /\b(?:psi|pm\s?2\.?5|readings?|numbers?|values?)\b|读数|讀數|指数|指數|数值|數值/iu.test(message);
   const evidence: Array<{ source: string; area: string; issuedAt: string; validFrom?: string; validUntil?: string; value: string }> = [];
   const parts: string[] = [];
   const missing: string[] = [];
@@ -146,8 +159,8 @@ export async function environmentAdvisory(message: string, homeAddress?: string 
       if (forecast) {
         evidence.push({ source: SOURCES.short, area: area.name, issuedAt: item.timestamp,
           validFrom: item.valid_period.start, validUntil: item.valid_period.end, value: forecast });
-        parts.push(chinese ? `${area.name} 的两小时天气预报：${forecast}（有效至 ${stamp(item.valid_period.end)}）。`
-          : `${area.name}: ${forecast} in the 2-hour forecast, valid until ${stamp(item.valid_period.end)}.`);
+        parts.push(chinese ? `${area.name} 的最新短期预报是${chineseForecast(forecast)}。`
+          : `The latest forecast for ${area.name} is ${forecast.toLowerCase()}.`);
         if (/thunder/i.test(forecast)) parts.push(chinese ? "预报有雷阵雨；请考虑推迟户外活动并留在室内。" : "Thunderstorms are forecast; consider postponing outdoor activity and staying indoors.");
         else if (/rain|shower/i.test(forecast)) parts.push(chinese ? "可能下雨；请带伞并小心湿滑路面。" : "Rain is forecast; take an umbrella and watch for slippery paths.");
       } else missing.push("2-hour forecast");
@@ -160,9 +173,9 @@ export async function environmentAdvisory(message: string, homeAddress?: string 
     if (tomorrow && record && fresh(record.timestamp, now, 24) && longCovers) {
       evidence.push({ source: SOURCES.long, area: "Singapore", issuedAt: record.timestamp,
         validFrom: record.general.validPeriod.start, validUntil: record.general.validPeriod.end, value: record.general.forecast.text });
-      parts.push(chinese ? `可用的明天全国概况（可能仅涵盖部分时段）：${record.general.forecast.text}（${stamp(record.general.validPeriod.start)} 至 ${stamp(record.general.validPeriod.end)}）。这不是当地实时天气；出门前请再核对短期预报。`
-        : `Available national outlook for tomorrow (may cover only part of the day): ${record.general.forecast.text}, covering ${stamp(record.general.validPeriod.start)} to ${stamp(record.general.validPeriod.end)}. This is not local live weather; check the short-term forecast before leaving.`);
-      if (target.departure === null) parts.push(chinese ? "尚未确认您出门的具体时间是否在预报范围内。" : "Coverage for your exact departure time is not established.");
+      parts.push(chinese ? `明天的全国预报是${chineseForecast(record.general.forecast.text)}，不过可能只涵盖部分时段。`
+        : `Tomorrow's national outlook is ${record.general.forecast.text.toLowerCase()}, though it may cover only part of the day.`);
+      if (target.departure === null) parts.push(chinese ? "还不能确认您出门时的天气。" : "I can't confirm the weather for your exact departure time yet.");
     } else if (future) missing.push("forecast for the intended departure time");
 
     // Approximate regional air reading using the nearest published region label, not street-level exposure.
@@ -180,18 +193,21 @@ export async function environmentAdvisory(message: string, homeAddress?: string 
       if (reading && typeof value === "number" && fresh(reading.timestamp, now, 2)) {
         const description = `${kind}: ${value}${kind === "1-hour PM2.5" ? " µg/m³" : ""}`;
         evidence.push({ source: url, area: region!, issuedAt: reading.timestamp, value: description });
-        parts.push(chinese ? `当前 ${region} 区域参考读数（非街道级）：${description}，时间 ${stamp(reading.timestamp)}。`
-          : `Current ${region} regional reading (approximate, not street-level): ${description}, as of ${stamp(reading.timestamp)}.`);
+        if (readingsRequested) parts.push(chinese ? `${region} 区域的${description}，记录时间是 ${stamp(reading.timestamp)}。`
+          : `The wider ${region} area's ${description}, recorded at ${stamp(reading.timestamp)}.`);
         if (key === "pm25_one_hourly" && !future && value > 55) parts.push(value > 150
-          ? chinese ? "按 NEA 对长者等易受影响人群的建议：未来一小时避免所有户外活动。" : "NEA advises older adults and other vulnerable people to avoid all outdoor activities for the next hour at this PM2.5 level."
-          : chinese ? "按 NEA 对长者等易受影响人群的建议：未来一小时避免剧烈户外活动。" : "NEA advises older adults and other vulnerable people to avoid strenuous outdoor activities for the next hour at this PM2.5 level.");
+          ? chinese ? "附近大区域的空气读数偏高，接下来一小时请先留在室内，避免户外活动。" : "The air reading for the wider area is high, so please avoid all outdoor activities for the next hour."
+          : chinese ? "附近大区域的空气读数偏高，接下来一小时请避免剧烈户外活动，出门前再查一下。" : "The air reading for the wider area is elevated, so please avoid strenuous outdoor activities for the next hour and check again before heading out.");
+        if (key === "pm25_one_hourly" && !future && value <= 55 && airQuestion) parts.push(chinese
+          ? "附近大区域最新的短期空气读数在 NEA 的正常范围内。如果晚点出门，请再查一下，情况可能会变化。"
+          : "The latest short-term air reading for the wider area is in NEA's normal range. Check again if you head out later, as conditions can change.");
       } else missing.push(kind);
     }
-    if (future) parts.push(chinese ? "当前空气读数不能预测您稍后或明天出门时的情况；出门前请再查。" : "Current air readings do not predict conditions later or tomorrow; check again before leaving.");
-    if (missing.length) parts.push(chinese ? "部分预报或空气数据暂不可用或已过期，我无法确认外出条件。" : `Unavailable or out of date: ${missing.join(", ")}. I can't confirm outdoor conditions from those data.`);
-    if (evidence.length) parts.push(chinese ? "来源：data.gov.sg / NEA；空气建议：www.haze.gov.sg。" : "Source: data.gov.sg / NEA. Air-quality guidance: www.haze.gov.sg.");
+    if (future) parts.push(chinese ? "现在的空气读数不能预测您出门时的情况，出门前请再查一下。" : "Today's air readings don't tell us what it will be like when you leave, so check again before heading out.");
+    if (missing.some(value => /forecast/.test(value))) parts.push(chinese ? "我暂时查不到适合您出门时间的最新预报，请出门前再核对一下。" : "I couldn't get an up-to-date forecast for your departure time. Please check again before you go.");
+    if (missing.some(value => /PSI|PM2.5/.test(value))) parts.push(chinese ? "部分空气读数暂时查不到或已过期，请出门前查看 NEA 的最新消息。" : "Some air readings are unavailable or out of date. Please check NEA's latest update before you go.");
   }
-  const reply = parts.join("\n\n");
+  const reply = parts.join(" ");
   return { reply, trace: {
     id: `trace_environment_${randomUUID()}`, agentId: "aac_nudge", agentName: "Outdoor Conditions Tool",
     timestamp: new Date(now).toISOString(), input: JSON.stringify({ area: area?.name ?? null, locationSource, timing: tomorrow ? "tomorrow" : future ? "future_unspecified" : "now" }),

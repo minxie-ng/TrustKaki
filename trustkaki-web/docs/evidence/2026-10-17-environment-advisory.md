@@ -52,4 +52,15 @@ Offline orchestration reproduced the failure with that exact message and (a) a n
 
 Correction removes only those two weather gates, retains the existing care response/clarification first, then appends factual government advice. Urgent health, digital safety, capability bounds and red-risk suppression remain. Policy risk, alerts, memory and briefing decisions are unchanged. Refusal still prevents a weather call. The tool trace receives `care_reply_preserved` where appropriate, and the selected response retains the triage/policy identity for care-led responses.
 
-Verification: seven offline orchestration regressions and 18 tool tests passed (25 total); changed-file ESLint and production build exited 0. Independent review found no Important blockers. No paid inference, live records or hosted chat checks. This correction is local pending approval to push to GitHub main and trigger Vercel automatic deployment.
+Verification: seven offline orchestration regressions and 18 tool tests passed (25 total); changed-file ESLint and production build exited 0. Independent review found no Important blockers. No paid inference, live records or hosted chat checks. Owner approved this correction as `09afd8c`; it was pushed to GitHub main and Vercel status reported deployment completed. The owner's subsequent screenshot confirms weather/air advice appears with the care reply.
+
+
+## Conversational presentation correction (local, pending release)
+
+The owner reported the resulting reply was robotic. The model's Triage prompt was running, but it could not influence the later deterministic data-report paragraphs. Raw regional readings, repeated timestamps and source footer were appended directly to the senior-facing message.
+
+Ordinary replies now use brief conversational forecasts and the same bounded NEA air advice. Full numeric values, source URLs, issue times, regional scope and forecast validity remain in structured evidence and the existing source panel. Explicit requests for PSI/PM2.5 still receive exact readings; explicit air-quality questions receive a qualitative answer even below the advisory threshold. Mandarin weather categories use bounded translations.
+
+The Triage system prompt now asks for everyday, short replies without repetitive praise or generic help endings, and prohibits turning a background condition or ordinary walking plan into an invented new symptom/social signal. Model adherence and perceived warmth have not been evaluated through paid inference in this change.
+
+Verification: 52 focused offline tests across environment tool, outdoor-care orchestration and prompts passed; changed-file ESLint and production build exited 0. Review identified a missing normal-band answer for explicit air-quality questions; this was fixed with a regression case. Freshness, departure coverage, health advice thresholds and urgent/safety handling are unchanged. No additional model call or paid provider is introduced. GitHub main push / Vercel automatic deployment awaits exact commit approval.
