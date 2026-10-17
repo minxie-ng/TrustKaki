@@ -117,6 +117,7 @@ export interface TriageSignal {
 }
 
 export interface TriageOutput {
+  outdoorContext?: "check" | "none" | "declined";
   signals: TriageSignal[];
   riskLevel: RiskLevel;
   riskChange: "none" | "increase" | "decrease";

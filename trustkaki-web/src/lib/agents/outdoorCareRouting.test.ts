@@ -15,7 +15,7 @@ const advisory = { reply: "Bedok: Thundery Showers. Source: data.gov.sg / NEA.",
   id: "environment", agentId: "aac_nudge", agentName: "Outdoor Conditions Tool", timestamp: new Date().toISOString(),
   input: "", reasoning: "Government data", output: "{}", tags: ["reply_selected"],
 } };
-function arrange(type?: "health" | "daily_living", healthLabel = "absent") {
+function arrange(type?: "health" | "daily_living", healthLabel = "absent", outdoorContext: TriageOutput["outdoorContext"] = "check") {
   vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", "true");
   vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "false");
   vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
@@ -27,6 +27,7 @@ function arrange(type?: "health" | "daily_living", healthLabel = "absent") {
     })),
   })));
   const triage: TriageOutput = {
+    outdoorContext,
     signals: type ? [{ type, severity: "low", description: "Known knee discomfort; reminder to rest" }] : [],
     riskLevel: "yellow", riskChange: "none", routing: [], summary: "Walking plan with existing care context",
     responseMessage: "If your knee gets uncomfortable, please rest.", humanFollowUpRequired: false,
@@ -77,8 +78,21 @@ it("does not displace red-risk handling", async () => {
   expect(mocks.environment).not.toHaveBeenCalled();
 });
 it("does not call the tool after refusing the walk", async () => {
-  arrange();
+  arrange(undefined, "absent", "declined");
   const { orchestrate } = await import("./orchestrator");
   await orchestrate("I don't want to walk in Bedok", ctx);
   expect(mocks.environment).not.toHaveBeenCalled();
+});
+
+
+it.each([
+  ["I plan to practise tai chi by the reservoir", "check", true],
+  ["I will play sepak takraw at the open court", "check", true],
+  ["I am cycling indoors on a stationary bike", "none", false],
+  ["I cancelled my fishing trip", "declined", false],
+] as const)("uses semantic outdoor intent for %s", async (message, intent, expected) => {
+  arrange(undefined, "absent", intent);
+  const { orchestrate } = await import("./orchestrator");
+  await orchestrate(message, ctx);
+  expect(mocks.environment).toHaveBeenCalledTimes(expected ? 1 : 0);
 });

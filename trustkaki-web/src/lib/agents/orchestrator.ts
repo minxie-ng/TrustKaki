@@ -467,7 +467,7 @@ export async function orchestrate(
   let signals: TriageSignal[] = [];
   let briefing: BriefingOutput | null = null;
   let contextMemoryCandidates: ContextMemoryOutput["candidates"] = [];
-  const outdoorMessage = outdoorRequest(message, ctx.messages);
+
   const activeRouting = process.env.TRUSTKAKI_JEV_ROUTING_ENABLED === "true";
   const routingRun = runJevRoutingShadow(message, ctx);
 
@@ -485,6 +485,9 @@ export async function orchestrate(
   });
   traces.push(toAgentTrace(triageResult));
 
+  // Triage owns semantic eligibility; preserve timing when answering an area clarification.
+  const outdoorMessage = triageResult.data.outdoorContext === "check"
+    ? outdoorRequest(message, ctx.messages) ?? message : null;
   signals = triageResult.data.signals;
   const activeObservation = activeRouting ? await routingRun : null;
   const routes = selectSpecialistRouting(activeObservation?.judgment ?? null, {
