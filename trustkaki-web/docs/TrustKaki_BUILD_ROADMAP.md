@@ -4,10 +4,20 @@ Updated: 17 October 2026
 
 ## Current checkpoint
 
-- **Visual refresh implemented locally:** owner-requested Manrope/DM Sans fonts,
+- **Combined candidate deployed:** `708f9cf` is READY at
+  https://trustkaki-902kzg48v-minxie-ngs-projects.vercel.app. Reviewed refreshed UI,
+  active Jev routing and narrow memory fix are included. 1,273 tests pass;
+  typecheck/lint/build pass; zero production dependency vulnerabilities. All 41
+  migrations match. Protected read-only smoke passed, including Neon and Jev
+  readiness. Public domain unchanged. Authenticated checks, remaining hosted
+  memory example and promotion pending.
+  [Candidate evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
+
+
+- **Visual refresh included in candidate:** owner-requested Manrope/DM Sans fonts,
   forest-green primary buttons, sage identity panels, softer borders and rounded
   surfaces supersede the first pass's visual tokens. Font-variable root scope is
-  corrected. Desktop/mobile fixture inspection passed; release remains pending.
+  corrected. Desktop/mobile fixture inspection passed; public promotion remains pending.
   See the visual refresh section in the implementation evidence below.
 
 - **UI revamp implemented locally:** narrower senior roster, focused identity and
@@ -16,17 +26,16 @@ Updated: 17 October 2026
   retrieval, Jev requested/executed specialists, model/fallback, policy and save
   outcome. No scripted success after a failed chat request. 1,270 tests passed,
   38 skipped; typecheck, lint and build passed. Desktop/mobile local fixture
-  inspection and independent review completed. Not deployed or promoted.
+  inspection and independent review completed. First pass was local at this checkpoint; now superseded by the combined candidate above.
   [Approved design](superpowers/specs/2026-10-17-priority-first-ui-revamp.md) ·
   [Implementation evidence](evidence/2026-10-17-care-desk-ui-revamp.md).
-  **Next:** one final release candidate combining UI, Jev and the narrow memory
-  validator fix; confirm the remaining hosted preference example, then promote
+  **Next:** verify the combined candidate and remaining hosted preference example, then promote
   after the required release checks and owner approval.
 
 - **Live:** Neon personal memory and consolidated agent flow `410b6ef`.
   [Memory cutover](evidence/2026-10-15-neon-memory-cutover.md) and
   [agent release](evidence/2026-10-16-agent-candidate.md).
-- **Latest hosted candidate:** timing persistence correction `21f4152` is READY
+- **Earlier hosted inference candidate:** timing persistence correction `21f4152` is READY
   at https://trustkaki-72gigstgp-minxie-ngs-projects.vercel.app. Exact metadata,
   28-second remote build, protected smoke and both hosted chat requests passed
   HTTP 200. Actual active Jev routing and social refusal classification ran
