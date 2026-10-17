@@ -42,3 +42,14 @@ Generating static pages (24/24)
 Independent code review found timing/forecast-coverage and refusal gaps. These were fixed with regression cases; the final refusal follow-up now shares the same refusal predicate before either routing branch. No Critical findings. The reviewer's unconfirmed concern about a national PSI metadata entry was resolved by the actual five-region public payload read during implementation.
 
 No broad suite, paid inference, live database writes, authenticated browser checks or hosted full-chat demonstration were performed. Local fixtures do not prove hosted chat operation. Owner explicitly approved this commit's deployment and promotion with only Vercel's required build; both are complete.
+
+
+## Reported outdoor-plan routing defect and local correction
+
+The owner reported “i am going for a walk in bedok” produced a knee-care reminder without an Outdoor Conditions Tool trace. The screenshot shows activity handling blocked; the exact saved hosted model outputs were not inspected.
+
+Offline orchestration reproduced the failure with that exact message and (a) a nonurgent health/daily-living signal or (b) a Jev care uncertainty. Both weather eligibility checks (`!triageCare` and `!routes.carePause`) incorrectly treated factual conditions as an activity invitation. Three regression scenarios failed before the correction.
+
+Correction removes only those two weather gates, retains the existing care response/clarification first, then appends factual government advice. Urgent health, digital safety, capability bounds and red-risk suppression remain. Policy risk, alerts, memory and briefing decisions are unchanged. Refusal still prevents a weather call. The tool trace receives `care_reply_preserved` where appropriate, and the selected response retains the triage/policy identity for care-led responses.
+
+Verification: seven offline orchestration regressions and 18 tool tests passed (25 total); changed-file ESLint and production build exited 0. Independent review found no Important blockers. No paid inference, live records or hosted chat checks. This correction is local pending approval to push to GitHub main and trigger Vercel automatic deployment.

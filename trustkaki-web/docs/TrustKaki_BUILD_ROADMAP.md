@@ -45,7 +45,15 @@ Updated: 17 October 2026
   approved promotion succeeded in 3 seconds. No additional tests or smoke calls
   during release. No broad suite.
   [Feature plan](superpowers/plans/2026-10-17-environment-advisory.md).
-- **Wrap-up:** approved outdoor advisory deployment and promotion complete.
+- **Outdoor routing correction prepared locally:** the reported walking message
+  could skip government data whenever Triage supplied nonurgent care context or
+  Jev paused activities. The weather tool now retains care text first and adds
+  factual conditions for an already stated outdoor plan; urgent/safety/capability
+  and red-risk gates remain. Seven orchestration regressions plus 18 tool tests
+  pass (25 total), changed-file lint and production build pass; independent review
+  found no Important blockers. No hosted inference or live records used.
+  Release will use a GitHub main push / Vercel automatic deployment after approval.
+- **Wrap-up:** previous deployment complete; routing correction awaits release approval.
   [Release evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 The entries below preserve earlier implementation checkpoints. References to

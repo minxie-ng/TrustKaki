@@ -581,10 +581,18 @@ export async function orchestrate(
       ? "在讨论活动之前，您现在需要什么帮助？"
       : "Before discussing activities, what help do you need right now?"
     : null;
-  const environment = !urgentHealth && !safetyReply && !boundedReply && !triageCare &&
-      policyResult.finalRisk !== "red" && !routes.carePause && outdoorMessage !== null
+  // Weather is factual context, not an activity invitation: a nonurgent care
+  // pause must not hide conditions relevant to an already stated outdoor plan.
+  const environment = !urgentHealth && !safetyReply && !boundedReply &&
+      policyResult.finalRisk !== "red" && outdoorMessage !== null
     ? await environmentAdvisory(outdoorMessage!, ctx.senior.address) : null;
-  if (environment) traces.push(environment.trace);
+  const environmentReply = environment && (triageCare || routes.carePause)
+    ? `${careClarification ?? triageResult.data.responseMessage}\n\n${environment.reply}`
+    : environment?.reply;
+  if (environment) {
+    if (triageCare || routes.carePause) environment.trace.tags.push("care_reply_preserved");
+    traces.push(environment.trace);
+  }
   const socialDecision = !environment && jevIsEnabled() && socialEligible && !routes.carePause
       ? await runJevSocialDecision(message) : null;
   if (socialDecision) {
@@ -602,10 +610,10 @@ export async function orchestrate(
         : digitalSafetyResult.data.warningMessage, agentId: "digital_safety" }
       : boundedReply
         ? { text: boundedReply, agentId: "policy" }
+        : environmentReply
+          ? { text: environmentReply, agentId: triageCare ? "triage" : routes.carePause ? "policy" : "aac_nudge" }
         : careClarification
           ? { text: careClarification, agentId: "policy" }
-        : environment
-          ? { text: environment.reply, agentId: "aac_nudge" }
         : socialDecision
           ? { text: socialDecision.data.nudgeMessage, agentId: "aac_nudge" }
         : { text: triageResult.data.responseMessage, agentId: "triage" });
