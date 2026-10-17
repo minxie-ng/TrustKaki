@@ -44,9 +44,8 @@ model requests, outbound messages, database mutations or promotion occurred.
 
 ## Pending
 
-Remaining hosted preference-memory example; explicit promotion approval. Candidate
-readiness does not establish those results. Earlier active Jev hosted checks
-remain evidence for their earlier build only. No final-demo readiness claim yet.
+The hosted preference-memory example failed with an RPC conflict (details below).
+Resolve that failure before requesting promotion. No final-demo readiness claim yet.
 
 ## Signed-in demo dashboard — passed
 
@@ -96,3 +95,33 @@ credential bindings cleared. No model call, outbound message or promotion.
 Limits: fixtures have no populated traces; suppression of populated traces has
 local regression coverage. Write denial covers the admin-context gate, not every
 mutation route. Production remains on `410b6ef`.
+
+## Final hosted chat/memory case — partial pass; cleanup complete
+
+Owner approved one fictional chat request, a fresh US$1 cap, one temporary
+caregiver, four isolated setup rows, scoped verification and cleanup.
+Read-only preflight passed exact candidate/source/project and provider
+configuration provenance before fixture setup.
+
+- One HTTP 200 response; actual active Jev model
+  `typesafe/jev-1.14-20261014` requested and executed `context_memory` and
+  `aac_nudge`. Actual social intent was `declining`.
+- One reply matched the source-reviewed refusal reply; green final policy,
+  zero alerts, zero provider fallbacks and zero trace errors.
+- Conversation persistence reported true. Memory attempted 1, accepted 0,
+  rejected 0, failed 1: `rpc` / `conflict`. Memory acceptance failed.
+- No HTTP retry. One US$0.319795 reservation retained under the separate US$1
+  cap; actual billed cost was not measured.
+- All exact-owned setup/generated Supabase rows, scoped audit/private bindings,
+  Neon records/revisions/commands and temporary Auth account removed. Audit
+  trigger restored, former token denied, Neon scope rechecked empty. Restricted
+  response/credential/cleanup files removed; budget ledger retained.
+
+Root cause is not established by the grouped conflict. Application-layer
+diagnostic reason labels are prepared locally with a real-database regression
+for missing update targets versus duplicate creates. All 47 focused tests pass;
+typecheck, lint and production build also pass. Independent review found no
+actionable issues. No relaxation of conflict checks,
+new deployment, paid retry or public promotion occurred.
+
+[Exact procedure and outcome](../operations/2026-10-17-final-memory-confirmation.md).

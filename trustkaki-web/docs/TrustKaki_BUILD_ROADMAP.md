@@ -10,8 +10,12 @@ Updated: 17 October 2026
   typecheck/lint/build pass; zero production dependency vulnerabilities. All 41
   migrations match. Protected read-only smoke passed, including Neon and Jev
   readiness. Public domain unchanged. Signed-in demo dashboard and two ordinary-caregiver API/browser checks passed;
-  all temporary fixtures removed and tokens denied. Remaining hosted memory
-  example and promotion pending.
+  all temporary fixtures removed and tokens denied. Final hosted chat passed
+  active Jev/refusal handling, but memory save failed with an RPC conflict
+  (attempted 1, accepted 0, failed 1). Its fixtures/accounts and generated data
+  are fully removed; one US$0.319795 reservation remains under its separate US$1
+  cap. Local diagnostic labels distinguish application-layer conflicts; exact
+  hosted cause remains unconfirmed. Resolve this blocker before promotion.
   [Candidate evidence](evidence/2026-10-17-combined-ui-jev-candidate.md).
 
 
@@ -47,8 +51,8 @@ Updated: 17 October 2026
   Its extracted category was communication_preference; the local validator
   omitted “chats” from communication vocabulary. A narrow fix plus regression
   now passes (67 focused tests and typecheck); independent review found no
-  blockers. Confirm this example on the final UI candidate; no more model calls
-  during this checkpoint. No unsupported memory was saved.
+  blockers. The final UI candidate progressed to a memory-write conflict instead;
+  see the current checkpoint above. No unsupported memory was saved.
 - **Cleanup and budget:** all temporary accounts, scoped Supabase/Neon records
   and restricted responses/credentials are removed. The diagnostic US$1 budget
   retains US$0.959385 across its failed attempt and two corrected-build attempts.

@@ -1,6 +1,33 @@
 # Final hosted memory confirmation
 
-Status: prepared; live execution and fresh spending approval pending.
+Status: executed with owner approval; stopped on memory-write conflict. Cleanup
+fully verified. No retry or promotion.
+
+## Execution result
+
+One HTTP request completed with status 200. Actual active Jev routing and its
+declining social decision passed; requested/executed specialists were
+`context_memory` and `aac_nudge`. One selected reply matched the reviewed refusal
+reply, final policy remained green, no alerts, provider fallbacks or trace errors.
+Conversation persistence reported true, but personal memory reported attempted 1,
+accepted 0, rejected 0, failed 1: stage `rpc`, category `conflict`.
+The memory acceptance criterion failed; no accepted Neon preference was proven.
+
+Stopped without an HTTP retry. Retained budget: one dispatch and US$0.319795
+reserved against this separate US$1 cap; this is a conservative reservation,
+not a measured provider bill. Earlier budgets remain unchanged.
+
+Scoped Neon records/revisions/commands and Supabase fixtures/generated records,
+private receipts and audit events are removed. The context-event trigger was
+restored and verified. Exact Auth account absence and former-token HTTP 401
+were verified; scoped Neon counts were zero again. Private response, credentials
+and cleanup SQL were removed; restricted budget ledger remains.
+
+The grouped error does not establish the originating conflict. The raw response
+and sanitized trace did not retain the candidate intent needed to infer it.
+Local content-free conflict labels now distinguish application-layer causes;
+database-command PT409 errors and cross-store purpose collisions have separate static labels. This is diagnostic work, not a
+fix or a successful hosted recheck. Further deployment/inference needs approval.
 
 ## Exact scope
 
@@ -82,3 +109,23 @@ reply review, persistence/Neon and cleanup outcomes, reservation and any failure
 No raw reply, trace payload, credentials or Auth identifiers in tracked evidence.
 This confirms one regression example; it is not a semantic-recall benchmark or
 a general model-quality claim. Promotion needs its separate owner approval.
+
+## Prepared diagnostic recovery — not authorized or executed
+
+Deploy the reviewed conflict-label change with existing Production settings and
+`--skip-domain`, after read-only linked-service/configuration and exact-source
+checks. Public smoke must pass before fixture setup. This is diagnostic only;
+the original failure is not fixed or attributed yet.
+
+If separately approved, repeat exactly the single case and four-row/account
+fixture procedure above on that deployment. Retain the first failed reservation;
+reserve another US$0.319795 before dispatch in the existing ledger. Cumulative
+reservation US$0.639590, at most two HTTP attempts including the original, same
+US$1 total cap. No automatic HTTP retries; stop on any further failure.
+
+Inspect only the resulting `personal_memory_conflict` event's fixed reason labels
+for this candidate/request window, alongside the scoped checks already listed.
+Do not print raw log lines, source payloads, identifiers or provider errors.
+Apply the same guarded cleanup, token/account absence and Neon zero-count checks
+even on failure. No existing-record edits, real messages or promotion. Separate
+authenticated release gates remain required before any later promotion.

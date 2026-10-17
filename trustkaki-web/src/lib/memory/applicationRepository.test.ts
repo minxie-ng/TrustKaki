@@ -57,14 +57,18 @@ it("uses RLS-scoped senior visibility and verified admin identity for manual edi
 });
 
 it("rejects active context-key collisions across stores in both directions", async () => {
-  const c = client({ seniors: { id: seniorId, organisation_id: organisationId }, senior_memories: { id: crypto.randomUUID() },
-    messages: { id: sourceMessageId, senior_id: seniorId, sender: "senior", text: "I like porridge for breakfast", created_at: "2026-10-15T00:00:00.000Z" } });
-  await expect(applyNeonAutomaticMemory(c.db, command)).rejects.toThrow("Memory conflict");
-  expect(automatic).not.toHaveBeenCalled();
-  query.mockImplementation(async (sql) => sql.includes("FROM personal_memory.records") ? [{ id: crypto.randomUUID() }] : []);
-  const write = vi.fn();
-  await expect(withOperationalMemoryPurpose(c.db, command, write)).rejects.toThrow("Memory conflict");
-  expect(write).not.toHaveBeenCalled();
+  const log = vi.spyOn(console, "info").mockImplementation(() => {});
+  try {
+    const c = client({ seniors: { id: seniorId, organisation_id: organisationId }, senior_memories: { id: crypto.randomUUID() },
+      messages: { id: sourceMessageId, senior_id: seniorId, sender: "senior", text: "I like porridge for breakfast", created_at: "2026-10-15T00:00:00.000Z" } });
+    await expect(applyNeonAutomaticMemory(c.db, command)).rejects.toThrow("Memory conflict");
+    expect(automatic).not.toHaveBeenCalled();
+    query.mockImplementation(async (sql) => sql.includes("FROM personal_memory.records") ? [{ id: crypto.randomUUID() }] : []);
+    const write = vi.fn();
+    await expect(withOperationalMemoryPurpose(c.db, command, write)).rejects.toThrow("Memory conflict");
+    expect(write).not.toHaveBeenCalled();
+    expect(log.mock.calls).toEqual(Array.from({ length: 2 }, () => [JSON.stringify({ event: "personal_memory_conflict", reason: "purpose_collision" })]));
+  } finally { log.mockRestore(); }
 });
 it("checks original backend receipts before mutable purpose checks on retry", async () => {
   const c = client({ seniors: { id: seniorId, organisation_id: organisationId }, senior_memories: { id: crypto.randomUUID() },

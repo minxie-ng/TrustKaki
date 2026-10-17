@@ -89,6 +89,32 @@ it("conflicts on duplicate create, replacement without current memory, key chang
   const operational = edit(first.id); operational.replacement.applicationTags = ["accessibility_support"];
   await expect(app().manual(scope, caregiverId, operational, later)).rejects.toThrow("Operational context must stay in Supabase");
 });
+it("distinguishes a missing update target from duplicate creation without logging personal data", async () => {
+  const log = vi.spyOn(console, "info").mockImplementation(() => {});
+  try {
+    const input = proposal();
+    await expect(app().automatic(scope, { ...input, candidate: { ...input.candidate, intent: "confirm" } })).rejects.toThrow("Memory conflict");
+    await app().automatic(scope, input);
+    await expect(app().automatic(scope, proposal())).rejects.toThrow("Memory conflict");
+    expect(log.mock.calls.map(([event]) => JSON.parse(event))).toEqual([
+      { event: "personal_memory_conflict", reason: "update_target_missing" },
+      { event: "personal_memory_conflict", reason: "create_target_exists" },
+    ]);
+    expect((await db.query("SELECT count(*)::int AS n FROM personal_memory.records")).rows).toEqual([{ n: 1 }]);
+  } finally { log.mockRestore(); }
+});
+it("labels database conflicts without exposing the database error or changing it", async () => {
+  const log = vi.spyOn(console, "info").mockImplementation(() => {});
+  const error = Object.assign(new Error("Private database detail"), { code: "PT409" });
+  const rejecting: MemoryTransaction = (s, work) => transact(s, query => work(async (sql, values) => {
+    if (sql.includes("personal_memory.apply_command(")) throw error;
+    return query(sql, values);
+  }));
+  try {
+    await expect(createApplicationMemoryCommands(rejecting, model).automatic(scope, proposal())).rejects.toBe(error);
+    expect(log.mock.calls).toEqual([[JSON.stringify({ event: "personal_memory_conflict", reason: "database_command" })]]);
+  } finally { log.mockRestore(); }
+});
 it("archives with stable replay, hides from pending/search and rejects foreign edits", async () => {
   const first = await app().automatic(scope, proposal());
   const archive: SeniorContextActionCommand = { commandId: crypto.randomUUID(), store: "memory", action: "archive", contextId: first.id,

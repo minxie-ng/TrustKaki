@@ -20,7 +20,10 @@ const automaticSchema = z.object({
   }).strict(),
 }).strict();
 const receiptSchema = z.object({ id: z.uuid(), version: z.number().int().positive(), status: z.enum(["active", "superseded", "deleted"]) });
-const conflict = (): never => { throw Object.assign(new Error("Memory conflict"), { code: "PT409" }); };
+const conflict = (reason: "request_digest_changed" | "inactive_target" | "create_target_exists" | "update_target_missing" | "confirmation_changed" | "stale_evidence" | "manual_target_changed" = "manual_target_changed"): never => {
+  console.info(JSON.stringify({ event: "personal_memory_conflict", reason }));
+  throw Object.assign(new Error("Memory conflict"), { code: "PT409" });
+};
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)]));
@@ -48,14 +51,19 @@ export function createApplicationMemoryCommands(transact: MemoryTransaction, emb
         "SELECT digest,result FROM personal_memory.commands WHERE organisation_id=$1::uuid AND senior_id=$2::uuid AND command_id=$3::uuid",
         [scope.organisationId, scope.seniorId, commandId]));
       if (receipts.length) {
-        if (receipts[0].digest !== digest) conflict();
+        if (receipts[0].digest !== digest) conflict("request_digest_changed");
         return { ...receipts[0].result, duplicate: true };
       }
       const c = await prepare(query);
       const source = c.source ? memorySourceRecordSchema.parse(c.source) : null;
       const rows = z.array(z.object({ result: receiptSchema })).length(1).parse(await query(
         "SELECT personal_memory.apply_command($1::uuid,$2,$3::integer,$4,$5::jsonb,$6,$7,$8,$9) AS result",
-        [commandId, c.id, c.expectedVersion, c.action, source ? JSON.stringify(source) : null, digest, c.actor, c.reason, embeddingModel]));
+        [commandId, c.id, c.expectedVersion, c.action, source ? JSON.stringify(source) : null, digest, c.actor, c.reason, embeddingModel]).catch(error => {
+          if (error && typeof error === "object" && "code" in error && error.code === "PT409") {
+            console.info(JSON.stringify({ event: "personal_memory_conflict", reason: "database_command" }));
+          }
+          throw error;
+        }));
       return { ...rows[0].result, duplicate: false };
     });
   }
@@ -65,7 +73,7 @@ export function createApplicationMemoryCommands(transact: MemoryTransaction, emb
       [scope.organisationId, scope.seniorId, value]));
     if (!rows.length) return null;
     const source = rows[0].source;
-    if (rows[0].status !== "active" || !source?.metadata) return conflict();
+    if (rows[0].status !== "active" || !source?.metadata) return conflict("inactive_target");
     return source as MemorySourceRecord & { metadata: NonNullable<MemorySourceRecord["metadata"]> };
   }
   async function automatic(scope: MemoryScope, input: unknown) {
@@ -80,10 +88,11 @@ export function createApplicationMemoryCommands(transact: MemoryTransaction, emb
       || Date.parse(c.expiresAt) - Date.parse(request.sourceMessage.timestamp) > 180 * 86400000) throw new Error("Invalid personal memory proposal");
     return command(scope, request.commandId, { type: "automatic", ...request }, async query => {
       const previous = await current(query, scope, "context_key", c.contextKey);
-      if ((c.intent === "create") === Boolean(previous)) conflict();
-      if (c.intent === "confirm" && c.content !== previous?.content) conflict();
+      if (c.intent === "create" && previous) conflict("create_target_exists");
+      if (c.intent !== "create" && !previous) conflict("update_target_missing");
+      if (c.intent === "confirm" && c.content !== previous?.content) conflict("confirmation_changed");
       const at = request.sourceMessage.timestamp;
-      if (previous && Date.parse(at) < Date.parse(previous.metadata.updatedAt)) conflict();
+      if (previous && Date.parse(at) < Date.parse(previous.metadata.updatedAt)) conflict("stale_evidence");
       const id = previous?.id ?? randomUUID();
       const version = (previous?.version ?? 0) + 1;
       const source: MemorySourceRecord = { ...scope, id, contextKey: c.contextKey,

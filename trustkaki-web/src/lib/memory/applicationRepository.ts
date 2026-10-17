@@ -139,7 +139,10 @@ async function memoryPurposeTransaction<T>(client: TrustKakiClient, command: Aut
         collision = (await query("SELECT id FROM personal_memory.records WHERE organisation_id=$1::uuid AND senior_id=$2::uuid AND context_key=$3 AND status='active'",
           [scope.organisationId, scope.seniorId, key])).length > 0;
       }
-      if (collision) throw Object.assign(new Error("Memory conflict"), { code: "PT409" });
+      if (collision) {
+        console.info(JSON.stringify({ event: "personal_memory_conflict", reason: "purpose_collision" }));
+        throw Object.assign(new Error("Memory conflict"), { code: "PT409" });
+      }
     }
     // Each backend still verifies the original digest; the receipt check only skips purpose validation on retries.
     return work(query);
