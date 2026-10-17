@@ -51,7 +51,7 @@ export function PriorityCase({
   if (items.length === 0) {
     const risk = riskConfig[data.senior.riskLevel];
     return (
-      <section className="border-y border-[var(--care-line)] bg-white py-8">
+      <section className="care-case">
         <StatusIndicator
           tone="stable"
           label="No active follow-ups"
@@ -77,7 +77,7 @@ export function PriorityCase({
         <button
           type="button"
           onClick={() => setRecentActivityOpen((current) => !current)}
-          className="mt-6 min-h-10 border-b border-[var(--care-coral)] text-sm font-semibold text-[var(--care-brand)] hover:text-[var(--care-evergreen)]"
+          className="care-secondary-button mt-6 text-sm"
         >
           {recentActivityOpen ? "Hide recent activity" : "View recent activity"}
         </button>
