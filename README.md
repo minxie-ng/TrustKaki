@@ -78,6 +78,28 @@ See the [judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) for outdoor-advice exam
 
 The selected reply returns to the conversation. Operational results and follow-up history support the staff dashboard. The diagram groups conditional roles for readability; the [architecture guide](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) expands their responsibilities and boundaries.
 
+## Technology choices
+
+Each service has a specific role in the care workflow:
+
+| Technology | Role in TrustKaki | Reason for the choice |
+| --- | --- | --- |
+| **OpenAI models** | Interpret messages, extract care signals and draft replies | Turn everyday language into structured information that staff can review. |
+| **Jev via OpenRouter** | Request relevant specialists through structured decisions | Give specialist routing a dedicated, inspectable role, while code retains final safety authority. |
+| **Neon Postgres + pgvector** | Store personal facts, evidence, versions and searchable vectors | Keep canonical memory and vector retrieval together; preserve personal context independently of the chat model. |
+| **Pinecone Inference** | Generate text embeddings for memory search | Support similarity search. Neon stores the vectors; the current path does not use Pinecone as its vector database. |
+| **Supabase** | Authenticate users and store operational messages, signals, schedules, cases and actions | Keep access control and the staff workflow together, separate from the personal-memory store. |
+| **data.gov.sg / NEA** | Supply weather and regional air-quality readings | Ground outdoor advice in timestamped external data instead of model guesses. |
+| **Vercel** | Host the Next.js application and rebuild releases from GitHub | Publish the dashboard and API routes through a repeatable deployment workflow. |
+
+Telegram and WhatsApp connect this workflow to familiar messaging channels; their availability is described below. Pattern Watch and the final safety policy are deterministic code, not extra LLM agents. These choices describe the prototype's responsibilities, not measured cost or performance advantages.
+
+### A Singapore moment behind the outdoor tool
+
+The outdoor-advice feature grew out of the builder's experience of haze disrupting everyday plans in Singapore. Remembering that a senior enjoys a walk is useful; checking the air before encouraging that walk makes the context more practical.
+
+When a conversation calls for outdoor advice, TrustKaki can fetch government weather and regional air-quality data. It distinguishes current readings from future forecasts and states when information is unavailable. It is a contextual advisory tool, not continuous monitoring or a guarantee that an outing is safe.
+
 ## Messaging, automatic check-ins and Pattern Watch
 
 ### Two ways a conversation starts
