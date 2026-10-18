@@ -27,3 +27,12 @@ describe("judge decision trail", () => {
     expect(judgeRunSchema.safeParse({ messages: [{ text: "reply" }] }).success).toBe(false);
   });
 });
+
+it("shows bounded memory failure categories without provider details", () => {
+  const run = judgeRunSchema.parse({ messages: [], traces: [], riskLevel: "yellow", persistence: { persisted: true,
+    memory: { accepted: 0, rejected: 0, failed: 1, failures: [{ stage: "rpc", category: "conflict", message: "private provider detail" }] } } });
+  const html = renderToStaticMarkup(createElement(AgentTracePanel, { traces: [], run, visible: true, onToggle: () => {} }));
+  expect(html).toContain("Memory write conflict");
+  expect(html).not.toContain("private provider detail");
+  expect(JSON.stringify(run)).not.toContain("private provider detail");
+});

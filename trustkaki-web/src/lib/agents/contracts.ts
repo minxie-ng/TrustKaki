@@ -169,7 +169,7 @@ export interface DigitalSafetyInput {
 }
 
 export interface DigitalSafetyOutput {
-  incidentStatus?: "active" | "resolved" | "unclear";
+  incidentStatus?: "active" | "resolved" | "unclear" | "not_applicable";
   isScam: boolean;
   scamType: string | null;
   confidence: number;

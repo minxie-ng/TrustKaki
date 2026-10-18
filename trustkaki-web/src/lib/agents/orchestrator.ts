@@ -392,6 +392,13 @@ function buildPatternWatchTrace(
   };
 }
 
+function hasConcreteDigitalSafetyCue(message: string): boolean {
+  // Tangible links, credentials or private data still require caution even when
+  // model assessments disagree with these independently observable cues.
+  return /https?:\/\/|www\.|bit\.ly|tinyurl|\b(?:otp|one[- ]time password)\b|验证码|驗證碼/i.test(message) ||
+    prohibitedMemoryDataPatterns.some(pattern => message.search(pattern) >= 0);
+}
+
 function hasDigitalSafetyCue(message: string): boolean {
   // Bounded guard supplements Triage; this is not a general scam detector.
   return /https?:\/\/|www\.|bit\.ly|tinyurl|\b(?:otp|one[- ]time password|phishing|scam|suspicious link|investment scheme)\b|验证码|驗證碼|诈骗|詐騙|可疑链接|可疑連結/i.test(message) ||
@@ -400,6 +407,7 @@ function hasDigitalSafetyCue(message: string): boolean {
 
 function digitalSafetySummary(data?: DigitalSafetyOutput): string | undefined {
   if (!data) return undefined;
+  if (data.incidentStatus === "not_applicable" && !data.isScam) return "Digital Safety found no current digital threat to assess; this does not verify external content or close existing alerts.";
   if (data.incidentStatus === "resolved") return `Digital Safety assessed the reported incident as resolved; this does not independently verify the report or close existing alerts: ${data.warningMessage}`;
   return `${data.isScam ? "Suspected scam" : "Assessment inconclusive; safety is not verified"}; reported confidence=${data.confidence}: ${data.warningMessage}`;
 }
@@ -588,7 +596,18 @@ export async function orchestrate(
 
   // One selected reply, after authoritative policy; specialist drafts are not concatenated.
   const urgentHealth = hasUrgentHealthConcern(message, signals);
-  const safetyReply = digitalSafetyResult && (
+  // A route authorizes analysis, not automatic ownership of the senior reply.
+  // Clear a speculative route only after two successful, explicit assessments
+  // agree there is no current threat. Missing/uncertain/fallback outputs retain caution.
+  const noCurrentDigitalThreat = !!digitalSafetyResult && !digitalSafetyResult.fallback && !triageResult.fallback &&
+    (triageResult.data.digitalSafetyContext === "none" || triageResult.data.digitalSafetyContext === "resolved") && !triageResult.data.routing.includes("digital_safety") &&
+    !signals.some(signal => signal.type === "digital_safety") && !hasConcreteDigitalSafetyCue(message) &&
+    digitalSafetyResult.data.incidentStatus === "not_applicable" && !digitalSafetyResult.data.isScam && digitalSafetyResult.data.confidence > 0;
+  if (noCurrentDigitalThreat) {
+    const trace = traces.find(item => item.id === digitalSafetyResult.traceId);
+    if (trace) trace.tags.push("no_current_digital_threat");
+  }
+  const safetyReply = !noCurrentDigitalThreat && digitalSafetyResult && (
     digitalSafetyResult.fallback || digitalSafetyResult.data.isScam ||
     signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message) ||
     routes.requestedSpecialists.includes("digital_safety")

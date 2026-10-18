@@ -176,7 +176,7 @@ export const aacNudgeOutputSchema = z.object({
 });
 
 export const digitalSafetyOutputSchema = z.object({
-  incidentStatus: z.enum(["active", "resolved", "unclear"]).optional(),
+  incidentStatus: z.enum(["active", "resolved", "unclear", "not_applicable"]).optional(),
   isScam: z.boolean(),
   scamType: z.string().nullable(),
   confidence: z.number().min(0).max(1),

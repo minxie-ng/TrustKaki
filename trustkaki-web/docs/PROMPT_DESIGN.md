@@ -51,6 +51,7 @@ The common chat context includes the latest ten conversation messages. Memory ex
 | Do not invent external actions | Capability guards can select explicit bounded replies; no booking, phone-call or physical-help tool is granted |
 | Use available public data for outdoor advice | Current-turn semantic intent plus a narrow independent explicit-request guard initiate checks; history only resolves destinations. Code checks freshness, geography and timing; unavailable data remains explicit |
 | Distinguish resolved scam reports from active exposure | Triage and Digital Safety must both classify a resolution before historical digital-safety signals are excluded from new alerts; existing risk and alert records are not cleared |
+| Keep irrelevant safety reviews from replacing conversation | A route requests analysis, not reply priority. Two successful assessments must agree no current threat applies, with no safety signal, Triage safety route, or concrete link/credential cue; uncertainty and failures retain caution |
 
 For example, **“remember that I prefer quiet one-to-one conversations”** can produce a memory proposal; **“did you save that?”** is a status question, not new evidence. Acknowledgement alone proves neither acceptance nor indexing. The [RAG screenshot](DEMO_GUIDE.md#4-rag-personalisation) shows a reply using already retrieved preferences.
 
