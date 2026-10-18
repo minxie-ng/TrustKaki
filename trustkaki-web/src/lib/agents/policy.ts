@@ -24,6 +24,8 @@ export interface PolicyInput {
   currentRiskLevel: RiskLevel;
   /** Output from the Digital Safety Agent, if it ran. */
   digitalSafety?: DigitalSafetyOutput | null;
+  /** Orchestrator confirmed agreement on a no-exposure resolution update. */
+  digitalSafetyResolved?: boolean;
   /** The original message text (used for keyword-based safety checks). */
   message: string;
 }
@@ -343,7 +345,10 @@ export function applyPolicy(input: PolicyInput): PolicyResult {
     }
   }
 
-  if (risk === "red" && alerts.length === 0) {
+  // An existing red risk stays red, but a resolved report with no current
+  // concern is not evidence for a new urgent health incident.
+  if (risk === "red" && alerts.length === 0 &&
+      !(input.digitalSafetyResolved && signals.length === 0 && !hasEmergencyKeyword)) {
     const primary = strongestSignal(signals);
     alerts.push({
       type: primary?.type ?? "health",

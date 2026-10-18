@@ -137,6 +137,8 @@ export const contextMemoryOutputSchema = z
   .strict();
 
 export const triageOutputSchema = z.object({
+  socialContext: z.enum(["conversation", "activity_options"]).optional(),
+  digitalSafetyContext: z.enum(["active", "resolved", "none"]).optional(),
   outdoorContext: z.enum(["check", "none", "declined"]).optional(),
   outdoorQuery: z.string().trim().min(1).max(1000).optional(),
   outdoorTrigger: z.string().trim().min(1).max(1000).optional(),
@@ -174,6 +176,7 @@ export const aacNudgeOutputSchema = z.object({
 });
 
 export const digitalSafetyOutputSchema = z.object({
+  incidentStatus: z.enum(["active", "resolved", "unclear"]).optional(),
   isScam: z.boolean(),
   scamType: z.string().nullable(),
   confidence: z.number().min(0).max(1),

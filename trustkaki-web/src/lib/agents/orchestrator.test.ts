@@ -435,6 +435,8 @@ function result<T>(
 const triageData = (
   overrides: Partial<TriageOutput> = {}
 ): TriageOutput => ({
+  // Existing social-decision fixtures explicitly exercise activity discovery.
+  socialContext: "activity_options",
   signals: [],
   riskLevel: "green",
   riskChange: "none",
@@ -1316,5 +1318,48 @@ describe("memory conversation honesty", () => {
       options.agentId === "triage" ? triageData({ routing: ["context_memory"], responseMessage: draft }) : options.fallback()));
     const response = await orchestrate(message, context());
     expect(response.messages[0].text).toBe(draft);
+  });
+});
+
+describe("current question and incident resolution regressions", () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+  it.each([
+    ["Actually staying home today. Feel like chatting with someone, but not a big group.", "You could ask Mei Ling for a quiet one-to-one chat."],
+    ["The community centre has a $30 tai chi class at their official counter. Is that okay?", "Check the fee directly with the community centre at its official counter."],
+    ["Anyways, what can we chat about?", "We could talk about food or your favourite music. Which sounds good?"],
+  ])("preserves the direct conversational answer for %s", async (message, draft) => {
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true");
+    vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", "true");
+    vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
+    const request = vi.fn(async (_url, init) => {
+      expect(JSON.parse(init.body).questions.social_intent).toBeUndefined();
+      return Response.json({ model: "typesafe/jev-1.14-20261014", usage: { input_tokens: 100, output_tokens: 0 },
+        answers: Object.fromEntries(routingFlags.map(flag => {
+          const choice = flag === "social" ? "present" : "absent";
+          return [flag, { type: "choice", choice, confidence: 1, probabilities: { present: +(choice === "present"), absent: +(choice === "absent"), unclear: 0 } }];
+        })) });
+    });
+    vi.stubGlobal("fetch", request);
+    runAgentMock.mockImplementation(async options => result(options.agentId, options.agentId === "triage"
+      ? { ...triageData({ responseMessage: draft }), socialContext: "conversation" } : options.fallback()));
+    const { orchestrate } = await import("./orchestrator");
+    const response = await orchestrate(message, context());
+    expect(response.messages[0].text).toBe(draft);
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+  it.each([[true, "yellow"], [true, "red"], [false, "yellow"]] as const)("only suppresses repeated scam signals when both assessments agree=%s with risk=%s", async (agrees, risk) => {
+    const draft = "Good that you checked and haven't paid. You can block and report the sender.";
+    runAgentMock.mockImplementation(async options => result(options.agentId, options.agentId === "triage"
+      ? { ...triageData({ responseMessage: draft, riskLevel: "yellow", humanFollowUpRequired: true,
+        signals: [{ type: "digital_safety", severity: "high", description: "Earlier suspicious payment request" }], routing: ["digital_safety"] }), digitalSafetyContext: "resolved" }
+      : options.agentId === "digital_safety" ? { isScam: true, incidentStatus: agrees ? "resolved" : "active", scamType: "payment", confidence: 0.9,
+        warningMessage: agrees ? draft : "Pause payment and check directly with the centre.", educationalNote: "Use official channels." }
+      : options.agentId === "briefing" ? briefingData({ overallRisk: "yellow" }) : options.fallback()));
+    const { orchestrate } = await import("./orchestrator");
+    const response = await orchestrate("I checked directly with the centre. It wasn't from them. I haven't paid or shared anything.", context(risk));
+    expect(response.riskLevel).toBe(risk);
+    expect(response.signals.some(signal => signal.type === "digital_safety")).toBe(!agrees);
+    expect(response.alerts.length > 0).toBe(!agrees);
+    if (agrees) expect(response.messages[0].text).toBe(draft);
   });
 });

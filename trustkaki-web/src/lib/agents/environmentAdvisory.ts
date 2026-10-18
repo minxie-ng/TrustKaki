@@ -92,6 +92,27 @@ export function outdoorRequest(message: string, messages: Array<{ sender: string
   }
   return null;
 }
+// Independent, narrow backstop for explicit current requests when semantic fields
+// are omitted. History resolves a place only; it never initiates a check.
+export function explicitOutdoorRequest(message: string, messages: Array<{ sender: string; text: string }>): string | null {
+  if (refusesOutdoor(message) || /["“”「」]/u.test(message) ||
+      /\b(?:yesterday|last week|used to|my friend|someone said|example|repeat|repeating|stop|indoors|indoor)\b|昨天|上周|例如|重复|重複/iu.test(message)) return null;
+  const plan = /^(?:(?:i(?:['’]m| am|'ll| will)?|we(?:['’]re| are|'ll| will)?)\s+)?(?:going|heading|leaving|go)(?:\s+out)?\b.{0,160}\b(?:walk|jog|picnic|cycling|outdoors?)\b/iu.test(message) ||
+    /^(?:我|我们|我們).{0,12}(?:去|出门|出門).{0,30}(?:散步|户外|戶外)/u.test(message);
+  const question = /^(?:how(?:['’]s| is| about)|what(?:['’]s| is| about)|is (?:it|the)|any|check|can you check|please check)\b.{0,70}\b(?:weather|forecast|air(?: quality)?|hazy|haze|psi|pm2\.?5)\b/iu.test(message) ||
+    /(?:天气|天氣|空气|空氣|烟霾|煙霾).{0,12}(?:怎样|怎樣|如何|吗|嗎|呢|\?)/u.test(message);
+  const conditions = /\b(?:there|here|now|today|tomorrow|tonight|hazy|in|at)\b|那里|那裡|现在|現在|今天|明天/iu.test(message) &&
+    /\b(?:weather|forecast|air quality|hazy|haze|psi|pm2\.?5)\b|\bair\s+(?:there|here)\b|天气|天氣|空气|空氣|烟霾|煙霾/iu.test(message);
+  const explanatory = /\b(?:in general|measured|made|calculated|defined|definition|work|works|mean|means)\b|原理|定义|定義|计算|計算/iu.test(message);
+  if (!plan && (!(question && conditions) || explanatory)) return null;
+  if (!/\b(?:there|that area|same place)\b|那里|那裡/iu.test(message)) return message;
+  for (const previous of [...messages].reverse()) {
+    if (previous.sender !== "senior") continue;
+    if (refusesOutdoor(previous.text)) return message;
+    if (hasOutdoorPlan(previous.text) && !/["“”「」]/u.test(previous.text)) return `${message}\nPreviously stated destination and timing: ${previous.text}`;
+  }
+  return message;
+}
 function fresh(timestamp: string, now: number, hours: number): boolean {
   const age = now - Date.parse(timestamp);
   return age >= -300_000 && age <= hours * 3_600_000;

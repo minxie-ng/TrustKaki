@@ -117,6 +117,8 @@ export interface TriageSignal {
 }
 
 export interface TriageOutput {
+  socialContext?: "conversation" | "activity_options";
+  digitalSafetyContext?: "active" | "resolved" | "none";
   outdoorContext?: "check" | "none" | "declined";
   outdoorQuery?: string;
   outdoorTrigger?: string;
@@ -167,6 +169,7 @@ export interface DigitalSafetyInput {
 }
 
 export interface DigitalSafetyOutput {
+  incidentStatus?: "active" | "resolved" | "unclear";
   isScam: boolean;
   scamType: string | null;
   confidence: number;

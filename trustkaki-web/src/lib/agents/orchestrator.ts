@@ -46,7 +46,7 @@ import { contextMemoryFallback } from "./fallbacks";
 import { hasSocialActivityCue, jevIsEnabled, runJevSocialDecision } from "./socialDecision";
 import { runJevRoutingShadow, routingShadowTrace } from "./routingShadow";
 import { selectSpecialistRouting } from "./specialistRouting";
-import { environmentAdvisory, outdoorRequest } from "./environmentAdvisory";
+import { environmentAdvisory, outdoorRequest, explicitOutdoorRequest } from "./environmentAdvisory";
 
 const contextMemoryTextExclusionPatterns = [
   /^(?:你好|您好|早安|早上好|晚上好|谢谢|谢谢你|好的|好|再见)$/u,
@@ -400,6 +400,7 @@ function hasDigitalSafetyCue(message: string): boolean {
 
 function digitalSafetySummary(data?: DigitalSafetyOutput): string | undefined {
   if (!data) return undefined;
+  if (data.incidentStatus === "resolved") return `Digital Safety assessed the reported incident as resolved; this does not independently verify the report or close existing alerts: ${data.warningMessage}`;
   return `${data.isScam ? "Suspected scam" : "Assessment inconclusive; safety is not verified"}; reported confidence=${data.confidence}: ${data.warningMessage}`;
 }
 
@@ -490,7 +491,8 @@ export async function orchestrate(
   const outdoorTrigger = triageResult.data.outdoorTrigger?.trim();
   const currentOutdoorTrigger = !!outdoorTrigger && message.includes(outdoorTrigger);
   const outdoorMessage = triageResult.data.outdoorContext === "check" && currentOutdoorTrigger
-    ? triageResult.data.outdoorQuery ?? outdoorRequest(message, ctx.messages) ?? message : null;
+    ? triageResult.data.outdoorQuery ?? outdoorRequest(message, ctx.messages) ?? message
+    : explicitOutdoorRequest(message, ctx.messages);
   signals = triageResult.data.signals;
   const activeObservation = activeRouting ? await routingRun : null;
   const routes = selectSpecialistRouting(activeObservation?.judgment ?? null, {
@@ -554,6 +556,16 @@ export async function orchestrate(
     contextMemoryCandidates = contextMemoryResult.data.candidates;
   }
 
+  // A resolution update is not another active scam. Require agreement from both
+  // independent assessments; absent fields or either fallback retain safety review.
+  const resolvedSafety = !triageResult.fallback && !digitalSafetyResult?.fallback &&
+    triageResult.data.digitalSafetyContext === "resolved" && digitalSafetyResult?.data.incidentStatus === "resolved";
+  if (resolvedSafety) {
+    signals = signals.filter(signal => signal.type !== "digital_safety");
+    const trace = traces.find(item => item.id === digitalSafetyResult.traceId);
+    if (trace) trace.tags.push("incident_resolution_update");
+  }
+
   // ── Step 4: Apply deterministic policy layer ──
   // The policy computes the final risk level and briefing requirement
   // using deterministic rules on top of validated LLM outputs.
@@ -563,9 +575,10 @@ export async function orchestrate(
     signals,
     triageRiskLevel: triageResult.data.riskLevel,
     triageRiskChange: triageResult.data.riskChange,
-    humanFollowUpRequired: triageResult.data.humanFollowUpRequired,
+    humanFollowUpRequired: triageResult.data.humanFollowUpRequired && (!resolvedSafety || signals.length > 0),
     currentRiskLevel: ctx.currentRiskLevel,
-    digitalSafety: digitalSafetyResult?.data ?? null,
+    digitalSafety: resolvedSafety ? null : digitalSafetyResult?.data ?? null,
+    digitalSafetyResolved: resolvedSafety,
     message,
   });
 
@@ -603,7 +616,7 @@ export async function orchestrate(
     if (triageCare || routes.carePause) environment.trace.tags.push("care_reply_preserved");
     traces.push(environment.trace);
   }
-  const socialDecision = !environment && jevIsEnabled() && socialEligible && !routes.carePause
+  const socialDecision = triageResult.data.socialContext === "activity_options" && !environment && jevIsEnabled() && socialEligible && !routes.carePause
       ? await runJevSocialDecision(message) : null;
   if (socialDecision) {
     socialDecision.tags.push("reply_selected");
@@ -613,7 +626,7 @@ export async function orchestrate(
   responseMessages.push(urgentHealth
     ? { text: "Your message may need urgent help. Please seek immediate help from local emergency services or someone nearby. I cannot contact them for you.\n\n您的情况可能需要紧急帮助。请立即联系当地急救服务或身边的人求助。我无法替您联系他们。", agentId: "policy" }
     : safetyReply
-      ? { text: routes.requestedSpecialists.includes("digital_safety") && !digitalSafetyResult.data.isScam
+      ? { text: !resolvedSafety && routes.requestedSpecialists.includes("digital_safety") && !digitalSafetyResult.data.isScam
         ? /\p{Script=Han}/u.test(message)
           ? "我无法确认这条信息是否安全。请先不要分享验证码、密码或转账，并请可信任的人帮忙核实。"
           : "I can't verify whether this request is safe. Avoid sharing codes, passwords or money, and ask someone you trust to help check it."
@@ -685,7 +698,7 @@ export async function orchestrate(
         ? { context_memory: "memory_exclusion" } : {}),
       ...(routes.social && !socialDecision && !environment ? { aac_nudge: urgentHealth ? "urgent_priority" : safetyReply ? "safety_priority"
         : boundedReply ? "capability_priority" : policyResult.finalRisk === "red" ? "red_risk"
-          : triageCare || routes.carePause ? "care_priority" : "social_disabled" } : {}),
+          : triageCare || routes.carePause ? "care_priority" : triageResult.data.socialContext !== "activity_options" ? "conversation_priority" : "social_disabled" } : {}),
     },
   }));
   const response: OrchestrateResponse = {

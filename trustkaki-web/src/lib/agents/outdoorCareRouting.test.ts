@@ -136,3 +136,20 @@ it.each(["ok", "okok", "why do you keep telling me the same thing?"])("rejects a
   expect(mocks.environment).not.toHaveBeenCalled();
   expect(result.messages[0].text).toBe("Okay, take care.");
 });
+
+it.each([
+  ["going to macritchie reservoir for a walk now", []],
+  ["how about the air there?", [{ id: "previous-plan", sender: "senior", text: "going to macritchie reservoir for a walk now", timestamp: "2026-10-18T14:00:00Z" }]],
+] as const)("checks explicit current outdoor requests even if Triage says none: %s", async (message, history) => {
+  arrange(undefined, "absent", "none");
+  const { orchestrate } = await import("./orchestrator");
+  await orchestrate(message, { ...ctx, messages: [...history] });
+  expect(mocks.environment).toHaveBeenCalledTimes(1);
+  expect(mocks.environment.mock.calls[0][0]).toMatch(/macritchie/i);
+});
+it.each(["What is air quality in general?", "How is the weather forecast made in Singapore?", "What is air pollution?", "Is the air conditioner working?", "How is air quality measured?", "okay thanks", "why repeat the air warning?", 'My friend said "going for a walk now".', "I walked there yesterday", "Actually staying home today"])("does not let the independent outdoor guard revive %s", async message => {
+  arrange(undefined, "absent", "none");
+  const { orchestrate } = await import("./orchestrator");
+  await orchestrate(message, { ...ctx, messages: [{ id: "previous-plan", sender: "senior", text: "Going to Bedok for a walk now", timestamp: "2026-10-18T14:00:00Z" }] });
+  expect(mocks.environment).not.toHaveBeenCalled();
+});

@@ -27,7 +27,7 @@ flowchart LR
 | **Briefing** | Separate observations, uncertainty and proposed human actions; preserve final policy risk | Staff should see what was reported and what to check, without fictional completed actions |
 | **Social decision** | Distinguish interested, declining and unclear; interest never authorises contact or booking | Loneliness is not consent, and refusal must be respected |
 
-Jev uses structured question instructions and criteria, rather than a free-form chat persona. In the main flow, Triage drafts the reply; Jev requests specialist reviews. Their outputs do not grant database access or final care authority. [Runtime selection](../src/lib/agents/orchestrator.ts) · [Jev contract](../src/lib/agents/routingContract.ts).
+Jev uses structured question instructions and criteria, rather than a free-form chat persona. In the main flow, Triage drafts the reply; Jev requests specialist reviews. Ordinary chat, one-to-one companionship and factual questions about a named class retain the Triage answer. Only explicit activity-discovery turns opt into the separate social-consent reply path. Their outputs do not grant database access or final care authority. [Runtime selection](../src/lib/agents/orchestrator.ts) · [Jev contract](../src/lib/agents/routingContract.ts).
 
 ## Context has a hierarchy
 
@@ -49,7 +49,8 @@ The common chat context includes the latest ten conversation messages. Memory ex
 | Propose memory; do not claim it was saved | Source/evidence validation and repository receipts determine acceptance; the UI reports write outcomes separately from retrieval |
 | Respect refusal and prioritise immediate care | Orchestration gates social suggestions and selects one reply; independent triggers and policy constrain Jev requests |
 | Do not invent external actions | Capability guards can select explicit bounded replies; no booking, phone-call or physical-help tool is granted |
-| Use available public data for outdoor advice | Code checks source freshness, geography and timing; unavailable data remains explicit |
+| Use available public data for outdoor advice | Current-turn semantic intent plus a narrow independent explicit-request guard initiate checks; history only resolves destinations. Code checks freshness, geography and timing; unavailable data remains explicit |
+| Distinguish resolved scam reports from active exposure | Triage and Digital Safety must both classify a resolution before historical digital-safety signals are excluded from new alerts; existing risk and alert records are not cleared |
 
 For example, **“remember that I prefer quiet one-to-one conversations”** can produce a memory proposal; **“did you save that?”** is a status question, not new evidence. Acknowledgement alone proves neither acceptance nor indexing. The [RAG screenshot](DEMO_GUIDE.md#4-rag-personalisation) shows a reply using already retrieved preferences.
 
