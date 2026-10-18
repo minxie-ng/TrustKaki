@@ -199,13 +199,13 @@ textarea {
   margin: 12px 0;
   padding: 14px 16px;
   border: 1px solid #cee1d4;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #eff7f1;
 }
 .decision-trail-result p { color: #203c2e; }
 .decision-trail-memory {
   padding: 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #eff7f1;
 }
 .decision-trail-summary, .decision-trail-routing {
@@ -219,13 +219,13 @@ textarea {
 .decision-trail-routing > div {
   padding: 12px;
   border: 1px solid var(--care-line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--care-paper);
 }
 .decision-trail-risk, .decision-trail-fallback {
   display: inline-block;
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 700;
 }
@@ -239,7 +239,7 @@ textarea {
 .decision-trail-card[data-fallback="true"] { border-color: #d7b46c; }
 .decision-trail-card[data-fallback="true"] .decision-trail-result,
 .decision-trail-error { background: #fff8e9; border-color: #e6cd9b; }
-.decision-trail-error { margin: 12px 0; padding: 14px; border-radius: 10px; }
+.decision-trail-error { margin: 12px 0; padding: 14px; border-radius: 12px; }
 .decision-trail-technical { padding: 14px 0; font-size: 14px; }
 .decision-trail-technical summary { min-height: 30px; }
 .decision-trail-technical summary:focus-visible {
@@ -250,7 +250,7 @@ textarea {
 .decision-trail-tag {
   max-width: 100%;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #f0f4f1;
   color: #435c50;
   font-size: 12px;

@@ -590,8 +590,11 @@ export async function orchestrate(
   const environment = !urgentHealth && !safetyReply && !boundedReply &&
       policyResult.finalRisk !== "red" && outdoorMessage !== null
     ? await environmentAdvisory(outdoorMessage!, ctx.senior.address) : null;
+  // A conditions-only turn must use checked tool evidence, not the earlier
+  // model draft (which has not seen those readings and may guess about haze).
+  const careReply = careClarification ?? (triageCare ? triageResult.data.responseMessage : null);
   const environmentReply = environment
-    ? `${careClarification ?? triageResult.data.responseMessage}\n\n${environment.reply}`
+    ? careReply ? `${careReply}\n\n${environment.reply}` : environment.reply
     : undefined;
   if (environment) {
     if (triageCare || routes.carePause) environment.trace.tags.push("care_reply_preserved");

@@ -211,7 +211,9 @@ async function getOrCreateOrchestration(args: {
   };
   const context: AgentRunContext = {
     ...senior.context,
-    messages: [inboundMessage],
+    // Keep the scoped, bounded dialogue loaded for this senior; follow-ups
+    // must reach the same agents with their preceding destination and timing.
+    messages: [...senior.context.messages, inboundMessage],
   };
 
   const result = await orchestrate(args.inbound.text, context);

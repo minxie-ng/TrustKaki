@@ -169,6 +169,24 @@ describe("Telegram orchestration service", () => {
     markTelegramEventFailedMock.mockResolvedValue(undefined);
   });
 
+  it("preserves loaded conversation and personal context for a location follow-up", async () => {
+    const history: AgentRunContext["messages"] = [
+      { id: "previous-senior", sender: "senior", text: "I am going to Pasir Ris Park for a walk now", timestamp: "2026-07-14T23:58:00.000Z" },
+      { id: "previous-reply", sender: "trustkaki", text: "The forecast for Pasir Ris is cloudy.", timestamp: "2026-07-14T23:59:00.000Z" },
+    ];
+    const loaded = { ...context, messages: history };
+    loadSeniorContextByMessagingIdentityMock.mockResolvedValue({ seniorId, context: loaded });
+    claimTelegramEventMock.mockResolvedValue(eventRow({ text_body: "only cloudy? is it hazy?" }));
+    const sendText = vi.fn().mockResolvedValue({ messageId: "outbound-test" });
+    const { processTelegramEventById } = await import("./service");
+    await processTelegramEventById("event-telegram-1", { outboundClient: { sendText } });
+    const supplied = orchestrateMock.mock.calls[0][1] as AgentRunContext;
+    expect(supplied.messages.slice(0, -1)).toEqual(history);
+    expect(supplied.messages.at(-1)).toMatchObject({ sender: "senior", text: "only cloudy? is it hazy?" });
+    expect(supplied.senior).toEqual(loaded.senior);
+    expect(loaded.messages).toEqual(history);
+  });
+
   it("accepts a parsed update through the durable inbox and reports duplicates", async () => {
     const { acceptTelegramWebhookEvent } = await import("./service");
     const payload = {

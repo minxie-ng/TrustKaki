@@ -15,7 +15,7 @@ const advisory = { reply: "Bedok: Thundery Showers. Source: data.gov.sg / NEA.",
   id: "environment", agentId: "aac_nudge", agentName: "Outdoor Conditions Tool", timestamp: new Date().toISOString(),
   input: "", reasoning: "Government data", output: "{}", tags: ["reply_selected"],
 } };
-function arrange(type?: "health" | "daily_living", healthLabel = "absent", outdoorContext: TriageOutput["outdoorContext"] = "check", outdoorQuery?: string) {
+function arrange(type?: "health" | "daily_living", healthLabel = "absent", outdoorContext: TriageOutput["outdoorContext"] = "check", outdoorQuery?: string, responseMessage = "If your knee gets uncomfortable, please rest.") {
   vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", "true");
   vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "false");
   vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
@@ -30,7 +30,7 @@ function arrange(type?: "health" | "daily_living", healthLabel = "absent", outdo
     outdoorContext, outdoorQuery,
     signals: type ? [{ type, severity: "low", description: "Known knee discomfort; reminder to rest" }] : [],
     riskLevel: "yellow", riskChange: "none", routing: [], summary: "Walking plan with existing care context",
-    responseMessage: "If your knee gets uncomfortable, please rest.", humanFollowUpRequired: false,
+    responseMessage, humanFollowUpRequired: false,
   };
   mocks.runAgent.mockImplementation(async options => ({
     agentId: options.agentId, agentName: options.agentName, traceId: options.agentId,
@@ -103,7 +103,7 @@ it("passes the model-resolved outing to the tool on a contextual follow-up", asy
   const { orchestrate } = await import("./orchestrator");
   const response = await orchestrate("What about the weather there?", ctx);
   expect(mocks.environment).toHaveBeenCalledWith("Going to Clementi later to meet friends and play pickleball and tai chi", undefined);
-  expect(response.messages[0].text).toContain("If your knee gets uncomfortable, please rest.");
+  expect(response.messages[0].text).toBe(advisory.reply);
 });
 
 it.each(["you just need to tell me to be careful can already", "i literally just told u..."])("does not force another tool report for %s", async message => {
@@ -111,4 +111,14 @@ it.each(["you just need to tell me to be careful can already", "i literally just
   const { orchestrate } = await import("./orchestrator");
   await orchestrate(message, ctx);
   expect(mocks.environment).not.toHaveBeenCalled();
+});
+
+it("does not publish a pre-tool model guess about haze on an environmental follow-up", async () => {
+  arrange(undefined, "absent", "check", "Air quality in Pasir Ris now", "No haze reported. Are you planning to go out?");
+  mocks.environment.mockResolvedValue({ ...structuredClone(advisory), reply: "Some air readings are unavailable or out of date. Please check NEA's latest update before you go." });
+  const { orchestrate } = await import("./orchestrator");
+  const response = await orchestrate("only cloudy? is it hazy?", ctx);
+  expect(response.messages[0].text).not.toContain("No haze reported");
+  expect(response.messages[0].text).not.toContain("Are you planning");
+  expect(response.messages[0].text).toContain("air readings are unavailable");
 });
