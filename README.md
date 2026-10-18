@@ -65,6 +65,12 @@ No registration or extra judge accounts are needed. Use fictional messages only.
 
 ## Explore the project
 
+### Technical walkthrough · 1:24
+
+https://github.com/user-attachments/assets/ab5b9fdf-ebba-4c06-b222-930918af5f81
+
+Generated with [GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki). This codebase overview complements the product screenshots below. Jev routes specialist reviews; application code retains final safety authority. Messaging availability, configured schedules and duplicate-processing safeguards have the limits described in the [architecture guide](trustkaki-web/docs/ARCHITECTURE.md).
+
 | View | Best for |
 | --- | --- |
 | [Live application](https://trustkaki.vercel.app) | Experience the care workflow and authenticated judge workspace |

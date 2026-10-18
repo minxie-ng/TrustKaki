@@ -19,7 +19,9 @@ Compact Mermaid views in the RAG and agent guides cover retrieval outcomes, memo
 
 The generator reports 26 components and 28 connections, with only three connections supported by its sampled source evidence. Review found that channel adapters call the shared orchestrator directly, not the browser orchestration API, and specialists execute internally rather than through the standalone route used to label their group. These limitations are stated beside the image. It omits details such as authentication, storage internals and parts of the runtime; it is not a complete call graph or deployment-status check. Curated SVG diagrams remain the source-linked explanation of behaviour and boundaries.
 
-For a walkthrough video, place a small linked thumbnail in **Explore the project**, directly before its table, once the video is published. Host the recording externally and use the same video URL in Devpost; keep the full video out of Git to avoid repository bloat. Add a screenshot thumbnail here only when an actual recording exists, and label any prepared fictional sequence clearly. A code-map tour complements a product demonstration but does not replace showing the senior message, staff case and decision trail.
+The landscape GitDiagram technical walkthrough (**1:24**) is uploaded as a [GitHub video attachment](https://github.com/user-attachments/assets/ab5b9fdf-ebba-4c06-b222-930918af5f81) and embedded near the top of **Explore the project** in the root README. The MP4 is hosted by GitHub and is not committed to Git history. Its generated explanation complements the maintained architecture guide; it does not establish current channel availability, active schedules or unconditional duplicate-processing guarantees.
+
+The product demo remains a separate recording: show the senior message, staff case and decision trail. Once published, link it separately in the README and Devpost rather than merging it with this codebase overview.
 
 ## Product screenshots
 
