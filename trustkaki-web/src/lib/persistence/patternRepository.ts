@@ -192,7 +192,7 @@ async function upsertConsolidatedQueue(
   );
   if (!episode) return;
 
-  const { data: queue, error: queueSelectError } = await client
+  const { data: episodeQueue, error: queueSelectError } = await client
     .from("caregiver_queue_items")
     .select("id")
     .eq("senior_id", seniorId)
@@ -201,6 +201,23 @@ async function upsertConsolidatedQueue(
     .limit(1)
     .maybeSingle();
   throwIfError(queueSelectError, "select active consolidated queue item");
+
+  // Older demo/care workflows used a different episode key for the same
+  // pattern. Reuse that open case before inserting: the database permits only
+  // one open queue item per pattern. Keep its identity and human workflow state.
+  let queue = episodeQueue;
+  if (!queue) {
+    const { data: patternQueue, error: patternQueueError } = await client
+      .from("caregiver_queue_items")
+      .select("id")
+      .eq("senior_id", seniorId)
+      .eq("pattern_id", episode.primaryPattern.id)
+      .in("status", ["pending", "acknowledged", "followed_up", "snoozed", "escalated"])
+      .limit(1)
+      .maybeSingle();
+    throwIfError(patternQueueError, "select active consolidated queue item");
+    queue = patternQueue;
+  }
 
   const queuePayload = {
     senior_id: seniorId,
