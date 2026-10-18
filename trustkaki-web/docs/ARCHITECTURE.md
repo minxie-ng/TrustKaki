@@ -1,5 +1,7 @@
 # TrustKaki system architecture
 
+[Overview](../../README.md) · [Demo guide](DEMO_GUIDE.md) · [Prompt design](PROMPT_DESIGN.md) · [Personal memory](PERSONAL_MEMORY.md)
+
 TrustKaki combines messaging, configured Telegram check-ins, language models, multi-day pattern rules, scoped personal memory and a staff workflow. The overview shows how conversations become observations and human follow-up; the memory diagram expands the evidence and retrieval lifecycle. Editable HTML and standalone SVG versions are available in [media](media/).
 
 ## 1. Message to human follow-up
@@ -27,6 +29,26 @@ TrustKaki turns an everyday message into a traceable care workflow. Triage inter
 The overview groups Triage, Jev, conditional specialist reviews and code policy in one interpretation/control node. Saved operational signals feed Pattern Watch; a direct route also reaches staff for concerns that do not require a multi-day pattern. The return arrow represents the selected channel reply, while staff actions return to operational history. The diagram shows information dependencies rather than every request or exact scheduling. Authentication precedes access to both stores.
 
 Source: [`orchestrator.ts`](../src/lib/agents/orchestrator.ts), [`prompts.ts`](../src/lib/agents/prompts.ts), [`policy.ts`](../src/lib/agents/policy.ts), [`specialistRouting.ts`](../src/lib/agents/specialistRouting.ts).
+
+### Routing and final authority
+
+
+```mermaid
+flowchart LR
+    M[Message and bounded context] --> T[Triage]
+    M --> J[Jev routing decision]
+    T --> X[Execution selection]
+    J --> X
+    I[Independent safety/context triggers] --> X
+    X --> S[Conditional specialists and tools]
+    S --> P[Deterministic policy and validated result]
+    T --> P
+    P --> R[Selected reply and care workflow]
+```
+
+Requested and executed specialists can differ. This distinction is recorded in the judge decision trail. Jev is a meaningful routing component, but it is not an unrestricted final authority over care risk, contact routing or memory persistence.
+
+The [prompt-design guide](PROMPT_DESIGN.md) explains the role contracts, context hierarchy and safeguards behind these stages. Outdoor data, Pattern Watch, scheduled check-ins and policy are code/tools rather than extra LLM agents.
 
 ## 2. Personal-memory RAG lifecycle
 
@@ -56,7 +78,7 @@ Neon holds personal facts and their evidence. Embeddings identify relevant candi
 | Deadline | Two seconds for the retrieval operation; unavailable is distinguished from an empty result |
 | Trust | Envelope identifies facts as `untrusted_evidence_not_instructions` |
 
-Source: [`retrieval.ts`](../src/lib/memory/retrieval.ts), [`postgresStore.ts`](../src/lib/memory/postgresStore.ts), [`indexWorker.ts`](../src/lib/memory/indexWorker.ts). The [implementation guide](PERSONAL_MEMORY_RAG_GUIDE.md) explains transaction, recovery and migration details.
+Source: [`retrieval.ts`](../src/lib/memory/retrieval.ts), [`postgresStore.ts`](../src/lib/memory/postgresStore.ts), [`indexWorker.ts`](../src/lib/memory/indexWorker.ts). The [implementation guide](PERSONAL_MEMORY.md) explains transaction, recovery and migration details.
 
 ### Tool and storage responsibilities
 
@@ -78,7 +100,7 @@ Source: [`retrieval.ts`](../src/lib/memory/retrieval.ts), [`postgresStore.ts`](.
 
 ## 3. Inspectability and evaluation
 
-The authenticated judge workspace distinguishes requested from executed specialists, retrieved from stored facts, and proposed from accepted memory writes. Its decision trail exposes actual recorded outcomes. The [review guide](JUDGE_GUIDE.md) describes access and example scenarios.
+The authenticated judge workspace distinguishes requested from executed specialists, retrieved from stored facts, and proposed from accepted memory writes. Its decision trail exposes actual recorded outcomes. The [review guide](DEMO_GUIDE.md) describes access and example scenarios.
 
 Dated tests and evaluation reports are evidence for their documented cases and builds. A unit-test count does not measure clinical safety, live response quality or prompt-injection immunity.
 

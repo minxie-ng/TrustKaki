@@ -2,13 +2,13 @@
 
 Technical overview · 17 October 2026
 
-[Documentation](README.md) · [System architecture](ARCHITECTURE_GUIDE.md) · [Database operations](NEON_MEMORY_SETUP.md)
+[Documentation](README.md) · [System architecture](ARCHITECTURE.md) · [Database operations](operations/NEON_MEMORY.md)
 
 TrustKaki personalises conversations with selected, evidence-backed facts about the senior. Its retrieval-augmented generation (RAG) pipeline supplies relevant context while preserving source attribution, correction history and access boundaries. Recent conversation is supplied separately from durable personal memory.
 
 ![Personal-memory lifecycle from validated statements to scoped, source-checked retrieval](media/memory-lifecycle.svg)
 
-[See RAG in the live workspace](PRODUCT_TOUR.md#4-rag-personalisation): the captured reply uses two retrieved preferences, with source and confirmation date visible beside it.
+[See RAG in the live workspace](DEMO_GUIDE.md#4-rag-personalisation): the captured reply uses two retrieved preferences, with source and confirmation date visible beside it.
 
 ## Storage architecture
 
@@ -172,9 +172,9 @@ The state view summarises retrieval eligibility rather than literal database sta
 
 ## Operating references
 
-- [Active roadmap](TrustKaki_BUILD_ROADMAP.md)
-- [Neon setup and safe commands](NEON_MEMORY_SETUP.md)
-- [System architecture](ARCHITECTURE_GUIDE.md)
+- [Product scope and next-stage work](PRODUCT.md#next-stage-work)
+- [Neon setup and safe commands](operations/NEON_MEMORY.md)
+- [System architecture](ARCHITECTURE.md)
 - [Retrieval](../src/lib/memory/retrieval.ts)
 - [Authenticated integration](../src/lib/memory/applicationRepository.ts)
 - [Transactions and RLS scope](../src/lib/memory/neonDatabase.ts)

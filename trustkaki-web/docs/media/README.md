@@ -2,7 +2,7 @@
 
 Two complementary views keep the README readable without hiding implementation details:
 
-- `architecture.html` / `architecture.svg`: eight grouped components covering messaging, configured Telegram check-ins, AI interpretation/policy, multi-day Pattern Watch, staff follow-up, memory, operational storage and outdoor data. Dashed paths mark configured/conditional inputs; channel and scheduler limitations are stated in the figure. Specialist detail remains in [the architecture guide](../ARCHITECTURE_GUIDE.md).
+- `architecture.html` / `architecture.svg`: eight grouped components covering messaging, configured Telegram check-ins, AI interpretation/policy, multi-day Pattern Watch, staff follow-up, memory, operational storage and outdoor data. Dashed paths mark configured/conditional inputs; channel and scheduler limitations are stated in the figure. Specialist detail remains in [the architecture guide](../ARCHITECTURE.md).
 - `memory-lifecycle.html` / `memory-lifecycle.svg`: validated memory writes, scoped retrieval and source revalidation.
 
 HTML files are editable, self-contained diagram sources with inline SVG. SVG exports are embedded in the README; open them separately for presentation. Both use a 1280 × 720 canvas and accessible titles/descriptions.
@@ -23,7 +23,7 @@ For a walkthrough video, place a small linked thumbnail in **Explore the project
 
 ## Product screenshots
 
-Four browser captures from the authenticated fictional demo and two user-supplied messaging captures, collected on **18 October 2026 (SGT)**. These PNGs are unmodified captures: captions and callout tables explain the visible evidence without changing the interface or model output. Click images in the [product tour](../PRODUCT_TOUR.md) to inspect their original resolution.
+Four browser captures from the authenticated fictional demo and two user-supplied messaging captures, collected on **18 October 2026 (SGT)**. These PNGs are unmodified captures: captions and callout tables explain the visible evidence without changing the interface or model output. Click images in the [product tour](../DEMO_GUIDE.md) to inspect their original resolution.
 
 | Asset | Capture | Visible evidence |
 | --- | --- | --- |

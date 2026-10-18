@@ -1,10 +1,10 @@
 # Neon personal-memory operations
 
-[Documentation](README.md) · [RAG architecture](PERSONAL_MEMORY_RAG_GUIDE.md) · [Recovery and retention](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md)
+[Documentation](../README.md) · [RAG architecture](../PERSONAL_MEMORY.md) · [Recovery and retention](PERSONAL_MEMORY_RECOVERY_RETENTION.md)
 
 Neon Postgres is the canonical personal-memory store. Personal facts, evidence references, versions, revisions, receipts and vectors share one database. Supabase continues to provide authentication and operational care data.
 
-![Personal-memory storage, indexing and retrieval](media/memory-lifecycle.svg)
+![Personal-memory storage, indexing and retrieval](../media/memory-lifecycle.svg)
 
 ## Configuration boundary
 
@@ -17,7 +17,7 @@ Neon Postgres is the canonical personal-memory store. Personal facts, evidence r
 | `TRUSTKAKI_MEMORY_EMBEDDING_MODEL` | Embedding model compatible with the index |
 | `TRUSTKAKI_MEMORY_MIN_SCORE` | Model-specific calibrated retrieval threshold |
 
-The [environment template](../.env.example) lists the complete configuration. Production uses Pinecone inference for 1,024-dimensional `llama-text-embed-v2` vectors; vectors are stored and searched in Neon, not the historical Pinecone pilot index.
+The [environment template](../../.env.example) lists the complete configuration. Production uses Pinecone inference for 1,024-dimensional `llama-text-embed-v2` vectors; vectors are stored and searched in Neon, not the historical Pinecone pilot index.
 
 The runtime uses a lazy `pg` pool, TLS verification, transactions and scoped role selection. Trusted server code resolves access before setting organisation/senior scope. Scope settings are not a substitute for authenticating arbitrary SQL clients. Runtime functions are configured in Singapore; build location is a separate platform concern.
 
@@ -79,10 +79,10 @@ npm run validate
 
 Live checks require the corresponding environment, budget and fixture scope approvals. Fixture tools operate on isolated fictional scopes and verify cleanup. They are separate from the standard local development path.
 
-`/api/health` reports sanitised readiness booleans. It does not prove live embeddings, response faithfulness or conversational quality. The [validation summary](VALIDATION.md) records the scope and limitations of the retained retrieval and integration evidence.
+`/api/health` reports sanitised readiness booleans. It does not prove live embeddings, response faithfulness or conversational quality. The [validation summary](../VALIDATION.md) records the scope and limitations of the retained retrieval and integration evidence.
 
 ## Rollback and data lifecycle
 
 Neon mode has no silent fallback to legacy Supabase personal memory. An application rollback must remain compatible with the current memory store. Resuming an old Supabase writer requires a deliberate writer pause and reconciliation plan; changing a backend flag is not a safe data rollback.
 
-Archiving, correction and erasure have distinct semantics. Restoring a historical database can reintroduce erased information unless erasure operations are replayed. Independent backup and post-restore erasure checks remain open prerequisites for real senior use. The [recovery/retention runbook](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md) preserves the operational procedure and known limitations.
+Archiving, correction and erasure have distinct semantics. Restoring a historical database can reintroduce erased information unless erasure operations are replayed. Independent backup and post-restore erasure checks remain open prerequisites for real senior use. The [recovery/retention runbook](PERSONAL_MEMORY_RECOVERY_RETENTION.md) preserves the operational procedure and known limitations.

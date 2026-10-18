@@ -1,33 +1,32 @@
 # TrustKaki documentation
 
-TrustKaki helps AAC staff turn everyday senior conversations into prioritised, accountable human follow-up. Personal context, structured specialist reviews and a record of staff actions support a shared care workflow.
+TrustKaki helps AAC teams turn everyday senior conversations into prioritised human follow-up. Start with the product, then inspect the AI and its boundaries.
 
-## Start here
+## A quick path for judges
 
-| Document | What it explains |
+| Time | Read | What to look for |
+| --- | --- | --- |
+| **1 minute** | [Project overview](../../README.md) | The care-team problem and working product |
+| **3 minutes** | [Demo guide](DEMO_GUIDE.md) | Access, six screenshots and live review prompts |
+| **1 minute** | [Prompt design · 30-second summary](PROMPT_DESIGN.md#the-30-second-version) | Why roles differ; what prompts request and code enforces |
+
+## Go deeper when needed
+
+| Document | Purpose |
 | --- | --- |
-| [Project overview](../../README.md) | Problem, product, demo access and architecture |
-| [Business case](BUSINESS_CASE.md) | Singapore context, users, value hypotheses and pilot measures |
-| [Product screenshot tour](PRODUCT_TOUR.md) | Care desk, four-day evidence, live Jev routing and source-linked RAG |
-| [Judge guide](JUDGE_GUIDE.md) | No-login walkthrough and authenticated live review |
-| [System architecture](ARCHITECTURE_GUIDE.md) | Message-to-care data flow and authority boundaries |
-| [Personal-memory RAG](PERSONAL_MEMORY_RAG_GUIDE.md) | Evidence-backed storage, retrieval, correction and failure handling |
-| [Agent and tool design](AGENT_SYSTEM.md) | Role responsibilities, structured routing and safeguards |
-| [Validation](VALIDATION.md) | Selected bounded evidence, observed failures and limits |
-| [Project status](TrustKaki_BUILD_ROADMAP.md) | Implemented capabilities and next-stage work |
+| [Product](PRODUCT.md) | Users, business case, implemented scope and proposed pilot measures |
+| [Architecture](ARCHITECTURE.md) | Agents/tools, messaging, Pattern Watch, storage and access |
+| [Personal memory](PERSONAL_MEMORY.md) | RAG evidence, retrieval, correction and failure lifecycle |
+| [Prompt design](PROMPT_DESIGN.md) | Role contracts, context hierarchy, safety choices and source links |
+| [Validation](VALIDATION.md) | Bounded results, observed failures and unverified outcomes |
 
-[Interactive repository map · GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki) complements the maintained architecture guide. It is an external code-navigation view, not evidence that a workflow is enabled or validated.
+The [interactive repository map](https://gitdiagram.com/minxie-ng/trustkaki) complements the maintained architecture guide; it is not a runtime verification report.
 
-![TrustKaki architecture](media/architecture.svg)
+## Engineering and operations
 
-## Engineering references
+- [Developer setup](../README.md) · [Script catalogue](../scripts/README.md)
+- [Neon memory operations](operations/NEON_MEMORY.md) · [Memory recovery and retention](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md)
+- [Release runbook](operations/HACKATHON_RELEASE_RUNBOOK.md)
+- [Diagrams and screenshots](media/README.md) · [Fictional portraits](../public/seniors/README.md)
 
-- [Developer setup](../README.md): dependencies, configuration and offline checks.
-- [Neon memory operations](NEON_MEMORY_SETUP.md): restricted runtime identity, migrations and indexing.
-- [Script catalogue](../scripts/README.md): evaluation, provisioning and verification tools; live commands are opt-in.
-- [Release runbook](operations/HACKATHON_RELEASE_RUNBOOK.md): controlled release and rollback procedures.
-- [Memory recovery and retention](operations/PERSONAL_MEMORY_RECOVERY_RETENTION.md): recovery boundaries and remaining prerequisites.
-- [Diagram assets](media/README.md): editable HTML and SVG exports.
-- [Fictional assets](../public/seniors/README.md): demo portrait usage.
-
-Product guides describe current behaviour; dated evidence records retain their original scope. Earlier versions remain in Git history.
+Source-linked guides explain current behaviour. Dated evidence keeps its original scope; earlier document versions remain in Git history.

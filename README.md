@@ -8,7 +8,7 @@ TrustKaki is an AI-assisted check-in and care-coordination system for Active Age
 
 **AI Lodge Hackathon · Solving a Business Problem**
 
-[Open TrustKaki](https://trustkaki.vercel.app) · [Judge guide](trustkaki-web/docs/JUDGE_GUIDE.md) · [Technical setup](trustkaki-web/README.md) · [Architecture explained](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) · [Documentation](trustkaki-web/docs/README.md)
+[Open TrustKaki](https://trustkaki.vercel.app) · [Demo guide](trustkaki-web/docs/DEMO_GUIDE.md) · [Technical setup](trustkaki-web/README.md) · [Architecture explained](trustkaki-web/docs/ARCHITECTURE.md) · [Documentation](trustkaki-web/docs/README.md)
 
 ## TrustKaki at a glance
 
@@ -27,7 +27,7 @@ TrustKaki is an AI-assisted check-in and care-coordination system for Active Age
 
 **Who needs attention → what changed → what staff should do next.** The left column prioritises seniors; the centre explains the follow-up; the right panel brings together relevant personal context. Fictional demo records shown.
 
-[**View the screenshot tour: Telegram/WhatsApp chats, care patterns, Jev routing and RAG →**](trustkaki-web/docs/PRODUCT_TOUR.md)
+[**View the screenshot tour: Telegram/WhatsApp chats, care patterns, Jev routing and RAG →**](trustkaki-web/docs/DEMO_GUIDE.md)
 
 ## Why this matters in Singapore
 
@@ -43,7 +43,7 @@ Scattered conversations make changes in appetite, mobility, social contact or di
 | Preserve personal context across staff handovers | Evidence-backed memory with correction history | Staff-reported context usefulness and factual accuracy |
 | Make follow-up accountable | Recorded actions, status and retained history | Time to human response and unresolved follow-ups |
 
-These are intended benefits, not measured savings or clinical outcomes. [Business case and pilot measures](trustkaki-web/docs/BUSINESS_CASE.md).
+These are intended benefits, not measured savings or clinical outcomes. [Business case and pilot measures](trustkaki-web/docs/PRODUCT.md).
 
 ## Try it
 
@@ -61,7 +61,7 @@ No registration or extra judge accounts are needed. Use fictional messages only.
 2. In **Judge workspace**, try “I feel lonely, but I don't want to join a group activity.” Inspect the reply and decision trail.
 3. Try “Please remember that I prefer quiet one-to-one conversations.” Inspect the **save outcome**, then ask a related question and inspect **personal memory retrieved**. Acknowledgement alone does not prove a save; retrieval is selective.
 
-[More scenarios and adversarial tests](trustkaki-web/docs/JUDGE_GUIDE.md).
+[More scenarios and adversarial tests](trustkaki-web/docs/DEMO_GUIDE.md).
 
 ## Explore the project
 
@@ -69,7 +69,7 @@ No registration or extra judge accounts are needed. Use fictional messages only.
 | --- | --- |
 | [Live application](https://trustkaki.vercel.app) | Experience the care workflow and authenticated judge workspace |
 | [Interactive repository map · GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki) | Explore the code structure alongside the repository |
-| [Architecture guide](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) | Understand data flow, roles, database access and safety boundaries |
+| [Architecture guide](trustkaki-web/docs/ARCHITECTURE.md) | Understand data flow, roles, database access and safety boundaries |
 
 <details open>
 <summary><strong>Explore the codebase · generated repository map</strong></summary>
@@ -107,13 +107,23 @@ flowchart LR
 | **Scoped memory** | The server resolves organisation + senior scope before Neon retrieval and writes | Keeps personal context tied to the authorised person |
 | **Continuity** | Cases, recorded actions and resolution history persist | Preserves follow-up context across sessions and staff handovers |
 
-This is an implemented multi-user foundation, not a claim of proven large-scale production readiness. [Database and access design](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#5-database-and-access-design) · [Validation and limits](trustkaki-web/docs/VALIDATION.md).
+This is an implemented multi-user foundation, not a claim of proven large-scale production readiness. [Database and access design](trustkaki-web/docs/ARCHITECTURE.md#5-database-and-access-design) · [Validation and limits](trustkaki-web/docs/VALIDATION.md).
 
 ## How the system works
 
 ![TrustKaki care loop: messaging, Telegram check-ins, AI interpretation, saved signals, multi-day patterns and staff follow-up](trustkaki-web/docs/media/architecture.svg)
 
-Triage interprets messages and drafts replies; Jev requests relevant specialists. Independent triggers and code policy constrain execution. Saved signals feed Pattern Watch; staff retain care decisions. [Agent responsibilities](trustkaki-web/docs/AGENT_SYSTEM.md) · [Detailed execution flow](trustkaki-web/docs/ARCHITECTURE_GUIDE.md).
+Triage interprets messages and drafts replies; Jev requests relevant specialists. Independent triggers and code policy constrain execution. Saved signals feed Pattern Watch; staff retain care decisions. [Agent responsibilities](trustkaki-web/docs/ARCHITECTURE.md#what-runs-and-why) · [Detailed execution flow](trustkaki-web/docs/ARCHITECTURE.md).
+
+### Prompt design in one glance
+
+| Design choice | Why it matters |
+| --- | --- |
+| **Different role contracts** | Triage converses, Jev requests specialists, Memory proposes evidence-backed facts, and Briefing supports staff action |
+| **Labelled context** | Current statements, dated dialogue and retrieved memory serve different purposes; records are evidence, not instructions |
+| **Code retains authority** | Schemas, access checks, evidence validation and policy constrain what model outputs may do |
+
+[**Prompt-design rationale and visual flow →**](trustkaki-web/docs/PROMPT_DESIGN.md) · [Observed results and limits](trustkaki-web/docs/VALIDATION.md)
 
 ## Technology choices
 
@@ -159,7 +169,7 @@ Haze disrupting the builder's everyday plans inspired the outdoor tool: remember
 
 **RAG recalls relevant personal facts; Pattern Watch connects observations across days.** Deterministic rules evaluate AI-extracted care signals in a seven-day window: mobility and withdrawal patterns require at least two distinct days; combined wellbeing decline requires at least three.
 
-The public walkthrough uses a prepared fictional four-day history, without sending channel messages or running a real schedule. [Messaging and pattern details](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns).
+The public walkthrough uses a prepared fictional four-day history, without sending channel messages or running a real schedule. [Messaging and pattern details](trustkaki-web/docs/ARCHITECTURE.md#4-messaging-check-ins-and-multi-day-patterns).
 
 ## Personal memory with RAG
 
@@ -174,7 +184,7 @@ The app saves selected durable facts with evidence, rather than treating every m
 | Bounded context | Up to **six facts**, **4,000-character JSON envelope**, **two-second deadline** |
 | Explicit failure state | Empty retrieval and unavailable retrieval are distinct; neither proves that no memories exist |
 
-Chat models can change without moving the memory database. Embedding-model changes require compatible dimensions and reindexing. [Detailed RAG lifecycle](trustkaki-web/docs/PERSONAL_MEMORY_RAG_GUIDE.md) · [Storage and failure paths](trustkaki-web/docs/ARCHITECTURE_GUIDE.md#2-personal-memory-rag-lifecycle).
+Chat models can change without moving the memory database. Embedding-model changes require compatible dimensions and reindexing. [Detailed RAG lifecycle](trustkaki-web/docs/PERSONAL_MEMORY.md) · [Storage and failure paths](trustkaki-web/docs/ARCHITECTURE.md#2-personal-memory-rag-lifecycle).
 
 ## Safety and practical limits
 
@@ -208,8 +218,8 @@ This runs tests, type checking, lint and a production build. Paid model evaluati
 | [`trustkaki-web/src`](trustkaki-web/src/) | Next.js UI, API routes, agents, policy, memory and persistence |
 | [`trustkaki-web/supabase`](trustkaki-web/supabase/) | Operational database migrations and fictional seed data |
 | [`trustkaki-web/docs/media`](trustkaki-web/docs/media/) | Editable diagram sources and README exports |
-| [`Judge guide`](trustkaki-web/docs/JUDGE_GUIDE.md) | Access, review steps and expected boundaries |
-| [`Architecture guide`](trustkaki-web/docs/ARCHITECTURE_GUIDE.md) | Judge-facing technical explanation and source links |
+| [`Demo guide`](trustkaki-web/docs/DEMO_GUIDE.md) | Access, review steps and expected boundaries |
+| [`Architecture guide`](trustkaki-web/docs/ARCHITECTURE.md) | Judge-facing technical explanation and source links |
 | [`Validation`](trustkaki-web/docs/VALIDATION.md) · [`Operations`](trustkaki-web/docs/operations/) | Selected bounded evaluation evidence and controlled operational procedures |
 
 ## Source use

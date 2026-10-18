@@ -1,6 +1,6 @@
 # TrustKaki — developer guide
 
-AI-assisted care coordination for AAC staff. Start with the [project overview](../README.md), [judge guide](docs/JUDGE_GUIDE.md) and [architecture explanation](docs/ARCHITECTURE_GUIDE.md).
+AI-assisted care coordination for AAC staff. Start with the [project overview](../README.md), [demo guide](docs/DEMO_GUIDE.md) and [architecture explanation](docs/ARCHITECTURE.md).
 
 ## Runtime stack
 
@@ -41,7 +41,7 @@ Use [`.env.example`](.env.example) as the full reference. Do not commit secrets.
 
 Only `NEXT_PUBLIC_*` configuration is intended for the browser. Service-role, model, OpenRouter and database credentials remain server-side. The template retains conservative opt-in defaults; copying it alone does not reproduce production services.
 
-Follow [Neon memory setup](docs/NEON_MEMORY_SETUP.md) for database roles, migrations and indexing. Review Supabase migrations under `supabase/migrations/` against the intended project before applying them. Do not seed or reset an unrelated or real-care database. Embedding model changes require a compatible index and reindexing.
+Follow [Neon memory setup](docs/operations/NEON_MEMORY.md) for database roles, migrations and indexing. Review Supabase migrations under `supabase/migrations/` against the intended project before applying them. Do not seed or reset an unrelated or real-care database. Embedding model changes require a compatible index and reindexing.
 
 ## Code navigation
 

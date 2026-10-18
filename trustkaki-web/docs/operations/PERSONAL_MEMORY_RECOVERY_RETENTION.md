@@ -1,6 +1,6 @@
 # Personal-memory recovery and retention
 
-[Documentation](../README.md) · [Neon operations](../NEON_MEMORY_SETUP.md) · [Validation](../VALIDATION.md)
+[Documentation](../README.md) · [Neon operations](NEON_MEMORY.md) · [Validation](../VALIDATION.md)
 
 This operator reference covers personal-memory recovery and historical copies. It does not authorise live commands. Releases, fixture creation, recovery branches and production changes require the corresponding approvals in the [release runbook](HACKATHON_RELEASE_RUNBOOK.md).
 

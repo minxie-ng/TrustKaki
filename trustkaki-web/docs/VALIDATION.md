@@ -1,6 +1,6 @@
 # Validation and known limits
 
-[Documentation](README.md) · [Architecture](ARCHITECTURE_GUIDE.md) · [Business case](BUSINESS_CASE.md)
+[Documentation](README.md) · [Architecture](ARCHITECTURE.md) · [Business case](PRODUCT.md)
 
 TrustKaki combines automated regression checks with bounded fictional live experiments. These cover different questions: structural correctness, retrieval eligibility, model behaviour, persistence and staff usability. None alone establishes clinical safety or real-world effectiveness.
 

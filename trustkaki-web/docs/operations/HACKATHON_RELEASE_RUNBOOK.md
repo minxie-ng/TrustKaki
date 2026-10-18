@@ -1,7 +1,7 @@
 # TrustKaki Hackathon Release Runbook
 
 <!-- documentation-context -->
-> **Operator reference.** This document defines controlled procedures and prerequisites. It is not a product tour or an instruction to run live commands during judging. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE_GUIDE.md).
+> **Operator reference.** This document defines controlled procedures and prerequisites. It is not a product tour or an instruction to run live commands during judging. Start with the [documentation index](../README.md) or [current architecture](../ARCHITECTURE.md).
 <!-- /documentation-context -->
 
 
