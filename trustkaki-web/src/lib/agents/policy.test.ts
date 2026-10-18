@@ -37,6 +37,56 @@ describe("applyPolicy", () => {
     expect(result.alerts).toEqual([]);
   });
 
+  it.each([
+    "Thanks, that's settled. Anyway, what can I make with eggs and bread?",
+    "Good morning, I slept well.",
+    "I checked with my bank. The call has ended and I shared nothing.",
+  ])("retains existing red risk without inventing a new incident: %s", (message) => {
+    const result = applyPolicy({
+      signals: [],
+      triageRiskLevel: "green",
+      triageRiskChange: "none",
+      humanFollowUpRequired: false,
+      currentRiskLevel: "red",
+      message,
+    });
+    expect(result.finalRisk).toBe("red");
+    expect(result.riskChange).toBe("none");
+    expect(result.alerts).toEqual([]);
+    expect(result.briefingRequired).toBe(false);
+  });
+
+  it("still alerts for a new emergency with no extracted signals at existing red risk", () => {
+    const result = applyPolicy({
+      signals: [],
+      triageRiskLevel: "red",
+      triageRiskChange: "none",
+      humanFollowUpRequired: false,
+      currentRiskLevel: "red",
+      message: "I cannot breathe and have chest pain.",
+    });
+    expect(result.finalRisk).toBe("red");
+    expect(result.alerts).toHaveLength(1);
+    expect(result.alerts[0].urgent).toBe(true);
+    expect(result.briefingRequired).toBe(true);
+  });
+
+  it.each(["scam", "follow-up"] as const)("preserves zero-signal %s alerts at existing red risk", (concern) => {
+    const result = applyPolicy({
+      signals: [],
+      triageRiskLevel: "red",
+      triageRiskChange: "none",
+      humanFollowUpRequired: concern === "follow-up",
+      currentRiskLevel: "red",
+      digitalSafety: concern === "scam" ? scam() : null,
+      message: "Please help check this.",
+    });
+    expect(result.alerts).toHaveLength(1);
+    expect(result.alerts[0].urgent).toBe(true);
+    expect(result.briefingRequired).toBe(true);
+    expect(result.reasoning).not.toContain("Briefing required ()");
+  });
+
   it("escalates medium health plus medium daily living to yellow with one actionable alert", () => {
     const result = applyPolicy({
       signals: [

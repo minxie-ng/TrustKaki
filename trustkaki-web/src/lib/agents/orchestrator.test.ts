@@ -497,6 +497,26 @@ describe("orchestrate", () => {
     });
   });
 
+  it("keeps red risk but does not create a new incident or briefing for a later food question", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const draft = "You could make scrambled eggs on toast.";
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({
+      socialContext: "conversation", digitalSafetyContext: "none", responseMessage: draft,
+    })));
+    const response = await orchestrate(
+      "Thanks, that's settled. Anyway, what can I make with eggs and bread?", context("red")
+    );
+    expect(response.riskLevel).toBe("red");
+    expect(response.alerts).toEqual([]);
+    expect(response.briefing).toBeNull();
+    expect(response.messages[0].text).toBe(draft);
+    expect(runAgentMock).toHaveBeenCalledTimes(1);
+    expect(response.traces.find(trace => trace.agentId === "policy")).toMatchObject({
+      tags: expect.arrayContaining(["no_alert", "no_briefing"]),
+      stateChanges: ["risk:red->red", "briefing:none", "alerts:0"],
+    });
+  });
+
   it("handles social refusal in the primary reply without a router or AAC call", async () => {
     const { orchestrate } = await import("./orchestrator");
     const reply = "That's okay. We can leave activities for now.";

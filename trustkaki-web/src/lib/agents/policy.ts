@@ -24,8 +24,6 @@ export interface PolicyInput {
   currentRiskLevel: RiskLevel;
   /** Output from the Digital Safety Agent, if it ran. */
   digitalSafety?: DigitalSafetyOutput | null;
-  /** Orchestrator confirmed agreement on a no-exposure resolution update. */
-  digitalSafetyResolved?: boolean;
   /** The original message text (used for keyword-based safety checks). */
   message: string;
 }
@@ -345,17 +343,20 @@ export function applyPolicy(input: PolicyInput): PolicyResult {
     }
   }
 
-  // An existing red risk stays red, but a resolved report with no current
-  // concern is not evidence for a new urgent health incident.
-  if (risk === "red" && alerts.length === 0 &&
-      !(input.digitalSafetyResolved && signals.length === 0 && !hasEmergencyKeyword)) {
+  // Retained risk is not evidence of a new incident. Require a current
+  // concern before synthesising an alert when signal extraction missed it.
+  const currentConcern =
+    hasEmergencyKeyword || hasUrgentStructuredHealthSignal ||
+    Boolean(digitalSafety?.isScam) || humanFollowUpRequired ||
+    riskChange !== "none";
+  if (risk === "red" && alerts.length === 0 && currentConcern) {
     const primary = strongestSignal(signals);
     alerts.push({
       type: primary?.type ?? "health",
       message: primary?.description ?? "Urgent risk escalation detected",
       severity: "high",
       urgent: true,
-      reason: "Red risk requires urgent alert",
+      reason: "Current concern requires alert at Red risk",
     });
   }
 
@@ -374,16 +375,18 @@ export function applyPolicy(input: PolicyInput): PolicyResult {
   //   1. there are signals beyond a single low-severity social signal
   //   2. riskChange !== "none"
   //   3. humanFollowUpRequired is true
-  //   4. a session-end or explicit briefing event occurs (handled by orchestrator)
+  //   4. this message generated an alert
+  //   5. a session-end or explicit briefing event occurs (handled by orchestrator)
   const hasActionableSignal = signals.length > 0 && !onlyLowSocial;
   const briefingRequired =
-    hasActionableSignal || riskChange !== "none" || humanFollowUpRequired;
+    hasActionableSignal || riskChange !== "none" || humanFollowUpRequired || alerts.length > 0;
 
   if (briefingRequired) {
     const reasons: string[] = [];
     if (hasActionableSignal) reasons.push(`${signals.length} actionable signal(s)`);
     if (riskChange !== "none") reasons.push(`risk ${riskChange}`);
     if (humanFollowUpRequired) reasons.push("human follow-up required");
+    if (alerts.length > 0) reasons.push(`${alerts.length} new alert(s)`);
     reasoning.push(`Briefing required (${reasons.join(", ")})`);
   } else if (onlyLowSocial) {
     reasoning.push(

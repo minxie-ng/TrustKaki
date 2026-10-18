@@ -586,7 +586,6 @@ export async function orchestrate(
     humanFollowUpRequired: triageResult.data.humanFollowUpRequired && (!resolvedSafety || signals.length > 0),
     currentRiskLevel: ctx.currentRiskLevel,
     digitalSafety: resolvedSafety ? null : digitalSafetyResult?.data ?? null,
-    digitalSafetyResolved: resolvedSafety,
     message,
   });
 

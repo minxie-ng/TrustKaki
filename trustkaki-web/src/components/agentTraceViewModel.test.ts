@@ -102,6 +102,15 @@ describe("agent trace caregiver formatting", () => {
     expect(formatted).toBe("Structured result recorded.");
   });
 
+  it.each([
+    ["risk:red->red", "Risk remains red"],
+    ["briefing:none", "No caregiver briefing required"],
+    ["briefing:policy", "Caregiver briefing required"],
+    ["briefing:created", "Caregiver briefing prepared"],
+  ])("accurately describes %s", (change, expected) => {
+    expect(formatStateChangeForCaregiver(change)).toBe(expected);
+  });
+
   it("formats technical state changes as short caregiver-readable phrases", () => {
     expect(formatStateChangeForCaregiver("risk:green->yellow")).toBe(
       "Risk changed from green to yellow"
