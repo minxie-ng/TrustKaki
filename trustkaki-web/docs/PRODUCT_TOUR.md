@@ -6,6 +6,22 @@
 
 All people and care records shown are fictional. Captured **18 October 2026 (SGT)**; screenshots preserve the displayed UI and outputs. Click each image for its full-resolution view.
 
+## Senior conversations through familiar channels
+
+### Telegram
+
+[![TrustKaki Telegram bot asks about breakfast and knee comfort; the fictional senior replies and receives a relevant acknowledgement](media/telegram-conversation.png)](media/telegram-conversation.png)
+
+**A simple check-in, a natural reply.** The exchange asks about breakfast and knee comfort; the demo user reports improvement, and TrustKaki acknowledges both details. Seniors interact through a familiar chat interface rather than a staff dashboard.
+
+### WhatsApp
+
+[![WhatsApp demo exchange: the senior reports low appetite and knee pain, and the reply refers to Rachel and Mei Ling](media/whatsapp-conversation.png)](media/whatsapp-conversation.png)
+
+**Everyday language carries care context.** The demo user mentions low appetite and knee pain; the displayed reply acknowledges both and refers to Rachel and Mei Ling. This image shows the conversation, not which retrieval path supplied those names; the RAG evidence is shown separately below.
+
+These are user-supplied fictional demo chat captures, captured on 18 October. They do not by themselves verify current delivery configuration or an active recurring schedule. Telegram scheduled outreach requires an authorised worker invocation; WhatsApp live availability remains subject to external business verification. [Channel architecture and limits](ARCHITECTURE_GUIDE.md#4-messaging-check-ins-and-multi-day-patterns).
+
 ## 1. A focused care desk
 
 [![Care desk with a senior priority list, Mr Tan's follow-up and personal context](media/care-workspace.png)](media/care-workspace.png)

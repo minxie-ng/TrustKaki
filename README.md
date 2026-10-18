@@ -27,7 +27,7 @@ TrustKaki is an AI-assisted check-in and care-coordination system for Active Age
 
 **Who needs attention → what changed → what staff should do next.** The left column prioritises seniors; the centre explains the follow-up; the right panel brings together relevant personal context. Fictional demo records shown.
 
-[**View the screenshot tour: four-day patterns, live Jev safety routing and RAG personalisation →**](trustkaki-web/docs/PRODUCT_TOUR.md)
+[**View the screenshot tour: Telegram/WhatsApp chats, care patterns, Jev routing and RAG →**](trustkaki-web/docs/PRODUCT_TOUR.md)
 
 ## Why this matters in Singapore
 
