@@ -21,7 +21,7 @@ The generator reports 26 components and 28 connections, with only three connecti
 
 The landscape GitDiagram technical walkthrough (**1:24**) is uploaded as a [GitHub video attachment](https://github.com/user-attachments/assets/ab5b9fdf-ebba-4c06-b222-930918af5f81) and embedded near the top of **Explore the project** in the root README. The MP4 is hosted by GitHub and is not committed to Git history. Its generated explanation complements the maintained architecture guide; it does not establish current channel availability, active schedules or unconditional duplicate-processing guarantees.
 
-The separate [product demo · 1:28](https://github.com/user-attachments/assets/31658cdd-6bee-41d4-95c4-ba6a81d47741) shows Telegram, the care workspace, the judge decision trail and a separately recorded personal-memory example. It includes English AI narration and captions, and is embedded in the root README and demo guide. The MP4 is hosted as a GitHub attachment, not committed to Git history.
+The separate [product demo · 1:28](https://github.com/user-attachments/assets/127f1371-d58d-4c7d-bc8b-3c0884a0f1a6) shows Telegram, the care workspace, the judge decision trail and a separately recorded personal-memory example. It includes English AI narration and captions, and is embedded in the root README and demo guide. The MP4 is hosted as a GitHub attachment, not committed to Git history.
 
 ## Product screenshots
 

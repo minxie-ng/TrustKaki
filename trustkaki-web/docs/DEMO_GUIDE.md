@@ -8,7 +8,7 @@ All people and care records shown are fictional. Captured **18 October 2026 (SGT
 
 ## Product demo · 1:28
 
-https://github.com/user-attachments/assets/31658cdd-6bee-41d4-95c4-ba6a81d47741
+https://github.com/user-attachments/assets/127f1371-d58d-4c7d-bc8b-3c0884a0f1a6
 
 Telegram conversation → care workspace → judge decision trail → a separately recorded personal-memory example. English AI narration and captions. The [technical walkthrough](https://github.com/user-attachments/assets/ab5b9fdf-ebba-4c06-b222-930918af5f81) explains the codebase separately.
 

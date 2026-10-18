@@ -12,7 +12,7 @@ TrustKaki is an AI-assisted check-in and care-coordination system for Active Age
 
 ## Product demo · 1:28
 
-https://github.com/user-attachments/assets/31658cdd-6bee-41d4-95c4-ba6a81d47741
+https://github.com/user-attachments/assets/127f1371-d58d-4c7d-bc8b-3c0884a0f1a6
 
 From a Telegram conversation to the care desk, inspectable AI decisions and personal memory. English AI narration and captions; fictional demo records. [Screenshot tour and judge access](trustkaki-web/docs/DEMO_GUIDE.md).
 
