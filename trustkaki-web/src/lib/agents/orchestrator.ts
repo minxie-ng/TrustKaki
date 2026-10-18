@@ -485,8 +485,11 @@ export async function orchestrate(
   });
   traces.push(toAgentTrace(triageResult));
 
-  // Triage owns semantic eligibility; preserve timing when answering an area clarification.
-  const outdoorMessage = triageResult.data.outdoorContext === "check"
+  // History resolves a destination, but cannot itself authorize another check.
+  // The semantic classifier must cite a trigger in this current senior turn.
+  const outdoorTrigger = triageResult.data.outdoorTrigger?.trim();
+  const currentOutdoorTrigger = !!outdoorTrigger && message.includes(outdoorTrigger);
+  const outdoorMessage = triageResult.data.outdoorContext === "check" && currentOutdoorTrigger
     ? triageResult.data.outdoorQuery ?? outdoorRequest(message, ctx.messages) ?? message : null;
   signals = triageResult.data.signals;
   const activeObservation = activeRouting ? await routingRun : null;

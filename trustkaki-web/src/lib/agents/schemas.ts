@@ -139,6 +139,7 @@ export const contextMemoryOutputSchema = z
 export const triageOutputSchema = z.object({
   outdoorContext: z.enum(["check", "none", "declined"]).optional(),
   outdoorQuery: z.string().trim().min(1).max(1000).optional(),
+  outdoorTrigger: z.string().trim().min(1).max(1000).optional(),
   signals: z.array(triageSignalSchema),
   riskLevel: riskLevelSchema,
   riskChange: z.enum(["none", "increase", "decrease"]),

@@ -27,7 +27,7 @@ function arrange(type?: "health" | "daily_living", healthLabel = "absent", outdo
     })),
   })));
   const triage: TriageOutput = {
-    outdoorContext, outdoorQuery,
+    outdoorContext, outdoorQuery, outdoorTrigger: outdoorContext === "check" ? "i am going for a walk in bedok" : undefined,
     signals: type ? [{ type, severity: "low", description: "Known knee discomfort; reminder to rest" }] : [],
     riskLevel: "yellow", riskChange: "none", routing: [], summary: "Walking plan with existing care context",
     responseMessage, humanFollowUpRequired: false,
@@ -35,7 +35,7 @@ function arrange(type?: "health" | "daily_living", healthLabel = "absent", outdo
   mocks.runAgent.mockImplementation(async options => ({
     agentId: options.agentId, agentName: options.agentName, traceId: options.agentId,
     timestamp: new Date().toISOString(), input: "", reasoning: "", output: "{}", tags: [],
-    data: options.agentId === "triage" ? triage : options.fallback(),
+    data: options.agentId === "triage" ? { ...triage, outdoorTrigger: outdoorContext === "check" ? JSON.parse(options.userPrompt.split("Current incoming message (JSON):\n").at(-1).split("\n")[0]) : undefined } : options.fallback(),
     durationMs: 0, modelUsed: "offline fixture", fallback: false, inputSummary: "", outputSummary: "", stateChanges: [],
   }));
   mocks.environment.mockResolvedValue(structuredClone(advisory));
@@ -121,4 +121,18 @@ it("does not publish a pre-tool model guess about haze on an environmental follo
   expect(response.messages[0].text).not.toContain("No haze reported");
   expect(response.messages[0].text).not.toContain("Are you planning");
   expect(response.messages[0].text).toContain("air readings are unavailable");
+});
+
+it.each(["ok", "okok", "why do you keep telling me the same thing?"])("rejects a historical outing trigger for %s", async message => {
+  arrange(undefined, "absent", "check", "Going to Pasir Ris Park now");
+  const original = mocks.runAgent.getMockImplementation()!;
+  mocks.runAgent.mockImplementation(async options => {
+    const run = await original(options);
+    if (options.agentId === "triage") run.data = { ...run.data, outdoorTrigger: "Going to Pasir Ris Park now", responseMessage: "Okay, take care." };
+    return run;
+  });
+  const { orchestrate } = await import("./orchestrator");
+  const result = await orchestrate(message, ctx);
+  expect(mocks.environment).not.toHaveBeenCalled();
+  expect(result.messages[0].text).toBe("Okay, take care.");
 });
