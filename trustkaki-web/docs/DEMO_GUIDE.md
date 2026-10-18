@@ -58,16 +58,18 @@ These are user-supplied fictional demo exchanges captured on 18 October. They do
 
 ## 3. Jev routes a payment concern
 
-[![Live fictional payment concern with Jev requesting digital safety and the specialist actually executing](media/jev-safety-routing.png)](media/jev-safety-routing.png)
+[![Refreshed Judge workspace showing a fictional payment concern, Triage and the Digital Safety Agent result](media/jev-safety-routing.png)](media/jev-safety-routing.png)
 
 | Look here | Visible evidence |
 | --- | --- |
-| **Left · senior message** | Someone requests a $500 transfer to sign up for a class. |
-| **Right · Jev Specialist Router** | Actual model shown: `typesafe/jev-1.14-20261014`, in active routing mode. |
-| **Jev requested / Actually executed** | Both show **Digital safety**, making the routing decision and execution inspectable. |
-| **Left · TrustKaki reply** | Advises pausing payment, protecting personal information and verifying through trusted sources. |
+| **Left · senior message** | An urgent $500 transfer to a personal account for class registration. |
+| **Right · Digital Safety Agent** | The specialist's actual review and selected precautionary reply. |
+| **Top · Final policy** | Yellow risk is the application outcome; Triage's red recommendation does not override it. |
+| **Left · TrustKaki reply** | Advises against transferring money or sharing personal information and recommends verification. |
 
-This is a successful observed routing run. The precaution does not establish that the payment request is fraudulent. Application policy retains final safety authority; model routing can still fail or be wrong.
+**Captured 11:17 in the refreshed interface.** This image shows specialist execution; Jev's routing card is outside the visible area. The [earlier routing capture](media/jev-routing-evidence.png), from a separate run at 02:04, shows `typesafe/jev-1.14-20261014` requesting **Digital safety** and **Actually executed: Digital safety**. It preserves evidence of the router without implying the two captures are the same run.
+
+These are individual observed runs. The precaution does not establish that the payment request is fraudulent. Application policy retains final safety authority; model routing can still fail or be wrong.
 
 [Agent responsibilities and guardrails](ARCHITECTURE.md)
 

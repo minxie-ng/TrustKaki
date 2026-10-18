@@ -23,17 +23,18 @@ For a walkthrough video, place a small linked thumbnail in **Explore the project
 
 ## Product screenshots
 
-Four browser captures from the authenticated fictional demo and two user-supplied messaging captures, collected on **18 October 2026 (SGT)**. These PNGs are unmodified captures: captions and callout tables explain the visible evidence without changing the interface or model output. Click images in the [product tour](../DEMO_GUIDE.md) to inspect their original resolution.
+Five browser captures from the authenticated fictional demo and two user-supplied messaging captures, collected on **18 October 2026 (SGT)**. These PNGs are unmodified captures: captions and callout tables explain the visible evidence without changing the interface or model output. Click images in the [product tour](../DEMO_GUIDE.md) to inspect their original resolution.
 
 | Asset | Capture | Visible evidence |
 | --- | --- | --- |
 | `care-workspace.png` | 01:47 | Priority queue, follow-up reason, next human action and personal context |
 | `four-day-pattern.png` | 01:52 | Cropped timeline of prepared fictional observations across four days |
-| `jev-safety-routing.png` | 02:04 | Actual Jev model, digital-safety request and specialist execution |
-| `rag-personalisation.png` | 02:09 | Retrieved preferences, source/date and a reply using those facts |
+| `jev-safety-routing.png` | 11:17 | Refreshed interface: payment concern, Triage and Digital Safety result |
+| `jev-routing-evidence.png` | 02:04 | Earlier separate run: actual Jev model, digital-safety request and execution |
+| `rag-personalisation.png` | 11:18 | Retrieved preferences, source/date and a reply using those facts |
 | `telegram-conversation.png` | 10:42 | User-supplied demo chat: breakfast/knee check-in, senior reply and acknowledgement |
 | `whatsapp-conversation.png` | 10:42 | User-supplied demo chat: appetite/knee update and a reply mentioning known contacts |
 
-The six images total about **2.03 MiB**. They are documentation evidence, not application assets or exhaustive test results. The timeline includes prepared fictional history; live-model screenshots show individual observed runs, not guaranteed responses. No credentials are included. Source identifiers in the RAG capture belong to fictional demo records.
+The seven images total about **2.48 MiB**. They are documentation evidence, not application assets or exhaustive test results. The timeline includes prepared fictional history; live-model screenshots show individual observed runs, not guaranteed responses. No credentials are included. Source identifiers in the RAG capture belong to fictional demo records.
 
 The messaging screenshots show displayed exchanges, not evidence of current channel provisioning, recurring scheduler activation or a specific memory-retrieval path. The WhatsApp contact-info screenshot is omitted because it shows configuration rather than the product conversation.
