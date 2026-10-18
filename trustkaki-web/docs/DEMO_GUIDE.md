@@ -6,6 +6,12 @@
 
 All people and care records shown are fictional. Captured **18 October 2026 (SGT)**; screenshots preserve the displayed UI and outputs. Click each image for its full-resolution view.
 
+## Product demo · 1:28
+
+https://github.com/user-attachments/assets/31658cdd-6bee-41d4-95c4-ba6a81d47741
+
+Telegram conversation → care workspace → judge decision trail → a separately recorded personal-memory example. English AI narration and captions. The [technical walkthrough](https://github.com/user-attachments/assets/ab5b9fdf-ebba-4c06-b222-930918af5f81) explains the codebase separately.
+
 ## Access
 
 Open [TrustKaki](https://trustkaki.vercel.app).
