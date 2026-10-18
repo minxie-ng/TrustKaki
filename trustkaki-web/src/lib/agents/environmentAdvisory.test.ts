@@ -159,3 +159,15 @@ it("recognises the park fishing plan and respects fishing refusals", async () =>
   expect(outdoorRequest("我想去钓鱼", [])).not.toBeNull();
   expect(outdoorRequest("我不想钓鱼", [])).toBeNull();
 });
+
+// Every current outing checks air quality, even when the semantic routing query
+// is a plain outing statement rather than the senior's original haze question.
+it.each(["Going for a short walk in Bedok now", "Is it hazy in Bedok?"])("reports checked normal air quality for %s", async query => {
+  mockApi(20, issued, "Cloudy");
+  const { environmentAdvisory } = await import("./environmentAdvisory");
+  const result = await environmentAdvisory(query, null, now);
+  expect(result.reply).toContain("forecast for Bedok is cloudy");
+  expect(result.reply).toContain("short-term air reading for the wider area is in NEA's normal range");
+  expect(result.reply).not.toMatch(/no haze|safe to go/i);
+  expect(JSON.parse(result.trace.output).evidence.some((entry: { source: string }) => entry.source.endsWith("/pm25"))).toBe(true);
+});

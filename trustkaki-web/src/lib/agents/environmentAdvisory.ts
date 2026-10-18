@@ -140,7 +140,6 @@ export async function environmentAdvisory(message: string, homeAddress?: string 
   const area = matches.length === 1 ? matches[0] : null;
   const tomorrow = /\btomorrow\b|明天/iu.test(message);
   const future = isFuturePlan(message);
-  const airQuestion = /\b(?:air quality|haze|psi|pm\s?2\.?5)\b|空气质量|空氣質量|雾霾|霧霾/iu.test(message);
   const readingsRequested = /\b(?:psi|pm\s?2\.?5|readings?|numbers?|values?)\b|读数|讀數|指数|指數|数值|數值/iu.test(message);
   const evidence: Array<{ source: string; area: string; issuedAt: string; validFrom?: string; validUntil?: string; value: string }> = [];
   const parts: string[] = [];
@@ -198,7 +197,7 @@ export async function environmentAdvisory(message: string, homeAddress?: string 
         if (key === "pm25_one_hourly" && !future && value > 55) parts.push(value > 150
           ? chinese ? "附近大区域的空气读数偏高，接下来一小时请先留在室内，避免户外活动。" : "The air reading for the wider area is high, so please avoid all outdoor activities for the next hour."
           : chinese ? "附近大区域的空气读数偏高，接下来一小时请避免剧烈户外活动，出门前再查一下。" : "The air reading for the wider area is elevated, so please avoid strenuous outdoor activities for the next hour and check again before heading out.");
-        if (key === "pm25_one_hourly" && !future && value <= 55 && airQuestion) parts.push(chinese
+        if (key === "pm25_one_hourly" && !future && value <= 55) parts.push(chinese
           ? "附近大区域最新的短期空气读数在 NEA 的正常范围内。如果晚点出门，请再查一下，情况可能会变化。"
           : "The latest short-term air reading for the wider area is in NEA's normal range. Check again if you head out later, as conditions can change.");
       } else missing.push(kind);
