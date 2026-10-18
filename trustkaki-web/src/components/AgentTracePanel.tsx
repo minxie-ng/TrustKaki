@@ -26,26 +26,26 @@ function formatTime(ts: string) {
 
 export default function AgentTracePanel({ traces, run, visible, onToggle }: AgentTracePanelProps) {
   return (
-    <div className="flex h-full flex-col border-t border-[var(--care-line)] bg-[var(--care-paper)] text-[var(--care-ink)]">
+    <div className="decision-trail flex h-full min-w-0 flex-col border-t border-[var(--care-line)] bg-[var(--care-paper)] text-[var(--care-ink)]">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={visible}
         className="flex min-h-11 shrink-0 items-center justify-between px-4 py-3 text-left hover:bg-[var(--care-mist)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--care-brand)]"
       >
-        <span className="text-sm font-semibold">Decision trail</span>
-        <span className="flex items-center gap-2 text-xs text-gray-500">
+        <span className="text-lg font-bold">Decision trail</span>
+        <span className="flex items-center gap-2 text-sm text-gray-600">
           <span>{traces.length} {traces.length === 1 ? "run" : "runs"}</span>
           <span aria-hidden="true">{visible ? "-" : "+"}</span>
         </span>
       </button>
 
       {visible && (
-        <div className="min-h-0 flex-1 divide-y divide-[var(--care-line)] overflow-y-auto border-t border-[var(--care-line)]">
-          <section className="space-y-4 px-5 py-5 text-sm" aria-label="Run outcome">
+        <div className="decision-trail-scroll min-h-0 flex-1 overflow-y-auto border-t border-[var(--care-line)]">
+          <section className="decision-trail-outcome space-y-4" aria-label="Run outcome">
             <p className="text-gray-600">{run ? "Last completed message in this workspace." : "Latest recorded traces for the selected senior. Send a message to inspect its retrieved context and save outcome."}</p>
             {run && <>
-              <div><h3 className="font-semibold">Personal memory retrieved for this request</h3>
+              <div className="decision-trail-memory"><h3 className="font-semibold">Personal memory retrieved for this request</h3>
                 {!run.retrieval || run.retrieval.status === "not_recorded" ? <p className="mt-1 text-gray-600">Retrieval evidence was not recorded.</p>
                   : run.retrieval.status === "unavailable" ? <p className="mt-1 text-gray-600">Retrieval unavailable. No personal memory supplied.</p>
                   : run.retrieval.items.length === 0 ? <p className="mt-1 text-gray-600">No matching personal memory supplied.</p>
@@ -53,8 +53,8 @@ export default function AgentTracePanel({ traces, run, visible, onToggle }: Agen
                     <p className="leading-6">{item.content}</p><p className="mt-1 break-words text-gray-600">Source: {item.source} · Confirmed {new Date(item.confirmedAt).toLocaleDateString("en-SG")}</p>
                   </li>)}</ul>}
               </div>
-              <div className="grid grid-cols-2 gap-4 border-t border-[var(--care-line)] pt-4">
-                <div><h3 className="font-semibold">Final policy</h3><p className="mt-1 capitalize">{run.riskLevel} risk</p><p className="mt-1 text-gray-600">Policy retains safety authority.</p></div>
+              <div className="decision-trail-summary">
+                <div><h3 className="font-semibold">Final policy</h3><p className="decision-trail-risk mt-2 capitalize" data-risk={run.riskLevel}>{run.riskLevel} risk</p><p className="mt-1 text-gray-600">Policy retains safety authority.</p></div>
                 <div><h3 className="font-semibold">Save outcome</h3><p className="mt-1">{run.persistence?.persisted === true ? "Saved" : run.persistence?.persisted === false ? "Not saved" : "Not recorded"}{run.persistence?.replayed ? " · Existing request replayed" : ""}</p>
                   {run.persistence?.memory && <p className="mt-1 text-gray-600">Personal memory: {run.persistence.memory.accepted} accepted, {run.persistence.memory.rejected} rejected, {run.persistence.memory.failed} failed</p>}
                 </div>
@@ -65,11 +65,13 @@ export default function AgentTracePanel({ traces, run, visible, onToggle }: Agen
           {traces.map((trace) => (
             <article
               key={trace.id}
-              className="px-5 py-5 text-sm"
+              className="decision-trail-card"
+              data-fallback={trace.fallback || Boolean(trace.errorMessage)}
             >
-              <div className="flex items-start justify-between gap-3 border-b border-[var(--care-hairline)] pb-2">
-                <div><h3 className="font-semibold text-gray-800">{trace.agentName}</h3><p className="mt-1 break-words text-sm text-gray-600">{trace.modelUsed ?? "Model not recorded"}{trace.fallback ? " · Fallback used" : ""}</p></div>
-                <code className="shrink-0 font-mono text-[10px] text-gray-500">
+              <div className="decision-trail-card-header">
+                <div className="min-w-0"><h3 className="decision-trail-agent">{trace.agentName}</h3><p className="decision-trail-model">{trace.modelUsed ?? "Model not recorded"}</p>
+                  {trace.fallback && <span className="decision-trail-fallback">Fallback used</span>}</div>
+                <code className="decision-trail-time">
                   {formatTime(trace.timestamp)}
                 </code>
               </div>
@@ -78,20 +80,20 @@ export default function AgentTracePanel({ traces, run, visible, onToggle }: Agen
                 {recordedRouting(trace) && <RoutingDetails trace={trace} />}
                 <EnvironmentSources trace={trace} />
                 <div className="py-2">
-                  <div className="font-semibold text-gray-600">What it reviewed</div>
+                  <div className="decision-trail-label">What it reviewed</div>
                   <p className="mt-1 leading-relaxed text-gray-700">
                     {formatAgentInputForCaregiver(trace)}
                   </p>
                 </div>
-                <div className="py-2">
-                  <div className="font-semibold text-gray-600">Result</div>
+                <div className="decision-trail-result">
+                  <div className="decision-trail-label">Result</div>
                   <p className="mt-1 leading-relaxed text-gray-700">
                     {formatAgentOutputForCaregiver(trace)}
                   </p>
                 </div>
                 {trace.stateChanges && trace.stateChanges.length > 0 && (
                   <div className="py-2">
-                    <div className="font-semibold text-gray-600">Recorded changes</div>
+                    <div className="decision-trail-label">Recorded changes</div>
                     <ul className="mt-1 list-disc space-y-1 pl-4 text-gray-700">
                       {trace.stateChanges.slice(0, 4).map((change) => (
                         <li key={change}>{formatStateChangeForCaregiver(change)}</li>
@@ -100,29 +102,29 @@ export default function AgentTracePanel({ traces, run, visible, onToggle }: Agen
                   </div>
                 )}
                 {trace.errorMessage && (
-                  <div className="py-2">
-                    <div className="font-semibold text-gray-600">Fallback or error</div>
+                  <div className="decision-trail-error">
+                    <div className="decision-trail-label">Fallback or error</div>
                     <p className="mt-1 text-gray-700">{trace.errorMessage}</p>
                   </div>
                 )}
-                <details className="py-2">
-                  <summary className="cursor-pointer font-semibold text-gray-600">
+                <details className="decision-trail-technical">
+                  <summary className="cursor-pointer font-semibold text-[var(--care-brand)]">
                     Technical values
                   </summary>
                   <dl className="mt-2 grid grid-cols-[5rem_minmax(0,1fr)] gap-x-2 gap-y-1 text-gray-600">
                     <dt>Model</dt>
-                    <dd><code className="font-mono">{trace.modelUsed ?? "not recorded"}</code></dd>
+                    <dd className="min-w-0 break-words"><code className="font-mono">{trace.modelUsed ?? "not recorded"}</code></dd>
                     <dt>Duration</dt>
-                    <dd><code className="font-mono">{trace.durationMs != null ? `${Math.round(trace.durationMs)} ms` : "not recorded"}</code></dd>
+                    <dd className="min-w-0 break-words"><code className="font-mono">{trace.durationMs != null ? `${Math.round(trace.durationMs)} ms` : "not recorded"}</code></dd>
                     <dt>Fallback</dt>
-                    <dd><code className="font-mono">{trace.fallback ? "yes" : "no"}</code></dd>
+                    <dd className="min-w-0 break-words"><code className="font-mono">{trace.fallback ? "yes" : "no"}</code></dd>
                   </dl>
                 </details>
               </div>
 
-              <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-[var(--care-hairline)] pt-2">
+              <div className="decision-trail-tags">
                 {trace.tags.map((tag) => (
-                  <code key={tag} className="font-mono text-[10px] text-[var(--care-brand)]">
+                  <code key={tag} className="decision-trail-tag">
                     {tag}
                   </code>
                 ))}
@@ -138,8 +140,8 @@ export default function AgentTracePanel({ traces, run, visible, onToggle }: Agen
 function RoutingDetails({ trace }: { trace: AgentTrace }) {
   const routing = recordedRouting(trace);
   if (!routing) return null;
-  return <dl className="grid gap-3 py-4 text-sm">
-    {[["Mode", routing.mode], ["Jev requested", routing.requested], ["Actually executed", routing.executed], ["Blocked by policy or exclusions", routing.blocked], ["Independent safety/context triggers", routing.overrides]].map(([label, value]) => <div key={label}><dt className="font-semibold text-gray-600">{label}</dt><dd className="mt-1">{value}</dd></div>)}
+  return <dl className="decision-trail-routing">
+    {[["Mode", routing.mode], ["Jev requested", routing.requested], ["Actually executed", routing.executed], ["Blocked by policy or exclusions", routing.blocked], ["Independent safety/context triggers", routing.overrides]].map(([label, value]) => <div key={label}><dt className="decision-trail-label">{label}</dt><dd className="mt-1">{value}</dd></div>)}
   </dl>;
 }
 
@@ -162,7 +164,7 @@ function EnvironmentSources({ trace }: { trace: AgentTrace }) {
     <ul className="mt-3 space-y-3">{evidence.map(item => <li key={item.source} className="break-words border-l-2 border-[var(--care-line)] pl-3">
       <a href={item.source} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{item.source.split("/").at(-1)?.replaceAll("-", " ")}</a>
       <p className="mt-1">{item.area} · {item.value}</p>
-      <p className="mt-1 text-xs text-gray-600">Issued {time(item.issuedAt)}{item.validUntil ? ` · Valid ${item.validFrom ? time(item.validFrom) + " to " : "until "}${time(item.validUntil)}` : " · Observed air reading, not a forecast"}</p>
+      <p className="mt-1 text-sm text-gray-600">Issued {time(item.issuedAt)}{item.validUntil ? ` · Valid ${item.validFrom ? time(item.validFrom) + " to " : "until "}${time(item.validUntil)}` : " · Observed air reading, not a forecast"}</p>
     </li>)}</ul>
     <a href="https://www.haze.gov.sg/" target="_blank" rel="noopener noreferrer" className="mt-3 inline-block underline underline-offset-4">NEA air-quality guidance</a>
   </details>;
