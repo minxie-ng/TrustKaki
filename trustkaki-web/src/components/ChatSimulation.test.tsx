@@ -28,3 +28,21 @@ it("does not send examples automatically or display scripted replies after failu
   expect(container.textContent).not.toContain("Scripted reply must never appear");
   expect(onComplete).not.toHaveBeenCalled(); expect(onResult).not.toHaveBeenCalled();
 });
+
+it("shows the saved reply and forwards a post-save warning without prompting a resend", async () => {
+  const run = { messages: [{ text: "Could you tell me your preferences again?", agentId: "triage" }],
+    traces: [], riskLevel: "red", persistence: { persisted: true, patternWatch: { status: "failed" } } };
+  const fetcher = vi.fn().mockResolvedValue(Response.json(run));
+  vi.stubGlobal("fetch", fetcher);
+  const onComplete = vi.fn(); const onResult = vi.fn();
+  await act(async () => root.render(createElement(ChatSimulation, { seniorId: "senior-2", authToken: "fictional-token",
+    messages: [], onComplete, onResult })));
+  await act(async () => (Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Use a check-in example")!).click());
+  await act(async () => container.querySelector("form")!.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true })));
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(container.textContent).toContain(run.messages[0].text);
+  expect(container.textContent).not.toContain("server-side save may have occurred");
+  expect(onResult).toHaveBeenCalledWith(run);
+  expect(onComplete).toHaveBeenCalledTimes(1);
+  expect(container.querySelector("textarea")!.value).toBe("");
+});

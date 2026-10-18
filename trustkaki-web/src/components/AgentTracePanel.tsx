@@ -56,6 +56,7 @@ export default function AgentTracePanel({ traces, run, visible, onToggle }: Agen
               <div className="decision-trail-summary">
                 <div><h3 className="font-semibold">Final policy</h3><p className="decision-trail-risk mt-2 capitalize" data-risk={run.riskLevel}>{run.riskLevel} risk</p><p className="mt-1 text-gray-600">Policy retains safety authority.</p></div>
                 <div><h3 className="font-semibold">Save outcome</h3><p className="mt-1">{run.persistence?.persisted === true ? "Saved" : run.persistence?.persisted === false ? "Not saved" : "Not recorded"}{run.persistence?.replayed ? " · Existing request replayed" : ""}</p>
+                  {run.persistence?.patternWatch?.status === "failed" && <p role="alert" className="mt-2 text-[var(--care-coral)]">Pattern and care queue update failed. The chat and recorded decisions were saved. Review Activity; do not resend this message.</p>}
                   {run.persistence?.memory && <p className="mt-1 text-gray-600">Personal memory: {run.persistence.memory.accepted} accepted, {run.persistence.memory.rejected} rejected, {run.persistence.memory.failed} failed</p>}
                   {!!run.persistence?.memory?.failures?.length && <ul className="mt-2 space-y-1 text-gray-600">{[...new Set(run.persistence.memory.failures.map(memoryFailureLabel))].map(label => <li key={label}>{label}</li>)}</ul>}
                 </div>

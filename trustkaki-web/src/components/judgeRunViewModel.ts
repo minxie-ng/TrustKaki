@@ -13,7 +13,7 @@ export const judgeRunSchema = z.object({
   traces: z.array(traceSchema),
   riskLevel: z.enum(["green", "yellow", "red"]),
   retrieval: z.object({ status: z.enum(["available", "empty", "unavailable", "not_recorded"]), items: z.array(z.object({ content: z.string(), source: z.string(), confirmedAt: z.string() })) }).optional(),
-  persistence: z.object({ persisted: z.boolean(), replayed: z.boolean().optional(), memory: z.object({ accepted: z.number(), rejected: z.number(), failed: z.number(), failures: z.array(z.object({ stage: z.enum(["extraction", "policy", "rpc"]), category: z.enum(["conflict", "invalid_output", "policy_error", "provider_error", "rpc_error"]) })).optional() }).optional() }).optional(),
+  persistence: z.object({ persisted: z.boolean(), patternWatch: z.object({ status: z.enum(["completed", "failed"]) }).optional(), replayed: z.boolean().optional(), memory: z.object({ accepted: z.number(), rejected: z.number(), failed: z.number(), failures: z.array(z.object({ stage: z.enum(["extraction", "policy", "rpc"]), category: z.enum(["conflict", "invalid_output", "policy_error", "provider_error", "rpc_error"]) })).optional() }).optional() }).optional(),
 });
 export type JudgeRun = z.infer<typeof judgeRunSchema>;
 

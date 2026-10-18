@@ -486,9 +486,29 @@ export async function persistOrchestrationResult(args: {
   await persistRiskEvent(client, args.seniorId, checkIn.id, payload, agentRuns, inbound.id);
   await persistAlerts(client, args.seniorId, checkIn.id, payload, inbound.id);
   await persistBrief(client, args.seniorId, checkIn.id, payload.brief, agentRuns, inbound.id);
-  await runPatternWatchForSenior(client, args.seniorId);
+  // Core messages, decisions, alerts and briefs have committed. A derived
+  // pattern/queue refresh failure must not invite a duplicate inbound send.
+  let patternWatch: NonNullable<PersistenceMeta["patternWatch"]> = { status: "completed" };
+  try {
+    await runPatternWatchForSenior(client, args.seniorId);
+  } catch (error) {
+    patternWatch = { status: "failed" };
+    const operations = [
+      "select senior check-ins for patterns", "select pattern signals",
+      "select routine baselines", "select senior health contexts", "select senior memories",
+      "select active pattern", "upsert pattern", "select active consolidated queue item",
+      "upsert caregiver queue item", "select duplicate queue items",
+      "resolve duplicate queue items", "select open patterns for consolidated queue",
+    ];
+    const operation = error instanceof Error
+      ? operations.find(label => error.message.startsWith(`${label}:`)) ?? "unknown"
+      : "unknown";
+    console.error("[TrustKaki:pattern_watch] Post-save processing failed", {
+      stage: "pattern_watch", operation,
+    });
+  }
 
-  return { ...supabaseMeta(), replayed: !inbound.inserted || undefined, memory };
+  return { ...supabaseMeta(), replayed: !inbound.inserted || undefined, memory, patternWatch };
 }
 
 export async function hasPersistedMessageClientId(

@@ -41,6 +41,8 @@ export interface PersistenceMeta {
   reason?: string;
   replayed?: boolean;
   memory?: MemoryPersistenceSummary;
+  /** Core artifacts are saved before this derived pattern/queue refresh. */
+  patternWatch?: { status: "completed" | "failed" };
 }
 
 export interface MemoryPersistenceFailure {

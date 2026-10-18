@@ -697,6 +697,26 @@ describe("TrustKaki persistence senior identity", () => {
     ).toHaveLength(2);
   });
 
+  it("reports saved core artifacts with a bounded warning when pattern processing fails", async () => {
+    const service = createServiceClient({});
+    createTrustKakiServiceClientMock.mockReturnValue(service.client);
+    runPatternWatchForSeniorMock.mockRejectedValueOnce(new Error("upsert caregiver queue item: private database detail"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { persistOrchestrationResult } = await import("./trustkakiRepository");
+    const saved = await persistOrchestrationResult({
+      seniorId: SENIOR_B, message: "Hello", clientMessageId: "pattern-failure-1",
+      context, result: orchestrationResult,
+    });
+    expect(saved).toMatchObject({ persisted: true, patternWatch: { status: "failed" } });
+    expect(JSON.stringify(saved)).not.toContain("private database detail");
+    expect(log).toHaveBeenCalledWith("[TrustKaki:pattern_watch] Post-save processing failed", {
+      stage: "pattern_watch", operation: "upsert caregiver queue item",
+    });
+    expect(service.storedKeys.get("messages")?.size).toBe(1);
+    expect(service.storedKeys.get("agent_runs")?.size).toBe(1);
+    log.mockRestore();
+  });
+
   it("resumes a replay after a downstream failure and completes each artifact once", async () => {
     const service = createServiceClient({}, {
       inboundInsertedSequence: [true, false],

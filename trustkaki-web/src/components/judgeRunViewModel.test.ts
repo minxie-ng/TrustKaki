@@ -36,3 +36,13 @@ it("shows bounded memory failure categories without provider details", () => {
   expect(html).not.toContain("private provider detail");
   expect(JSON.stringify(run)).not.toContain("private provider detail");
 });
+
+
+it("preserves and displays a post-save pattern failure without claiming the chat failed", () => {
+  const run = judgeRunSchema.parse({ messages: [{ text: "Could you tell me again?" }], traces: [], riskLevel: "red",
+    persistence: { persisted: true, patternWatch: { status: "failed", detail: "private database detail" } } });
+  const html = renderToStaticMarkup(createElement(AgentTracePanel, { traces: [], run, visible: true, onToggle: () => {} }));
+  expect(html).toContain("Saved");
+  expect(html).toContain("Pattern and care queue update failed");
+  expect(html).not.toContain("private database detail");
+});
