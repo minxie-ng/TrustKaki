@@ -71,4 +71,13 @@ describe("/api/demo/reset", () => {
     expect(response.status).toBe(500);
     expect(json.error).toBe("Failed to reset demo data");
   });
+  it("returns a recoverable conflict while a web message is unfinished", async () => {
+    const { DemoResetBusyError } = await import("@/lib/persistence/demoResetError");
+    resetDemoPersistenceMock.mockRejectedValue(new DemoResetBusyError());
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/demo/reset"));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({code:"request_in_progress",error:expect.stringContaining("Check Activity")});
+  });
+
 });

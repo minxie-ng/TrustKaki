@@ -83,3 +83,9 @@ describe("demo repository", () => {
     expect(source).toContain("organisation_id: DEMO_ORGANISATION_ID");
   });
 });
+
+it("preserves a bounded reset-busy category without exposing database details", async () => {
+  createTrustKakiUserClientMock.mockReturnValue({rpc:vi.fn().mockResolvedValue({data:null,error:{code:"PT409",message:"private database detail"}})});
+  const {resetDemoPersistence}=await import("./demoRepository");
+  await expect(resetDemoPersistence({accessToken:"verified-token"})).rejects.toMatchObject({name:"DemoResetBusyError",message:"A web message is unfinished. Check Activity and finish recovery before resetting the demo."});
+});

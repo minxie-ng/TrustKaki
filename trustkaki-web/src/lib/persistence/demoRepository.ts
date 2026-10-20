@@ -1,4 +1,5 @@
 import "server-only";
+import { DemoResetBusyError } from "./demoResetError";
 
 import { z } from "zod";
 import { uncleTan } from "@/data/demo";
@@ -53,6 +54,7 @@ export async function prepareLiveDemoPersistence(args: {
     }>;
   };
   const { data, error } = await rpcClient.rpc("prepare_trustkaki_live_demo");
+  if (error && "code" in error && error.code === "PT409") throw new DemoResetBusyError();
   if (error) throw new Error("prepare TrustKaki live demo failed");
   const fixture = liveDemoFixtureSchema.safeParse(data);
   if (!fixture.success) throw new Error("prepare TrustKaki live demo failed");
@@ -84,6 +86,7 @@ export async function resetDemoPersistence(args: {
   }
 
   const { error } = await client.rpc("reset_trustkaki_demo");
+  if (error?.code === "PT409") throw new DemoResetBusyError();
   if (error) throw new Error("reset TrustKaki demo failed");
   return { mode: "supabase", configured: true, persisted: true };
 }

@@ -30,7 +30,7 @@ caregiver actions, or every other channel against the web endpoint.
 
 ## Storage and rollout
 
-Apply `20261020062325_web_request_idempotency.sql` before deploying its route.
+Apply `20261020064005_web_request_idempotency.sql` before deploying its route.
 The private receipt table is inaccessible to browser roles. Its service-only
 function checks the service role and fences writes with worker tokens.
 Snapshots and replay responses use AES-256-GCM with identity-bound additional
@@ -44,3 +44,17 @@ ID tombstones remain to prevent old IDs executing again.
 Local tests cover SQL transitions, route recovery, response filtering, and UI
 retry IDs. They do not prove live multi-instance behaviour or exactly-once
 execution at an external model provider.
+
+## Demo reset coordination
+
+`20261020070743_demo_reset_web_coordination.sql` makes the disposable demo senior's
+reset use the same advisory transaction lock as durable web claims. A reset
+returns a conflict while any web receipt is unfinished, including expired
+receipts: expiry alone cannot establish that its worker stopped. Complete
+recovery or perform an approved investigation before trying reset again.
+
+Successful reset expires completed receipts and clears their encrypted payloads,
+retaining ID tombstones so a pre-reset ID cannot rerun. Existing context-event
+evidence remains protected. This does not serialize Telegram, WhatsApp, caregiver
+writes or a full demo replay's later processing against reset. Local embedded
+Postgres tests verify transitions; they are not a live multi-instance race test.

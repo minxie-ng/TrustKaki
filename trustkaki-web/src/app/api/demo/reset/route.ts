@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/responses";
 import { authJsonError, requireDemoAdmin } from "@/lib/auth/session";
 import { resetDemoPersistence } from "@/lib/persistence/demoRepository";
+import { DemoResetBusyError } from "@/lib/persistence/demoResetError";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ persistence });
   } catch (error) {
+    if (error instanceof DemoResetBusyError) return NextResponse.json({ error: error.message, code: "request_in_progress" }, { status: 409 });
     return jsonError("Failed to reset demo data", { error, status: 500 });
   }
 }
