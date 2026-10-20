@@ -112,6 +112,19 @@ beforeEach(() => {
 });
 
 describe("/api/agents/briefing manual override", () => {
+  it.each(["caregiver", "demo_admin"])("restricts briefing diagnostics by role (%s)", async role => {
+    requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth: { ...auth, role } });
+    const data = { forCaregiver: "Check in", forAACVolunteer: "Follow up", overallRisk: "green" as const, keyConcerns: [], recommendedActions: [] };
+    runBriefingAgentMock.mockResolvedValue(briefingResult(data));
+    const { POST } = await import("./route");
+    const response = await POST(jsonRequest({ seniorId, trigger: "manual_override" }));
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data).toEqual(data);
+    if (role === "demo_admin") expect(json.input).toBe("briefing input");
+    else for (const key of ["input", "reasoning", "output", "errorMessage", "modelUsed", "traceId"]) expect(json).not.toHaveProperty(key);
+  });
+
   it("returns 401 before loading context or running models", async () => {
     requireAuthenticatedCaregiverMock.mockResolvedValue({
       ok: false,

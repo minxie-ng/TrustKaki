@@ -1,3 +1,4 @@
+import { agentResponseForRole } from "@/lib/api/agentResponses";
 // /api/agents/aac-nudge
 // Crafts gentle social engagement nudges for seniors showing withdrawal signals
 
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       context,
       triageResult.data.signals
     );
-    return NextResponse.json(result);
+    return NextResponse.json(agentResponseForRole(result, authResult.auth.role));
   } catch (error) {
     return jsonError("AAC Nudge agent failed", { error, status: 500 });
   }

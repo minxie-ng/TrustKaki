@@ -28,17 +28,16 @@ describe("API error responses", () => {
     expect(JSON.stringify(json)).not.toContain("+6591234567");
   });
 
-  it("keeps development details useful but redacted", async () => {
+  it("keeps arbitrary private exception content out of development responses", async () => {
     vi.stubEnv("NODE_ENV", "development");
 
     const response = jsonError("Unable to complete the request", {
-      error: new Error("Failed with token abc123 and phone +6591234567"),
+      error: new Error("PRIVATE SENIOR HEALTH CONTENT token abc123 phone +6591234567"),
       status: 500,
     });
     const json = await bodyOf(response);
 
     expect(json.error).toBe("Unable to complete the request");
-    expect(String(json.detail)).toContain("Failed with token [redacted]");
-    expect(String(json.detail)).toContain("[phone]");
+    expect(json).toEqual({ error: "Unable to complete the request" });
   });
 });

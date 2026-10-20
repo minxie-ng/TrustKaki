@@ -1,3 +1,4 @@
+import { agentResponseForRole } from "@/lib/api/agentResponses";
 // /api/agents/briefing
 // Synthesizes agent findings into caregiver and AAC volunteer briefings
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       briefing: data,
     });
 
-    return NextResponse.json({
+    return NextResponse.json(agentResponseForRole({
       ...result,
       trigger,
       persistence,
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       output: JSON.stringify(data, null, 2),
       tags: [...result.tags, "manual_override"],
       data,
-    });
+    }, authResult.auth.role));
   } catch (error) {
     return jsonError("Briefing agent failed", { error, status: 500 });
   }

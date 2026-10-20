@@ -197,7 +197,7 @@ describe("/api/dashboard/state", () => {
     expect(json).toEqual({ error: "Forbidden" });
   });
 
-  it("keeps development route errors useful but redacted", async () => {
+  it("keeps development route exceptions private", async () => {
     vi.stubEnv("NODE_ENV", "development");
     readDashboardStateMock.mockRejectedValue(
       new Error("Supabase failed with token abc123 and +6591234567")
@@ -209,7 +209,6 @@ describe("/api/dashboard/state", () => {
 
     expect(response.status).toBe(500);
     expect(json.error).toBe("Failed to read dashboard state");
-    expect(json.detail).toContain("token [redacted]");
-    expect(json.detail).toContain("[phone]");
+    expect(json).toEqual({ error: "Failed to read dashboard state" });
   });
 });

@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       result,
     });
 
-    return NextResponse.json({ ...result, persistence,
+    return NextResponse.json({ ...result, traces: authResult.auth.role === "demo_admin" ? result.traces : [], persistence,
       ...(authResult.auth.role === "demo_admin" ? { retrieval: personalMemoryPreview(context.personalMemory) } : {}),
     });
   } catch (error) {

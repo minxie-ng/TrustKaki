@@ -1,3 +1,4 @@
+import { agentResponseForRole } from "@/lib/api/agentResponses";
 // /api/agents/triage
 // Analyzes a senior's message for health, daily living, digital safety, and social signals
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await runTriageAgent(message, context);
-    return NextResponse.json(result);
+    return NextResponse.json(agentResponseForRole(result, authResult.auth.role));
   } catch (error) {
     return jsonError("Triage agent failed", { error, status: 500 });
   }

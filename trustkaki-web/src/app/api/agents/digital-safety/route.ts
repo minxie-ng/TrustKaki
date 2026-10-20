@@ -1,3 +1,4 @@
+import { agentResponseForRole } from "@/lib/api/agentResponses";
 // /api/agents/digital-safety
 // Detects scams, phishing, and digital threats in senior messages
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await runDigitalSafetyAgent(message, context);
-    return NextResponse.json(result);
+    return NextResponse.json(agentResponseForRole(result, authResult.auth.role));
   } catch (error) {
     return jsonError("Digital Safety agent failed", { error, status: 500 });
   }

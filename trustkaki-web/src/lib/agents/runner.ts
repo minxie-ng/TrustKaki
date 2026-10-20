@@ -140,21 +140,25 @@ export async function runAgent<T>(
     model: provider.getModel(),
   });
 
-  let lastError: Error | null = null;
+  let lastErrorCategory = "provider_error";
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    let failureCategory = "provider_error";
+    let deadline: ReturnType<typeof setTimeout> | undefined;
     try {
       // ── Call LLM with timeout ──
       const result = await Promise.race([
         provider.chat({ systemPrompt, userPrompt, temperature }),
         new Promise<never>((_, reject) => {
-          setTimeout(
-            () => reject(new Error(`Agent timed out after ${timeoutMs}ms`)),
-            timeoutMs
-          );
+          deadline = setTimeout(() => {
+            failureCategory = "timeout";
+            reject(new Error("Agent deadline exceeded"));
+          }, timeoutMs);
         }),
       ]);
 
+      clearTimeout(deadline);
+      failureCategory = "invalid_output";
       // ── Parse JSON ──
       const parsed = safeParseJSON(result.content);
 
@@ -198,11 +202,14 @@ export async function runAgent<T>(
         errorMessage: null,
       };
     } catch (error) {
-      lastError = error as Error;
+      void error;
+      lastErrorCategory = failureCategory;
       logAgent(agentId, "warn", `Attempt ${attempt + 1} failed`, {
         traceId,
-        error: lastError.message,
+        error: lastErrorCategory,
       });
+    } finally {
+      clearTimeout(deadline);
     }
   }
 
@@ -213,7 +220,7 @@ export async function runAgent<T>(
   logAgent(agentId, "error", "All retries exhausted — using fallback", {
     traceId,
     durationMs,
-    lastError: lastError?.message,
+    lastError: lastErrorCategory,
   });
 
   return {
@@ -222,7 +229,7 @@ export async function runAgent<T>(
     traceId,
     timestamp,
     input: userPrompt,
-    reasoning: `All ${maxRetries + 1} attempts failed. Last error: ${lastError?.message}. Using safe fallback.`,
+    reasoning: `All ${maxRetries + 1} attempts failed. Last error: ${lastErrorCategory}. Using safe fallback.`,
     output: JSON.stringify(fallbackData, null, 2),
     tags: ["fallback", "llm_error"],
     data: fallbackData,
@@ -232,7 +239,7 @@ export async function runAgent<T>(
     inputSummary: inputSummary ?? summarizeText(userPrompt),
     outputSummary: summarizeOutput(fallbackData),
     stateChanges,
-    errorMessage: lastError?.message ?? "Unknown LLM error",
+    errorMessage: lastErrorCategory,
   };
 }
 

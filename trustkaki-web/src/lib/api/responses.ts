@@ -9,12 +9,6 @@ const SENSITIVE_ENV_KEYS = [
   "WHATSAPP_INTERNAL_PROCESSOR_SECRET",
 ];
 
-function rawErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  return "Unknown error";
-}
-
 export function redactSensitiveText(value: string): string {
   let redacted = value;
 
@@ -42,11 +36,7 @@ export function jsonError(
   } = {}
 ) {
   const status = options.status ?? 500;
-  const body: { error: string; detail?: string } = { error: publicMessage };
-
-  if (process.env.NODE_ENV !== "production" && options.error !== undefined) {
-    body.detail = redactSensitiveText(rawErrorMessage(options.error));
-  }
-
-  return NextResponse.json(body, { status });
+  // Exception messages can contain arbitrary care data or provider payloads.
+  // A development build does not confer permission to disclose those to callers.
+  return NextResponse.json({ error: publicMessage }, { status });
 }

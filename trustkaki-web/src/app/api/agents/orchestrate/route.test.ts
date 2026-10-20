@@ -76,6 +76,17 @@ describe("/api/agents/orchestrate", () => {
     persistOrchestrationResultMock.mockResolvedValue({ persisted: true });
   });
 
+  it.each(["caregiver", "demo_admin"])("restricts live traces by role (%s)", async role => {
+    requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth: { ...auth, role } });
+    orchestrateMock.mockResolvedValue({ messages: [{ text: "Hello" }], riskLevel: "yellow", traces: [{ input: "private context", reasoning: "internal reasoning" }] });
+    const { POST } = await import("./route");
+    const response = await POST(request({ seniorId, message: "Hello" }));
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.messages).toEqual([{ text: "Hello" }]);
+    expect(json.traces).toEqual(role === "demo_admin" ? [{ input: "private context", reasoning: "internal reasoning" }] : []);
+  });
+
   it.each(["demo_admin", "caregiver"])("exposes request retrieval only to demo admin (%s)", async role => {
     requireAuthenticatedCaregiverMock.mockResolvedValue({ ok: true, auth: { ...auth, role } });
     const { POST } = await import("./route");

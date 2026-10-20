@@ -61,6 +61,20 @@ describe("/api/agents/aac-nudge", () => {
     runAACNudgeAgentMock.mockResolvedValue({ data: { nudgeMessage: "No pressure." } });
   });
 
+  it.each(["caregiver", "demo_admin"])("restricts technical diagnostics by role (%s)", async role => {
+    requireAuthMock.mockResolvedValue({ ok: true, auth: { ...auth, role } });
+    runAACNudgeAgentMock.mockResolvedValue({ data: { responseMessage: "Care result" }, input: "private context", reasoning: "internal reasoning", output: "raw provider output", errorMessage: "provider detail", modelUsed: "private-model", traceId: "trace-private" });
+    const { POST } = await import("./route");
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data).toEqual({ responseMessage: "Care result" });
+    if (role === "demo_admin") expect(json.input).toBe("private context");
+    else {
+      for (const key of ["input", "reasoning", "output", "errorMessage", "modelUsed", "traceId"]) expect(json).not.toHaveProperty(key);
+    }
+  });
+
   it("returns 401 before model work", async () => {
     requireAuthMock.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
     const { POST } = await import("./route");
