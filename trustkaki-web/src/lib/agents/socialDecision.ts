@@ -1,3 +1,4 @@
+import { inferenceSignal } from "./inferenceBudget";
 import { randomUUID } from "node:crypto";
 import type { AACNudgeOutput, AgentRunResult } from "./contracts";
 import { buildJevSocialIntentRequest, OPENROUTER_JEV_ENDPOINT, parseJevSocialIntent, type SocialIntent } from "./socialIntentContract";
@@ -43,7 +44,7 @@ export async function runJevSocialDecision(message: string, options: { carePrior
     if (!apiKey) throw new Error("jev_not_configured");
     const payload = { ...buildJevSocialIntentRequest(message), model: JEV_SOCIAL_MODEL };
     const response = await fetch(OPENROUTER_JEV_ENDPOINT, {
-      method: "POST", redirect: "error", signal: AbortSignal.timeout(3000),
+      method: "POST", redirect: "error", signal: inferenceSignal(3000, true),
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(payload),
     });

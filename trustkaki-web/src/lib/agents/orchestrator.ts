@@ -1,3 +1,4 @@
+import { withInferenceBudget } from "./inferenceBudget";
 import { agentPersonalMemorySchema, contextItemsForMemory } from "@/lib/memory/agentContext";
 // ─── Orchestrator: Multi-Agent Orchestration Logic ───
 // Triage drafts signals/replies; optional Jev routes specialists, then policy and briefing.
@@ -467,10 +468,11 @@ function capabilityReply(message: string, draft: string, signals: TriageSignal[]
 }
 
 // ─── Main orchestration function ───
-export async function orchestrate(
-  message: string,
-  ctx: AgentRunContext
-): Promise<OrchestrationResult> {
+export async function orchestrate(message: string, ctx: AgentRunContext): Promise<OrchestrationResult> {
+  return withInferenceBudget(() => orchestrateWithinBudget(message, ctx));
+}
+
+async function orchestrateWithinBudget(message: string, ctx: AgentRunContext): Promise<OrchestrationResult> {
   const traces: AgentTrace[] = [];
   const responseMessages: Array<{ text: string; agentId?: AgentId }> = [];
   let signals: TriageSignal[] = [];

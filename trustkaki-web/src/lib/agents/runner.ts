@@ -1,3 +1,4 @@
+import { remainingInferenceMs } from "./inferenceBudget";
 // ─── Shared Agent Runner ───
 // Handles: prompt assembly, LLM invocation, Zod schema validation,
 // retries, timeout, logging, and trace ID generation.
@@ -143,6 +144,8 @@ export async function runAgent<T>(
   let lastErrorCategory = "provider_error";
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const remaining = remainingInferenceMs();
+    if (remaining <= 0) { lastErrorCategory = "budget_exhausted"; break; }
     const attemptController = new AbortController();
     let failureCategory = "provider_error";
     let deadline: ReturnType<typeof setTimeout> | undefined;
@@ -155,7 +158,7 @@ export async function runAgent<T>(
             failureCategory = "timeout";
             attemptController.abort();
             reject(new Error("Agent deadline exceeded"));
-          }, timeoutMs);
+          }, Math.min(timeoutMs, remaining));
         }),
       ]);
 
@@ -205,7 +208,7 @@ export async function runAgent<T>(
       };
     } catch (error) {
       void error;
-      lastErrorCategory = failureCategory;
+      lastErrorCategory = remainingInferenceMs() <= 0 ? "budget_exhausted" : failureCategory;
       logAgent(agentId, "warn", `Attempt ${attempt + 1} failed`, {
         traceId,
         error: lastErrorCategory,
@@ -231,7 +234,7 @@ export async function runAgent<T>(
     traceId,
     timestamp,
     input: userPrompt,
-    reasoning: `All ${maxRetries + 1} attempts failed. Last error: ${lastErrorCategory}. Using safe fallback.`,
+    reasoning: lastErrorCategory === "budget_exhausted" ? "Shared inference budget exhausted. Using safe fallback." : `All ${maxRetries + 1} attempts failed. Last error: ${lastErrorCategory}. Using safe fallback.`,
     output: JSON.stringify(fallbackData, null, 2),
     tags: ["fallback", "llm_error"],
     data: fallbackData,

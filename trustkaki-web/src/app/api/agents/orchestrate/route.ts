@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     windowMs: 60_000,
   });
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } });
   }
 
   let stage: "request" | "receipt" | "context" | "orchestration" | "snapshot" | "persistence" | "completion" = "request";
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       clientMessageId:clientMessageId ?? crypto.randomUUID(),token:crypto.randomUUID()};
     stage = "receipt";
     const receipt = await webRequestReceipt(identity,"claim");
+    if (receipt.status === "rate_limited") return NextResponse.json({error:"Too many new messages. Wait before starting another message.",code:"rate_limited"},{status:429,headers:{"Retry-After":"60"}});
     if (receipt.status === "replay") return respond(receipt.payload as Record<string,unknown>);
     if (receipt.status === "busy") return NextResponse.json({error:"This message is still processing or awaiting review. Retry the same message later; check Activity before starting a new one.",code:"request_in_progress"},{status:409,headers:{"Retry-After":"5"}});
     if (receipt.status === "conflict") return NextResponse.json({error:"This request ID is already assigned to a different message.",code:"request_id_conflict"},{status:409});

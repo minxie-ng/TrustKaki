@@ -1,3 +1,4 @@
+import { inferenceSignal } from "./inferenceBudget";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { AgentTrace } from "@/lib/types";
@@ -38,7 +39,7 @@ async function get<T>(url: string, schema: z.ZodType<T>): Promise<T | null> {
     if (!request) {
       request = (async () => {
         const response = await fetch(url, { headers: { Accept: "application/json" },
-          signal: AbortSignal.timeout(2500), redirect: "error", cache: "no-store" });
+          signal: inferenceSignal(2500), redirect: "error", cache: "no-store" });
         if (!response.ok) { await response.body?.cancel(); throw new Error("unavailable"); }
         const value: unknown = await response.json();
         schema.parse(value);

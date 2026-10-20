@@ -301,4 +301,14 @@ describe("/api/agents/orchestrate", () => {
     expect(persistOrchestrationResultMock).toHaveBeenCalledTimes(1);
   });
 
+  it("returns Retry-After without loading context or models when durable admission is exhausted", async () => {
+    webRequestReceiptMock.mockResolvedValueOnce({status:"rate_limited"});
+    const {POST}=await import("./route");
+    const response=await POST(request({seniorId,message:"Hello",clientMessageId:"admission-limited"}));
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("60");
+    expect(loadAuthorizedAgentContextMock).not.toHaveBeenCalled();
+    expect(orchestrateMock).not.toHaveBeenCalled();
+  });
+
 });

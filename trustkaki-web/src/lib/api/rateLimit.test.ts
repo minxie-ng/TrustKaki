@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { checkRateLimit, resetRateLimits } from "./rateLimit";
 
 describe("in-process route rate limiter", () => {
@@ -39,4 +39,15 @@ describe("in-process route rate limiter", () => {
         .allowed
     ).toBe(true);
   });
+  it("bounds bucket memory without evicting active limits and recovers after expiry", () => {
+    vi.useFakeTimers();
+    try {
+      for(let i=0;i<10000;i++) checkRateLimit({key:`user-${i}`,route:"bounded",limit:1,windowMs:1000});
+      expect(checkRateLimit({key:"overflow",route:"bounded",limit:1,windowMs:1000}).allowed).toBe(false);
+      expect(checkRateLimit({key:"user-0",route:"bounded",limit:1,windowMs:1000}).allowed).toBe(false);
+      vi.advanceTimersByTime(1001);
+      expect(checkRateLimit({key:"overflow",route:"bounded",limit:1,windowMs:1000}).allowed).toBe(true);
+    } finally {vi.useRealTimers();}
+  });
+
 });

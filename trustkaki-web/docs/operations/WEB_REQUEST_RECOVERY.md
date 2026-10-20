@@ -47,7 +47,7 @@ execution at an external model provider.
 
 ## Demo reset coordination
 
-`20261020070743_demo_reset_web_coordination.sql` makes the disposable demo senior's
+`20261020071209_demo_reset_web_coordination.sql` makes the disposable demo senior's
 reset use the same advisory transaction lock as durable web claims. A reset
 returns a conflict while any web receipt is unfinished, including expired
 receipts: expiry alone cannot establish that its worker stopped. Complete
@@ -58,3 +58,30 @@ retaining ID tombstones so a pre-reset ID cannot rerun. Existing context-event
 evidence remains protected. This does not serialize Telegram, WhatsApp, caregiver
 writes or a full demo replay's later processing against reset. Local embedded
 Postgres tests verify transitions; they are not a live multi-instance race test.
+
+## Admission and inference budgets
+
+`20261020071723_web_inference_admission_limit.sql` admits at most 20 new web
+orchestration receipts per account in a rolling 60-second window. The account
+advisory lock covers admission across seniors and server instances. Completed
+replays and frozen-result resumes do not consume a new admission. Existing
+receipts start outside the accounting window. A denied admission returns 429
+and Retry-After: 60 before context retrieval or model work.
+
+The separate in-process HTTP limiter remains a best-effort flood guard, including
+for replay traffic; it cannot establish a global HTTP limit. Its storage is
+bounded to 10,000 active buckets and does not evict active limits to make room.
+Other model endpoints do not inherit the durable web-receipt admission cap.
+
+Each `orchestrate` invocation shares a 45-second inference deadline and a maximum
+of 12 model starts across retries, specialists and Jev. Requests inherit the
+remaining deadline, abort active transport when it expires, and use existing
+fallbacks without starting later model work. Policy still runs and persistence
+happens outside the inference budget. Public weather calls inherit the deadline
+but do not consume model starts. Standalone agent endpoints retain their own
+attempt timeouts; a full replay has multiple orchestration invocations.
+
+This reserves nominal headroom under the web route's 60-second platform duration;
+it does not bound auth/context retrieval, database writes or total response time,
+nor prove a cancelled provider request incurs no charge. Local tests use embedded
+SQL and mocked transports; no live load or cross-session race test is implied.

@@ -1,3 +1,4 @@
+import { inferenceSignal } from "./inferenceBudget";
 // ─── LLM Provider Abstraction ───
 // Server-side client for providers implementing the OpenAI Chat Completions format.
 
@@ -59,8 +60,8 @@ export class LLMProvider {
           Authorization: `Bearer ${this.apiKey}`,
         },
         signal: params.signal
-          ? AbortSignal.any([params.signal, AbortSignal.timeout(this.timeoutMs)])
-          : AbortSignal.timeout(this.timeoutMs),
+          ? AbortSignal.any([params.signal, inferenceSignal(this.timeoutMs, true)])
+          : inferenceSignal(this.timeoutMs, true),
         body: JSON.stringify({
           model,
           messages: [

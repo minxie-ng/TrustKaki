@@ -32,7 +32,7 @@ export interface WebRequestIdentity {
 export function receiptIdentity(value: WebRequestIdentity) {
   return JSON.stringify([value.userId,value.seniorId,value.clientMessageId]);
 }
-type ReceiptStatus = "run" | "resume" | "replay" | "busy" | "conflict" | "expired" | "saved";
+type ReceiptStatus = "rate_limited" | "run" | "resume" | "replay" | "busy" | "conflict" | "expired" | "saved";
 export async function webRequestReceipt(
   identity: WebRequestIdentity,
   action: "claim" | "snapshot" | "complete" | "release" | "cancel",
@@ -47,7 +47,7 @@ export async function webRequestReceipt(
   });
   if (error) throw new Error("Request receipt operation failed");
   const result = data as {status?: string; payload?: string} | null;
-  if (!result || !["run","resume","replay","busy","conflict","expired","saved"].includes(result.status ?? "")) throw new Error("Invalid request receipt response");
+  if (!result || !["rate_limited","run","resume","replay","busy","conflict","expired","saved"].includes(result.status ?? "")) throw new Error("Invalid request receipt response");
   if (action !== "claim" && result.status !== "saved") throw new Error("Request receipt transition refused");
   if ((result.status === "replay" || result.status === "resume") && typeof result.payload !== "string") throw new Error("Request receipt payload unavailable");
   return {status:result.status as ReceiptStatus, ...(result.payload ? {payload:openReceipt(result.payload,receiptIdentity(identity))} : {})};

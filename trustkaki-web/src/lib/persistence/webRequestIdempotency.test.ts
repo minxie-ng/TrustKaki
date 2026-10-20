@@ -18,6 +18,8 @@ describe("durable web request claims", () => {
       create function trustkaki_private.orchestration_persistence_hmac(jsonb) returns text language sql as $$ select md5($1::text) $$;`);
     const dir = resolve("supabase/migrations");
     await db.exec(readFileSync(resolve(dir, readdirSync(dir).find(n => n.endsWith("_web_request_idempotency.sql"))!), "utf8"));
+    const rateMigration = readdirSync(dir).find(n => n.endsWith("_web_inference_admission_limit.sql"));
+    if (rateMigration) await db.exec(readFileSync(resolve(dir, rateMigration), "utf8"));
   });
   beforeEach(async () => { await db.exec("truncate trustkaki_private.web_orchestration_requests, public.messages, trustkaki_private.orchestration_persistence_bindings"); });
   afterAll(async () => { await db?.close(); });
@@ -99,6 +101,19 @@ describe("durable web request claims", () => {
     expect((await call("old-expired")).status).toBe("expired");
     const rows = await db.query<{snapshot:string|null}>("select snapshot from trustkaki_private.web_orchestration_requests where client_message_id='old-expired'");
     expect(rows.rows[0].snapshot).toBeNull();
+  });
+
+  it("limits new model runs per user across seniors without charging replay", async () => {
+    for (let i=0;i<20;i++) {
+      const id=`limited-${i}`;
+      expect((await call(id)).status).toBe("run");
+      await call(id,"snapshot","snapshot"); await call(id,"complete","reply");
+    }
+    expect((await call("twenty-first","claim",null,{senior:token})).status).toBe("rate_limited");
+    expect((await call("limited-0")).status).toBe("replay");
+    expect((await call("another-user","claim",null,{user:token,senior:token})).status).toBe("run");
+    await db.exec("update trustkaki_private.web_orchestration_requests set admitted_at=now()-interval '61 seconds'");
+    expect((await call("next-window")).status).toBe("run");
   });
 
 });

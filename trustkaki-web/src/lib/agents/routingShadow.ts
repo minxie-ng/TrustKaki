@@ -1,3 +1,4 @@
+import { inferenceSignal } from "./inferenceBudget";
 import { randomUUID } from "node:crypto";
 import type { AgentTrace } from "@/lib/types";
 import type { AgentRunContext } from "./contracts";
@@ -39,7 +40,7 @@ export async function runJevRoutingShadow(message: string, context: AgentRunCont
     const body = buildRoutingShadowRequest(message, context);
     errorCode = "jev_routing_unavailable";
     const response = await fetch(OPENROUTER_JEV_ENDPOINT, {
-      method: "POST", redirect: "error", signal: AbortSignal.timeout(3000),
+      method: "POST", redirect: "error", signal: inferenceSignal(3000, true),
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify(body),
     });
