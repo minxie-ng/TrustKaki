@@ -6,6 +6,8 @@ import type {
   Message,
   PatternEvidenceItem,
 } from "@/lib/types";
+import { FollowUpHandover } from "./FollowUpHandover";
+import { careActionAnchor } from "./caseHandover";
 import { recentCareMessages } from "../dashboardViewModel";
 import {
   escalationDestinationLabel,
@@ -118,7 +120,7 @@ function careThreadEntries(
 }
 
 export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
-  if (!item.pattern) return null;
+  if (!item.pattern || (data.selectedSeniorId && data.selectedSeniorId !== item.seniorId)) return null;
   const pattern = item.pattern;
   const careMessages = recentCareMessages(data);
   const thread = careThreadEntries(
@@ -150,7 +152,7 @@ export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
             className="relative ml-1 mt-5 border-l border-[var(--care-hairline)]"
           >
             {thread.map((entry) => (
-              <li key={entry.id} className="relative pb-6 pl-6 last:pb-0">
+              <li id={entry.kind === "caregiver" ? careActionAnchor(item.id, entry.action.id) : undefined} key={entry.id} className="relative pb-6 pl-6 last:pb-0">
                 <ThreadMarker entry={entry} />
                 <time dateTime={entry.at} className="text-xs font-semibold text-gray-500">
                   {formatDate(entry.at)}
@@ -190,28 +192,7 @@ export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
             </section>
           )}
 
-          <section className="border-t border-[var(--care-line)] pt-6">
-            <SectionHeading eyebrow="Human follow-up" title="Recorded actions" />
-            <p className="mt-3 text-sm leading-6 text-gray-600">
-              {pattern.previousActions.length === 0
-                ? "No caregiver action recorded yet."
-                : `${pattern.previousActions.length} caregiver ${
-                    pattern.previousActions.length === 1 ? "action is" : "actions are"
-                  } included in the care thread.`}
-            </p>
-
-            {briefing && (
-              <div className="mt-6 border-y border-l-4 border-[var(--care-line)] border-l-[var(--care-evergreen)] p-4">
-                <div className="text-xs font-semibold text-[var(--care-evergreen)]">AI-generated caregiver summary</div>
-                <div className="mt-2 text-sm leading-6 text-gray-900">
-                  {briefing.forCaregiver}
-                  {briefing.recommendedActions.length > 0 && (
-                    <div className="mt-2 text-gray-700">{briefing.recommendedActions.join(" ")}</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
+          <FollowUpHandover item={item} briefing={briefing} />
         </div>
       </div>
     </div>
