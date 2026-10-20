@@ -135,3 +135,17 @@ it("clears judge evidence on senior switch and recovers a failed load", async ()
   await act(async () => Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Retry loading senior")!.click()); await flush();
   expect(container.querySelector("[data-judge-traces]")?.textContent).toBe("two evidence");
 });
+
+
+it.each(["SIGNED_OUT", "SIGNED_IN"])("clears pending browser receipts on account transition %s", async event => {
+  vi.stubGlobal("fetch", vi.fn(async () => dashboard("admin")));
+  await act(async () => { root.render(createElement(Home)); }); await flush();
+  const key = 'trustkaki:pending-web:v1:["admin","senior"]';
+  window.sessionStorage.setItem(key, "receipt");
+  window.sessionStorage.setItem("unrelated", "keep");
+  await act(async () => { auth.listener!("TOKEN_REFRESHED", { ...session("admin"), access_token: "refreshed" }); });
+  expect(window.sessionStorage.getItem(key)).toBe("receipt");
+  await act(async () => { auth.listener!(event, event === "SIGNED_OUT" ? null : session("caregiver")); });
+  expect(window.sessionStorage.getItem(key)).toBeNull();
+  expect(window.sessionStorage.getItem("unrelated")).toBe("keep");
+});

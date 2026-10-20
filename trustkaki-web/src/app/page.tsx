@@ -14,6 +14,7 @@ import {
 import OperationalState from "@/components/OperationalState";
 import SignInForm from "@/components/SignInForm";
 import PublicDemoWorkspace from "@/components/PublicDemoWorkspace";
+import { clearPendingWebRequests } from "@/lib/pendingWebRequest";
 import { restorePublicDemo, PUBLIC_DEMO_STORAGE_KEY } from "@/lib/publicDemoState";
 import { authHeader, canShowDemoControls, publicUserRole } from "@/lib/auth/client";
 import { createTrustKakiBrowserClient } from "@/lib/supabase/browser";
@@ -105,6 +106,7 @@ export default function Home() {
   });
 
   const sessionTokenRef = useRef<string | null>(null);
+  const sessionOwnerRef = useRef<string | null>(null);
   const sessionGenerationRef = useRef(0);
   const [sessionGeneration, setSessionGeneration] = useState(0);
   const isCurrentSession = useCallback(() => Boolean(authToken) &&
@@ -112,6 +114,9 @@ export default function Home() {
   [authToken, sessionGeneration]);
   const applySession = useCallback((nextSession: Session | null) => {
     const nextToken = nextSession?.access_token ?? null;
+    const nextOwner = nextSession?.user.id ?? null;
+    if (sessionOwnerRef.current && nextOwner !== sessionOwnerRef.current) clearPendingWebRequests();
+    sessionOwnerRef.current = nextOwner;
     if (nextToken !== sessionTokenRef.current) {
       // Invalidate old requests and child callbacks before exposing a different session.
       sessionGenerationRef.current++;

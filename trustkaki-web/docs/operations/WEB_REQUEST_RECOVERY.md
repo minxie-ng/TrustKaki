@@ -19,9 +19,14 @@ caregiver actions, or every other channel against the web endpoint.
   outcome before proceeding; do not invent a replacement ID to force a retry.
 - Receipts expire after 24 hours. Expired and pre-rollout saved IDs return 410
   rather than rerunning models. Expired pending requests stop blocking new IDs.
-- The browser preserves pending IDs during the mounted conversation and access
-  token refresh. Reloading or leaving that conversation does not restore the
-  pending browser ID; inspect Activity before resending.
+- The browser preserves pending IDs across navigation and access-token refresh.
+  Same-tab session storage keeps only the ID, text fingerprint, timestamp and
+  expiry, scoped to the account and senior; it stores no message text or token.
+  Navigation can restore text from memory. After a full reload, re-enter the
+  original wording to resume the same ID. Nothing is sent automatically.
+- Browser receipts expire after 24 hours and clear on sign-out or account change.
+  When browser storage is blocked, in-memory navigation recovery remains available,
+  but reload recovery is unavailable. Check Activity before starting a new message.
 
 ## Storage and rollout
 
