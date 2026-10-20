@@ -11,25 +11,38 @@ export interface ChatSimulationProps {
   isSeniorLoading?: boolean;
   onComplete: () => void;
   authToken: string | null;
+  userId?: string;
   onUnauthorized?: () => void;
   onResult?: (result: JudgeRun) => void;
 }
 
-export default function ChatSimulation({ messages, seniorId, isSeniorLoading = false, onComplete, authToken, onUnauthorized, onResult }: ChatSimulationProps) {
+export default function ChatSimulation({ messages, seniorId, isSeniorLoading = false, onComplete, authToken, userId, onUnauthorized, onResult }: ChatSimulationProps) {
   const [conversation, setConversation] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sendingRef = useRef(false);
+  const pendingRef = useRef<{seniorId:string;owner:string;message:Message} | null>(null);
   const requestRef = useRef<AbortController | null>(null);
   useEffect(() => () => requestRef.current?.abort(), []);
 
   async function send(event: FormEvent) {
     event.preventDefault();
-    if (busy || !seniorId || !authToken || isSeniorLoading || !draft.trim()) return;
+    if (sendingRef.current || busy || !seniorId || !authToken || isSeniorLoading || !draft.trim()) return;
+    const unresolved = pendingRef.current;
+    if (unresolved?.seniorId === seniorId && unresolved.owner === (userId ?? authToken) && unresolved.message.text !== draft.trim()) {
+      setDraft(unresolved.message.text);
+      setError("Check or resume your previous message first. Its text has been restored; send it again to retry safely.");
+      return;
+    }
+    sendingRef.current = true;
     const controller = new AbortController();
     requestRef.current = controller;
-    const inbound: Message = { id: crypto.randomUUID(), sender: "senior", text: draft.trim(), timestamp: new Date().toISOString() };
-    setConversation((current) => [...current, inbound]);
+    const pending = pendingRef.current;
+    const retry = pending?.seniorId === seniorId && pending.owner === (userId ?? authToken) && pending.message.text === draft.trim();
+    const inbound: Message = retry ? pending.message : { id: crypto.randomUUID(), sender: "senior", text: draft.trim(), timestamp: new Date().toISOString() };
+    pendingRef.current = {seniorId,owner:userId ?? authToken,message:inbound};
+    if (!retry) setConversation((current) => [...current, inbound]);
     setBusy(true);
     setError(null);
     try {
@@ -39,16 +52,27 @@ export default function ChatSimulation({ messages, seniorId, isSeniorLoading = f
         body: JSON.stringify({ seniorId, message: inbound.text, clientMessageId: inbound.id }),
       });
       if (response.status === 401) onUnauthorized?.();
-      if (!response.ok) throw new Error("request_failed");
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        if (body.code === "request_in_progress") throw new Error("request_in_progress");
+        if (body.code === "request_expired") throw new Error("request_expired");
+        throw new Error("request_failed");
+      }
       const result = judgeRunSchema.parse(await response.json());
       if (controller.signal.aborted) return;
       setConversation((current) => [...current, ...result.messages.map((message, index) => ({ ...message, id: `${inbound.id}:reply:${index}`, sender: "trustkaki" as const, timestamp: new Date().toISOString() }))]);
+      pendingRef.current = null;
       setDraft("");
       onResult?.(result);
       onComplete();
-    } catch {
-      if (!controller.signal.aborted) setError("The request did not complete successfully. Check Activity before sending again; a server-side save may have occurred.");
+    } catch (failure) {
+      if (!controller.signal.aborted) setError(failure instanceof Error && failure.message === "request_in_progress"
+        ? "This message is still processing or awaiting review. Retry this same message later; check Activity before starting a new one."
+        : failure instanceof Error && failure.message === "request_expired"
+          ? "This message can no longer be replayed. Check Activity for its saved outcome."
+          : "The request did not complete successfully; a server-side save may have occurred. Retry this same message to check or resume its result.");
     } finally {
+      sendingRef.current = false;
       if (!controller.signal.aborted) setBusy(false);
     }
   }

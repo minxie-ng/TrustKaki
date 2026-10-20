@@ -7,6 +7,7 @@ export interface LLMCallParams {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  signal?: AbortSignal;
 }
 
 export interface LLMCallResult {
@@ -57,7 +58,9 @@ export class LLMProvider {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this.apiKey}`,
         },
-        signal: AbortSignal.timeout(this.timeoutMs),
+        signal: params.signal
+          ? AbortSignal.any([params.signal, AbortSignal.timeout(this.timeoutMs)])
+          : AbortSignal.timeout(this.timeoutMs),
         body: JSON.stringify({
           model,
           messages: [

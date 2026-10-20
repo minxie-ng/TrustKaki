@@ -516,7 +516,7 @@ export default function Home() {
               messages={chatMessages} traces={loadedSeniorId === selectedSeniorId ? liveTraces : []}
               seniorId={chatState.submissionSeniorId}
               isSeniorLoading={!chatState.canSubmit && Boolean(selectedSeniorId)}
-              onComplete={requestDashboardRefresh} authToken={authToken}
+              onComplete={requestDashboardRefresh} authToken={authToken} userId={session?.user.id}
               onUnauthorized={handleUnauthorized}
             />
           </section>

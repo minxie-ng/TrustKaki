@@ -10,6 +10,28 @@ const loadAuthorizedAgentContextMock = vi.fn();
 const orchestrateMock = vi.fn();
 const persistOrchestrationResultMock = vi.fn();
 
+const receipts = new Map<string, {state: string; message: string; payload?: unknown}>();
+const webRequestReceiptMock = vi.fn(async (identity: {clientMessageId:string; message:string}, action: string, payload?: unknown) => {
+  const current = receipts.get(identity.clientMessageId);
+  if (current && current.message !== identity.message) return {status:"conflict"};
+  if (action === "claim") {
+    if (!current) { receipts.set(identity.clientMessageId,{state:"processing",message:identity.message}); return {status:"run"}; }
+    if (current.state === "completed") return {status:"replay",payload:current.payload};
+    if (current.state === "retryable") {current.state="persisting";return {status:"resume",payload:current.payload};}
+    return {status:"busy"};
+  }
+  if (current?.state === "completed" && action === "release") throw new Error("Invalid receipt transition");
+  if (action === "cancel") receipts.delete(identity.clientMessageId);
+  else if (current) {current.state=action === "complete" ? "completed" : action === "release" ? "retryable" : "persisting"; if (payload) current.payload=payload;}
+  return {status:"saved"};
+});
+vi.mock("@/lib/persistence/webRequestReceipt", () => ({ webRequestReceipt:webRequestReceiptMock }));
+vi.mock("@/lib/persistence/orchestration", async importOriginal => ({
+  ...await importOriginal<typeof import("@/lib/persistence/orchestration")>(),
+  serializeOrchestrationRetryEnvelope: (value: unknown) => value,
+  restoreOrchestrationRetryEnvelope: (value: unknown) => value,
+}));
+
 const seniorId = "00000000-0000-4000-8000-000000000001";
 const auth = {
   userId: "auth-user-1",
@@ -65,6 +87,7 @@ describe("/api/agents/orchestrate", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    receipts.clear();
     requireAuthenticatedCaregiverMock.mockResolvedValue({
       ok: true,
       auth,
@@ -193,6 +216,89 @@ describe("/api/agents/orchestrate", () => {
       stage: "persistence", kind: "type_error", operation: "unknown",
     });
     expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
+  });
+
+  it("replays a completed request without model, context or persistence work", async () => {
+    const {POST} = await import("./route");
+    const body = {seniorId,message:"Hello",clientMessageId:"replay-1"};
+    const first = await POST(request(body));
+    const second = await POST(request(body));
+    expect(second.status).toBe(200);
+    expect(await second.json()).toEqual(await first.json());
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+    expect(loadAuthorizedAgentContextMock).toHaveBeenCalledTimes(1);
+    expect(persistOrchestrationResultMock).toHaveBeenCalledTimes(1);
+  });
+  it("blocks concurrent duplicates before model work", async () => {
+    let finish!: (value: unknown) => void;
+    orchestrateMock.mockImplementationOnce(() => new Promise(resolve => {finish=resolve;}));
+    const {POST} = await import("./route");
+    const body = {seniorId,message:"Hello",clientMessageId:"concurrent-1"};
+    const first = POST(request(body));
+    await vi.waitFor(() => expect(orchestrateMock).toHaveBeenCalledTimes(1));
+    const second = await POST(request(body));
+    expect(second.status).toBe(409);
+    finish({messages:[],traces:[],riskLevel:"yellow"});
+    expect((await first).status).toBe(200);
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+  });
+  it("resumes a partial save with the original model result and context", async () => {
+    persistOrchestrationResultMock.mockRejectedValueOnce(new Error("transient save failure"));
+    const {POST} = await import("./route");
+    const body = {seniorId,message:"Hello",clientMessageId:"partial-1"};
+    expect((await POST(request(body))).status).toBe(500);
+    const original = persistOrchestrationResultMock.mock.calls[0][0];
+    expect((await POST(request(body))).status).toBe(200);
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+    expect(loadAuthorizedAgentContextMock).toHaveBeenCalledTimes(1);
+    expect(persistOrchestrationResultMock.mock.calls[1][0]).toEqual(original);
+  });
+  it("rejects an ID reused with changed message text", async () => {
+    const {POST} = await import("./route");
+    await POST(request({seniorId,message:"Hello",clientMessageId:"conflict-1"}));
+    expect((await POST(request({seniorId,message:"Different",clientMessageId:"conflict-1"}))).status).toBe(409);
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["snapshot","complete"])("recovers when the %s acknowledgement is lost", async action => {
+    const handler = webRequestReceiptMock.getMockImplementation()!;
+    webRequestReceiptMock.mockImplementationOnce(handler).mockImplementationOnce(async (...args) => {
+      const result = await handler(...args);
+      if (action === "snapshot") throw new Error("lost acknowledgement");
+      return result;
+    });
+    if (action === "complete") webRequestReceiptMock.mockImplementationOnce(() => {throw new Error("completion unavailable");});
+    const {POST} = await import("./route");
+    const body = {seniorId,message:"Hello",clientMessageId:`lost-${action}`};
+    expect((await POST(request(body))).status).toBe(500);
+    expect((await POST(request(body))).status).toBe(200);
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rechecks current role before returning a stored response", async () => {
+    requireAuthenticatedCaregiverMock.mockResolvedValue({ok:true,auth:{...auth,role:"demo_admin"}});
+    orchestrateMock.mockResolvedValue({messages:[],riskLevel:"yellow",traces:[{input:"private trace"}]});
+    const {POST} = await import("./route");
+    const body = {seniorId,message:"Hello",clientMessageId:"role-replay"};
+    await POST(request(body));
+    requireAuthenticatedCaregiverMock.mockResolvedValue({ok:true,auth});
+    const response = await POST(request(body));
+    expect(await response.json()).toMatchObject({traces:[]});
+    const again = await POST(request(body));
+    expect(await again.json()).not.toHaveProperty("retrieval");
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+  });
+  it("replays after completion committed but its acknowledgement was lost", async () => {
+    const handler = webRequestReceiptMock.getMockImplementation()!;
+    webRequestReceiptMock.mockImplementationOnce(handler).mockImplementationOnce(handler).mockImplementationOnce(async (...args) => {
+      await handler(...args); throw new Error("lost committed completion acknowledgement");
+    });
+    const {POST} = await import("./route");
+    const body = {seniorId,message:"Hello",clientMessageId:"complete-lost-after-commit"};
+    expect((await POST(request(body))).status).toBe(500);
+    expect((await POST(request(body))).status).toBe(200);
+    expect(orchestrateMock).toHaveBeenCalledTimes(1);
+    expect(persistOrchestrationResultMock).toHaveBeenCalledTimes(1);
   });
 
 });

@@ -143,15 +143,17 @@ export async function runAgent<T>(
   let lastErrorCategory = "provider_error";
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const attemptController = new AbortController();
     let failureCategory = "provider_error";
     let deadline: ReturnType<typeof setTimeout> | undefined;
     try {
       // ── Call LLM with timeout ──
       const result = await Promise.race([
-        provider.chat({ systemPrompt, userPrompt, temperature }),
+        provider.chat({ systemPrompt, userPrompt, temperature, signal: attemptController.signal }),
         new Promise<never>((_, reject) => {
           deadline = setTimeout(() => {
             failureCategory = "timeout";
+            attemptController.abort();
             reject(new Error("Agent deadline exceeded"));
           }, timeoutMs);
         }),

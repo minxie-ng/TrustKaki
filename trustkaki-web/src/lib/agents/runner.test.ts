@@ -101,3 +101,32 @@ describe("runAgent failure cleanup", () => {
     expect(JSON.stringify(result)).not.toContain("PRIVATE CONTENT");
   });
 });
+
+
+describe("runAgent request cancellation", () => {
+  it("aborts the expired request before starting its retry", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("TRUSTKAKI_LLM_API_KEY", "synthetic-test-key");
+    const signals: AbortSignal[] = [];
+    let firstAbortedBeforeRetry = false;
+    globalThis.fetch = vi.fn((_input, init) => {
+      const signal = init?.signal as AbortSignal;
+      signals.push(signal);
+      if (signals.length === 2) {
+        firstAbortedBeforeRetry = signals[0].aborted;
+        return Promise.resolve(Response.json({ choices: [{ message: { content: '{"safe":true}' } }] }));
+      }
+      return new Promise<Response>((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+      });
+    }) as typeof fetch;
+    const { runAgent } = await import("./runner");
+    const pending = runAgent({ agentId: "triage", agentName: "Triage", systemPrompt: "JSON", userPrompt: "hello", schema: z.object({ safe: z.boolean() }), fallback: () => ({ safe: false }), maxRetries: 1, timeoutMs: 10 });
+    await vi.advanceTimersByTimeAsync(10);
+    const result = await pending;
+    expect(result.fallback).toBe(false);
+    expect(signals).toHaveLength(2);
+    expect(firstAbortedBeforeRetry).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
