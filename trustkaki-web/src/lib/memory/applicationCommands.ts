@@ -20,7 +20,7 @@ const automaticSchema = z.object({
   }).strict(),
 }).strict();
 const receiptSchema = z.object({ id: z.uuid(), version: z.number().int().positive(), status: z.enum(["active", "superseded", "deleted"]) });
-const conflict = (reason: "request_digest_changed" | "inactive_target" | "create_target_exists" | "update_target_missing" | "confirmation_changed" | "stale_evidence" | "manual_target_changed" = "manual_target_changed"): never => {
+const conflict = (reason: "request_digest_changed" | "inactive_target" | "missing_metadata" | "create_target_exists" | "update_target_missing" | "confirmation_changed" | "stale_evidence" | "manual_target_changed" = "manual_target_changed"): never => {
   console.info(JSON.stringify({ event: "personal_memory_conflict", reason }));
   throw Object.assign(new Error("Memory conflict"), { code: "PT409" });
 };
@@ -73,7 +73,8 @@ export function createApplicationMemoryCommands(transact: MemoryTransaction, emb
       [scope.organisationId, scope.seniorId, value]));
     if (!rows.length) return null;
     const source = rows[0].source;
-    if (rows[0].status !== "active" || !source?.metadata) return conflict("inactive_target");
+    if (rows[0].status !== "active") return conflict("inactive_target");
+    if (!source?.metadata) return conflict("missing_metadata");
     return source as MemorySourceRecord & { metadata: NonNullable<MemorySourceRecord["metadata"]> };
   }
   async function automatic(scope: MemoryScope, input: unknown) {

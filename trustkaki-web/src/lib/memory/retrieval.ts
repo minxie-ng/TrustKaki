@@ -27,12 +27,13 @@ export async function retrievePersonalMemory(
 ): Promise<MemoryRetrievalResult> {
   const started = performance.now();
   const controller = new AbortController();
+  let stage: MemoryRetrievalResult["diagnostics"]["stage"] = "validation";
   let candidates = 0;
   let unresolvedGroupCount = 0;
   const finish = (items: RetrievedMemory[] = [], unresolvedGroups: string[] = [], reason: RetrievalFailure | null = null): MemoryRetrievalResult => ({
     status: reason ? "unavailable" : items.length ? "available" : "empty",
     reason, items, unresolvedGroups, contextJson: envelope(items, unresolvedGroups),
-    diagnostics: { candidates, unresolvedGroupCount, selected: items.length, elapsedMs: Math.round(performance.now() - started) },
+    diagnostics: { stage, candidates, unresolvedGroupCount, selected: items.length, elapsedMs: Math.round(performance.now() - started) },
   });
   if (!z.object({ seniorId: z.uuid(), query: z.string(), now: z.iso.datetime({ offset: true }) }).safeParse(input).success
     || !input.query.trim() || size(input.query) > 2000) return finish([], [], "invalid_input");
@@ -45,14 +46,17 @@ export async function retrievePersonalMemory(
     timer = setTimeout(() => { controller.abort(); reject(new RetrievalError("timeout")); }, 2000);
   });
   async function run(): Promise<MemoryRetrievalResult> {
+    stage = "scope";
     const resolved = memoryScopeSchema.safeParse(await deps.resolveScope(input.seniorId, signal));
     signal.throwIfAborted();
     if (!resolved.success || resolved.data.seniorId !== input.seniorId) throw new RetrievalError("access_denied");
     const scope = resolved.data;
     const scoped = (r: { organisationId: string; seniorId: string }) =>
       r.organisationId === scope.organisationId && r.seniorId === scope.seniorId;
+    stage = "embedding";
     const vector = parsed(z.array(z.number().finite()).min(1).max(20000), await deps.embed(input.query, signal));
     signal.throwIfAborted();
+    stage = "search";
     const hits = parsed(z.array(memorySearchHitSchema).max(TOP_K),
       await deps.search({ scope, vector, topK: TOP_K, now: input.now }, signal));
     signal.throwIfAborted();
@@ -62,9 +66,11 @@ export async function retrievePersonalMemory(
     const ranked = eligible.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
     const unique = ranked.filter((hit, index) => ranked.findIndex(other => other.id === hit.id) === index);
     if (!unique.length) return finish();
+    stage = "sources";
     const sources = parsed(z.array(memorySourceRecordSchema).max(TOP_K),
       await deps.fetchSources(scope, unique.map(h => h.id), signal));
     signal.throwIfAborted();
+    stage = "selection";
     if (new Set(sources.map(r => r.id)).size !== sources.length) throw new RetrievalError("malformed_result");
     const valid = sources.filter(r => scoped(r) && r.status === "active"
       && r.metadata?.provenanceStatus !== "missing_source"

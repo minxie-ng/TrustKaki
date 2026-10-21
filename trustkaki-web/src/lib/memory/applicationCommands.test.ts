@@ -144,3 +144,23 @@ it("stores policy-normalized evidence even when a generated summary contradicts 
   const first = await app().automatic(scope, input);
   expect((await store().fetchSources(scope, [first.id]))[0].content).toBe(input.candidate.evidenceExcerpt);
 });
+
+for (const condition of ["inactive_target", "missing_metadata"] as const) {
+  it(`reports ${condition} without exposing content or changing the blocked record`, async () => {
+    const input = proposal();
+    const first = await app().automatic(scope, input);
+    if (condition === "inactive_target") {
+      await app().manual(scope, caregiverId, { commandId: crypto.randomUUID(), action: "archive", store: "memory",
+        contextId: first.id, expectedUpdatedAt: now, reason: "Fictional archive protection test" }, later);
+    } else {
+      await db.query("UPDATE personal_memory.records SET source=source-'metadata' WHERE id=$1", [first.id]);
+    }
+    const before = (await db.query("SELECT source,status,version FROM personal_memory.records WHERE id=$1", [first.id])).rows;
+    const log = vi.spyOn(console, "info").mockImplementation(() => {});
+    try {
+      await expect(app().automatic(scope, proposal())).rejects.toThrow("Memory conflict");
+      expect(log.mock.calls).toEqual([[JSON.stringify({ event: "personal_memory_conflict", reason: condition })]]);
+      expect((await db.query("SELECT source,status,version FROM personal_memory.records WHERE id=$1", [first.id])).rows).toEqual(before);
+    } finally { log.mockRestore(); }
+  });
+}

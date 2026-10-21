@@ -57,5 +57,5 @@ export interface MemoryRetrievalResult {
   items: RetrievedMemory[];
   unresolvedGroups: string[];
   contextJson: string;
-  diagnostics: { unresolvedGroupCount: number; candidates: number; selected: number; elapsedMs: number };
+  diagnostics: { stage: "validation" | "scope" | "embedding" | "search" | "sources" | "selection"; unresolvedGroupCount: number; candidates: number; selected: number; elapsedMs: number };
 }
