@@ -61,7 +61,7 @@ Postgres tests verify transitions; they are not a live multi-instance race test.
 
 ## Admission and inference budgets
 
-`20261020071723_web_inference_admission_limit.sql` admits at most 20 new web
+`20261020072510_web_inference_admission_limit.sql` admits at most 20 new web
 orchestration receipts per account in a rolling 60-second window. The account
 advisory lock covers admission across seniors and server instances. Completed
 replays and frozen-result resumes do not consume a new admission. Existing
