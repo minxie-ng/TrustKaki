@@ -1,5 +1,7 @@
 "use client";
 
+import OfficialSourceText from "./OfficialSourceText";
+
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { authHeader } from "@/lib/auth/client";
 import type { Message } from "@/lib/types";
@@ -134,7 +136,7 @@ export default function ChatSimulation({ messages, seniorId, isSeniorLoading = f
         {conversation.map((message) => <article key={message.id} className={`mb-5 flex ${message.sender === "senior" ? "justify-end" : "justify-start"}`}>
           <div className={`min-w-0 max-w-[90%] rounded-2xl border border-[var(--care-line)] px-4 py-3 sm:max-w-[85%] ${message.sender === "senior" ? "rounded-br-md bg-[var(--care-sage)]" : "rounded-bl-md bg-white"}`}>
           <h3 className="text-sm font-semibold text-[var(--care-brand)]">{message.sender === "senior" ? "Senior" : "TrustKaki"}</h3>
-          <p className="mt-2 whitespace-pre-wrap break-words text-base leading-7">{message.text}</p>
+          <p className="mt-2 whitespace-pre-wrap break-words text-base leading-7">{message.sender === "trustkaki" ? <OfficialSourceText text={message.text} /> : message.text}</p>
           </div>
         </article>)}
         {recovering && <p role="status" className="py-4 text-sm text-gray-600">An earlier message may be unfinished. Use its original wording and send to check or resume it. Nothing is sent automatically.</p>}

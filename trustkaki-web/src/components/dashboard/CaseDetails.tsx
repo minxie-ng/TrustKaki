@@ -1,3 +1,5 @@
+
+import OfficialSourceText from "../OfficialSourceText";
 import type { BriefingOutput } from "@/lib/agents/contracts";
 import type {
   CaregiverActionItem,
@@ -241,8 +243,8 @@ function ThreadEntry({ entry }: { entry: CareThreadEntry }) {
         <div className="mt-1 text-xs font-bold uppercase text-[var(--care-evergreen)]">
           {entry.message.sender === "senior" ? "Senior message" : "TrustKaki reply"}
         </div>
-        <p className="mt-1 text-sm leading-6 text-gray-700">
-          {entry.message.text}
+        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-gray-700">
+          {entry.message.sender === "trustkaki" ? <OfficialSourceText text={entry.message.text} /> : entry.message.text}
         </p>
         {entry.message.channel && (
           <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">

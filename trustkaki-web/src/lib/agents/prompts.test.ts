@@ -293,3 +293,12 @@ describe("retained role contracts", () => {
     expect(BRIEFING_PROMPT).toMatch(/not.*safe|never.*safe/i);
   });
 });
+
+
+it("preserves care signals when optional activity extraction is malformed", () => {
+  const result = triageOutputSchema.safeParse({ signals: [{ type: "health", severity: "high", description: "Cannot breathe" }],
+    riskLevel: "red", riskChange: "increase", routing: [], summary: "Urgent symptoms", responseMessage: "Get urgent help",
+    humanFollowUpRequired: true, activityRequest: { area: "guessed", constraintsComplete: true } });
+  expect(result.success).toBe(true);
+  if (result.success) { expect(result.data.signals).toHaveLength(1); expect(result.data.activityRequest).toBeUndefined(); }
+});

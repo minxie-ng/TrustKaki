@@ -10,6 +10,8 @@ import type {
 } from "@/lib/memory/contracts";
 import type { PolicyResult } from "./policy";
 
+import type { ActivityRequest } from "./activityMatching";
+
 // ─── Shared Context ───
 export type KnownContextItemType =
   | "preference"
@@ -117,6 +119,7 @@ export interface TriageSignal {
 }
 
 export interface TriageOutput {
+  activityRequest?: ActivityRequest;
   socialContext?: "conversation" | "activity_options";
   digitalSafetyContext?: "active" | "resolved" | "none";
   outdoorContext?: "check" | "none" | "declined";

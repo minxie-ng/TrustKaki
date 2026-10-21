@@ -1,3 +1,4 @@
+import { activityRequestSchema } from "./activityMatching";
 // ─── Zod Schemas for Agent Output Validation ───
 
 import { z } from "zod";
@@ -137,6 +138,8 @@ export const contextMemoryOutputSchema = z
   .strict();
 
 export const triageOutputSchema = z.object({
+  // Catalogue extraction must never invalidate independent care/safety signals.
+  activityRequest: activityRequestSchema.optional().catch(undefined),
   socialContext: z.enum(["conversation", "activity_options"]).optional(),
   digitalSafetyContext: z.enum(["active", "resolved", "none"]).optional(),
   outdoorContext: z.enum(["check", "none", "declined"]).optional(),

@@ -44,7 +44,7 @@ import {
   contextMemoryUserPrompt,
 } from "./prompts";
 import { contextMemoryFallback } from "./fallbacks";
-import { hasSocialActivityCue, jevIsEnabled, runJevSocialDecision } from "./socialDecision";
+import { hasSocialActivityCue, jevIsEnabled, runJevSocialDecision, previousActivityQuestion } from "./socialDecision";
 import { runJevRoutingShadow, routingShadowTrace } from "./routingShadow";
 import { selectSpecialistRouting } from "./specialistRouting";
 import { environmentAdvisory, outdoorRequest, explicitOutdoorRequest } from "./environmentAdvisory";
@@ -509,7 +509,7 @@ async function orchestrateWithinBudget(message: string, ctx: AgentRunContext): P
     digitalSafety: triageResult.data.routing.includes("digital_safety") ||
       signals.some(signal => signal.type === "digital_safety") || hasDigitalSafetyCue(message),
     contextMemory: triageResult.data.routing.includes("context_memory") || mayContainDurableContext(message),
-    social: outdoorMessage !== null || hasSocialActivityCue(message) || signals.some(signal => signal.type === "social") || triageResult.data.routing.includes("aac_nudge"),
+    social: (triageResult.data.socialContext === "activity_options" && triageResult.data.activityRequest !== undefined) || outdoorMessage !== null || hasSocialActivityCue(message) || signals.some(signal => signal.type === "social") || triageResult.data.routing.includes("aac_nudge"),
   }, !shouldExcludeContextMemory(message));
 
   const runDigitalSafety: Promise<AgentRunResult<DigitalSafetyOutput> | null> =
@@ -637,7 +637,7 @@ async function orchestrateWithinBudget(message: string, ctx: AgentRunContext): P
     traces.push(environment.trace);
   }
   const socialDecision = triageResult.data.socialContext === "activity_options" && !environment && jevIsEnabled() && socialEligible && !routes.carePause
-      ? await runJevSocialDecision(message) : null;
+      ? await runJevSocialDecision(message, { activityRequest: triageResult.data.activityRequest, age: ctx.senior.age, activityQuestion: previousActivityQuestion(ctx.messages, message) }) : null;
   if (socialDecision) {
     socialDecision.tags.push("reply_selected");
     traces.push(toAgentTrace(socialDecision));
@@ -774,9 +774,11 @@ export async function runTriageTimelineAgent(
 export async function runAACNudgeAgent(
   message: string,
   ctx: AgentRunContext,
-  signals: TriageSignal[]
+  signals: TriageSignal[],
+  activityRequest?: TriageOutput["activityRequest"]
 ): Promise<AgentRunResult<AACNudgeOutput>> {
   if (jevIsEnabled()) return runJevSocialDecision(message, {
+    activityRequest, age: ctx.senior.age, activityQuestion: previousActivityQuestion(ctx.messages, message),
     boundedReply: capabilityReply(message, "", signals, ctx),
     carePriority: ctx.currentRiskLevel === "red" || hasUrgentHealthConcern(message, signals) || hasDigitalSafetyCue(message) ||
       signals.some(signal => signal.type === "health" || signal.type === "daily_living" || signal.type === "digital_safety"),

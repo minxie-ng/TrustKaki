@@ -1,5 +1,7 @@
+import { matchActivities, ACTIVITY_QUESTIONS, type ActivityQuestion, type ActivityRequest } from "./activityMatching";
 import { inferenceSignal } from "./inferenceBudget";
 import { randomUUID } from "node:crypto";
+import type { Message } from "@/lib/types";
 import type { AACNudgeOutput, AgentRunResult } from "./contracts";
 import { buildJevSocialIntentRequest, OPENROUTER_JEV_ENDPOINT, parseJevSocialIntent, type SocialIntent } from "./socialIntentContract";
 
@@ -11,6 +13,18 @@ export function jevIsEnabled(): boolean {
 export function hasSocialActivityCue(message: string): boolean {
   // Eligibility only; never interpret this lexical guard as interest or consent.
   return /\b(?:activit(?:y|ies)|outings?|chess|mahjong|clubs?|one[- ]to[- ]one|social|lonel(?:y|iness)|groups?)\b|活动|活動|探访|探訪|象棋|麻将|麻將|孤独|孤獨|小组|小組/iu.test(message);
+}
+
+// Only a recent, immediately preceding application-authored fixed question may
+// contextualise a short reply. Never forward arbitrary history to the classifier.
+export function previousActivityQuestion(messages: readonly Message[], currentMessage: string): ActivityQuestion | undefined {
+  let index = messages.length - 1;
+  if (messages[index]?.sender === "senior" && messages[index].text === currentMessage) index--;
+  const previous = messages[index];
+  if (!previous || previous.sender !== "trustkaki") return undefined;
+  const age = Date.now() - Date.parse(previous.timestamp);
+  if (!Number.isFinite(age) || age < 0 || age > 15 * 60 * 1000) return undefined;
+  return Object.values(ACTIVITY_QUESTIONS).find(question => previous.text === question);
 }
 
 export interface SocialDecisionOutput extends AACNudgeOutput { socialIntent: SocialIntent | null }
@@ -29,7 +43,7 @@ function reply(label: SocialIntent | null, chinese: boolean): string {
     : "I couldn't check your activity preferences right now. We can leave activities for now.";
 }
 
-export async function runJevSocialDecision(message: string, options: { carePriority?: boolean; boundedReply?: string | null } = {}): Promise<AgentRunResult<SocialDecisionOutput>> {
+export async function runJevSocialDecision(message: string, options: { carePriority?: boolean; boundedReply?: string | null; activityRequest?: ActivityRequest; age?: number; activityQuestion?: ActivityQuestion } = {}): Promise<AgentRunResult<SocialDecisionOutput>> {
   const start = performance.now();
   const timestamp = new Date().toISOString();
   let label: SocialIntent | null = null;
@@ -42,7 +56,7 @@ export async function runJevSocialDecision(message: string, options: { carePrior
     if (!jevIsEnabled()) throw new Error("jev_disabled");
     const apiKey = process.env.OPENROUTER_API_KEY?.trim();
     if (!apiKey) throw new Error("jev_not_configured");
-    const payload = { ...buildJevSocialIntentRequest(message), model: JEV_SOCIAL_MODEL };
+    const payload = { ...buildJevSocialIntentRequest(message, options.activityQuestion), model: JEV_SOCIAL_MODEL };
     const response = await fetch(OPENROUTER_JEV_ENDPOINT, {
       method: "POST", redirect: "error", signal: inferenceSignal(3000, true),
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -59,23 +73,24 @@ export async function runJevSocialDecision(message: string, options: { carePrior
     errorMessage = error instanceof Error && /^jev_(?:disabled|not_configured|provider_unavailable|invalid_output|care_priority|capability_priority)$/.test(error.message)
       ? error.message : "jev_decision_unavailable";
   }
+  const chinese = /\p{Script=Han}/u.test(message);
+  const activityMatch = label === "interested" ? matchActivities(options.activityRequest, { age: options.age ?? NaN, chinese }) : null;
   const summary = options.boundedReply ? "Requested action exceeds chat capabilities; no activity suggestion made."
     : options.carePriority ? "Activity discussion paused; care or safety review takes priority."
     : label === "interested" ? "Interested in exploring activities; no booking or contact authorized."
     : label === "declining" ? "Activity suggestion stopped to respect refusal."
     : label === "unclear" ? "Interest unclear; clarification needed before suggesting an activity."
     : "Jev decision unavailable; no activity suggestion made.";
-  const chinese = /\p{Script=Han}/u.test(message);
   const data: SocialDecisionOutput = { socialIntent: label, nudgeMessage: options.boundedReply ?? (options.carePriority
     ? chinese ? "我们先不谈活动，优先关注您的照护或安全问题。" : "Let's pause activities and focus on your care or safety concern."
-    : reply(label, chinese)),
+    : activityMatch?.text ?? reply(label, chinese)),
     approach: "Respect current activity preference", rationale: summary, suggestedChannel: "whatsapp" };
   return {
     agentId: "aac_nudge", agentName: "Jev Social Decision", traceId: `trace_jev_${randomUUID()}`, timestamp,
     input: JSON.stringify({ currentMessageCharacters: message.length }),
-    reasoning: summary, output: JSON.stringify({ socialIntent: label, confidence, summary }), tags: ["social_decision", label ?? "unavailable"],
+    reasoning: summary, output: JSON.stringify({ socialIntent: label, confidence, summary, ...(activityMatch ? { catalogueStatus: activityMatch.status, catalogueIds: activityMatch.ids } : {}) }), tags: ["social_decision", label ?? "unavailable", ...(activityMatch ? [`catalogue_${activityMatch.status}`] : [])],
     data, durationMs: performance.now() - start, modelUsed, fallback: label === null,
-    inputSummary: "Current message reviewed for willingness to explore social activities.", outputSummary: summary,
+    inputSummary: "Current message reviewed for willingness to explore social activities.", outputSummary: activityMatch ? `${summary} Catalogue: ${activityMatch.status}; ${activityMatch.ids.length} option(s).` : summary,
     stateChanges: [], errorMessage,
   };
 }

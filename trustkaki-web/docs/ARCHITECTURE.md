@@ -20,7 +20,7 @@ TrustKaki turns an everyday message into a traceable care workflow. Triage inter
 | Jev routing | Structured decisions about which specialist reviews are relevant. | Active routing coexists with independent triggers and deterministic exclusions. Requested and executed routes can differ. |
 | Context Memory | Proposes durable facts from current senior-authored evidence. | Server validation, source evidence and a persistence result determine acceptance. |
 | Digital Safety | Reviews suspicious digital/payment situations when relevant. | Cannot authorise payments, gain account access or override policy. |
-| AAC Nudge / social decision | Supports low-pressure community engagement and respects refusal. | Does not autonomously enrol a senior or contact an organiser. |
+| AAC Nudge / social decision | Checks willingness and matches a small curated activity catalogue against extracted preferences. | Sources/freshness and unknown attributes constrain suggestions; no enrolment or organiser contact. |
 | Outdoor tool | Retrieves public forecast and air-quality facts when outdoor context is relevant. | Data freshness, destination and timing constrain advice; it is ordinary API integration, not another model. |
 | Briefing | Organises relevant results for caregiver review. | Proposed human action remains a recommendation. |
 | Policy and persistence | Applies final rules; records operational results and accepted memory writes. | Care records go to Supabase; personal memory goes to Neon. |
@@ -29,6 +29,8 @@ TrustKaki turns an everyday message into a traceable care workflow. Triage inter
 The overview groups Triage, Jev, conditional specialist reviews and code policy in one interpretation/control node. Saved operational signals feed Pattern Watch; a direct route also reaches staff for concerns that do not require a multi-day pattern. The return arrow represents the selected channel reply, while staff actions return to operational history. The diagram shows information dependencies rather than every request or exact scheduling. Authentication precedes access to both stores.
 
 Source: [`orchestrator.ts`](../src/lib/agents/orchestrator.ts), [`prompts.ts`](../src/lib/agents/prompts.ts), [`policy.ts`](../src/lib/agents/policy.ts), [`specialistRouting.ts`](../src/lib/agents/specialistRouting.ts).
+
+Catalogue behaviour and manual maintenance: [Curated community activity suggestions](ACTIVITY_CATALOGUE.md).
 
 ### Routing and final authority
 

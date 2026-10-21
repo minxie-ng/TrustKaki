@@ -1420,3 +1420,57 @@ describe("irrelevant safety reviews do not seize the conversation", () => {
     expect(response.messages[0].agentId).toBe("digital_safety");
   });
 });
+
+
+describe("source-backed catalogue in the active conversation", () => {
+  const activityRequest: NonNullable<TriageOutput["activityRequest"]> = { area: "toa_payoh", format: "any", topics: ["community"],
+    earliestDate: null, latestDate: null, maxFeeSGD: null, requiredLanguage: null, wheelchairRequired: false, constraintsComplete: true };
+  beforeEach(() => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date("2026-10-21T15:00:00+08:00"));
+    vi.stubEnv("TRUSTKAKI_JEV_ENABLED", "true"); vi.stubEnv("TRUSTKAKI_JEV_ROUTING_ENABLED", "false");
+    vi.stubEnv("OPENROUTER_API_KEY", "fictional-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ model: "typesafe/jev-1.14-20261014",
+      usage: { input_tokens: 500, output_tokens: 0 }, answers: { social_intent: { type: "choice", choice: "interested", confidence: 1,
+      probabilities: { interested: 1, declining: 0, unclear: 0 } } } })));
+  });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+  it("uses extracted constraints in the one selected reply with unchanged risk and memory", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ activityRequest })));
+    const ctx = context(); const original = JSON.stringify(ctx);
+    const output = await orchestrate("Suggest community activities in Toa Payoh", ctx);
+    expect(output.messages).toHaveLength(1);
+    expect(output.messages[0].text).toContain("14 Nov 2026");
+    expect(output.traces.find(t => t.agentId === "aac_nudge")?.tags).toContain("catalogue_matched");
+    expect(output.riskLevel).toBe("green"); expect(output.contextMemoryCandidates).toEqual([]);
+    expect(JSON.stringify(ctx)).toBe(original);
+  });
+  it("uses semantic activity eligibility for a short area clarification", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    const { matchActivities } = await import("./activityMatching");
+    const question = matchActivities({ ...activityRequest, area: null }, { age: 76, chinese: false }).text;
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ activityRequest })));
+    const ctx = context(); ctx.messages = [{ id: "question", sender: "trustkaki", text: question, timestamp: "2026-10-21T06:59:00Z" }];
+    const output = await orchestrate("Toa Payoh", ctx);
+    expect(output.messages[0].text).toContain("14 Nov 2026");
+    const payload = JSON.parse(vi.mocked(fetch).mock.calls[0][1]!.body as string);
+    expect(payload.state.current_message).toBe("Toa Payoh");
+    expect(payload.state.activity_question).toBe(question);
+  });
+  it("keeps urgent care ahead of even a complete activity request", async () => {
+    const { orchestrate } = await import("./orchestrator");
+    runAgentMock.mockResolvedValueOnce(result("triage", triageData({ activityRequest, riskLevel: "red", riskChange: "increase",
+      signals: [{ type: "health", category: "emergency_high_risk", severity: "high", description: "Chest pain and cannot breathe" }], humanFollowUpRequired: true })));
+    runAgentMock.mockImplementation(async options => result(options.agentId, options.fallback()));
+    const output = await orchestrate("I cannot breathe, but suggest community activities", context());
+    expect(output.messages[0].text).toContain("urgent help");
+    expect(output.messages[0].text).not.toContain("onepa");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("applies the same matching gate in the exported AAC helper", async () => {
+    const { runAACNudgeAgent } = await import("./orchestrator");
+    const result = await runAACNudgeAgent("Suggest community activities in Toa Payoh", context(), [], activityRequest);
+    expect(result.data.nudgeMessage).toContain("14 Nov 2026");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});

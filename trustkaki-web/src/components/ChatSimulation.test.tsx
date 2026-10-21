@@ -96,12 +96,15 @@ it("keeps the unresolved request recoverable when an example changes the draft",
   await act(async () => { example(); });
   const original = container.querySelector("textarea")!.value;
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   await act(async () => root.render(createElement(ChatSimulation, { ...props, messages: [{ id: "new", sender: "senior", text: "A different message", timestamp: "2026-10-20T00:00:00Z" }] })));
   await act(async () => { example(); });
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   expect(fetcher).toHaveBeenCalledTimes(1);
   expect(container.querySelector("textarea")!.value).toBe(original);
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
   expect(JSON.parse(fetcher.mock.calls[1][1].body).clientMessageId).toBe(JSON.parse(fetcher.mock.calls[0][1].body).clientMessageId);
 });
@@ -114,11 +117,13 @@ it("restores the same pending request after navigating away and back without aut
   await act(async () => Array.from(container.querySelectorAll("button")).find(b => b.textContent === "Use a check-in example")!.click());
   const submit = () => container.querySelector("form")!.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   await act(async () => root.render(null));
   await act(async () => root.render(createElement(ChatSimulation, props)));
   expect(fetcher).toHaveBeenCalledTimes(1);
   expect(container.querySelector("textarea")!.value).toContain("quiet one-to-one");
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
   expect(JSON.parse(fetcher.mock.calls[1][1].body).clientMessageId).toBe(JSON.parse(fetcher.mock.calls[0][1].body).clientMessageId);
 });
@@ -134,6 +139,7 @@ it("recovers a pending ID after reload without storing message text or automatic
   await act(async () => { example(); });
   const wording = container.querySelector("textarea")!.value;
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   const store = dom.window.sessionStorage;
   const entries = Array.from({ length: store.length }, (_, i) => [store.key(i)!, store.getItem(store.key(i)!)!] as const);
   expect(JSON.stringify(entries)).not.toContain(wording);
@@ -147,6 +153,7 @@ it("recovers a pending ID after reload without storing message text or automatic
   expect(container.textContent).toContain("Nothing is sent automatically");
   await act(async () => { example(); });
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
   expect(JSON.parse(fetcher.mock.calls[1][1].body).clientMessageId).toBe(JSON.parse(fetcher.mock.calls[0][1].body).clientMessageId);
 });
@@ -160,15 +167,18 @@ it("does not reuse another senior or account's pending request", async () => {
   const example = () => Array.from(container.querySelectorAll("button")).find(b => b.textContent === "Use a check-in example")!.click();
   await act(async () => { example(); });
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   await act(async () => root.render(createElement(ChatSimulation, { ...props, seniorId: "scope-senior-2" })));
   expect(container.querySelector("textarea")!.value).toBe("");
   expect(container.querySelectorAll("article")).toHaveLength(0);
   await act(async () => { example(); });
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   await act(async () => root.render(createElement(ChatSimulation, { ...props, userId: "scope-user-2" })));
   expect(container.querySelector("textarea")!.value).toBe("");
   await act(async () => { example(); });
   await act(async () => { submit(); });
+  await vi.waitFor(() => expect(container.querySelector("button[type=submit]")?.textContent).toBe("Send fictional message"));
   expect(new Set(fetcher.mock.calls.map(call => JSON.parse(call[1].body).clientMessageId)).size).toBe(3);
 });
 
@@ -182,10 +192,12 @@ it("does not renew an expired request while the component remains mounted", asyn
     await act(async () => Array.from(container.querySelectorAll("button")).find(b => b.textContent === "Use a check-in example")!.click());
     const submit = () => container.querySelector("form")!.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
     await act(async () => { submit(); });
+    // Let asynchronous receipt hashing finish before advancing its expiry clock.
+    await vi.waitFor(() => expect(container.textContent).toContain("Retry this same message"));
     vi.advanceTimersByTime(24 * 60 * 60 * 1000);
     await act(async () => { submit(); });
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(container.textContent).toContain("can no longer be replayed");
+    await vi.waitFor(() => expect(container.textContent).toContain("can no longer be replayed"));
     expect(dom.window.sessionStorage.length).toBe(0);
   } finally { vi.useRealTimers(); }
 });
@@ -201,7 +213,8 @@ it("ignores an expired error body from a previous senior after switching", async
   await act(async () => root.render(createElement(ChatSimulation, props)));
   await act(async () => { example(); });
   await act(async () => { submit(); });
-  expect(finish).toBeTypeOf("function");
+  // Receipt fingerprinting uses asynchronous Web Crypto before fetch starts.
+  await vi.waitFor(() => expect(finish).toBeTypeOf("function"));
   await act(async () => root.render(createElement(ChatSimulation, { ...props, seniorId: "new-senior" })));
   await act(async () => { example(); });
   await act(async () => { submit(); });
