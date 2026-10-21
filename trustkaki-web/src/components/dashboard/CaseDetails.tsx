@@ -131,7 +131,8 @@ export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
 
   return (
     <div className="mt-6 border-t border-[var(--care-line)] pt-6">
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] xl:gap-10">
+      <FollowUpHandover item={item} briefing={briefing} />
+      <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] xl:gap-10">
         <div>
           <SectionHeading eyebrow="Authoritative care evidence" title="Chronological evidence timeline" />
           {pattern.evidence.length === 0 ? (
@@ -192,7 +193,6 @@ export function CaseDetails({ item, data, briefing }: CaseDetailsProps) {
             </section>
           )}
 
-          <FollowUpHandover item={item} briefing={briefing} />
         </div>
       </div>
     </div>
