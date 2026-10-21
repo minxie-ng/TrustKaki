@@ -1,5 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
+import { voiceLanguageSchema, type VoiceLanguage } from '@/lib/voiceLanguage';
 
 const MAX_AUDIO = 2_000_000;
 const MAX_JSON = 100_000;
@@ -66,10 +67,12 @@ const transcription = z.object({
   text: z.string().trim().min(1).max(3000), duration: z.number().finite().positive().max(60),
   segments: z.array(z.object({ no_speech_prob: z.number().min(0).max(1).optional() })).max(1000).optional(),
 });
-export async function transcribeVoice(audio: Uint8Array, apiKey: string, fetchImpl: Fetch = fetch): Promise<string> {
+export async function transcribeVoice(audio: Uint8Array, apiKey: string, fetchImpl: Fetch = fetch, language: VoiceLanguage = null): Promise<string> {
   return deadline('Voice transcription failed', 20_000, async signal => {
     if (!apiKey || !validOgg(audio)) throw new Error('Invalid input');
+    const selectedLanguage = voiceLanguageSchema.parse(language);
     const body = new FormData();
+    if (selectedLanguage) body.set('language', selectedLanguage);
     body.set('file', new Blob([new Uint8Array(audio)], { type: 'audio/ogg' }), 'voice.ogg');
     body.set('model', 'whisper-large-v3');
     body.set('response_format', 'verbose_json');

@@ -170,6 +170,7 @@ export interface Database {
       };
       seniors: {
         Row: {
+          preferred_voice_language?: "en" | "ms" | "zh" | "ta" | null;
           id: string;
           external_ref: string | null;
           display_name: string;
@@ -186,6 +187,7 @@ export interface Database {
         Insert: {
           id?: string;
           external_ref?: string | null;
+          preferred_voice_language?: "en" | "ms" | "zh" | "ta" | null;
           display_name: string;
           age?: number | null;
           gender?: string | null;

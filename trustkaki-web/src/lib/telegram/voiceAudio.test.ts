@@ -48,3 +48,17 @@ describe('bounded failure handling',()=>{
    await vi.advanceTimersByTimeAsync(15000);await assertion;
   } finally {vi.useRealTimers();}
  });
+
+it('passes an explicit supported language and omits it for automatic detection',async()=>{
+ const english=vi.fn().mockResolvedValue(transcript());
+ await transcribeVoice(ogg,'key',english,'en');
+ expect(english.mock.calls[0][1].body.get('language')).toBe('en');
+ const automatic=vi.fn().mockResolvedValue(transcript());
+ await transcribeVoice(ogg,'key',automatic,null);
+ expect(automatic.mock.calls[0][1].body.has('language')).toBe(false);
+});
+it('rejects unsupported language values before contacting the provider',async()=>{
+ const fetcher=vi.fn();
+ await expect(transcribeVoice(ogg,'key',fetcher,'invalid' as 'en')).rejects.toThrow('Voice transcription failed');
+ expect(fetcher).not.toHaveBeenCalled();
+});

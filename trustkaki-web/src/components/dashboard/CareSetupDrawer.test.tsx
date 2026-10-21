@@ -5,6 +5,8 @@ import { JSDOM } from "jsdom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CareSetupDrawer } from "./CareSetupDrawer";
 
+vi.mock("./VoiceLanguagePanel", () => ({ VoiceLanguagePanel: () => createElement("section", null, "Voice language") }));
+
 const props = {
   selectedSeniorId: "senior-1",
   authToken: "token",

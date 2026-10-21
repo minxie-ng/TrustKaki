@@ -11,6 +11,7 @@ import type { SeniorContextReadModel } from "@/lib/api/schemas";
 import type { MaskedContactPlan } from "@/lib/types";
 import { ContactPlanPanel, contactPlanInstanceKey } from "./ContactPlanPanel";
 import { ProactiveCheckInPanel } from "./ProactiveCheckInPanel";
+import { VoiceLanguagePanel } from "./VoiceLanguagePanel";
 import { SeniorContextPanel } from "./SeniorContextPanel";
 
 type CareSetupTab = "context" | "check-ins" | "contacts";
@@ -201,6 +202,10 @@ export function CareSetupDrawer(props: CareSetupDrawerProps) {
             hidden={activeTab !== "context"}
             className="h-full overflow-y-auto p-4 sm:p-6"
           >
+            {props.isAdmin && props.selectedSeniorId && <VoiceLanguagePanel
+              key={`voice-language:${props.selectedSeniorId}:${props.authToken}`}
+              seniorId={props.selectedSeniorId} authToken={props.authToken} onUnauthorized={props.onUnauthorized}
+            />}
             <SeniorContextPanel
               key={`senior-context:${props.selectedSeniorId ?? "none"}`}
               context={props.seniorContext}

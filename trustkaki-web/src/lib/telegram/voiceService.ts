@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import { readVoiceLanguage } from "@/lib/persistence/voiceLanguageRepository";
 import type { PersistedTelegramEvent } from "@/lib/persistence/telegramEventRepository";
 import { markTelegramEventProcessed, updateTelegramOutboundState } from "@/lib/persistence/telegramEventRepository";
 import { findSeniorIdByMessagingIdentity } from "@/lib/persistence/seniorMessagingIdentityRepository";
@@ -59,8 +60,9 @@ export async function processVoiceEvent(event:PersistedTelegramEvent, client:Tel
       await markTelegramEventProcessed(event.id);return;
     }
     try {
+      const language=await readVoiceLanguage(seniorId);
       const audio=await downloadTelegramVoice({botToken:process.env.TELEGRAM_BOT_TOKEN!,fileId:media.data.fileId});
-      transcript=await transcribeVoice(audio,process.env.GROQ_API_KEY!);
+      transcript=await transcribeVoice(audio,process.env.GROQ_API_KEY!,undefined,language);
     } catch {
       await confirmVoiceDraft({draftId:draft.id,seniorId,senderUserId:event.sender_user_id,chatId:event.chat_id,action:"discard"});
       await reply(event,client,{text:RETRY_TEXT});await markTelegramEventProcessed(event.id);return;
