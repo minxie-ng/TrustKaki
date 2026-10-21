@@ -124,3 +124,16 @@ describe("Telegram outbound client", () => {
     expect((error as Error).message).not.toContain("123456:secret-token");
   });
 });
+
+it("includes an optional confirmation keyboard without changing plain-text bodies",async()=>{
+ const {buildTelegramTextRequest}=await import('./client');
+ const replyMarkup={inline_keyboard:[[{text:'Confirm',callback_data:'voice:confirm:example'}]]};
+ const request=buildTelegramTextRequest({botToken:'test',timeoutMs:1000},{chatId:'1',text:'I heard…',replyMarkup});
+ expect(JSON.parse(request.init.body as string).reply_markup).toEqual(replyMarkup);
+});
+it("acknowledges a callback without exposing transport errors",async()=>{
+ const {answerTelegramCallbackWithConfig}=await import('./client');
+ const fetcher=vi.fn().mockResolvedValue(new Response(JSON.stringify({ok:true,result:true})));
+ await answerTelegramCallbackWithConfig({botToken:'test',timeoutMs:1000},'callback',fetcher);
+ expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({callback_query_id:'callback'});
+});

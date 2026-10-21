@@ -553,3 +553,38 @@ describe("Telegram orchestration service", () => {
     expect(result).toMatchObject({ processed: 1, failed: 0 });
   });
 });
+
+describe('voice inbox acceptance',()=>{
+ const voice=()=>({update_id:920001,message:{message_id:80,date:1784102400,from:{id:8123456789,is_bot:false},chat:{id:8123456789,type:'private'},voice:{file_id:'voice-file',file_unique_id:'unique',duration:12,file_size:100}}});
+ it('accepts bounded voice metadata only when explicitly enabled',async()=>{
+  vi.stubEnv('TRUSTKAKI_TELEGRAM_VOICE_ENABLED','true');vi.stubEnv('GROQ_API_KEY','test');vi.stubEnv('TELEGRAM_BOT_TOKEN','test');
+  acceptTelegramEventMock.mockResolvedValue({row:{id:'voice-event'},duplicate:false});
+  const {acceptTelegramWebhookEvent}=await import('./service');
+  expect(await acceptTelegramWebhookEvent(voice())).toMatchObject({status:'accepted',eventId:'voice-event'});
+  expect(acceptTelegramEventMock).toHaveBeenCalledWith(expect.objectContaining({eventType:'inbound_voice',text:'',payload:{fileId:'voice-file',duration:12,fileSize:100}}));
+  vi.unstubAllEnvs();
+ });
+ it('ignores voice when flag is disabled',async()=>{
+  vi.stubEnv('TRUSTKAKI_TELEGRAM_VOICE_ENABLED','false');
+  const {acceptTelegramWebhookEvent}=await import('./service');
+  expect(await acceptTelegramWebhookEvent(voice())).toEqual({status:'ignored'});
+  vi.unstubAllEnvs();
+ });
+ it('accepts callbacks as controls rather than care text',async()=>{
+  vi.stubEnv('TRUSTKAKI_TELEGRAM_VOICE_ENABLED','true');vi.stubEnv('GROQ_API_KEY','test');vi.stubEnv('TELEGRAM_BOT_TOKEN','test');
+  acceptTelegramEventMock.mockResolvedValue({row:{id:'callback-event'},duplicate:false});
+  const {acceptTelegramWebhookEvent}=await import('./service');
+  const p={update_id:920002,callback_query:{id:'callback',from:{id:8123456789,is_bot:false},data:'voice:confirm:00000000-0000-4000-8000-000000000123',message:{message_id:81,chat:{id:8123456789,type:'private'}}}};
+  expect(await acceptTelegramWebhookEvent(p)).toMatchObject({eventId:'callback-event'});
+  expect(acceptTelegramEventMock).toHaveBeenCalledWith(expect.objectContaining({eventType:'voice_callback',text:''}));
+  vi.unstubAllEnvs();
+ });
+});
+it('records unsupported private attachments as a bounded control reply when voice is enabled',async()=>{
+ vi.stubEnv('TRUSTKAKI_TELEGRAM_VOICE_ENABLED','true');vi.stubEnv('GROQ_API_KEY','test');vi.stubEnv('TELEGRAM_BOT_TOKEN','test');
+ acceptTelegramEventMock.mockResolvedValue({row:{id:'unsupported'},duplicate:false});
+ const {acceptTelegramWebhookEvent}=await import('./service');
+ await acceptTelegramWebhookEvent({update_id:920003,message:{message_id:90,date:1784102400,from:{id:8123456789,is_bot:false},chat:{id:8123456789,type:'private'},document:{file_id:'not-retained'}}});
+ expect(acceptTelegramEventMock).toHaveBeenCalledWith(expect.objectContaining({eventType:'inbound_voice',payload:{unsupported:true},text:''}));
+ vi.unstubAllEnvs();
+});

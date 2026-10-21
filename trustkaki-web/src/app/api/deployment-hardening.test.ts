@@ -112,6 +112,7 @@ describe("deployment hardening", () => {
 
     expect(config.crons ?? []).toEqual([
       { path: "/api/internal/memory/process-pending", schedule: "15 0 * * *" },
+      { path: "/api/internal/telegram/voice-cleanup", schedule: "30 0 * * *" },
     ]);
     expect(sql).toContain("cron.schedule");
     expect(sql).toContain("*/5 * * * *");

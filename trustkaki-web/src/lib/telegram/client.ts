@@ -41,10 +41,11 @@ export function getTelegramClientConfig(): TelegramClientConfig | null {
 export function buildTelegramTextRequest(
   config: TelegramClientConfig,
   params: SendTelegramTextParams
-): { url: string; init: RequestInit; body: Record<string, string> } {
+): { url: string; init: RequestInit; body: Record<string, unknown> } {
   const body = {
     chat_id: params.chatId,
     text: params.text,
+    ...(params.replyMarkup ? { reply_markup: params.replyMarkup } : {}),
   };
 
   return {
@@ -95,6 +96,23 @@ export async function sendTelegramText(
   return sendTelegramTextWithConfig(config, params);
 }
 
+export async function answerTelegramCallbackWithConfig(config: TelegramClientConfig, callbackId: string, fetchImpl: FetchImplementation = fetch): Promise<void> {
+  try {
+    const response = await fetchImpl(`https://api.telegram.org/bot${config.botToken}/answerCallbackQuery`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ callback_query_id: callbackId }),
+      signal: AbortSignal.timeout(config.timeoutMs), redirect: "error",
+    });
+    if (!response.ok) throw new Error("callback rejected");
+    const body = await response.json();
+    if (body?.ok !== true) throw new Error("callback rejected");
+  } catch { throw new Error("Telegram callback acknowledgement failed"); }
+}
 export const telegramOutboundClient: TelegramOutboundClient = {
   sendText: sendTelegramText,
+  async answerCallback(callbackId) {
+    const config = getTelegramClientConfig();
+    if (!config) throw new Error("Telegram Bot API is not configured");
+    await answerTelegramCallbackWithConfig(config, callbackId);
+  },
 };

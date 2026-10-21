@@ -112,6 +112,16 @@ Telegram and WhatsApp adapters parse verified inbound events, resolve a mapped s
 
 Sources: [Telegram service](../src/lib/telegram/service.ts), [WhatsApp service](../src/lib/whatsapp/service.ts).
 
+### Optional Telegram voice input
+
+Voice input is disabled by default. After applying the voice-draft migration, configure server-only `GROQ_API_KEY` and explicitly enable `TRUSTKAKI_TELEGRAM_VOICE_ENABLED=true`. The adapter uses Groq `whisper-large-v3`; verify the account remains on the intended free tier and review its Data Controls before activation. Audio is transmitted to Groq for transcription; TrustKaki does not persist audio. Provider retention is separate from application retention.
+
+Only verified private-chat identities can download/transcribe notes. Limits are 60 seconds, 2 MB, five drafts per minute per identity, 20 per rolling day per identity and 100 globally per rolling day. Each draft permits one transcription attempt; an interrupted attempt asks the user to resend or type rather than silently repeat inference. Downloads and transcription have 15- and 20-second deadlines respectively.
+
+The senior receives “I heard…” with Confirm / Try again. Unconfirmed transcripts are not care evidence, agent input or personal memory. Confirmation rechecks identity and creates one durable text event with voice provenance; ordinary text retains its existing path. Drafts become unusable after 10 minutes. Transcript text is erased on confirmation/discard/supersession and by opportunistic expiry cleanup; the authenticated daily `/api/internal/telegram/voice-cleanup` job removes expired text even if voice is disabled. Physical expiry cleanup can therefore lag expiry until the next successful job. Minimal admission/receipt metadata is retained. Confirmed text follows existing care-record retention.
+
+Use fictional audio for acceptance testing. Check speech, silence, language mixing, correction, expiry, duplicate confirmation and unavailable-provider behaviour. Transcription accuracy for Singlish and mixed languages is not guaranteed. This confirmation-first channel is not an emergency service. A lost provider acknowledgement can duplicate a control prompt; it does not create a second confirmed text event. Existing Telegram processing/reset concurrency limits still apply.
+
 ### Proactive Telegram check-ins
 
 ```mermaid
@@ -128,7 +138,7 @@ flowchart TD
 
 This is the logical state progression; each stage requires a worker invocation when due. The worker uses approved context tags to adjust configured wording, records send intent/provider acceptance, and holds uncertain sends for reconciliation. It is bounded workflow code, not an agent deciding to repeatedly contact someone.
 
-**Deployment boundary:** [vercel.json](../vercel.json) currently declares the memory-indexing cron only. Scheduled senior check-ins require a separately authorised recurring caller to `/api/internal/check-ins/process-due`, configured senior schedules, verified Telegram identities and provider credentials. The current worker supports Telegram only, despite a broader schedule schema. This guide does not claim an externally configured scheduler or current live channel health.
+**Deployment boundary:** [vercel.json](../vercel.json) declares the memory-indexing cron and a daily voice-draft cleanup cron. Scheduled senior check-ins require a separately authorised recurring caller to `/api/internal/check-ins/process-due`, configured senior schedules, verified Telegram identities and provider credentials. The current worker supports Telegram only, despite a broader schedule schema. This guide does not claim an externally configured scheduler or current live channel health.
 
 Sources: [check-in processor](../src/lib/checkins/service.ts), [timing policy](../src/lib/checkins/policy.ts), [protected endpoint](../src/app/api/internal/check-ins/process-due/route.ts), [schedule repository](../src/lib/persistence/proactiveCheckInRepository.ts).
 

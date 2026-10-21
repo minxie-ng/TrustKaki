@@ -36,7 +36,7 @@ export type WhatsAppWebhookEventStatus =
   | "ignored";
 export type WhatsAppOutboundStatus = "not_started" | "pending" | "sent" | "failed";
 export type SeniorMessagingPlatform = "whatsapp" | "telegram";
-export type TelegramWebhookEventType = "inbound_text" | "unsupported";
+export type TelegramWebhookEventType = "inbound_text" | "unsupported" | "inbound_voice" | "voice_callback";
 export type TelegramWebhookEventStatus =
   | "received"
   | "processing"

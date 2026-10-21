@@ -15,6 +15,7 @@ export interface TelegramClientConfig {
 export interface SendTelegramTextParams {
   chatId: string;
   text: string;
+  replyMarkup?: { inline_keyboard: { text: string; callback_data: string }[][] };
 }
 
 export interface TelegramSendTextResult {
@@ -23,4 +24,5 @@ export interface TelegramSendTextResult {
 
 export interface TelegramOutboundClient {
   sendText(params: SendTelegramTextParams): Promise<TelegramSendTextResult>;
+  answerCallback?(callbackId: string): Promise<void>;
 }

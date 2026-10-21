@@ -26,6 +26,7 @@ export interface TelegramWebhookEventInput {
   occurredAt: string;
   text: string;
   payload: Record<string, unknown>;
+  eventType?: "inbound_text" | "inbound_voice" | "voice_callback";
 }
 
 function getClient(): ServiceClient {
@@ -60,7 +61,7 @@ export async function acceptTelegramEvent(
     .from("telegram_webhook_events")
     .insert({
       update_id: event.updateId,
-      event_type: "inbound_text",
+      event_type: event.eventType ?? "inbound_text",
       telegram_message_id: event.telegramMessageId,
       sender_user_id: event.senderUserId,
       chat_id: event.chatId,

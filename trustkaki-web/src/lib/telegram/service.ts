@@ -1,4 +1,5 @@
 import "server-only";
+import { z } from "zod";
 
 import type { AgentRunContext, OrchestrateResponse, OrchestrationResult } from "@/lib/agents/contracts";
 import { orchestrate } from "@/lib/agents/orchestrator";
@@ -30,6 +31,9 @@ import type { AgentId, Message } from "@/lib/types";
 import { telegramOutboundClient } from "./client";
 import { logTelegramError } from "./logging";
 import { parseTelegramInboundText } from "./parser";
+import { parseVoiceUpdate, parseVoiceCallback } from "./voiceParser";
+import { isTelegramVoiceEnabled, processVoiceEvent } from "./voiceService";
+import { expireVoiceDrafts } from "@/lib/persistence/telegramVoiceRepository";
 import type { TelegramOutboundClient } from "./types";
 
 export interface TelegramAcceptResult {
@@ -144,6 +148,8 @@ async function getOrCreateOrchestration(args: {
     query: args.inbound.text,
   });
   if (!senior) throw new UnmappedTelegramSenderError();
+  const payload = args.event.payload as Record<string, unknown> | null;
+  if (payload?.source === "confirmed_voice" && payload.senior_id !== senior.seniorId) throw new UnmappedTelegramSenderError();
 
   if (args.event.orchestration_result && isAgentRunContext(args.event.orchestration_context)) {
     try {
@@ -252,7 +258,7 @@ async function persistOrchestrationIfNeeded(args: {
     externalMessageId: args.inbound.externalMessageId,
     externalMetadata: {
       direction: "inbound",
-      source: "webhook",
+      source: (args.event.payload as Record<string, unknown> | null)?.source === "confirmed_voice" ? "confirmed_voice_transcription" : "webhook",
       update_id: args.inbound.updateId,
     },
   });
@@ -312,6 +318,28 @@ async function sendOrResumeOutbound(args: {
 export async function acceptTelegramWebhookEvent(
   payload: unknown
 ): Promise<TelegramAcceptResult> {
+  const voice = isTelegramVoiceEnabled() ? parseVoiceUpdate(payload) : null;
+  const callback = isTelegramVoiceEnabled() ? parseVoiceCallback(payload) : null;
+  const unsupported = isTelegramVoiceEnabled() ? z.object({
+    update_id:z.number().int().safe().nonnegative(),
+    message:z.object({message_id:z.number().int().safe().positive(),date:z.number().int().nonnegative().max(8640000000000),from:z.object({id:z.number().int().safe().positive(),is_bot:z.literal(false)}),chat:z.object({id:z.number().int().safe().positive(),type:z.literal("private")}),text:z.never().optional()}).passthrough(),
+  }).safeParse(payload) : null;
+  if (!voice && !callback && unsupported?.success && ["voice","audio","document","photo","video","video_note","animation","sticker"].some(key => key in unsupported.data.message)) {
+    const {update_id,message:m}=unsupported.data;
+    const accepted=await acceptTelegramEvent({updateId:String(update_id),telegramMessageId:String(m.message_id),senderUserId:String(m.from.id),chatId:String(m.chat.id),occurredAt:new Date(m.date*1000).toISOString(),text:"",eventType:"inbound_voice",payload:{unsupported:true}});
+    return {status:accepted.duplicate ? "duplicate" : "accepted",eventId:accepted.row.id,duplicate:accepted.duplicate};
+  }
+  if (voice || callback) {
+    const control = voice ?? callback!;
+    const accepted = await acceptTelegramEvent({
+      updateId: control.updateId, telegramMessageId: control.messageId,
+      senderUserId: control.senderUserId, chatId: control.chatId,
+      occurredAt: voice?.timestamp ?? new Date().toISOString(), text: "",
+      eventType: voice ? "inbound_voice" : "voice_callback",
+      payload: voice ? {fileId:voice.fileId,duration:voice.duration,...(voice.fileSize !== undefined ? {fileSize:voice.fileSize} : {})} : {draftId:callback!.draftId,action:callback!.action,callbackId:callback!.callbackId},
+    });
+    return {status:accepted.duplicate ? "duplicate" : "accepted",eventId:accepted.row.id,duplicate:accepted.duplicate};
+  }
   const inbound = parseTelegramInboundText(payload);
   if (!inbound) return { status: "ignored" };
 
@@ -341,12 +369,16 @@ export async function processTelegramEventById(
   const event = await claimTelegramEvent(eventId);
   if (!event) return { status: "claimed_elsewhere" };
 
-  if (event.event_type !== "inbound_text") {
+  if (!["inbound_text", "inbound_voice", "voice_callback"].includes(event.event_type)) {
     await markTelegramEventProcessed(event.id);
     return { status: "ignored" };
   }
 
   try {
+    if (event.event_type === "inbound_voice" || event.event_type === "voice_callback") {
+      await processVoiceEvent(event, options.outboundClient ?? telegramOutboundClient, id => processTelegramEventById(id, options));
+      return {status:"processed"};
+    }
     const inbound = inboundFromEvent(event);
     if (!inbound) throw new Error("Accepted Telegram event is incomplete");
 
@@ -405,6 +437,7 @@ export async function retryPendingTelegramEvents(args: {
   limit: number;
   options?: ProcessTelegramOptions;
 }): Promise<{ processed: number; failed: number; skipped: number; statuses: string[] }> {
+  if (isTelegramVoiceEnabled()) await expireVoiceDrafts();
   const events = await listRetryableTelegramEvents(args.limit);
   const statuses: string[] = [];
   let processed = 0;

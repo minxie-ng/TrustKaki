@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <LegalDocument
       eyebrow="Privacy policy"
       title="TrustKaki Privacy Policy"
-      updated="14 July 2026"
+      updated="21 October 2026"
       introduction="TrustKaki is an AI-assisted senior engagement and caregiver decision-support service. This policy explains what information TrustKaki handles, why it is used, and the choices available to seniors and caregivers."
     >
       <section>
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         <h2>Information we handle</h2>
         <ul>
           <li>Identity and contact details, including names, phone numbers, age, address, and caregiver relationships.</li>
-          <li>WhatsApp messages, check-in responses, delivery information, and conversation timestamps.</li>
+          <li>WhatsApp and Telegram messages, check-in responses, delivery information, and conversation timestamps.</li>
           <li>Care context voluntarily supplied by the senior or authorised care team, including routines, preferences, mobility, wellbeing, and health-related context.</li>
           <li>Detected signals, pattern observations, policy risk events, briefings, follow-up cases, assignments, and caregiver-recorded outcomes.</li>
           <li>Operational and security records such as authenticated actions, agent runs, request identifiers, errors, and audit history.</li>
@@ -81,6 +81,20 @@ export default function PrivacyPage() {
           connections, server-side secrets, audit records, and database security
           policies. No system is completely secure, and participating organisations
           must manage staff access and devices responsibly.
+        </p>
+      </section>
+
+      <section>
+        <h2>Optional Telegram voice input</h2>
+        <p>
+          When enabled, authorised private Telegram voice notes are sent to Groq
+          for transcription. TrustKaki does not store the audio file. You review
+          the transcript and press Confirm before it enters the care conversation;
+          typing a message remains available. Unconfirmed drafts stop being usable
+          after 10 minutes and their text is removed on the next successful daily
+          cleanup. Confirmed text follows the care-record retention policy above.
+          Telegram and Groq apply their own data-handling policies; provider
+          retention is separate from TrustKaki&apos;s draft cleanup.
         </p>
       </section>
 

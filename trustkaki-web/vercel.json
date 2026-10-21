@@ -1,4 +1,15 @@
 {
-  "regions": ["sin1"],
-  "crons": [{ "path": "/api/internal/memory/process-pending", "schedule": "15 0 * * *" }]
+  "regions": [
+    "sin1"
+  ],
+  "crons": [
+    {
+      "path": "/api/internal/memory/process-pending",
+      "schedule": "15 0 * * *"
+    },
+    {
+      "path": "/api/internal/telegram/voice-cleanup",
+      "schedule": "30 0 * * *"
+    }
+  ]
 }
