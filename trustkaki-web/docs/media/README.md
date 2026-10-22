@@ -15,9 +15,9 @@ Compact Mermaid views in the RAG and agent guides cover retrieval outcomes, memo
 
 ## Repository map and walkthrough video
 
-`generated-repository-map.png` is the unmodified PNG exported from [GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki), generated 17 October 2026 and downloaded 18 October. It is embedded in an expanded-by-default **Explore the codebase** section in the root README, with an interactive link. The export contains the generator's attribution.
+`generated-repository-map.png` is the unmodified PNG exported from [GitDiagram](https://gitdiagram.com/minxie-ng/trustkaki) and supplied on 22 October 2026. It is embedded in an expanded-by-default **Explore the codebase** section in the root README, with an interactive link. The export contains the generator's attribution.
 
-The generator reports 26 components and 28 connections, with only three connections supported by its sampled source evidence. Review found that channel adapters call the shared orchestrator directly, not the browser orchestration API, and specialists execute internally rather than through the standalone route used to label their group. These limitations are stated beside the image. It omits details such as authentication, storage internals and parts of the runtime; it is not a complete call graph or deployment-status check. Curated SVG diagrams remain the source-linked explanation of behaviour and boundaries.
+The map groups the care workspace, messaging/check-ins, orchestration, Pattern Watch and persistence interfaces. It omits details such as authentication, individual specialist contracts, storage internals and parts of the runtime; it is not a complete call graph or deployment-status check. Curated SVG diagrams remain the source-linked explanation of behaviour and boundaries.
 
 The landscape GitDiagram technical walkthrough (**1:24**) is uploaded as a [GitHub video attachment](https://github.com/user-attachments/assets/ab5b9fdf-ebba-4c06-b222-930918af5f81) and embedded near the top of **Explore the project** in the root README. The MP4 is hosted by GitHub and is not committed to Git history. Its generated explanation complements the maintained architecture guide; it does not establish current channel availability, active schedules or unconditional duplicate-processing guarantees.
 
